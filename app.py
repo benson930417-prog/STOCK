@@ -365,14 +365,6 @@ try:
             value=True,
         )
 
-        st.caption(
-            T(
-                lang,
-                "If you see 'Sell without inventory', export a wider date range.",
-                "若出現『Sell without inventory』代表匯出的期間不夠早，請匯出更長的日期範圍。",
-            )
-        )
-
     # Colors
     if tw_colors:
         PROFIT_COLOR = "#E74C3C"  # red
@@ -392,7 +384,6 @@ try:
         st.subheader(T(lang, "Data Source", "資料來源"))
         if latest_path is not None:
             st.success(T(lang, "Using repo file: latest.csv", "使用 repo 檔案：latest.csv"))
-            st.caption(T(lang, "You update it daily by pushing to GitHub.", "你每天 push 更新 latest.csv 即可。"))
         else:
             st.warning(T(lang, "latest.csv not found. Using upload fallback.", "找不到 latest.csv，改用上傳模式（備援）。"))
 
