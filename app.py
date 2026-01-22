@@ -1,5 +1,5 @@
 INVESTMENT_TWD = 3_080_000  # <-- change this anytime
-APP_PASSWORD = "abc123"     # <-- change this (hardcoded password as you requested)
+APP_PASSWORD = "tony"     # <-- change this (hardcoded password as you requested)
 
 import io
 import os
