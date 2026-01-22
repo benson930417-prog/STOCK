@@ -1,25 +1,3 @@
-# app.py
-# Realized P/L Dashboard (Cathay / 國泰 CSV)
-#
-# Goal (GitHub + Streamlit Cloud):
-# - Friends open the website and see YOUR latest data (no upload needed).
-# - You update daily by committing/pushing a single file: latest.csv (repo root).
-# - Simple password gate (password stored directly in this Python file).
-# - Sidebar = all controls (language/theme/filters). Main page = KPIs first.
-#
-# Repo structure:
-#   app.py
-#   requirements.txt
-#   latest.csv   <-- you overwrite this daily and push
-#
-# Notes:
-# - If latest.csv is missing (local/dev), it falls back to manual upload.
-# - Tab2 Win rate is back
-# - Tables have clean decimals
-# - Tab3 graph has point labels
-# - Per-stock Contribution has value labels
-# - Equity curve x-axis shows months clearly + light daily vertical grid lines
-
 INVESTMENT_TWD = 3_080_000  # <-- change this anytime
 APP_PASSWORD = "abc123"     # <-- change this (hardcoded password as you requested)
 
