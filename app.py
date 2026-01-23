@@ -961,9 +961,11 @@ try:
     with k4:
         KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, T(lang, "Aggregated (day+stock+type)", "已彙總（日+股票+類型）"))
     with k5:
-        # Squeeze fee/tax into subtitle or separate
-        total_fee_tax = float(f_sorted["total_fee"].sum() + f_sorted["total_tax"].sum())
-        KPI_CARD(T(lang, "Trade volume", "交易量"), f"{trade_volume:,.0f}", NEUTRAL_BLUE, f"{T(lang, 'Fees+Tax', '手續費+稅')}: {total_fee_tax:,.0f}")
+        # Split fee/tax
+        total_fee = float(f_sorted["total_fee"].sum())
+        total_tax = float(f_sorted["total_tax"].sum())
+        sub_lbl = f"{T(lang, 'Fee', '手')}:{total_fee:,.0f}  {T(lang, 'Tax', '稅')}:{total_tax:,.0f}"
+        KPI_CARD(T(lang, "Trade volume", "交易量"), f"{trade_volume:,.0f}", NEUTRAL_BLUE, sub_lbl)
 
     hr()
 
@@ -1239,8 +1241,8 @@ try:
                 T(lang, "Stock", "股名"),
                 T(lang, "Type", "類型"),
                 T(lang, "Total Buy Cost", "買入總額"),
-                T(lang, "Avg Buy Price", "買入均價"),
                 T(lang, "Total Sell Proceeds", "賣出總額"),
+                T(lang, "Avg Buy Price", "買入均價"),
                 T(lang, "Avg Sell Price", "賣出均價"),
                 T(lang, "Realized P/L", "已實現損益"),
                 T(lang, "Realized %", "已實現%"),
