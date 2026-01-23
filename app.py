@@ -761,48 +761,7 @@ def add_month_major_lines(fig: go.Figure, dates: pd.Series):
     return fig
 
 
-def plot_calendar_heatmap(df: pd.DataFrame, lang: str):
-    """
-    Expects df with columns: 'date' (datetime), 'realized_pnl' (float).
-    Aggregates by day first.
-    Layout: X=Day of Month (1-31), Y=Year-Month.
-    """
-    daily = df.groupby("date", as_index=False)["realized_pnl"].sum()
-    daily["day"] = daily["date"].dt.day
-    daily["ym"] = daily["date"].dt.strftime("%Y-%m")
-    
-    # Sort by date descending so latest month is at top (or ascending if preferred)
-    # Usually heatmaps read better top-down (latest at top?) or bottom-up?
-    # Let's do descending Y (latest at top).
-    daily = daily.sort_values("date", ascending=False)
-    
-    fig = go.Figure(data=go.Heatmap(
-        x=daily["day"],
-        y=daily["ym"],
-        z=daily["realized_pnl"],
-        text=daily.apply(lambda r: f"{r['date'].strftime('%Y-%m-%d')}<br>{fmt_signed_money(r['realized_pnl'])}", axis=1),
-        hoverinfo="text",
-        colorscale=[
-            [0.0, "#2ECC71"],   # Green (Loss)
-            [0.5, "#1E1E1E"],   # Dark equivalent of 0
-            [1.0, "#E74C3C"]    # Red (Profit)
-        ],
-        zmid=0,
-        showscale=True,
-        xgap=2,
-        ygap=2,
-    ))
-    
-    fig.update_layout(
-        title=T(lang, "Daily P/L Heatmap", "每日損益熱力圖"),
-        height=min(600, max(300, len(daily["ym"].unique()) * 30)), # Auto-height
-        xaxis_title=T(lang, "Day of Month", "日期"),
-        yaxis_title=T(lang, "Month", "月份"),
-        margin=dict(l=40, r=40, t=40, b=40),
-        xaxis=dict(dtick=1), # Show all days 1-31
-    )
-    
-    return [fig]
+
 
 
 def plot_pnl_distribution(df: pd.DataFrame, lang: str):
@@ -810,22 +769,23 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str):
     Histogram of P/L distribution.
     Expects df with column 'realized_pnl'.
     """
+    # Scale units first
+    # unit_val is the series of scaled values, unit_txt is the label (e.g., '萬')
+    scaled_vals, unit_txt, _ = scale_unit(df["realized_pnl"], lang)
+    
+    # Create temp df for plotting
+    plot_df = pd.DataFrame({"pnl": scaled_vals})
+
     fig = px.histogram(
-        df, 
-        x="realized_pnl", 
+        plot_df, 
+        x="pnl", 
         nbins=40,
         color_discrete_sequence=["#4C78A8"],
     )
     
-    # Color bins by profit/loss (harder with px.histogram directly, 
-    # but we can overlay a colored background or just use neutral color).
-    # Better: Use neutral color, but add a zero line.
-    
-    unit_val, unit_txt, _ = scale_unit(df["realized_pnl"], lang)
-    
     fig.update_layout(
         title=T(lang, "P/L Distribution (Histogram)", "損益分佈直方圖"),
-        xaxis_title=T(lang, "Realized P/L", "已實現損益"),
+        xaxis_title=f"{T(lang, 'Realized P/L', '已實現損益')} ({unit_txt})",
         yaxis_title=T(lang, "Count", "筆數"),
         height=380,
         bargap=0.1,
@@ -1098,18 +1058,9 @@ try:
         hr()
         
         # New Visualizations
-        c_heat, c_hist = st.columns([3, 2], gap="large")
-        
-        with c_heat:
-            st.subheader(T(lang, "Calendar Heatmap", "每日損益熱力圖"))
-            heatmaps = plot_calendar_heatmap(f, lang)
-            for h in heatmaps:
-                st.plotly_chart(h, width="stretch")
-                
-        with c_hist:
-            st.subheader(T(lang, "P/L Distribution", "損益分佈"))
-            fig_hist = plot_pnl_distribution(f, lang)
-            st.plotly_chart(fig_hist, width="stretch")
+        st.subheader(T(lang, "P/L Distribution", "損益分佈"))
+        fig_hist = plot_pnl_distribution(f, lang)
+        st.plotly_chart(fig_hist, width="stretch")
 
         hr()
         st.subheader(T(lang, "Per-stock Contribution", "各股貢獻"))
