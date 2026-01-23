@@ -48,6 +48,11 @@ DATA_DIR = Path("data")
 MASTER_PATH = DATA_DIR / "master_trades.csv"
 META_PATH = DATA_DIR / "master_meta.json"
 
+# Check for upload success toast
+if st.session_state.get("upload_toast"):
+     st.toast(T(st.session_state.get("lang", "中文"), "✅ Master updated & pushed.", "✅ Master 已更新並推送。"), icon="✅")
+     del st.session_state["upload_toast"]
+
 
 # -------------------- translations --------------------
 def T(lang: str, en: str, zh: str) -> str:
@@ -914,8 +919,12 @@ try:
 
                         st.session_state["last_upload_stats"] = stats
                         
-                        # Show non-blocking toast
-                        st.toast(T(lang, "✅ Master updated & pushed.", "✅ Master 已更新並推送。"), icon="✅")
+                        st.session_state["last_upload_stats"] = stats
+                        
+                        # Set secure toast flag to show AFTER rerun
+                        st.session_state["upload_toast"] = True
+                        # Also save lang in session state to ensure toast has correct lang if needed (though global lang works too)
+                        st.session_state["lang"] = lang 
                         
                         # Rerun to refresh data immediately
                         st.rerun()
