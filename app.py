@@ -1,5 +1,5 @@
 # app.py
-# Realized P/L Dashboard (Cathay / 國泰 CSV) - Master Raw Trades
+# Realized P/L Dashboard (Cathay CSV) - Master Raw Trades
 #
 # Master design:
 # - Store ONLY raw trades in data/master_trades.csv
@@ -212,7 +212,7 @@ def KPI_CARD(title: str, value: str, color_hex: str, subtitle: str = ""):
 
 def humanize_ago_from_utc_epoch(epoch_utc: float, lang: str) -> str:
     """
-    This avoids timezone/DST issues by comparing in UTC only.
+    Avoid timezone/DST issues by comparing in UTC only.
     """
     if not epoch_utc:
         return T(lang, "Unknown", "未知")
@@ -314,7 +314,6 @@ def read_cathay_csv_any(file_like_or_path) -> pd.DataFrame:
 def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
     """
     Normalize types and build a COMPOSITE KEY to dedupe safely.
-    This avoids false-kill when 委託書號 repeats or collides.
     """
     df = df.copy()
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
@@ -325,7 +324,6 @@ def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df[RAW_REQUIRED].copy()
 
-    # Normalize base fields
     df["股名"] = df["股名"].astype(str).str.strip()
     df["買賣別"] = df["買賣別"].astype(str).str.strip()
 
@@ -334,11 +332,9 @@ def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
 
     df["成交股數"] = df["成交股數"].apply(to_int)
 
-    # IMPORTANT: 淨收付金額 might come as float with .0
-    # store it as integer TWD (rounded) to stabilize key
+    # stabilize key by storing 淨收付金額 as int
     df["淨收付金額"] = df["淨收付金額"].apply(to_float).round(0).astype(int)
 
-    # Normalize numeric columns (remove commas, keep as int where possible)
     def _num_clean_int(x):
         if pd.isna(x):
             return 0
@@ -363,18 +359,13 @@ def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
         except Exception:
             return 0.0
 
-    # Price as float (stable rounding)
     df["成交價"] = df["成交價"].apply(_num_clean_float).round(4)
 
-    # Cost/fees/taxes as int (stable)
     for c in ["成本", "手續費", "交易稅", "利息", "稅款", "券手續費/標借費", "融資金額/券擔保品", "資自備款/券保證金"]:
         df[c] = df[c].apply(_num_clean_int)
 
-    # Keep 委託書號 as string (still useful as part of key)
     df["委託書號"] = df["委託書號"].astype(str).str.strip()
 
-    # Build composite key (most stable fields)
-    # We DO NOT use 委託書號 alone anymore.
     df["_key"] = (
         df["股名"].astype(str)
         + "|"
@@ -411,8 +402,6 @@ def load_master_trades() -> pd.DataFrame:
 
 def save_master_trades(df_master: pd.DataFrame):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    # Save WITHOUT _key column in master file? (we can keep it, it's harmless but ugly)
-    # We keep it because it helps debug quickly.
     df_master.to_csv(MASTER_PATH, index=False, encoding="utf-8-sig")
 
 
@@ -437,7 +426,6 @@ def merge_into_master(new_month_df: pd.DataFrame, upload_filename: str):
 
     combined = pd.concat([master, new_month_df], ignore_index=True)
 
-    # Deduplicate by composite key
     before = len(combined)
     combined = combined.drop_duplicates(subset=["_key"], keep="last")
     n_after = len(combined)
@@ -452,7 +440,6 @@ def merge_into_master(new_month_df: pd.DataFrame, upload_filename: str):
     min_date = combined["日期"].min() if len(combined) else None
     max_date = combined["日期"].max() if len(combined) else None
 
-    # Update meta (store UTC epoch to avoid DST/Timezone issues)
     meta = load_meta()
     meta["last_update_utc_epoch"] = datetime.now(timezone.utc).timestamp()
     meta["rows"] = int(len(combined))
@@ -486,7 +473,6 @@ def merge_into_master(new_month_df: pd.DataFrame, upload_filename: str):
 
 
 def push_master_and_meta_to_github(message_suffix: str = ""):
-    # push master
     master_bytes = MASTER_PATH.read_bytes()
     msg = f"Update master_trades.csv {message_suffix}".strip()
     github_put_file(
@@ -497,7 +483,6 @@ def push_master_and_meta_to_github(message_suffix: str = ""):
         message=msg,
     )
 
-    # push meta (optional, but we want friends to see last update info)
     meta_bytes = META_PATH.read_bytes()
     github_put_file(
         repo=GITHUB_REPO,
@@ -523,7 +508,7 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
 
     df["日期"] = pd.to_datetime(df["日期"])
     df["成交股數"] = df["成交股數"].apply(to_int)
-    df["淨收付金額"] = df["淨收付金額"].apply(to_float)  # already int, but ok
+    df["淨收付金額"] = df["淨收付金額"].apply(to_float)
     df["買賣別"] = df["買賣別"].astype(str).str.strip()
     df["股名"] = df["股名"].astype(str).str.strip()
 
@@ -674,7 +659,7 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
 
     styler = df_show.style
     for col in df_show.columns:
-        low = col.lower()
+        low = str(col).lower()
         if low in ["realized p/l", "total p/l"] or col in ["已實現損益", "總損益", "損益"]:
             styler = styler.applymap(color_pl, subset=[col])
         if low in ["realized %", "total p/l %"] or col in ["已實現%", "總損益%", "報酬%"]:
@@ -684,7 +669,7 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
     return styler
 
 
-# -------------------- sidebar: recent update (always visible) --------------------
+# -------------------- sidebar: recent update (post-auth) --------------------
 def sidebar_recent_update(lang: str):
     st.markdown(f"## {T(lang,'Recent update','最近更新')}")
 
@@ -692,11 +677,23 @@ def sidebar_recent_update(lang: str):
     epoch = float(meta.get("last_update_utc_epoch", 0) or 0)
     ago_text = humanize_ago_from_utc_epoch(epoch, lang)
 
+    # ✅ Always compute "master range" from master_trades.csv (source of truth)
+    master_rows = "?"
+    rng_min = None
+    rng_max = None
+    if MASTER_PATH.exists():
+        try:
+            _m = load_master_trades()
+            master_rows = int(len(_m))
+            if len(_m):
+                rng_min = pd.to_datetime(_m["日期"].min()).date().isoformat()
+                rng_max = pd.to_datetime(_m["日期"].max()).date().isoformat()
+        except Exception:
+            pass
+
     if epoch:
         st.success(f"✅ {T(lang,'Master updated & pushed','Master 已更新並推送')}")
         st.caption(f"{T(lang,'Updated','更新於')}: **{ago_text}**")
-        rng_min = meta.get("min_date")
-        rng_max = meta.get("max_date")
         if rng_min and rng_max:
             st.caption(f"{T(lang,'Range','範圍')}: {rng_min} ~ {rng_max}")
     else:
@@ -706,7 +703,8 @@ def sidebar_recent_update(lang: str):
         if not epoch:
             st.write(T(lang, "No data yet.", "目前沒有資料。"))
             return
-        st.write(f"**{T(lang,'Master rows','總筆數')}** : {meta.get('rows','?')}")
+
+        st.write(f"**{T(lang,'Master rows','總筆數')}** : {master_rows}")
 
         last_up = meta.get("last_upload", {})
         if last_up:
@@ -723,9 +721,6 @@ def sidebar_recent_update(lang: str):
 
 # -------------------- chart helpers --------------------
 def add_month_major_lines(fig: go.Figure, dates: pd.Series):
-    """
-    Add thick vertical lines at month starts.
-    """
     if dates.empty:
         return fig
     dmin = pd.to_datetime(dates.min()).normalize()
@@ -743,22 +738,23 @@ def add_month_major_lines(fig: go.Figure, dates: pd.Series):
 
 # -------------------- APP --------------------
 try:
-    # Sidebar top: language + recent update
+    # Sidebar pre-auth: ONLY language switch
     with st.sidebar:
         lang = st.radio(
-            "Language / 語言",
+            T(lang="EN", en="Language", zh="語言") if "lang" not in locals() else T(lang, "Language", "語言"),
             ["EN", "中文"],
             index=1,
             horizontal=True,
         )
 
+    # Gate everything else behind VIEW password
+    require_view_password_centered(lang)
+
+    # Sidebar post-auth: recent update + everything else
+    with st.sidebar:
         sidebar_recent_update(lang)
         hr()
 
-    require_view_password_centered(lang)
-
-    # Sidebar: theme + admin
-    with st.sidebar:
         st.markdown(f"## {T(lang,'Theme','主題')}")
         tw_colors = st.toggle(
             T(lang, "Taiwan colors (red=profit, green=loss)", "台股顏色（紅=賺、綠=虧）"),
@@ -795,11 +791,9 @@ try:
 
                         stats = merge_into_master(monthly_df, upload_filename=getattr(up_admin, "name", "uploaded.csv"))
 
-                        # push master + meta
                         suffix = f"({datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')})"
                         push_master_and_meta_to_github(message_suffix=suffix)
 
-                        # Keep result for user to see (persistent)
                         st.session_state["last_upload_stats"] = stats
 
                     st.success(T(lang, "✅ Master updated & pushed.", "✅ Master 已更新並推送。"))
@@ -816,7 +810,6 @@ try:
                             f"{pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}"
                         )
 
-                    # IMPORTANT: rerun once after a successful submission
                     st.rerun()
 
     # Colors
@@ -852,7 +845,7 @@ try:
     realized["method_display"] = realized["method_key"].map(METHOD_ZH if lang == "中文" else METHOD_EN).fillna(realized["method_key"])
     realized["sign"] = np.where(realized["realized_pnl"] >= 0, "Profit", "Loss")
 
-    # Filters
+    # Filters (sidebar post-auth)
     with st.sidebar:
         hr()
         st.markdown(f"## {T(lang,'Selection','篩選')}")
@@ -963,18 +956,17 @@ try:
             )
         )
 
-        # WEEK ticks (labels), DAILY minor grid (no labels)
         fig_eq.update_layout(
             title=T(lang, "Cumulative Realized P/L", "累計已實現損益"),
             xaxis=dict(
                 title="",
-                dtick=7 * 24 * 60 * 60 * 1000,   # weekly ticks
+                dtick=7 * 24 * 60 * 60 * 1000,
                 tickformat="%m/%d",
                 showgrid=True,
                 gridcolor="rgba(255,255,255,0.10)",
                 gridwidth=1,
                 minor=dict(
-                    dtick=24 * 60 * 60 * 1000,    # daily minor grid
+                    dtick=24 * 60 * 60 * 1000,
                     showgrid=True,
                     gridcolor="rgba(255,255,255,0.04)",
                     gridwidth=1,
@@ -986,7 +978,6 @@ try:
             legend_title_text="",
         )
 
-        # month major lines
         fig_eq = add_month_major_lines(fig_eq, f_sorted["date"])
         add_zero_line(fig_eq, axis="y", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_eq, width="stretch")
