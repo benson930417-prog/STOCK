@@ -765,72 +765,44 @@ def plot_calendar_heatmap(df: pd.DataFrame, lang: str):
     """
     Expects df with columns: 'date' (datetime), 'realized_pnl' (float).
     Aggregates by day first.
+    Layout: X=Day of Month (1-31), Y=Year-Month.
     """
     daily = df.groupby("date", as_index=False)["realized_pnl"].sum()
-    daily["year"] = daily["date"].dt.year
-    daily["week"] = daily["date"].dt.isocalendar().week
-    daily["weekday"] = daily["date"].dt.dayofweek  # 0=Mon, 6=Sun
+    daily["day"] = daily["date"].dt.day
+    daily["ym"] = daily["date"].dt.strftime("%Y-%m")
     
-    # Adjust for consistent heatmap layout
-    # We want Mon at top (0) -> Sun at bottom (6)
-    # Week number on X axis
+    # Sort by date descending so latest month is at top (or ascending if preferred)
+    # Usually heatmaps read better top-down (latest at top?) or bottom-up?
+    # Let's do descending Y (latest at top).
+    daily = daily.sort_values("date", ascending=False)
     
-    # Separate by year to avoid overlapping weeks if multiple years present
-    years = sorted(daily["year"].unique())
+    fig = go.Figure(data=go.Heatmap(
+        x=daily["day"],
+        y=daily["ym"],
+        z=daily["realized_pnl"],
+        text=daily.apply(lambda r: f"{r['date'].strftime('%Y-%m-%d')}<br>{fmt_signed_money(r['realized_pnl'])}", axis=1),
+        hoverinfo="text",
+        colorscale=[
+            [0.0, "#2ECC71"],   # Green (Loss)
+            [0.5, "#1E1E1E"],   # Dark equivalent of 0
+            [1.0, "#E74C3C"]    # Red (Profit)
+        ],
+        zmid=0,
+        showscale=True,
+        xgap=2,
+        ygap=2,
+    ))
     
-    figs = []
+    fig.update_layout(
+        title=T(lang, "Daily P/L Heatmap", "每日損益熱力圖"),
+        height=min(600, max(300, len(daily["ym"].unique()) * 30)), # Auto-height
+        xaxis_title=T(lang, "Day of Month", "日期"),
+        yaxis_title=T(lang, "Month", "月份"),
+        margin=dict(l=40, r=40, t=40, b=40),
+        xaxis=dict(dtick=1), # Show all days 1-31
+    )
     
-    for y in years:
-        d_year = daily[daily["year"] == y].copy()
-        
-        # Fill missing days for complete grid (optional, but looks better)
-        # For now, let's just plot available data to avoid cluttering with 0s
-        
-        # Color scale: Red=Profit, Green=Loss (Taiwan style)
-        # We need a custom divering scale centered at 0
-        max_val = max(abs(d_year["realized_pnl"].max()), abs(d_year["realized_pnl"].min()))
-        if max_val == 0:
-            max_val = 1
-            
-        fig = go.Figure(data=go.Heatmap(
-            x=d_year["week"],
-            y=d_year["weekday"],
-            z=d_year["realized_pnl"],
-            text=d_year.apply(lambda r: f"{r['date'].strftime('%Y-%m-%d')}<br>{fmt_signed_money(r['realized_pnl'])}", axis=1),
-            hoverinfo="text",
-            colorscale=[
-                [0.0, "#2ECC71"],   # Green (Loss)
-                [0.5, "#1E1E1E"],   # Dark equivalent of 0
-                [1.0, "#E74C3C"]    # Red (Profit)
-            ],
-            zmid=0,
-            showscale=True,
-            xgap=2,
-            ygap=2,
-        ))
-        
-        # Map weekday numbers to names
-        weekday_map = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
-        if lang == "中文":
-            weekday_map = {0: "一", 1: "二", 2: "三", 3: "四", 4: "五", 5: "六", 6: "日"}
-            
-        fig.update_layout(
-            title=f"{y} {T(lang, 'Heatmap', '熱力圖')}",
-            height=260,
-            yaxis=dict(
-                tickmode="array",
-                tickvals=list(weekday_map.keys()),
-                ticktext=list(weekday_map.values()),
-                autorange="reversed" # Mon at top
-            ),
-            xaxis_title=T(lang, "Week of Year", "週數"),
-            margin=dict(l=40, r=40, t=40, b=40),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-        )
-        figs.append(fig)
-        
-    return figs
+    return [fig]
 
 
 def plot_pnl_distribution(df: pd.DataFrame, lang: str):
