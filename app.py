@@ -1,32 +1,26 @@
 # app.py
-# Realized P/L Dashboard (Cathay / 國泰 CSV) - Master Raw Trades
+# Realized P/L Dashboard (Cathay / 國泰 CSV)
+# Master raw trades stored in GitHub: data/master_trades.csv
 #
-# Master design:
-# - Store ONLY raw trades in data/master_trades.csv
-# - Admin uploads monthly Cathay export CSV (filename can vary)
-# - Merge into master by 委託書號 (unique), keep="last" (new upload overwrites)
-# - All calculations (FIFO + same-day match + board/odd pools) derived from master
+# Key fixes:
+# 1) Admin upload uses st.form(clear_on_submit=True) -> prevents infinite push loop
+# 2) App syncs master from GitHub by SHA -> prevents stale "Sell without inventory" after you fixed GitHub
+# 3) Heavy FIFO compute cached by master bytes -> faster + avoids "stuck" feeling
 #
-# FIX: prevent infinite rerun after upload
-# - Upload doesn't auto-push. Use a button to trigger merge/push.
-# - After success, uploader is cleared by changing its key (nonce).
-#
-# Required Streamlit Secrets:
-#   GITHUB_TOKEN
-#   ADMIN_PASSWORD
+# Streamlit Secrets required:
 #   VIEW_PASSWORD
+#   ADMIN_PASSWORD
+#   GITHUB_TOKEN
 #   GITHUB_REPO        e.g. "benson930417-prog/STOCK"
 #   GITHUB_BRANCH      e.g. "main"
 #   GITHUB_FILE_PATH   e.g. "data/master_trades.csv"
-#
-# requirements.txt:
-#   requests>=2.31
 
 INVESTMENT_TWD = 3_080_000
 
+import io
 import os
-import base64
 import json
+import base64
 import hashlib
 import traceback
 from datetime import datetime
@@ -63,6 +57,7 @@ GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
 
 
 def require_view_password_centered():
+    # If no view password set, allow public view
     if not VIEW_PASSWORD:
         return
 
@@ -76,11 +71,11 @@ def require_view_password_centered():
     with mid:
         st.markdown("## 🔒 Enter password to view")
         typed = st.text_input("Password", type="password", key="view_pw_input_main")
-        if st.button("Enter", use_container_width=True) or typed:
+        if st.button("Enter", use_container_width=True):
             if typed == VIEW_PASSWORD:
                 st.session_state.authed_view = True
                 st.rerun()
-            elif typed:
+            else:
                 st.error("Wrong password")
 
     st.stop()
@@ -118,7 +113,7 @@ def admin_login_ui():
 require_view_password_centered()
 
 
-# -------------------- helpers --------------------
+# -------------------- UI helpers --------------------
 def to_float(x):
     if pd.isna(x):
         return 0.0
@@ -151,7 +146,6 @@ def fmt_signed_pct(x) -> str:
 
 def scale_unit(values: pd.Series, lang: str):
     max_abs = float(np.nanmax(np.abs(values.to_numpy()))) if len(values) else 0.0
-
     if lang == "中文":
         if max_abs >= 1e6:
             return values / 1e6, "百萬", 1e6
@@ -207,7 +201,7 @@ def T(lang, en, zh):
     return zh if lang == "中文" else en
 
 
-# -------------------- GitHub push helpers --------------------
+# -------------------- GitHub helpers --------------------
 def github_api_headers():
     return {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
@@ -218,11 +212,21 @@ def github_api_headers():
 
 def github_get_file_sha(repo: str, path: str, ref: str):
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
-    r = requests.get(url, headers=github_api_headers(), params={"ref": ref}, timeout=20)
+    r = requests.get(url, headers=github_api_headers(), params={"ref": ref}, timeout=30)
     if r.status_code == 404:
         return None
     r.raise_for_status()
     return r.json().get("sha")
+
+
+def github_download_file_bytes(repo: str, path: str, ref: str) -> tuple[bytes, str]:
+    url = f"https://api.github.com/repos/{repo}/contents/{path}"
+    r = requests.get(url, headers=github_api_headers(), params={"ref": ref}, timeout=30)
+    r.raise_for_status()
+    j = r.json()
+    content_b64 = j["content"]
+    sha = j["sha"]
+    return base64.b64decode(content_b64), sha
 
 
 def github_put_file(repo: str, path: str, ref: str, content_bytes: bytes, message: str):
@@ -240,12 +244,33 @@ def github_put_file(repo: str, path: str, ref: str, content_bytes: bytes, messag
     if sha:
         payload["sha"] = sha
 
-    r = requests.put(url, headers=github_api_headers(), data=json.dumps(payload), timeout=30)
+    r = requests.put(url, headers=github_api_headers(), data=json.dumps(payload), timeout=60)
     r.raise_for_status()
     return r.json()
 
 
-# -------------------- master file handling --------------------
+def ensure_master_synced_from_github(force: bool = False):
+    """
+    Keep local MASTER_PATH in sync with GitHub file by SHA.
+    This avoids stale local file after you fixed data on GitHub.
+    """
+    if not (GITHUB_TOKEN and GITHUB_REPO and GITHUB_FILE_PATH):
+        return
+
+    if "master_sha_loaded" not in st.session_state:
+        st.session_state.master_sha_loaded = ""
+
+    try:
+        b, sha = github_download_file_bytes(GITHUB_REPO, GITHUB_FILE_PATH, GITHUB_BRANCH)
+        if force or (sha != st.session_state.master_sha_loaded) or (not MASTER_PATH.exists()):
+            MASTER_PATH.parent.mkdir(parents=True, exist_ok=True)
+            MASTER_PATH.write_bytes(b)
+            st.session_state.master_sha_loaded = sha
+    except Exception as e:
+        st.sidebar.warning(f"Master sync warning: {e}")
+
+
+# -------------------- raw trade schema --------------------
 RAW_REQUIRED = [
     "股名",
     "日期",
@@ -265,18 +290,18 @@ RAW_REQUIRED = [
 ]
 
 
-def read_cathay_csv_any(file_like_or_path) -> pd.DataFrame:
-    # Try Cathay export style first: header=1
+def read_cathay_csv_any(file_like) -> pd.DataFrame:
+    # Cathay export: row1 banner, row2 header -> header=1
     try:
-        df = pd.read_csv(file_like_or_path, header=1, encoding="utf-8-sig")
+        df = pd.read_csv(file_like, header=1, encoding="utf-8-sig")
         df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
         if all(c in df.columns for c in RAW_REQUIRED):
             return df
     except Exception:
         pass
 
-    # Fallback: normal CSV (master)
-    df = pd.read_csv(file_like_or_path, header=0, encoding="utf-8-sig")
+    # fallback
+    df = pd.read_csv(file_like, header=0, encoding="utf-8-sig")
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
     return df
 
@@ -299,35 +324,31 @@ def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
     df["股名"] = df["股名"].astype(str).str.strip()
     df["買賣別"] = df["買賣別"].astype(str).str.strip()
 
-    for c in ["成交價", "成本", "手續費", "交易稅", "利息", "稅款", "券手續費/標借費", "融資金額/券擔保品", "資自備款/券保證金"]:
-        if c in df.columns:
-            df[c] = df[c].apply(lambda x: x.replace(",", "").strip() if isinstance(x, str) else x)
-
     df = df.dropna(subset=["日期"])
     df = df[df["委託書號"].astype(str).str.len() > 0]
+
     return df
 
 
-def load_master_trades() -> pd.DataFrame:
+def load_master_trades_local() -> pd.DataFrame:
     if not MASTER_PATH.exists():
         return pd.DataFrame(columns=RAW_REQUIRED)
-    df = read_cathay_csv_any(str(MASTER_PATH))
+    df = pd.read_csv(MASTER_PATH, encoding="utf-8-sig")
     return normalize_raw_trades(df)
 
 
-def save_master_trades(df_master: pd.DataFrame):
+def save_master_trades_local(df_master: pd.DataFrame):
     MASTER_PATH.parent.mkdir(parents=True, exist_ok=True)
     df_master.to_csv(MASTER_PATH, index=False, encoding="utf-8-sig")
 
 
 def merge_into_master(new_month_df: pd.DataFrame):
-    master = load_master_trades()
+    master = load_master_trades_local()
     n_old = len(master)
 
     combined = pd.concat([master, new_month_df], ignore_index=True)
 
-    # unique by 委託書號 (you said always unique)
-    # keep="last" so re-upload can overwrite corrected row
+    # unique by 委託書號, keep last (new overwrites old)
     combined = combined.drop_duplicates(subset=["委託書號"], keep="last")
     combined = combined.sort_values(["日期", "股名", "委託書號"]).reset_index(drop=True)
 
@@ -336,7 +357,7 @@ def merge_into_master(new_month_df: pd.DataFrame):
     n_added = max(0, n_after - n_old)
     n_dup_skipped = (n_old + n_new_total) - n_after
 
-    save_master_trades(combined)
+    save_master_trades_local(combined)
 
     return {
         "old_rows": n_old,
@@ -349,7 +370,7 @@ def merge_into_master(new_month_df: pd.DataFrame):
     }
 
 
-# -------------------- accounting (same logic as before) --------------------
+# -------------------- FIFO logic (same as before) --------------------
 def pool_of(qty: int) -> str:
     return "board" if qty % 1000 == 0 else "odd"
 
@@ -490,6 +511,16 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
     return df, realized
 
 
+# -------------------- cache heavy compute --------------------
+@st.cache_data(show_spinner=False)
+def compute_realized_from_master_bytes(master_csv_bytes: bytes):
+    df_master = pd.read_csv(io.BytesIO(master_csv_bytes), encoding="utf-8-sig")
+    df_master.columns = [str(c).strip().replace("\n", "") for c in df_master.columns]
+    df_master = normalize_raw_trades(df_master)
+    raw_df, realized = realized_match_first_then_fifo_separate_pools_from_raw_trades(df_master)
+    return raw_df, realized
+
+
 # -------------------- styling --------------------
 def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str):
     def color_pl(v):
@@ -524,9 +555,8 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
     return styler
 
 
-# -------------------- app --------------------
+# -------------------- app main --------------------
 try:
-    # Sidebar (admin stays here)
     with st.sidebar:
         lang = st.radio("Language / 語言", ["EN", "中文"], index=1, horizontal=True)
 
@@ -544,47 +574,51 @@ try:
         st.subheader("Admin / 管理者")
         admin_login_ui()
 
-        # ---------- FIXED ADMIN UPLOAD FLOW (button-triggered + clears uploader) ----------
+        # Force reload master
+        if st.button("🔄 Force reload master from GitHub", use_container_width=True):
+            st.cache_data.clear()
+            ensure_master_synced_from_github(force=True)
+            st.rerun()
+
+        # ---------- Admin upload: FORM-based (no infinite loop) ----------
         if is_admin_authed():
-            if "uploader_nonce" not in st.session_state:
-                st.session_state.uploader_nonce = 0
-            if "last_uploaded_sha" not in st.session_state:
-                st.session_state.last_uploaded_sha = ""
+            if "last_pushed_sha" not in st.session_state:
+                st.session_state.last_pushed_sha = ""
 
-            st.markdown("**Upload monthly CSV → merge into master (依委託書號去重)**")
-            uploader_key = f"admin_month_uploader_{st.session_state.uploader_nonce}"
+            hr()
+            st.subheader("Upload / 上傳")
 
-            up_admin = st.file_uploader(
-                "Upload Cathay CSV (any filename). Then click the button to merge & push.",
-                type=["csv"],
-                key=uploader_key,
-            )
+            with st.form("admin_upload_form", clear_on_submit=True):
+                up_admin = st.file_uploader(
+                    "Upload Cathay CSV (any filename)",
+                    type=["csv"],
+                    key="admin_upload_uploader",
+                )
+                submitted = st.form_submit_button("✅ Merge into master & push", use_container_width=True)
 
-            if up_admin is not None:
+            if submitted:
+                if up_admin is None:
+                    st.error("Please select a CSV first.")
+                    st.stop()
+
                 file_bytes = up_admin.getvalue()
                 sha = hashlib.sha256(file_bytes).hexdigest()
 
-                st.caption(f"Selected: {up_admin.name}  |  size: {len(file_bytes):,} bytes")
-                already_done = (sha == st.session_state.last_uploaded_sha)
+                if sha == st.session_state.last_pushed_sha:
+                    st.warning("This file was already pushed (same content).")
+                    st.stop()
 
-                do_push = st.button(
-                    "✅ Merge into master & push to GitHub",
-                    use_container_width=True,
-                    disabled=already_done,
-                )
+                with st.spinner("Sync master from GitHub..."):
+                    ensure_master_synced_from_github(force=True)
 
-                if already_done:
-                    st.info("This exact file has already been merged/pushed in this session (prevents double push).")
-
-                if do_push:
-                    monthly_df = read_cathay_csv_any(up_admin)
+                with st.spinner("Merging into master..."):
+                    monthly_df = read_cathay_csv_any(io.BytesIO(file_bytes))
                     monthly_df = normalize_raw_trades(monthly_df)
-
                     stats = merge_into_master(monthly_df)
 
+                with st.spinner("Pushing to GitHub..."):
                     master_bytes = MASTER_PATH.read_bytes()
                     msg = f"Update master_trades.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
-
                     github_put_file(
                         repo=GITHUB_REPO,
                         path=GITHUB_FILE_PATH,
@@ -593,24 +627,23 @@ try:
                         message=msg,
                     )
 
-                    st.session_state.last_uploaded_sha = sha
-                    st.success("✅ Master updated + pushed to GitHub.")
-                    st.caption(
-                        f"old={stats['old_rows']} | uploaded={stats['uploaded_rows']} | "
-                        f"added={stats['added_rows']} | dup_skipped={stats['dup_skipped']} | "
-                        f"after={stats['after_rows']}"
-                    )
-                    if stats["min_date"] is not None:
-                        st.caption(f"range: {pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}")
+                st.session_state.last_pushed_sha = sha
+                st.success("✅ Master updated + pushed to GitHub.")
+                st.caption(
+                    f"old={stats['old_rows']} | uploaded={stats['uploaded_rows']} | "
+                    f"added={stats['added_rows']} | dup_skipped={stats['dup_skipped']} | "
+                    f"after={stats['after_rows']}"
+                )
+                if stats["min_date"] is not None:
+                    st.caption(f"range: {pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}")
 
-                    # Clear uploader by changing its key
-                    st.session_state.uploader_nonce += 1
-                    st.rerun()
+                st.cache_data.clear()
+                st.rerun()
 
     # Colors
     if tw_colors:
-        PROFIT_COLOR = "#E74C3C"
-        LOSS_COLOR = "#2ECC71"
+        PROFIT_COLOR = "#E74C3C"  # red
+        LOSS_COLOR = "#2ECC71"    # green
     else:
         PROFIT_COLOR = "#2ECC71"
         LOSS_COLOR = "#E74C3C"
@@ -618,14 +651,17 @@ try:
     NEUTRAL_BLUE = "#4C78A8"
     NEUTRAL_PURPLE = "#6F42C1"
 
-    # Load master trades
+    # Always sync master from GitHub for everyone (viewer sees your latest updates)
+    ensure_master_synced_from_github(force=False)
+
     if not MASTER_PATH.exists():
         st.warning(T(lang, "No master file yet. Admin please upload in sidebar.", "尚未有 master 檔，請管理者在左側上傳當月 CSV。"))
         st.stop()
 
-    master_trades = load_master_trades()
+    master_bytes = MASTER_PATH.read_bytes()
 
-    raw_df, realized = realized_match_first_then_fifo_separate_pools_from_raw_trades(master_trades)
+    with st.spinner(T(lang, "Loading & computing...", "載入並計算中...")):
+        raw_df, realized = compute_realized_from_master_bytes(master_bytes)
 
     if realized.empty:
         st.warning(T(lang, "No realized sells found.", "找不到已實現賣出紀錄。"))
@@ -641,7 +677,7 @@ try:
     realized["method_display"] = realized["method_key"].map(METHOD_ZH if lang == "中文" else METHOD_EN).fillna(realized["method_key"])
     realized["sign"] = np.where(realized["realized_pnl"] >= 0, "Profit", "Loss")
 
-    # Filters (sidebar)
+    # Sidebar filters
     with st.sidebar:
         hr()
         st.subheader(T(lang, "Selection", "篩選"))
@@ -671,7 +707,7 @@ try:
         st.warning(T(lang, "No trades match the current filters.", "目前篩選條件沒有任何交易。"))
         st.stop()
 
-    # Aggregate view: day + stock + type
+    # Aggregate day+stock+type
     f_view = f.copy()
     f_view["day"] = pd.to_datetime(f_view["date"]).dt.floor("D")
 
@@ -728,7 +764,7 @@ try:
         [T(lang, "Overview", "總覽"), T(lang, "Leaderboard", "排行"), T(lang, "Monthly report", "月報"), T(lang, "Trades", "交易")]
     )
 
-    # -------------------- Overview --------------------
+    # Overview
     with tab_overview:
         st.subheader(T(lang, "Equity Curve", "資金曲線"))
         scaled_cum, unit_lbl, _ = scale_unit(f_sorted["cum_pnl"], lang)
@@ -771,7 +807,6 @@ try:
 
         hr()
         st.subheader(T(lang, "Per-stock Contribution", "各股貢獻"))
-
         by_stock = f_view.groupby("stock", as_index=False)["realized_pnl"].sum()
         by_stock["sign"] = np.where(by_stock["realized_pnl"] >= 0, "Profit", "Loss")
         by_stock["abs"] = by_stock["realized_pnl"].abs()
@@ -802,7 +837,7 @@ try:
         add_zero_line(fig_bar, axis="x", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_bar, width="stretch")
 
-    # -------------------- Leaderboard (Tab 2) --------------------
+    # Leaderboard
     with tab_leader:
         st.subheader(T(lang, "Win / Loss Leaderboard", "勝負排行"))
 
@@ -884,7 +919,7 @@ try:
                 height=420,
             )
 
-    # -------------------- Monthly report (Tab 3) --------------------
+    # Monthly
     with tab_monthly:
         st.subheader(T(lang, "Monthly Snapshot (month-end)", "月報（月末快照）"))
 
@@ -960,7 +995,7 @@ try:
         add_zero_line(fig_m, axis="y", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_m, width="stretch")
 
-    # -------------------- Trades (Tab 4) --------------------
+    # Trades
     with tab_trades:
         st.subheader(T(lang, "Realized Trades (Aggregated)", "已實現交易（已彙總）"))
 
@@ -1006,6 +1041,12 @@ try:
             file_name="realized_fifo_aggregated.csv",
             mime="text/csv",
         )
+
+except ValueError as e:
+    # Show the real reason clearly
+    st.error(str(e))
+    st.info("If you fixed the master on GitHub, click 'Force reload master from GitHub' in the sidebar.")
+    st.stop()
 
 except Exception:
     st.error("App crashed during rendering. Here is the full traceback:")
