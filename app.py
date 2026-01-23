@@ -1,12 +1,12 @@
 # app.py
 # Realized P/L Dashboard (Cathay / 國泰 CSV) + GitHub-backed master raw trades
 #
-# FIXES INCLUDED:
-# - ✅ No infinite upload/push loop: admin upload uses st.form(clear_on_submit=True) + SHA guard
-# - ✅ Always sync master from GitHub (SHA-guarded) so fixing data on GitHub takes effect immediately
-# - ✅ Master de-dup uses a robust trade fingerprint key (trade_id), NOT 委託書號
-# - ✅ FIFO compute cached by master bytes for speed
-# - ✅ View password on MAIN page (mobile-friendly), admin password stays in sidebar
+# FIXES INCLUDED (2026-01-23):
+# ✅ trade_id 改成用「整列原始欄位」做 hash，避免 merge 少筆（例如少 4000 股）
+# ✅ GitHub meta 檔防呆：避免上傳後一直 push / redeploy 造成重複 push
+# ✅ 若 GitHub master 被刪 (404)，本地也會刪掉，避免還顯示舊錯誤
+# ✅ push 後清 cache + rerun
+# ✅ view 密碼放主畫面（手機不必展開 sidebar），admin 密碼仍在 sidebar
 #
 # Streamlit Secrets (Streamlit Cloud):
 #   VIEW_PASSWORD
@@ -16,8 +16,12 @@
 #   GITHUB_BRANCH      e.g. "main"
 #   GITHUB_FILE_PATH   e.g. "data/master_trades.csv"
 #
-# requirements.txt should include:
-#   streamlit, pandas, numpy, plotly, requests
+# requirements.txt:
+#   streamlit
+#   pandas
+#   numpy
+#   plotly
+#   requests
 
 INVESTMENT_TWD = 3_080_000
 
@@ -39,7 +43,8 @@ import streamlit as st
 
 st.set_page_config(page_title="Realized P/L Dashboard", layout="wide")
 
-MASTER_PATH = Path("data") / "master_trades.csv"
+MASTER_PATH_LOCAL = Path("data") / "master_trades.csv"
+META_PATH_REPO = "data/_upload_meta.json"  # ✅ persistent guard to prevent infinite push
 
 
 # -------------------- helpers --------------------
@@ -148,7 +153,6 @@ GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
 
 
 def require_view_password_centered():
-    # If no view password set -> public view
     if not VIEW_PASSWORD:
         return
 
@@ -168,7 +172,6 @@ def require_view_password_centered():
                 st.rerun()
             else:
                 st.error("Wrong password")
-
     st.stop()
 
 
@@ -213,20 +216,19 @@ def github_api_headers():
     }
 
 
-def github_get_file_sha(repo: str, path: str, ref: str):
+def github_get_content(repo: str, path: str, ref: str):
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
     r = requests.get(url, headers=github_api_headers(), params={"ref": ref}, timeout=30)
     if r.status_code == 404:
         return None
     r.raise_for_status()
-    return r.json().get("sha")
+    return r.json()
 
 
-def github_download_file_bytes(repo: str, path: str, ref: str) -> tuple[bytes, str]:
-    url = f"https://api.github.com/repos/{repo}/contents/{path}"
-    r = requests.get(url, headers=github_api_headers(), params={"ref": ref}, timeout=30)
-    r.raise_for_status()
-    j = r.json()
+def github_download_file_bytes(repo: str, path: str, ref: str) -> tuple[bytes, str] | tuple[None, None]:
+    j = github_get_content(repo, path, ref)
+    if j is None:
+        return None, None
     content_b64 = j["content"]
     sha = j["sha"]
     return base64.b64decode(content_b64), sha
@@ -236,7 +238,8 @@ def github_put_file(repo: str, path: str, ref: str, content_bytes: bytes, messag
     if not GITHUB_TOKEN or not repo:
         raise RuntimeError("Missing GITHUB_TOKEN or GITHUB_REPO in Streamlit Secrets.")
 
-    sha = github_get_file_sha(repo, path, ref)
+    existing = github_get_content(repo, path, ref)
+    sha = existing.get("sha") if existing else None
 
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
     payload = {
@@ -254,8 +257,8 @@ def github_put_file(repo: str, path: str, ref: str, content_bytes: bytes, messag
 
 def ensure_master_synced_from_github(force: bool = False):
     """
-    Keep local MASTER_PATH synced with GitHub (SHA-guarded).
-    This prevents stale local master causing old errors after you fixed GitHub.
+    ✅ SHA-guard sync master from GitHub
+    ✅ If GitHub file is deleted (404), delete local master too (IMPORTANT)
     """
     if not (GITHUB_TOKEN and GITHUB_REPO and GITHUB_FILE_PATH):
         return
@@ -263,14 +266,48 @@ def ensure_master_synced_from_github(force: bool = False):
     if "master_sha_loaded" not in st.session_state:
         st.session_state.master_sha_loaded = ""
 
+    b, sha = github_download_file_bytes(GITHUB_REPO, GITHUB_FILE_PATH, GITHUB_BRANCH)
+
+    # GitHub master missing -> delete local master to prevent stale state
+    if b is None:
+        if MASTER_PATH_LOCAL.exists():
+            MASTER_PATH_LOCAL.unlink(missing_ok=True)
+        st.session_state.master_sha_loaded = ""
+        return
+
+    if force or (sha != st.session_state.master_sha_loaded) or (not MASTER_PATH_LOCAL.exists()):
+        MASTER_PATH_LOCAL.parent.mkdir(parents=True, exist_ok=True)
+        MASTER_PATH_LOCAL.write_bytes(b)
+        st.session_state.master_sha_loaded = sha
+
+
+def load_repo_meta() -> dict:
+    """
+    ✅ Persistent guard to stop infinite push:
+       reads data/_upload_meta.json from GitHub
+    """
+    if not (GITHUB_TOKEN and GITHUB_REPO):
+        return {}
+    b, _ = github_download_file_bytes(GITHUB_REPO, META_PATH_REPO, GITHUB_BRANCH)
+    if b is None:
+        return {}
     try:
-        b, sha = github_download_file_bytes(GITHUB_REPO, GITHUB_FILE_PATH, GITHUB_BRANCH)
-        if force or (sha != st.session_state.master_sha_loaded) or (not MASTER_PATH.exists()):
-            MASTER_PATH.parent.mkdir(parents=True, exist_ok=True)
-            MASTER_PATH.write_bytes(b)
-            st.session_state.master_sha_loaded = sha
-    except Exception as e:
-        st.sidebar.warning(f"Master sync warning: {e}")
+        return json.loads(b.decode("utf-8"))
+    except Exception:
+        return {}
+
+
+def save_repo_meta(meta: dict):
+    if not (GITHUB_TOKEN and GITHUB_REPO):
+        return
+    content = json.dumps(meta, ensure_ascii=False, indent=2).encode("utf-8")
+    github_put_file(
+        repo=GITHUB_REPO,
+        path=META_PATH_REPO,
+        ref=GITHUB_BRANCH,
+        content_bytes=content,
+        message=f"Update upload meta ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})",
+    )
 
 
 # -------------------- raw trade schema --------------------
@@ -291,31 +328,10 @@ RAW_REQUIRED = [
     "券手續費/標借費",
     "委託書號",
 ]
-
-# We store raw trades + derived trade_id in master
 MASTER_COLS = RAW_REQUIRED + ["trade_id"]
-
-# Trade fingerprint columns (robust, 委託書號 is only helper, not unique)
-KEY_COLS = [
-    "股名",
-    "日期",
-    "買賣別",
-    "成交股數",
-    "成交價",
-    "淨收付金額",
-    "手續費",
-    "交易稅",
-    "融資金額/券擔保品",
-    "資自備款/券保證金",
-    "利息",
-    "稅款",
-    "券手續費/標借費",
-    "委託書號",
-]
 
 
 def read_cathay_csv_any(file_like) -> pd.DataFrame:
-    # Cathay export: row1 banner, row2 header -> header=1
     try:
         df = pd.read_csv(file_like, header=1, encoding="utf-8-sig")
         df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
@@ -323,7 +339,6 @@ def read_cathay_csv_any(file_like) -> pd.DataFrame:
             return df
     except Exception:
         pass
-
     df = pd.read_csv(file_like, header=0, encoding="utf-8-sig")
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
     return df
@@ -331,39 +346,44 @@ def read_cathay_csv_any(file_like) -> pd.DataFrame:
 
 def add_trade_id(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Create a robust, deterministic trade fingerprint (SHA1) from key fields.
-    This replaces using 委託書號 as primary key.
+    ✅ NEW: trade_id = SHA1(整列原始欄位 RAW_REQUIRED 的 canonical string)
+    這樣不會把 4000 股那筆誤當成同一筆
     """
     df = df.copy()
 
-    def norm(v):
-        if pd.isna(v):
-            return ""
-        if isinstance(v, (float, np.floating)):
-            return f"{float(v):.6f}"
-        return str(v).strip()
+    # normalize each column deterministically
+    def norm_col(series: pd.Series) -> pd.Series:
+        s = series.copy()
+        # try datetime
+        if series.name == "日期":
+            s = pd.to_datetime(s, errors="coerce").dt.strftime("%Y-%m-%d")
+            s = s.fillna("")
+            return s.astype(str)
 
-    df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
-    df["_date_key"] = df["日期"].dt.strftime("%Y-%m-%d")
+        def norm_val(v):
+            if pd.isna(v):
+                return ""
+            if isinstance(v, (float, np.floating)):
+                return f"{float(v):.6f}"
+            return str(v).strip()
 
-    parts = []
-    for c in KEY_COLS:
-        if c == "日期":
-            parts.append(df["_date_key"].map(norm))
+        return s.map(norm_val)
+
+    pieces = []
+    for c in RAW_REQUIRED:
+        if c not in df.columns:
+            pieces.append(pd.Series([""] * len(df)))
         else:
-            parts.append(df[c].map(norm) if c in df.columns else pd.Series([""] * len(df)))
+            pieces.append(norm_col(df[c]))
 
-    joined = parts[0].str.cat(parts[1:], sep="|")
+    joined = pieces[0].str.cat(pieces[1:], sep="|")
     df["trade_id"] = joined.map(lambda s: hashlib.sha1(s.encode("utf-8")).hexdigest())
-
-    df.drop(columns=["_date_key"], inplace=True)
     return df
 
 
 def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
-
     missing = [c for c in RAW_REQUIRED if c not in df.columns]
     if missing:
         raise ValueError(f"Missing columns: {missing}\nFound: {list(df.columns)}")
@@ -374,7 +394,6 @@ def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
     df["成交股數"] = df["成交股數"].apply(to_int)
     df["淨收付金額"] = df["淨收付金額"].apply(to_float)
 
-    # Keep strings clean
     df["委託書號"] = df["委託書號"].astype(str).str.strip()
     df["股名"] = df["股名"].astype(str).str.strip()
     df["買賣別"] = df["買賣別"].astype(str).str.strip()
@@ -382,62 +401,46 @@ def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna(subset=["日期"])
     df = df[df["股名"].astype(str).str.len() > 0]
 
-    # Add trade_id
     df = add_trade_id(df)
-
-    # Keep only master cols ordering (for stable CSV)
     return df[MASTER_COLS].copy()
 
 
-def load_master_trades_local() -> pd.DataFrame:
-    if not MASTER_PATH.exists():
+def save_master_local(df_master: pd.DataFrame):
+    MASTER_PATH_LOCAL.parent.mkdir(parents=True, exist_ok=True)
+    df_master[MASTER_COLS].to_csv(MASTER_PATH_LOCAL, index=False, encoding="utf-8-sig")
+
+
+def load_master_local() -> pd.DataFrame:
+    if not MASTER_PATH_LOCAL.exists():
         return pd.DataFrame(columns=MASTER_COLS)
-
-    df = pd.read_csv(MASTER_PATH, encoding="utf-8-sig")
+    df = pd.read_csv(MASTER_PATH_LOCAL, encoding="utf-8-sig")
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
-
-    # Backward compatibility: old master may not have trade_id column
-    if "trade_id" not in df.columns:
-        df = normalize_raw_trades(df)
-        save_master_trades_local(df)
-        return df
-
-    # Ensure required columns exist + normalize types, then recompute trade_id to be safe
-    # (If columns are already good, this is still deterministic and stable.)
+    # ensure trade_id exists & deterministic
     df = normalize_raw_trades(df)
     return df
 
 
-def save_master_trades_local(df_master: pd.DataFrame):
-    MASTER_PATH.parent.mkdir(parents=True, exist_ok=True)
-    df_master[MASTER_COLS].to_csv(MASTER_PATH, index=False, encoding="utf-8-sig")
-
-
 def merge_into_master(new_df: pd.DataFrame):
-    """
-    master: unique by trade_id (NOT 委託書號)
-    if same trade_id appears again, keep last (new overwrites old)
-    """
-    master = load_master_trades_local()
+    master = load_master_local()
     n_old = len(master)
+    n_new = len(new_df)
 
     combined = pd.concat([master, new_df], ignore_index=True)
 
-    # de-dup by fingerprint key
+    # ✅ de-dup by trade_id (fingerprint of entire row)
     combined = combined.drop_duplicates(subset=["trade_id"], keep="last")
     combined = combined.sort_values(["日期", "股名", "trade_id"]).reset_index(drop=True)
 
-    n_uploaded = len(new_df)
     n_after = len(combined)
-    n_dup_skipped = (n_old + n_uploaded) - n_after
+    dup_skipped = (n_old + n_new) - n_after
 
-    save_master_trades_local(combined)
+    save_master_local(combined)
 
     return {
         "old_rows": n_old,
-        "uploaded_rows": n_uploaded,
+        "uploaded_rows": n_new,
         "after_rows": n_after,
-        "dup_skipped": n_dup_skipped,
+        "dup_skipped": dup_skipped,
         "min_date": combined["日期"].min() if n_after else None,
         "max_date": combined["日期"].max() if n_after else None,
     }
@@ -503,7 +506,6 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
             )
         )
 
-    # Cathay CSV: buys have 淨收付金額 < 0, sells > 0
     for stock, sdf in df.groupby("股名", sort=False):
         sdf = sdf.sort_values("日期")
 
@@ -569,12 +571,12 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                         )
                     )
 
-                # 2) Remaining buys -> inventory FIFO
+                # 2) Remaining buys -> inventory
                 for lot in list(day_buy_lots):
                     if lot["qty"] > 0:
                         inventory[(stock, pool)].append({"qty": int(lot["qty"]), "cps": float(lot["cps"])})
 
-                # 3) Remaining sells -> inventory FIFO
+                # 3) Remaining sells -> inventory
                 for lot in list(day_sell_lots):
                     if lot["qty"] > 0:
                         qty = int(lot["qty"])
@@ -631,7 +633,6 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
 
 # -------------------- app --------------------
 try:
-    # Sidebar
     with st.sidebar:
         lang = st.radio("Language / 語言", ["EN", "中文"], index=1, horizontal=True)
 
@@ -649,17 +650,13 @@ try:
         st.subheader("Admin / 管理者")
         admin_login_ui()
 
-        # Force reload master
         if st.button("🔄 Force reload master from GitHub", use_container_width=True):
             st.cache_data.clear()
             ensure_master_synced_from_github(force=True)
             st.rerun()
 
-        # Admin upload (FORM-based, no loop)
+        # Admin upload (form + repo meta guard)
         if is_admin_authed():
-            if "last_pushed_sha" not in st.session_state:
-                st.session_state.last_pushed_sha = ""
-
             hr()
             st.subheader("Upload / 上傳")
 
@@ -677,10 +674,13 @@ try:
                     st.stop()
 
                 file_bytes = up_admin.getvalue()
-                sha = hashlib.sha256(file_bytes).hexdigest()
+                upload_hash = hashlib.sha256(file_bytes).hexdigest()
 
-                if sha == st.session_state.last_pushed_sha:
-                    st.warning("This file was already pushed (same content).")
+                # ✅ persistent guard (repo meta) prevents infinite pushes across redeploys
+                meta = load_repo_meta()
+                last_hash = meta.get("last_upload_hash", "")
+                if last_hash == upload_hash:
+                    st.warning("This upload file content was already processed & pushed. (meta guard)")
                     st.stop()
 
                 with st.spinner("Sync master from GitHub..."):
@@ -689,10 +689,16 @@ try:
                 with st.spinner("Merging into master..."):
                     monthly_df = read_cathay_csv_any(io.BytesIO(file_bytes))
                     monthly_df = normalize_raw_trades(monthly_df)
+
                     stats = merge_into_master(monthly_df)
 
+                    # (Optional quick sanity check for your case)
+                    # You can comment this out later.
+                    if stats["dup_skipped"] > 0:
+                        st.info(f"Dedup skipped {stats['dup_skipped']} rows (by trade_id).")
+
                 with st.spinner("Pushing to GitHub..."):
-                    master_bytes = MASTER_PATH.read_bytes()
+                    master_bytes = MASTER_PATH_LOCAL.read_bytes()
                     msg = f"Update master_trades.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
                     github_put_file(
                         repo=GITHUB_REPO,
@@ -702,16 +708,19 @@ try:
                         message=msg,
                     )
 
-                st.session_state.last_pushed_sha = sha
+                    # ✅ update meta AFTER master push
+                    meta = {
+                        "last_upload_hash": upload_hash,
+                        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "stats": stats,
+                    }
+                    save_repo_meta(meta)
+
                 st.success("✅ Master updated + pushed to GitHub.")
                 st.caption(
                     f"old={stats['old_rows']} | uploaded={stats['uploaded_rows']} | "
                     f"dup_skipped={stats['dup_skipped']} | after={stats['after_rows']}"
                 )
-                if stats["min_date"] is not None:
-                    st.caption(
-                        f"range: {pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}"
-                    )
 
                 st.cache_data.clear()
                 st.rerun()
@@ -727,20 +736,20 @@ try:
     NEUTRAL_BLUE = "#4C78A8"
     NEUTRAL_PURPLE = "#6F42C1"
 
-    # Always sync master from GitHub for everyone
+    # Always sync master from GitHub (for everyone)
     ensure_master_synced_from_github(force=False)
 
-    if not MASTER_PATH.exists():
+    if not MASTER_PATH_LOCAL.exists():
         st.warning(
             T(
                 lang,
-                "No master file yet. Admin please upload in sidebar.",
-                "尚未有 master 檔，請管理者在左側上傳當月 CSV。",
+                "No master file found. Admin please upload in sidebar.",
+                "找不到 master 檔案。請管理者在左側上傳 CSV 以建立/更新 master。",
             )
         )
         st.stop()
 
-    master_bytes = MASTER_PATH.read_bytes()
+    master_bytes = MASTER_PATH_LOCAL.read_bytes()
 
     with st.spinner(T(lang, "Loading & computing...", "載入並計算中...")):
         raw_df, realized = compute_realized_from_master_bytes(master_bytes)
@@ -764,7 +773,6 @@ try:
     with st.sidebar:
         hr()
         st.subheader(T(lang, "Selection", "篩選"))
-
         min_d, max_d = realized["date"].min(), realized["date"].max()
         dr = st.date_input(T(lang, "Date range", "日期範圍"), value=(min_d.date(), max_d.date()))
         if isinstance(dr, tuple):
@@ -790,7 +798,7 @@ try:
         st.warning(T(lang, "No trades match the current filters.", "目前篩選條件沒有任何交易。"))
         st.stop()
 
-    # ALWAYS aggregate: day + stock + type
+    # Aggregate: day + stock + type
     f_view = f.copy()
     f_view["day"] = pd.to_datetime(f_view["date"]).dt.floor("D")
 
@@ -867,7 +875,6 @@ try:
             )
         )
 
-        # Month ticks + light daily vertical grid (minor grid)
         fig_eq.update_layout(
             title=T(lang, "Cumulative Realized P/L", "累計已實現損益"),
             xaxis=dict(
@@ -901,8 +908,8 @@ try:
         by_stock["abs"] = by_stock["realized_pnl"].abs()
         by_stock = by_stock.sort_values("abs", ascending=False)
 
-        scaled_vals, unit_lbl2, _ = scale_unit(by_stock["realized_pnl"], lang)
-        by_stock["_scaled_pnl"] = scaled_vals
+        scaled_vals2, unit_lbl2, _ = scale_unit(by_stock["realized_pnl"], lang)
+        by_stock["_scaled_pnl"] = scaled_vals2
 
         sorted_df = by_stock.sort_values("_scaled_pnl")
         fig_bar = px.bar(
@@ -965,7 +972,6 @@ try:
             out[T(lang, "P/L % (vs cost)", "損益%（對成本）")] = out[T(lang, "P/L % (vs cost)", "損益%（對成本）")].round(2)
             out[T(lang, "Win rate %", "勝率%")] = out[T(lang, "Win rate %", "勝率%")].round(1)
             out[T(lang, "Trades", "筆數")] = out[T(lang, "Trades", "筆數")].astype(int)
-
             return out[
                 [
                     T(lang, "Stock", "股票"),
@@ -1061,14 +1067,14 @@ try:
         hr()
         st.subheader(T(lang, "Cumulative P/L by Month", "月度累計損益"))
 
-        scaled_vals, unit_lbl_m, _ = scale_unit(m_cum["cum_pnl"], lang)
-        labels = [f"{v:.2f} {unit_lbl_m}" for v in scaled_vals.to_numpy()]
+        scaled_vals_m, unit_lbl_m, _ = scale_unit(m_cum["cum_pnl"], lang)
+        labels = [f"{v:.2f} {unit_lbl_m}" for v in scaled_vals_m.to_numpy()]
 
         fig_m = go.Figure()
         fig_m.add_trace(
             go.Scatter(
                 x=m_cum["month"],
-                y=scaled_vals,
+                y=scaled_vals_m,
                 mode="lines+markers+text",
                 text=labels,
                 textposition="top center",
@@ -1133,7 +1139,7 @@ try:
 
 except ValueError as e:
     st.error(str(e))
-    st.info("If you fixed the master on GitHub, click 'Force reload master from GitHub' in the sidebar.")
+    st.info("如果你剛改了 GitHub master：按左側「Force reload master from GitHub」再試一次。")
     st.stop()
 
 except Exception:
