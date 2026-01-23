@@ -7,6 +7,10 @@
 # - Merge into master by 委託書號 (unique), keep="last" (new upload overwrites)
 # - All calculations (FIFO + same-day match + board/odd pools) derived from master
 #
+# FIX: prevent infinite rerun after upload
+# - Upload doesn't auto-push. Use a button to trigger merge/push.
+# - After success, uploader is cleared by changing its key (nonce).
+#
 # Required Streamlit Secrets:
 #   GITHUB_TOKEN
 #   ADMIN_PASSWORD
@@ -23,6 +27,7 @@ INVESTMENT_TWD = 3_080_000
 import os
 import base64
 import json
+import hashlib
 import traceback
 from datetime import datetime
 from pathlib import Path
@@ -58,7 +63,6 @@ GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
 
 
 def require_view_password_centered():
-    # If not set, do not lock (dev mode)
     if not VIEW_PASSWORD:
         return
 
@@ -262,12 +266,7 @@ RAW_REQUIRED = [
 
 
 def read_cathay_csv_any(file_like_or_path) -> pd.DataFrame:
-    """
-    Supports:
-    - Cathay export: row1 banner, row2 header -> header=1
-    - Master CSV: normal header=0
-    """
-    # Try Cathay export style first
+    # Try Cathay export style first: header=1
     try:
         df = pd.read_csv(file_like_or_path, header=1, encoding="utf-8-sig")
         df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
@@ -276,7 +275,7 @@ def read_cathay_csv_any(file_like_or_path) -> pd.DataFrame:
     except Exception:
         pass
 
-    # Fallback: normal CSV
+    # Fallback: normal CSV (master)
     df = pd.read_csv(file_like_or_path, header=0, encoding="utf-8-sig")
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
     return df
@@ -290,40 +289,30 @@ def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
     if missing:
         raise ValueError(f"Missing columns: {missing}\nFound: {list(df.columns)}")
 
-    # Keep only required columns (master stores raw trades only)
     df = df[RAW_REQUIRED].copy()
 
-    # Normalize types
     df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
     df["成交股數"] = df["成交股數"].apply(to_int)
     df["淨收付金額"] = df["淨收付金額"].apply(to_float)
 
-    # Keep 委託書號 as string (unique key)
     df["委託書號"] = df["委託書號"].astype(str).str.strip()
-
-    # Trim strings
     df["股名"] = df["股名"].astype(str).str.strip()
     df["買賣別"] = df["買賣別"].astype(str).str.strip()
 
-    # Optional numeric columns: keep as-is (string/float), but normalize commas if present
     for c in ["成交價", "成本", "手續費", "交易稅", "利息", "稅款", "券手續費/標借費", "融資金額/券擔保品", "資自備款/券保證金"]:
         if c in df.columns:
             df[c] = df[c].apply(lambda x: x.replace(",", "").strip() if isinstance(x, str) else x)
 
-    # Drop rows with invalid key/date
     df = df.dropna(subset=["日期"])
     df = df[df["委託書號"].astype(str).str.len() > 0]
-
     return df
 
 
 def load_master_trades() -> pd.DataFrame:
     if not MASTER_PATH.exists():
         return pd.DataFrame(columns=RAW_REQUIRED)
-
     df = read_cathay_csv_any(str(MASTER_PATH))
-    df = normalize_raw_trades(df)
-    return df
+    return normalize_raw_trades(df)
 
 
 def save_master_trades(df_master: pd.DataFrame):
@@ -337,10 +326,9 @@ def merge_into_master(new_month_df: pd.DataFrame):
 
     combined = pd.concat([master, new_month_df], ignore_index=True)
 
-    # unique by 委託書號 (user confirmed always unique in their case)
-    # keep="last" so if you re-upload a corrected record, it overwrites.
+    # unique by 委託書號 (you said always unique)
+    # keep="last" so re-upload can overwrite corrected row
     combined = combined.drop_duplicates(subset=["委託書號"], keep="last")
-
     combined = combined.sort_values(["日期", "股名", "委託書號"]).reset_index(drop=True)
 
     n_new_total = len(new_month_df)
@@ -363,20 +351,12 @@ def merge_into_master(new_month_df: pd.DataFrame):
 
 # -------------------- accounting (same logic as before) --------------------
 def pool_of(qty: int) -> str:
-    return "board" if qty % 1000 == 0 else "odd"  # 整股 vs 零股
+    return "board" if qty % 1000 == 0 else "odd"
 
 
 def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd.DataFrame):
-    """
-    Input raw_trades is a normalized DataFrame with required columns.
-    Uses:
-      - board/odd pools based on 成交股數
-      - same-day match first (當沖)
-      - FIFO inventory for remaining
-    """
     df = raw_trades.copy()
 
-    # Use only fields we need for matching (same as original logic)
     required = ["股名", "日期", "成交股數", "淨收付金額", "買賣別"]
     missing = [c for c in required if c not in df.columns]
     if missing:
@@ -390,7 +370,7 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
 
     df = df.sort_values(["股名", "日期"]).reset_index(drop=True)
 
-    inventory = defaultdict(deque)  # (stock, pool) -> deque lots {qty, cps}
+    inventory = defaultdict(deque)
     realized_rows = []
 
     def sell_against_inventory(stock, pool, date, qty, cash_in):
@@ -455,7 +435,7 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                     pps = cash_in / qty
                     day_sell_lots.append({"qty": qty, "pps": pps})
 
-                # 1) Same-day match (當沖)
+                # 1) same-day match
                 intraday_qty = 0
                 intraday_cost = 0.0
                 intraday_cash = 0.0
@@ -494,12 +474,12 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                         )
                     )
 
-                # 2) Remaining buys -> inventory FIFO
+                # 2) remaining buys -> inventory
                 for lot in list(day_buy_lots):
                     if lot["qty"] > 0:
                         inventory[(stock, pool)].append({"qty": int(lot["qty"]), "cps": float(lot["cps"])})
 
-                # 3) Remaining sells -> inventory FIFO
+                # 3) remaining sells -> inventory
                 for lot in list(day_sell_lots):
                     if lot["qty"] > 0:
                         qty = int(lot["qty"])
@@ -564,26 +544,47 @@ try:
         st.subheader("Admin / 管理者")
         admin_login_ui()
 
+        # ---------- FIXED ADMIN UPLOAD FLOW (button-triggered + clears uploader) ----------
         if is_admin_authed():
+            if "uploader_nonce" not in st.session_state:
+                st.session_state.uploader_nonce = 0
+            if "last_uploaded_sha" not in st.session_state:
+                st.session_state.last_uploaded_sha = ""
+
             st.markdown("**Upload monthly CSV → merge into master (依委託書號去重)**")
+            uploader_key = f"admin_month_uploader_{st.session_state.uploader_nonce}"
+
             up_admin = st.file_uploader(
-                "Upload Cathay CSV (any filename). It will merge into data/master_trades.csv and push to GitHub.",
+                "Upload Cathay CSV (any filename). Then click the button to merge & push.",
                 type=["csv"],
-                key="admin_month_uploader",
+                key=uploader_key,
             )
 
             if up_admin is not None:
-                # Read monthly file (Cathay export)
-                monthly_df = read_cathay_csv_any(up_admin)
-                monthly_df = normalize_raw_trades(monthly_df)
+                file_bytes = up_admin.getvalue()
+                sha = hashlib.sha256(file_bytes).hexdigest()
 
-                stats = merge_into_master(monthly_df)
+                st.caption(f"Selected: {up_admin.name}  |  size: {len(file_bytes):,} bytes")
+                already_done = (sha == st.session_state.last_uploaded_sha)
 
-                # Push master to GitHub
-                master_bytes = MASTER_PATH.read_bytes()
-                msg = f"Update master_trades.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+                do_push = st.button(
+                    "✅ Merge into master & push to GitHub",
+                    use_container_width=True,
+                    disabled=already_done,
+                )
 
-                try:
+                if already_done:
+                    st.info("This exact file has already been merged/pushed in this session (prevents double push).")
+
+                if do_push:
+                    monthly_df = read_cathay_csv_any(up_admin)
+                    monthly_df = normalize_raw_trades(monthly_df)
+
+                    stats = merge_into_master(monthly_df)
+
+                    master_bytes = MASTER_PATH.read_bytes()
+                    msg = f"Update master_trades.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+
                     github_put_file(
                         repo=GITHUB_REPO,
                         path=GITHUB_FILE_PATH,
@@ -591,6 +592,8 @@ try:
                         content_bytes=master_bytes,
                         message=msg,
                     )
+
+                    st.session_state.last_uploaded_sha = sha
                     st.success("✅ Master updated + pushed to GitHub.")
                     st.caption(
                         f"old={stats['old_rows']} | uploaded={stats['uploaded_rows']} | "
@@ -599,10 +602,10 @@ try:
                     )
                     if stats["min_date"] is not None:
                         st.caption(f"range: {pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}")
-                except Exception as e:
-                    st.error(f"GitHub push failed: {e}")
 
-                st.rerun()
+                    # Clear uploader by changing its key
+                    st.session_state.uploader_nonce += 1
+                    st.rerun()
 
     # Colors
     if tw_colors:
@@ -629,7 +632,6 @@ try:
         st.dataframe(raw_df.head(80), width="stretch")
         st.stop()
 
-    # Display mapping (2 types only)
     TYPE_ZH = {"day_trade": "當沖交易", "cash": "現股交易"}
     TYPE_EN = {"day_trade": "Day trade", "cash": "Cash trade"}
     METHOD_ZH = {"day_trade": "當沖", "cash": "現股"}
