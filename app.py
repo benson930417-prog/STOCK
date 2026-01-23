@@ -346,63 +346,45 @@ def read_cathay_csv_any(file_like) -> pd.DataFrame:
 
 def add_trade_id(df: pd.DataFrame) -> pd.DataFrame:
     """
-    ✅ NEW: trade_id = SHA1(整列原始欄位 RAW_REQUIRED 的 canonical string)
-    這樣不會把 4000 股那筆誤當成同一筆
+    ✅ trade_id 用「原始字串欄位」做 hash（不做任何數字轉型）
+    這樣才不會錯殺像 4000 vs 1000 這種同委託書號的不同交易。
     """
     df = df.copy()
 
-    # normalize each column deterministically
-    def norm_col(series: pd.Series) -> pd.Series:
-        s = series.copy()
-        # try datetime
-        if series.name == "日期":
-            s = pd.to_datetime(s, errors="coerce").dt.strftime("%Y-%m-%d")
-            s = s.fillna("")
-            return s.astype(str)
+    # 先確保所有欄位都是乾淨字串（保留原始格式，例如 "4,000"）
+    raw_str = df[RAW_REQUIRED].fillna("").astype(str)
+    raw_str = raw_str.apply(lambda s: s.str.strip())
 
-        def norm_val(v):
-            if pd.isna(v):
-                return ""
-            if isinstance(v, (float, np.floating)):
-                return f"{float(v):.6f}"
-            return str(v).strip()
-
-        return s.map(norm_val)
-
-    pieces = []
-    for c in RAW_REQUIRED:
-        if c not in df.columns:
-            pieces.append(pd.Series([""] * len(df)))
-        else:
-            pieces.append(norm_col(df[c]))
-
-    joined = pieces[0].str.cat(pieces[1:], sep="|")
+    # 用整列內容做 fingerprint
+    joined = raw_str.iloc[:, 0].str.cat([raw_str.iloc[:, i] for i in range(1, raw_str.shape[1])], sep="|")
     df["trade_id"] = joined.map(lambda s: hashlib.sha1(s.encode("utf-8")).hexdigest())
+
     return df
 
 
+
 def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    ✅ master 只存「原始交易」（字串形式），不做數字轉型
+    ✅ trade_id 用原始列做 hash
+    """
     df = df.copy()
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
+
     missing = [c for c in RAW_REQUIRED if c not in df.columns]
     if missing:
         raise ValueError(f"Missing columns: {missing}\nFound: {list(df.columns)}")
 
+    # master 存原始欄位字串（不轉型）
     df = df[RAW_REQUIRED].copy()
+    for c in RAW_REQUIRED:
+        df[c] = df[c].fillna("").astype(str).str.strip()
 
-    df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
-    df["成交股數"] = df["成交股數"].apply(to_int)
-    df["淨收付金額"] = df["淨收付金額"].apply(to_float)
-
-    df["委託書號"] = df["委託書號"].astype(str).str.strip()
-    df["股名"] = df["股名"].astype(str).str.strip()
-    df["買賣別"] = df["買賣別"].astype(str).str.strip()
-
-    df = df.dropna(subset=["日期"])
-    df = df[df["股名"].astype(str).str.len() > 0]
-
+    # 加 trade_id（用原始字串列做 hash）
     df = add_trade_id(df)
+
     return df[MASTER_COLS].copy()
+
 
 
 def save_master_local(df_master: pd.DataFrame):
