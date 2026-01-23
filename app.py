@@ -777,9 +777,30 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str = "#E74
     scaled_vals, unit_txt, _ = scale_unit(df["realized_pnl"], lang)
     vals = scaled_vals.to_numpy()
 
-    # Pre-calculate histogram bins
-    # Auto-binning using numpy
-    counts, bin_edges = np.histogram(vals, bins="auto")
+    # Pre-calculate histogram bins with 0 alignment
+    # We want bins to start/end exactly at 0.
+    if len(vals) > 0:
+        v_min, v_max = vals.min(), vals.max()
+        # Estimate ideal bin width using "auto" logic or FD rule on the whole set
+        # Then align to 0
+        iqr = np.subtract(*np.percentile(vals, [75, 25]))
+        fd_width = 2 * iqr / (len(vals) ** (1/3)) if iqr > 0 else 0
+        
+        if fd_width == 0:
+             # Fallback if IQR is 0 (low variation)
+             fd_width = (v_max - v_min) / 40 if v_max != v_min else 1.0
+
+        # Construct edges: 0 to max, and 0 to min
+        # use ceil to cover full range
+        pos_edges = np.arange(0, v_max + fd_width, fd_width)
+        neg_edges = np.arange(0, v_min - fd_width, -fd_width)
+        # neg_edges starts 0, -w, -2w... need to reverse and be unique
+        bin_edges = np.unique(np.concatenate([neg_edges, pos_edges]))
+        bin_edges.sort()
+    else:
+        bin_edges = "auto"
+
+    counts, bin_edges = np.histogram(vals, bins=bin_edges)
     centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     
     # Color condition: center >= 0 is profit
