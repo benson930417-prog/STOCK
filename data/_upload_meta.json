@@ -1,0 +1,12 @@
+{
+  "last_upload_hash": "7b8bce780eb4d9608c075b400427e8ab82ea0596d2e331501af72906541a8c78",
+  "updated_at": "2026-01-23 13:21:17",
+  "stats": {
+    "old_rows": 0,
+    "uploaded_rows": 46,
+    "after_rows": 46,
+    "dup_skipped": 0,
+    "min_date": "2026/01/02",
+    "max_date": "2026/01/22"
+  }
+}
