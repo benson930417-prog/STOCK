@@ -1,24 +1,27 @@
 # app.py
-# Realized P/L Dashboard (Cathay / 國泰 CSV)
-# Master raw trades stored in GitHub: data/master_trades.csv
+# Realized P/L Dashboard (Cathay / 國泰 CSV) + GitHub-backed master raw trades
 #
-# Key fixes:
-# 1) Admin upload uses st.form(clear_on_submit=True) -> prevents infinite push loop
-# 2) App syncs master from GitHub by SHA -> prevents stale "Sell without inventory" after you fixed GitHub
-# 3) Heavy FIFO compute cached by master bytes -> faster + avoids "stuck" feeling
+# FIXES INCLUDED:
+# - ✅ No infinite upload/push loop: admin upload uses st.form(clear_on_submit=True) + SHA guard
+# - ✅ Always sync master from GitHub (SHA-guarded) so fixing data on GitHub takes effect immediately
+# - ✅ Master de-dup uses a robust trade fingerprint key (trade_id), NOT 委託書號
+# - ✅ FIFO compute cached by master bytes for speed
+# - ✅ View password on MAIN page (mobile-friendly), admin password stays in sidebar
 #
-# Streamlit Secrets required:
+# Streamlit Secrets (Streamlit Cloud):
 #   VIEW_PASSWORD
 #   ADMIN_PASSWORD
 #   GITHUB_TOKEN
 #   GITHUB_REPO        e.g. "benson930417-prog/STOCK"
 #   GITHUB_BRANCH      e.g. "main"
 #   GITHUB_FILE_PATH   e.g. "data/master_trades.csv"
+#
+# requirements.txt should include:
+#   streamlit, pandas, numpy, plotly, requests
 
 INVESTMENT_TWD = 3_080_000
 
 import io
-import os
 import json
 import base64
 import hashlib
@@ -39,81 +42,7 @@ st.set_page_config(page_title="Realized P/L Dashboard", layout="wide")
 MASTER_PATH = Path("data") / "master_trades.csv"
 
 
-# -------------------- secrets / auth --------------------
-def _get_secret(key: str, default=""):
-    try:
-        return st.secrets.get(key, default)
-    except Exception:
-        return default
-
-
-VIEW_PASSWORD = str(_get_secret("VIEW_PASSWORD", "")).strip()
-ADMIN_PASSWORD = str(_get_secret("ADMIN_PASSWORD", "")).strip()
-
-GITHUB_TOKEN = _get_secret("GITHUB_TOKEN", "")
-GITHUB_REPO = _get_secret("GITHUB_REPO", "")
-GITHUB_BRANCH = _get_secret("GITHUB_BRANCH", "main")
-GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
-
-
-def require_view_password_centered():
-    # If no view password set, allow public view
-    if not VIEW_PASSWORD:
-        return
-
-    if "authed_view" not in st.session_state:
-        st.session_state.authed_view = False
-
-    if st.session_state.authed_view:
-        return
-
-    left, mid, right = st.columns([1, 2, 1])
-    with mid:
-        st.markdown("## 🔒 Enter password to view")
-        typed = st.text_input("Password", type="password", key="view_pw_input_main")
-        if st.button("Enter", use_container_width=True):
-            if typed == VIEW_PASSWORD:
-                st.session_state.authed_view = True
-                st.rerun()
-            else:
-                st.error("Wrong password")
-
-    st.stop()
-
-
-def is_admin_authed() -> bool:
-    if not ADMIN_PASSWORD:
-        return False
-    if "authed_admin" not in st.session_state:
-        st.session_state.authed_admin = False
-    return bool(st.session_state.authed_admin)
-
-
-def admin_login_ui():
-    if not ADMIN_PASSWORD:
-        st.info("Admin upload disabled (ADMIN_PASSWORD not set).")
-        return
-
-    if is_admin_authed():
-        st.success("Admin mode enabled.")
-        if st.button("Logout admin"):
-            st.session_state.authed_admin = False
-            st.rerun()
-        return
-
-    typed = st.text_input("Admin password", type="password", key="admin_pw_input")
-    if typed:
-        if typed == ADMIN_PASSWORD:
-            st.session_state.authed_admin = True
-            st.rerun()
-        else:
-            st.error("Wrong admin password")
-
-
-require_view_password_centered()
-
-
-# -------------------- UI helpers --------------------
+# -------------------- helpers --------------------
 def to_float(x):
     if pd.isna(x):
         return 0.0
@@ -201,6 +130,80 @@ def T(lang, en, zh):
     return zh if lang == "中文" else en
 
 
+# -------------------- secrets / auth --------------------
+def _get_secret(key: str, default=""):
+    try:
+        return st.secrets.get(key, default)
+    except Exception:
+        return default
+
+
+VIEW_PASSWORD = str(_get_secret("VIEW_PASSWORD", "")).strip()
+ADMIN_PASSWORD = str(_get_secret("ADMIN_PASSWORD", "")).strip()
+
+GITHUB_TOKEN = _get_secret("GITHUB_TOKEN", "")
+GITHUB_REPO = _get_secret("GITHUB_REPO", "")
+GITHUB_BRANCH = _get_secret("GITHUB_BRANCH", "main")
+GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
+
+
+def require_view_password_centered():
+    # If no view password set -> public view
+    if not VIEW_PASSWORD:
+        return
+
+    if "authed_view" not in st.session_state:
+        st.session_state.authed_view = False
+
+    if st.session_state.authed_view:
+        return
+
+    left, mid, right = st.columns([1, 2, 1])
+    with mid:
+        st.markdown("## 🔒 Enter password to view")
+        typed = st.text_input("Password", type="password", key="view_pw_input_main")
+        if st.button("Enter", use_container_width=True):
+            if typed == VIEW_PASSWORD:
+                st.session_state.authed_view = True
+                st.rerun()
+            else:
+                st.error("Wrong password")
+
+    st.stop()
+
+
+def is_admin_authed() -> bool:
+    if not ADMIN_PASSWORD:
+        return False
+    if "authed_admin" not in st.session_state:
+        st.session_state.authed_admin = False
+    return bool(st.session_state.authed_admin)
+
+
+def admin_login_ui():
+    if not ADMIN_PASSWORD:
+        st.info("Admin upload disabled (ADMIN_PASSWORD not set).")
+        return
+
+    if is_admin_authed():
+        st.success("Admin mode enabled.")
+        if st.button("Logout admin", use_container_width=True):
+            st.session_state.authed_admin = False
+            st.rerun()
+        return
+
+    typed = st.text_input("Admin password", type="password", key="admin_pw_input")
+    if st.button("Login admin", use_container_width=True):
+        if typed == ADMIN_PASSWORD:
+            st.session_state.authed_admin = True
+            st.rerun()
+        else:
+            st.error("Wrong admin password")
+
+
+require_view_password_centered()
+
+
 # -------------------- GitHub helpers --------------------
 def github_api_headers():
     return {
@@ -251,8 +254,8 @@ def github_put_file(repo: str, path: str, ref: str, content_bytes: bytes, messag
 
 def ensure_master_synced_from_github(force: bool = False):
     """
-    Keep local MASTER_PATH in sync with GitHub file by SHA.
-    This avoids stale local file after you fixed data on GitHub.
+    Keep local MASTER_PATH synced with GitHub (SHA-guarded).
+    This prevents stale local master causing old errors after you fixed GitHub.
     """
     if not (GITHUB_TOKEN and GITHUB_REPO and GITHUB_FILE_PATH):
         return
@@ -289,6 +292,27 @@ RAW_REQUIRED = [
     "委託書號",
 ]
 
+# We store raw trades + derived trade_id in master
+MASTER_COLS = RAW_REQUIRED + ["trade_id"]
+
+# Trade fingerprint columns (robust, 委託書號 is only helper, not unique)
+KEY_COLS = [
+    "股名",
+    "日期",
+    "買賣別",
+    "成交股數",
+    "成交價",
+    "淨收付金額",
+    "手續費",
+    "交易稅",
+    "融資金額/券擔保品",
+    "資自備款/券保證金",
+    "利息",
+    "稅款",
+    "券手續費/標借費",
+    "委託書號",
+]
+
 
 def read_cathay_csv_any(file_like) -> pd.DataFrame:
     # Cathay export: row1 banner, row2 header -> header=1
@@ -300,9 +324,39 @@ def read_cathay_csv_any(file_like) -> pd.DataFrame:
     except Exception:
         pass
 
-    # fallback
     df = pd.read_csv(file_like, header=0, encoding="utf-8-sig")
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
+    return df
+
+
+def add_trade_id(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Create a robust, deterministic trade fingerprint (SHA1) from key fields.
+    This replaces using 委託書號 as primary key.
+    """
+    df = df.copy()
+
+    def norm(v):
+        if pd.isna(v):
+            return ""
+        if isinstance(v, (float, np.floating)):
+            return f"{float(v):.6f}"
+        return str(v).strip()
+
+    df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
+    df["_date_key"] = df["日期"].dt.strftime("%Y-%m-%d")
+
+    parts = []
+    for c in KEY_COLS:
+        if c == "日期":
+            parts.append(df["_date_key"].map(norm))
+        else:
+            parts.append(df[c].map(norm) if c in df.columns else pd.Series([""] * len(df)))
+
+    joined = parts[0].str.cat(parts[1:], sep="|")
+    df["trade_id"] = joined.map(lambda s: hashlib.sha1(s.encode("utf-8")).hexdigest())
+
+    df.drop(columns=["_date_key"], inplace=True)
     return df
 
 
@@ -320,57 +374,76 @@ def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
     df["成交股數"] = df["成交股數"].apply(to_int)
     df["淨收付金額"] = df["淨收付金額"].apply(to_float)
 
+    # Keep strings clean
     df["委託書號"] = df["委託書號"].astype(str).str.strip()
     df["股名"] = df["股名"].astype(str).str.strip()
     df["買賣別"] = df["買賣別"].astype(str).str.strip()
 
     df = df.dropna(subset=["日期"])
-    df = df[df["委託書號"].astype(str).str.len() > 0]
+    df = df[df["股名"].astype(str).str.len() > 0]
 
-    return df
+    # Add trade_id
+    df = add_trade_id(df)
+
+    # Keep only master cols ordering (for stable CSV)
+    return df[MASTER_COLS].copy()
 
 
 def load_master_trades_local() -> pd.DataFrame:
     if not MASTER_PATH.exists():
-        return pd.DataFrame(columns=RAW_REQUIRED)
+        return pd.DataFrame(columns=MASTER_COLS)
+
     df = pd.read_csv(MASTER_PATH, encoding="utf-8-sig")
-    return normalize_raw_trades(df)
+    df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
+
+    # Backward compatibility: old master may not have trade_id column
+    if "trade_id" not in df.columns:
+        df = normalize_raw_trades(df)
+        save_master_trades_local(df)
+        return df
+
+    # Ensure required columns exist + normalize types, then recompute trade_id to be safe
+    # (If columns are already good, this is still deterministic and stable.)
+    df = normalize_raw_trades(df)
+    return df
 
 
 def save_master_trades_local(df_master: pd.DataFrame):
     MASTER_PATH.parent.mkdir(parents=True, exist_ok=True)
-    df_master.to_csv(MASTER_PATH, index=False, encoding="utf-8-sig")
+    df_master[MASTER_COLS].to_csv(MASTER_PATH, index=False, encoding="utf-8-sig")
 
 
-def merge_into_master(new_month_df: pd.DataFrame):
+def merge_into_master(new_df: pd.DataFrame):
+    """
+    master: unique by trade_id (NOT 委託書號)
+    if same trade_id appears again, keep last (new overwrites old)
+    """
     master = load_master_trades_local()
     n_old = len(master)
 
-    combined = pd.concat([master, new_month_df], ignore_index=True)
+    combined = pd.concat([master, new_df], ignore_index=True)
 
-    # unique by 委託書號, keep last (new overwrites old)
-    combined = combined.drop_duplicates(subset=["委託書號"], keep="last")
-    combined = combined.sort_values(["日期", "股名", "委託書號"]).reset_index(drop=True)
+    # de-dup by fingerprint key
+    combined = combined.drop_duplicates(subset=["trade_id"], keep="last")
+    combined = combined.sort_values(["日期", "股名", "trade_id"]).reset_index(drop=True)
 
-    n_new_total = len(new_month_df)
+    n_uploaded = len(new_df)
     n_after = len(combined)
-    n_added = max(0, n_after - n_old)
-    n_dup_skipped = (n_old + n_new_total) - n_after
+    n_dup_skipped = (n_old + n_uploaded) - n_after
 
     save_master_trades_local(combined)
 
     return {
         "old_rows": n_old,
-        "uploaded_rows": n_new_total,
+        "uploaded_rows": n_uploaded,
         "after_rows": n_after,
-        "added_rows": n_added,
         "dup_skipped": n_dup_skipped,
         "min_date": combined["日期"].min() if n_after else None,
         "max_date": combined["日期"].max() if n_after else None,
     }
 
 
-# -------------------- FIFO logic (same as before) --------------------
+# -------------------- FIFO logic --------------------
 def pool_of(qty: int) -> str:
     return "board" if qty % 1000 == 0 else "odd"
 
@@ -391,7 +464,7 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
 
     df = df.sort_values(["股名", "日期"]).reset_index(drop=True)
 
-    inventory = defaultdict(deque)
+    inventory = defaultdict(deque)  # (stock, pool) -> deque lots {qty, cps}
     realized_rows = []
 
     def sell_against_inventory(stock, pool, date, qty, cash_in):
@@ -430,6 +503,7 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
             )
         )
 
+    # Cathay CSV: buys have 淨收付金額 < 0, sells > 0
     for stock, sdf in df.groupby("股名", sort=False):
         sdf = sdf.sort_values("日期")
 
@@ -456,7 +530,7 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                     pps = cash_in / qty
                     day_sell_lots.append({"qty": qty, "pps": pps})
 
-                # 1) same-day match
+                # 1) Same-day match (當沖)
                 intraday_qty = 0
                 intraday_cost = 0.0
                 intraday_cash = 0.0
@@ -495,12 +569,12 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                         )
                     )
 
-                # 2) remaining buys -> inventory
+                # 2) Remaining buys -> inventory FIFO
                 for lot in list(day_buy_lots):
                     if lot["qty"] > 0:
                         inventory[(stock, pool)].append({"qty": int(lot["qty"]), "cps": float(lot["cps"])})
 
-                # 3) remaining sells -> inventory
+                # 3) Remaining sells -> inventory FIFO
                 for lot in list(day_sell_lots):
                     if lot["qty"] > 0:
                         qty = int(lot["qty"])
@@ -521,7 +595,7 @@ def compute_realized_from_master_bytes(master_csv_bytes: bytes):
     return raw_df, realized
 
 
-# -------------------- styling --------------------
+# -------------------- styling (tables) --------------------
 def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str):
     def color_pl(v):
         try:
@@ -555,8 +629,9 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
     return styler
 
 
-# -------------------- app main --------------------
+# -------------------- app --------------------
 try:
+    # Sidebar
     with st.sidebar:
         lang = st.radio("Language / 語言", ["EN", "中文"], index=1, horizontal=True)
 
@@ -580,7 +655,7 @@ try:
             ensure_master_synced_from_github(force=True)
             st.rerun()
 
-        # ---------- Admin upload: FORM-based (no infinite loop) ----------
+        # Admin upload (FORM-based, no loop)
         if is_admin_authed():
             if "last_pushed_sha" not in st.session_state:
                 st.session_state.last_pushed_sha = ""
@@ -631,11 +706,12 @@ try:
                 st.success("✅ Master updated + pushed to GitHub.")
                 st.caption(
                     f"old={stats['old_rows']} | uploaded={stats['uploaded_rows']} | "
-                    f"added={stats['added_rows']} | dup_skipped={stats['dup_skipped']} | "
-                    f"after={stats['after_rows']}"
+                    f"dup_skipped={stats['dup_skipped']} | after={stats['after_rows']}"
                 )
                 if stats["min_date"] is not None:
-                    st.caption(f"range: {pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}")
+                    st.caption(
+                        f"range: {pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}"
+                    )
 
                 st.cache_data.clear()
                 st.rerun()
@@ -651,11 +727,17 @@ try:
     NEUTRAL_BLUE = "#4C78A8"
     NEUTRAL_PURPLE = "#6F42C1"
 
-    # Always sync master from GitHub for everyone (viewer sees your latest updates)
+    # Always sync master from GitHub for everyone
     ensure_master_synced_from_github(force=False)
 
     if not MASTER_PATH.exists():
-        st.warning(T(lang, "No master file yet. Admin please upload in sidebar.", "尚未有 master 檔，請管理者在左側上傳當月 CSV。"))
+        st.warning(
+            T(
+                lang,
+                "No master file yet. Admin please upload in sidebar.",
+                "尚未有 master 檔，請管理者在左側上傳當月 CSV。",
+            )
+        )
         st.stop()
 
     master_bytes = MASTER_PATH.read_bytes()
@@ -668,6 +750,7 @@ try:
         st.dataframe(raw_df.head(80), width="stretch")
         st.stop()
 
+    # Display type vocab (2 types only)
     TYPE_ZH = {"day_trade": "當沖交易", "cash": "現股交易"}
     TYPE_EN = {"day_trade": "Day trade", "cash": "Cash trade"}
     METHOD_ZH = {"day_trade": "當沖", "cash": "現股"}
@@ -677,7 +760,7 @@ try:
     realized["method_display"] = realized["method_key"].map(METHOD_ZH if lang == "中文" else METHOD_EN).fillna(realized["method_key"])
     realized["sign"] = np.where(realized["realized_pnl"] >= 0, "Profit", "Loss")
 
-    # Sidebar filters
+    # Filters (sidebar)
     with st.sidebar:
         hr()
         st.subheader(T(lang, "Selection", "篩選"))
@@ -707,7 +790,7 @@ try:
         st.warning(T(lang, "No trades match the current filters.", "目前篩選條件沒有任何交易。"))
         st.stop()
 
-    # Aggregate day+stock+type
+    # ALWAYS aggregate: day + stock + type
     f_view = f.copy()
     f_view["day"] = pd.to_datetime(f_view["date"]).dt.floor("D")
 
@@ -746,7 +829,6 @@ try:
 
     st.markdown(f"### {T(lang, 'Key Metrics', '關鍵指標')}")
     k1, k2, k3, k4, k5 = st.columns([1, 1, 1, 1, 1], gap="medium")
-
     with k1:
         KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl), total_color, T(lang, "Realized (filtered)", "已實現（依篩選範圍）"))
     with k2:
@@ -761,10 +843,15 @@ try:
     hr()
 
     tab_overview, tab_leader, tab_monthly, tab_trades = st.tabs(
-        [T(lang, "Overview", "總覽"), T(lang, "Leaderboard", "排行"), T(lang, "Monthly report", "月報"), T(lang, "Trades", "交易")]
+        [
+            T(lang, "Overview", "總覽"),
+            T(lang, "Leaderboard", "排行"),
+            T(lang, "Monthly report", "月報"),
+            T(lang, "Trades", "交易"),
+        ]
     )
 
-    # Overview
+    # -------------------- Overview --------------------
     with tab_overview:
         st.subheader(T(lang, "Equity Curve", "資金曲線"))
         scaled_cum, unit_lbl, _ = scale_unit(f_sorted["cum_pnl"], lang)
@@ -780,6 +867,7 @@ try:
             )
         )
 
+        # Month ticks + light daily vertical grid (minor grid)
         fig_eq.update_layout(
             title=T(lang, "Cumulative Realized P/L", "累計已實現損益"),
             xaxis=dict(
@@ -807,6 +895,7 @@ try:
 
         hr()
         st.subheader(T(lang, "Per-stock Contribution", "各股貢獻"))
+
         by_stock = f_view.groupby("stock", as_index=False)["realized_pnl"].sum()
         by_stock["sign"] = np.where(by_stock["realized_pnl"] >= 0, "Profit", "Loss")
         by_stock["abs"] = by_stock["realized_pnl"].abs()
@@ -837,7 +926,7 @@ try:
         add_zero_line(fig_bar, axis="x", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_bar, width="stretch")
 
-    # Leaderboard
+    # -------------------- Leaderboard --------------------
     with tab_leader:
         st.subheader(T(lang, "Win / Loss Leaderboard", "勝負排行"))
 
@@ -919,7 +1008,7 @@ try:
                 height=420,
             )
 
-    # Monthly
+    # -------------------- Monthly report --------------------
     with tab_monthly:
         st.subheader(T(lang, "Monthly Snapshot (month-end)", "月報（月末快照）"))
 
@@ -995,7 +1084,7 @@ try:
         add_zero_line(fig_m, axis="y", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_m, width="stretch")
 
-    # Trades
+    # -------------------- Trades --------------------
     with tab_trades:
         st.subheader(T(lang, "Realized Trades (Aggregated)", "已實現交易（已彙總）"))
 
@@ -1043,7 +1132,6 @@ try:
         )
 
 except ValueError as e:
-    # Show the real reason clearly
     st.error(str(e))
     st.info("If you fixed the master on GitHub, click 'Force reload master from GitHub' in the sidebar.")
     st.stop()
