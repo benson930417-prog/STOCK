@@ -745,206 +745,121 @@ def sidebar_recent_update(lang: str):
 
 
 # -------------------- chart helpers --------------------
+def add_month_major_lines(fig: go.Figure, dates: pd.Series):
+    if dates.empty:
+        return fig
+    dmin = pd.to_datetime(dates.min()).normalize()
+    dmax = pd.to_datetime(dates.max()).normalize()
+    months = pd.date_range(dmin.replace(day=1), dmax + pd.Timedelta(days=31), freq="MS")
+    for m in months:
+        fig.add_vline(
+            x=m,
+            line_width=2,
+            line_dash="solid",
+            line_color="rgba(255,255,255,0.22)",
+        )
     return fig
 
 
 def plot_calendar_heatmap(df: pd.DataFrame, lang: str):
     """
-    GitHub-style calendar heatmap.
-    df must have 'date' and 'realized_pnl'.
+    Expects df with columns: 'date' (datetime), 'realized_pnl' (float).
+    Aggregates by day first.
     """
-    if df.empty:
-        return go.Figure()
-
-    df = df.copy()
-    df["year"] = df["date"].dt.year
-    df["week"] = df["date"].dt.isocalendar().week
-    df["weekday"] = df["date"].dt.weekday  # 0=Mon, 6=Sun
-
-    # Adjust week for display (so start of year isn't cut off if it's week 52/53 of prev year)
-    # Simple approach: just use week number.
-
-    years = sorted(df["year"].unique(), reverse=True)
+    daily = df.groupby("date", as_index=False)["realized_pnl"].sum()
+    daily["year"] = daily["date"].dt.year
+    daily["week"] = daily["date"].dt.isocalendar().week
+    daily["weekday"] = daily["date"].dt.dayofweek  # 0=Mon, 6=Sun
     
-    fig = go.Figure()
+    # Adjust for consistent heatmap layout
+    # We want Mon at top (0) -> Sun at bottom (6)
+    # Week number on X axis
     
-    # We will create one heatmap per year, or just one big one if small range?
-    # Let's do a scrolling list of years if many, but for now just all in one plot?
-    # Actually, standard GitHub is one row per year. But Plotly heatmap is X-Y.
-    # Let's stack them using subplots? Or just filter to current year/active range?
-    # Let's try to plot all data in one go but y-axis is "Year-Day". 
-    # Better: X=Date (approx week), Y=Day.
+    # Separate by year to avoid overlapping weeks if multiple years present
+    years = sorted(daily["year"].unique())
     
-    # Let's stick to the simplest: X=Date, Y=DayOfWeek, Z=PnL.
-    # But X=Date makes it a long strip.
+    figs = []
     
-    # GitHub style: 
-    # X = Week of Year
-    # Y = Day of Week
-    # Facet Row = Year
-    
-    # Let's try px.density_heatmap or just scatter? 
-    # Use go.Heatmap for best control.
-
-    # Color scale
-    colorscale = [
-        [0.0, "#2ECC71"],   # Green (Loss) - Taiwan
-        [0.5, "#161B22"],   # Zero/Middle
-        [1.0, "#E74C3C"],   # Red (Profit)
-    ]
-    # If not Taiwan colors, swap?
-    # Let's assume Taiwan colors for now as variable 'tw_colors' isn't available in this scope easily 
-    # unless we pass it. But app uses global. Let's just use the strict red/green hexes.
-
-    # Normalize color scale around 0
-    max_val = df["realized_pnl"].abs().max() or 1.0
-    
-    # Text hover
-    profit_lbl = T(lang, "Profit", "獲利")
-    loss_lbl = T(lang, "Loss", "虧損")
-    
-    for year in years:
-        ydf = df[df["year"] == year].copy()
+    for y in years:
+        d_year = daily[daily["year"] == y].copy()
         
-        # We need a full grid for the year to look right?
-        # Construct full date range for that year
-        start_y = pd.Timestamp(f"{year}-01-01")
-        end_y = pd.Timestamp(f"{year}-12-31")
+        # Fill missing days for complete grid (optional, but looks better)
+        # For now, let's just plot available data to avoid cluttering with 0s
         
-        # Reindex to full range to show empty spots
-        full_idx = pd.date_range(start_y, end_y, freq="D")
-        ydf = ydf.set_index("date").reindex(full_idx).reset_index().rename(columns={"index": "date"})
-        ydf["year"] = year
-        ydf["week"] = ydf["date"].dt.isocalendar().week
-        ydf["weekday"] = ydf["date"].dt.weekday
-        ydf["realized_pnl"] = ydf["realized_pnl"].fillna(0)
-        
-        # Github puts Sunday at top (0) or Monday? 
-        # let's do Monday (0) at top to Sunday (6) at bottom? 
-        # Actually GitHub is Sun/Mon/Wed/Fri labels.
-        # Let's put Mon (0) at top.
-        
-        # X-axis: we need a continuous week index just for this year?
-        # Actually, using 'date' as x is fine for heatmap?
-        # No, Heatmap needs discrete x/y bins usually.
-        
-        # Let's manually map:
-        # X = Week number (1..53)
-        # Y = Weekday (0..6)
-        
-        z = np.zeros((7, 54)) # 7 days, ~54 weeks max
-        text = np.full((7, 54), "", dtype=object)
-        
-        for _, r in ydf.iterrows():
-            if pd.isna(r["week"]): continue
-            w = int(r["week"])
-            d = int(r["weekday"])
-            val = r["realized_pnl"]
+        # Color scale: Red=Profit, Green=Loss (Taiwan style)
+        # We need a custom divering scale centered at 0
+        max_val = max(abs(d_year["realized_pnl"].max()), abs(d_year["realized_pnl"].min()))
+        if max_val == 0:
+            max_val = 1
             
-            # Map iso week 1..53 to 0..52
-            w_idx = w - 1 
-            if w_idx < 0 or w_idx >= 54: continue
-            
-            z[d, w_idx] = val
-            
-            # Formatted text
-            date_str = r["date"].strftime("%Y-%m-%d")
-            money_str = f"{val:,.0f}"
-            sign_str = profit_lbl if val > 0 else (loss_lbl if val < 0 else "-")
-            if val != 0:
-                text[d, w_idx] = f"{date_str}<br>{sign_str} {money_str}"
+        fig = go.Figure(data=go.Heatmap(
+            x=d_year["week"],
+            y=d_year["weekday"],
+            z=d_year["realized_pnl"],
+            text=d_year.apply(lambda r: f"{r['date'].strftime('%Y-%m-%d')}<br>{fmt_signed_money(r['realized_pnl'])}", axis=1),
+            hoverinfo="text",
+            colorscale=[
+                [0.0, "#2ECC71"],   # Green (Loss)
+                [0.5, "#1E1E1E"],   # Dark equivalent of 0
+                [1.0, "#E74C3C"]    # Red (Profit)
+            ],
+            zmid=0,
+            showscale=True,
+            xgap=2,
+            ygap=2,
+        ))
         
-        # Colors: we need a custom colorscale that centers on 0.
-        # Plotly has 'cmid=0'.
-        
-        fig.add_trace(
-            go.Heatmap(
-                z=z,
-                x=list(range(1, 55)),
-                y=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-                text=text,
-                hoverinfo="text",
-                colorscale="RdBu_r", # Red=Profit(high), Blue=Loss(low). Wait.
-                # Taiwan: Red=Profit, Green=Loss. 
-                # Custom scale: Green -> Black -> Red
-                colorscale=[
-                    [0, "#2ECC71"], 
-                    [0.5, "#1E1E1E"], 
-                    [1, "#E74C3C"]
-                ],
-                zmid=0,
-                zmin=-max_val,
-                zmax=max_val,
-                xgap=2, # Gap between squares
-                ygap=2,
-                showscale=False, # Shared scale?
-                name=str(year)
-            )
+        # Map weekday numbers to names
+        weekday_map = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
+        if lang == "中文":
+            weekday_map = {0: "一", 1: "二", 2: "三", 3: "四", 4: "五", 5: "六", 6: "日"}
+            
+        fig.update_layout(
+            title=f"{y} {T(lang, 'Heatmap', '熱力圖')}",
+            height=260,
+            yaxis=dict(
+                tickmode="array",
+                tickvals=list(weekday_map.keys()),
+                ticktext=list(weekday_map.values()),
+                autorange="reversed" # Mon at top
+            ),
+            xaxis_title=T(lang, "Week of Year", "週數"),
+            margin=dict(l=40, r=40, t=40, b=40),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
         )
+        figs.append(fig)
         
-        # Only do the first year (most recent) to avoid clutter, 
-        # or we need subplots. 
-        # For Minimum Viable Product, let's just show the collected data 
-        # NOT split by year if filtered range is small, 
-        # OR just show the filtered range.
-        break # Just most recent year in the filtered data for now? 
-        
-    # Wait, the better UX is:
-    # Just plot the dataset as provided (filtered).
-    # If filtered range > 1 year, it might look messy.
-    # But let's stick to: "Filtered Range Heatmap".
-    # X = Date (actual date), Y = DayOfWeek.
-    # This is actually easiest and supports zooming.
-    
-    # RESET Plan: X=Date, Y=DayOfWeek.
-    
-    df_sorted = df.sort_values("date")
-    # Pad to full range?
-    
-    # Just use scatter squares?
-    fig2 = px.scatter(
-        df_sorted,
-        x="date",
-        y="weekday", 
-        color="realized_pnl",
-        color_continuous_scale=[
-            [0, "#2ECC71"], 
-            [0.5, "#303030"], 
-            [1, "#E74C3C"]
-        ],
-        color_continuous_midpoint=0,
-        hover_data={"realized_pnl": ":,.0f", "weekday": False, "date": "|%Y-%m-%d"},
-        size_max=15
-    )
-    # Update markers to be squares
-    fig2.update_traces(marker_symbol="square", marker_size=12)
-    fig2.update_yaxes(
-        tickvals=[0,1,2,3,4,5,6],
-        ticktext=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-        autorange="reversed"
-    )
-    # This is not a "grid" though, weekends will be missing gaps.
-    # But it's good enough for "Activity Heatmap".
-    
-    return fig2
+    return figs
 
 
 def plot_pnl_distribution(df: pd.DataFrame, lang: str):
+    """
+    Histogram of P/L distribution.
+    Expects df with column 'realized_pnl'.
+    """
     fig = px.histogram(
-        df,
-        x="realized_pnl",
-        color="sign",
-        color_discrete_map={
-            T(lang, "Profit", "獲利"): "#E74C3C", 
-            T(lang, "Loss", "虧損"): "#2ECC71"
-        },
-        nbins=50,
-        opacity=0.8
+        df, 
+        x="realized_pnl", 
+        nbins=40,
+        color_discrete_sequence=["#4C78A8"],
     )
+    
+    # Color bins by profit/loss (harder with px.histogram directly, 
+    # but we can overlay a colored background or just use neutral color).
+    # Better: Use neutral color, but add a zero line.
+    
+    unit_val, unit_txt, _ = scale_unit(df["realized_pnl"], lang)
+    
     fig.update_layout(
+        title=T(lang, "P/L Distribution (Histogram)", "損益分佈直方圖"),
         xaxis_title=T(lang, "Realized P/L", "已實現損益"),
-        yaxis_title=T(lang, "Count", "次數"),
+        yaxis_title=T(lang, "Count", "筆數"),
+        height=380,
+        bargap=0.1,
+        showlegend=False,
     )
+    add_zero_line(fig, axis="x", color="#FFFFFF", width=1, dash="solid")
     return fig
 
 
@@ -1210,36 +1125,18 @@ try:
 
         hr()
         
-        # New Visualizations Grid
-        c_heat, c_dist = st.columns([1, 1], gap="large")
+        # New Visualizations
+        c_heat, c_hist = st.columns([3, 2], gap="large")
         
         with c_heat:
-            st.subheader(T(lang, "Activity Heatmap", "交易熱力圖"))
-            st.caption(T(lang, "Daily P/L intensity", "每日損益強度"))
-            # Prepare data: sum pnl by date
-            daily_pnl = f_view.groupby("date", as_index=False)["realized_pnl"].sum()
-            # Simple assumption: weekday
-            daily_pnl["weekday"] = pd.to_datetime(daily_pnl["date"]).dt.weekday
-            fig_hm = plot_calendar_heatmap(daily_pnl, lang)
-            fig_hm.update_layout(height=320, margin=dict(l=0,r=0,t=10,b=10), showlegend=False)
-            st.plotly_chart(fig_hm, width="stretch")
-            
-        with c_dist:
+            st.subheader(T(lang, "Calendar Heatmap", "每日損益熱力圖"))
+            heatmaps = plot_calendar_heatmap(f, lang)
+            for h in heatmaps:
+                st.plotly_chart(h, width="stretch")
+                
+        with c_hist:
             st.subheader(T(lang, "P/L Distribution", "損益分佈"))
-            st.caption(T(lang, "Frequency of Profit/Loss sizes", "損益金額分佈頻率"))
-            # Use un-aggregated trades? No, f_view is mostly day-aggregated locally.
-            # But the user might want per-trade or per-day? 
-            # Let's use the 'realized' unfiltered data for granular distribution?
-            # Or f_view (day-agg)? Day-agg is 'Daily P/L'. 
-            # Per-trade is better for 'luck vs skill'.
-            # f (filtered realized) is available.
-            
-            # Tag sign for raw trades
-            f_raw = f.copy()
-            f_raw["sign"] = np.where(f_raw["realized_pnl"] >= 0, profit_label, loss_label)
-            
-            fig_hist = plot_pnl_distribution(f_raw, lang)
-            fig_hist.update_layout(height=320, margin=dict(l=0,r=0,t=10,b=10), legend=dict(orientation="h", y=1.1))
+            fig_hist = plot_pnl_distribution(f, lang)
             st.plotly_chart(fig_hist, width="stretch")
 
         hr()
