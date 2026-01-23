@@ -764,34 +764,58 @@ def add_month_major_lines(fig: go.Figure, dates: pd.Series):
 
 
 
-def plot_pnl_distribution(df: pd.DataFrame, lang: str):
+def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str = "#E74C3C", loss_color: str = "#2ECC71"):
     """
     Histogram of P/L distribution.
     Expects df with column 'realized_pnl'.
     """
+    if df.empty:
+        return go.Figure()
+
     # Scale units first
     # unit_val is the series of scaled values, unit_txt is the label (e.g., '萬')
     scaled_vals, unit_txt, _ = scale_unit(df["realized_pnl"], lang)
-    
-    # Create temp df for plotting
-    plot_df = pd.DataFrame({"pnl": scaled_vals})
+    vals = scaled_vals.to_numpy()
 
-    fig = px.histogram(
-        plot_df, 
-        x="pnl", 
-        nbins=40,
-        color_discrete_sequence=["#4C78A8"],
+    # Pre-calculate histogram bins
+    # Auto-binning using numpy
+    counts, bin_edges = np.histogram(vals, bins="auto")
+    centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+    
+    # Color condition: center >= 0 is profit
+    colors = [profit_color if c >= 0 else loss_color for c in centers]
+    
+    # Filter out zero-count bins to avoid clutter? No, histogram usually shows gaps.
+    # But for labels, maybe only show non-zero?
+    text_labels = [str(int(x)) if x > 0 else "" for x in counts]
+
+    fig = go.Figure(
+        data=go.Bar(
+            x=centers,
+            y=counts,
+            marker_color=colors,
+            text=text_labels,
+            textposition="outside",
+            # Make bars look connected like a histogram
+            # Width needs to be calculated or let plotly handle it?
+            # Setting width to (edge[1] - edge[0]) * 0.9 close gaps
+        )
     )
     
+    # Calculate approximate bar width
+    if len(bin_edges) > 1:
+        width = (bin_edges[-1] - bin_edges[0]) / len(counts)
+        fig.update_traces(width=width * 0.95)
+
     fig.update_layout(
-        title=T(lang, "P/L Distribution (Histogram)", "損益分佈直方圖"),
+        title=T(lang, "P/L Distribution", "損益分佈"),
         xaxis_title=f"{T(lang, 'Realized P/L', '已實現損益')} ({unit_txt})",
         yaxis_title=T(lang, "Count", "筆數"),
         height=380,
-        bargap=0.1,
-        showlegend=False,
+        bargap=0.05,
+        margin=dict(l=10, r=10, t=40, b=10),
     )
-    add_zero_line(fig, axis="x", color="#FFFFFF", width=1, dash="solid")
+    add_zero_line(fig, axis="x", color="#A9B1BD", width=2, dash="dash")
     return fig
 
 
@@ -1059,7 +1083,7 @@ try:
         
         # New Visualizations
         st.subheader(T(lang, "P/L Distribution", "損益分佈"))
-        fig_hist = plot_pnl_distribution(f, lang)
+        fig_hist = plot_pnl_distribution(f, lang, PROFIT_COLOR, LOSS_COLOR)
         st.plotly_chart(fig_hist, width="stretch")
 
         hr()
