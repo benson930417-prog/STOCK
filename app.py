@@ -20,7 +20,6 @@
 
 INVESTMENT_TWD = 3_080_000
 
-import os
 import base64
 import json
 import traceback
@@ -58,7 +57,6 @@ GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
 
 
 def require_view_password_centered():
-    # If not set, do not lock (dev mode)
     if not VIEW_PASSWORD:
         return
 
@@ -203,6 +201,55 @@ def T(lang, en, zh):
     return zh if lang == "中文" else en
 
 
+def configure_equity_xaxis(fig, date_min: pd.Timestamp, date_max: pd.Timestamp):
+    """
+    X-axis: always show YYYY-MM-DD, but auto adjust density for short/long ranges.
+    - <= 45 days: daily ticks
+    - <= 180 days: weekly ticks
+    - > 180 days: monthly ticks
+    """
+    if pd.isna(date_min) or pd.isna(date_max):
+        return fig
+
+    span_days = max(1, int((date_max - date_min).days))
+
+    # Always show full date format
+    tickformat = "%Y-%m-%d"
+    tickangle = -35
+
+    if span_days <= 45:
+        dtick = 24 * 60 * 60 * 1000  # 1 day
+        minor_dtick = None
+    elif span_days <= 180:
+        dtick = 7 * 24 * 60 * 60 * 1000  # 1 week
+        minor_dtick = 24 * 60 * 60 * 1000  # daily light grid
+    else:
+        dtick = "M1"  # monthly ticks
+        minor_dtick = 7 * 24 * 60 * 60 * 1000  # weekly light grid
+
+    xaxis_cfg = dict(
+        title="",
+        tickformat=tickformat,
+        tickangle=tickangle,
+        dtick=dtick,
+        showgrid=True,
+        gridcolor="rgba(255,255,255,0.14)",
+        gridwidth=1,
+    )
+
+    # add light "minor" gridlines (works in recent plotly)
+    if minor_dtick is not None:
+        xaxis_cfg["minor"] = dict(
+            dtick=minor_dtick,
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.05)",
+            gridwidth=1,
+        )
+
+    fig.update_layout(xaxis=xaxis_cfg)
+    return fig
+
+
 # -------------------- GitHub push helpers --------------------
 def github_api_headers():
     return {
@@ -313,12 +360,12 @@ def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
     df["股名"] = df["股名"].astype(str).str.strip()
     df["買賣別"] = df["買賣別"].astype(str).str.strip()
 
-    # Make key numeric columns consistent (avoid "120.5" vs 120.5 style mismatch)
+    # Make key numeric columns consistent
     for c in ["成交價", "成本", "手續費", "交易稅"]:
         if c in df.columns:
             df[c] = df[c].apply(to_float)
 
-    # Optional numeric columns: normalize commas if present (keep numeric if possible)
+    # Optional numeric columns
     opt_cols = [
         "利息",
         "稅款",
@@ -362,16 +409,22 @@ def merge_into_master(new_month_df: pd.DataFrame):
     n_new_total = len(new_month_df)
     n_after = len(combined)
     n_added = max(0, n_after - n_old)
-    n_dup_skipped = (n_old + n_new_total) - n_after
+    n_ignored = (n_old + n_new_total) - n_after  # ignored duplicates
 
     save_master_trades(combined)
+
+    # upload range feedback
+    up_min = new_month_df["日期"].min() if len(new_month_df) else None
+    up_max = new_month_df["日期"].max() if len(new_month_df) else None
 
     return {
         "old_rows": n_old,
         "uploaded_rows": n_new_total,
         "after_rows": n_after,
         "added_rows": n_added,
-        "dup_skipped": n_dup_skipped,
+        "ignored_rows": n_ignored,
+        "upload_min_date": up_min,
+        "upload_max_date": up_max,
         "min_date": combined["日期"].min() if n_after else None,
         "max_date": combined["日期"].max() if n_after else None,
     }
@@ -589,33 +642,45 @@ try:
                     st.warning("請先選擇檔案再按 Merge + Push")
                     st.stop()
 
-                # Read & normalize monthly file
-                monthly_df = read_cathay_csv_any(up_admin)
-                monthly_df = normalize_raw_trades(monthly_df)
+                with st.spinner("Processing upload → merge → push ..."):
+                    # Read & normalize monthly file
+                    monthly_df = read_cathay_csv_any(up_admin)
+                    monthly_df = normalize_raw_trades(monthly_df)
 
-                stats = merge_into_master(monthly_df)
+                    stats = merge_into_master(monthly_df)
 
-                # Push master to GitHub
-                master_bytes = MASTER_PATH.read_bytes()
-                msg = f"Update master_trades.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+                    # Push master to GitHub
+                    master_bytes = MASTER_PATH.read_bytes()
+                    msg = f"Update master_trades.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
 
-                github_put_file(
-                    repo=GITHUB_REPO,
-                    path=GITHUB_FILE_PATH,
-                    ref=GITHUB_BRANCH,
-                    content_bytes=master_bytes,
-                    message=msg,
-                )
+                    github_put_file(
+                        repo=GITHUB_REPO,
+                        path=GITHUB_FILE_PATH,
+                        ref=GITHUB_BRANCH,
+                        content_bytes=master_bytes,
+                        message=msg,
+                    )
 
                 st.success("✅ Master updated + pushed to GitHub.")
-                st.caption(
-                    f"old={stats['old_rows']} | uploaded={stats['uploaded_rows']} | "
-                    f"added={stats['added_rows']} | dup_skipped={stats['dup_skipped']} | "
-                    f"after={stats['after_rows']}"
+
+                # ✅ Upload + merge feedback (clear & compact)
+                up_range = ""
+                if stats["upload_min_date"] is not None:
+                    up_range = f"{pd.to_datetime(stats['upload_min_date']).date()} ~ {pd.to_datetime(stats['upload_max_date']).date()}"
+
+                st.info(
+                    f"📦 Upload rows: {stats['uploaded_rows']}\n\n"
+                    f"🧩 Merge result:\n"
+                    f"- Old master: {stats['old_rows']}\n"
+                    f"- Added new: {stats['added_rows']}\n"
+                    f"- Ignored (duplicates): {stats['ignored_rows']}\n"
+                    f"- Final master: {stats['after_rows']}\n\n"
+                    f"📅 Upload range: {up_range}"
                 )
+
                 if stats["min_date"] is not None:
                     st.caption(
-                        f"range: {pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}"
+                        f"Master total range: {pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}"
                     )
 
                 st.rerun()
@@ -760,26 +825,13 @@ try:
 
         fig_eq.update_layout(
             title=T(lang, "Cumulative Realized P/L", "累計已實現損益"),
-            xaxis=dict(
-                title="",
-                dtick="M1",
-                tickformat="%Y-%m",
-                ticklabelmode="period",
-                showgrid=True,
-                gridcolor="rgba(255,255,255,0.18)",
-                gridwidth=1,
-                minor=dict(
-                    dtick=24 * 60 * 60 * 1000,
-                    showgrid=True,
-                    gridcolor="rgba(255,255,255,0.06)",
-                    gridwidth=1,
-                ),
-            ),
             yaxis_title=f"{T(lang, 'P/L', '損益')} ({unit_lbl})",
             height=460,
             margin=dict(l=10, r=10, t=60, b=10),
             legend_title_text="",
         )
+
+        fig_eq = configure_equity_xaxis(fig_eq, f_sorted["date"].min(), f_sorted["date"].max())
         add_zero_line(fig_eq, axis="y", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_eq, width="stretch")
 
