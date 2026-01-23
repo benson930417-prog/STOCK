@@ -741,11 +741,12 @@ try:
     # Sidebar pre-auth: ONLY language switch
     with st.sidebar:
         lang = st.radio(
-            T(lang="EN", en="Language", zh="語言") if "lang" not in locals() else T(lang, "Language", "語言"),
+            "Language / 語言",
             ["EN", "中文"],
             index=1,
             horizontal=True,
         )
+
 
     # Gate everything else behind VIEW password
     require_view_password_centered(lang)
