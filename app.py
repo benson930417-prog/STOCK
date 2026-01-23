@@ -55,7 +55,7 @@ def T(lang: str, en: str, zh: str) -> str:
 
 # Check for upload success toast (Moved here to ensure T is defined)
 if st.session_state.get("upload_toast"):
-     st.toast(T(st.session_state.get("lang", "中文"), "✅ Master updated & pushed.", "✅ Master 已更新並推送。"), icon="✅")
+     st.toast(T(st.session_state.get("lang", "中文"), "Master updated & pushed.", "Master 已更新並推送。"), icon="✅")
      del st.session_state["upload_toast"]
 
 
