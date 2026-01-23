@@ -3,9 +3,10 @@
 #
 # Goal:
 # - Friends can view YOUR latest data without uploading anything.
-# - You (admin) can upload from phone inside the website.
-# - Upload auto-overwrites latest.csv and pushes to GitHub (commit).
-# - App reads latest.csv from local repo checkout (Streamlit Cloud pulls repo).
+# - View password prompt appears on MAIN page (centered, mobile-friendly).
+# - Admin password + upload stays in SIDEBAR (as before).
+# - Admin upload overwrites latest.csv and pushes to GitHub (commit).
+# - App reads latest.csv locally (written on upload; otherwise must exist).
 #
 # Required Streamlit Secrets:
 #   GITHUB_TOKEN
@@ -14,6 +15,9 @@
 #   GITHUB_REPO        e.g. "benson930417-prog/STOCK"
 #   GITHUB_BRANCH      e.g. "main"
 #   GITHUB_FILE_PATH   e.g. "latest.csv"
+#
+# requirements.txt add:
+#   requests>=2.31
 
 INVESTMENT_TWD = 3_080_000
 
@@ -38,7 +42,7 @@ st.set_page_config(page_title="Realized P/L Dashboard", layout="wide")
 DATA_FILE = "latest.csv"
 
 
-# -------------------- auth --------------------
+# -------------------- secrets / auth --------------------
 def _get_secret(key: str, default=""):
     try:
         return st.secrets.get(key, default)
@@ -49,8 +53,13 @@ def _get_secret(key: str, default=""):
 VIEW_PASSWORD = str(_get_secret("VIEW_PASSWORD", "")).strip()
 ADMIN_PASSWORD = str(_get_secret("ADMIN_PASSWORD", "")).strip()
 
+GITHUB_TOKEN = _get_secret("GITHUB_TOKEN", "")
+GITHUB_REPO = _get_secret("GITHUB_REPO", "")
+GITHUB_BRANCH = _get_secret("GITHUB_BRANCH", "main")
+GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "latest.csv")
 
-def require_view_password():
+
+def require_view_password_centered():
     # If not set, do not lock (dev mode)
     if not VIEW_PASSWORD:
         return
@@ -61,23 +70,24 @@ def require_view_password():
     if st.session_state.authed_view:
         return
 
-    with st.sidebar:
-        st.markdown("### 🔒 Access")
-        typed = st.text_input("Password", type="password")
-        if typed:
+    # Main-page centered login (mobile-friendly)
+    left, mid, right = st.columns([1, 2, 1])
+    with mid:
+        st.markdown("## 🔒 Enter password to view")
+        typed = st.text_input("Password", type="password", key="view_pw_input_main")
+        if st.button("Enter", use_container_width=True) or typed:
             if typed == VIEW_PASSWORD:
                 st.session_state.authed_view = True
                 st.rerun()
-            else:
+            elif typed:
                 st.error("Wrong password")
+
     st.stop()
 
 
 def is_admin_authed() -> bool:
-    # admin is optional; if not set, disable admin features
     if not ADMIN_PASSWORD:
         return False
-
     if "authed_admin" not in st.session_state:
         st.session_state.authed_admin = False
     return bool(st.session_state.authed_admin)
@@ -104,7 +114,7 @@ def admin_login_ui():
             st.error("Wrong admin password")
 
 
-require_view_password()
+require_view_password_centered()
 
 
 # -------------------- helpers --------------------
@@ -197,12 +207,6 @@ def T(lang, en, zh):
 
 
 # -------------------- GitHub uploader --------------------
-GITHUB_TOKEN = _get_secret("GITHUB_TOKEN", "")
-GITHUB_REPO = _get_secret("GITHUB_REPO", "")
-GITHUB_BRANCH = _get_secret("GITHUB_BRANCH", "main")
-GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "latest.csv")
-
-
 def github_api_headers():
     return {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
@@ -211,14 +215,13 @@ def github_api_headers():
     }
 
 
-def github_get_file_sha(repo: str, path: str, ref: str) -> str | None:
+def github_get_file_sha(repo: str, path: str, ref: str):
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
     r = requests.get(url, headers=github_api_headers(), params={"ref": ref}, timeout=20)
     if r.status_code == 404:
         return None
     r.raise_for_status()
-    j = r.json()
-    return j.get("sha")
+    return r.json().get("sha")
 
 
 def github_put_file(repo: str, path: str, ref: str, content_bytes: bytes, message: str):
@@ -421,7 +424,7 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
 
 # -------------------- app --------------------
 try:
-    # Sidebar basics
+    # Sidebar (admin stays here)
     with st.sidebar:
         lang = st.radio("Language / 語言", ["EN", "中文"], index=1, horizontal=True)
 
@@ -439,11 +442,10 @@ try:
         st.subheader("Admin / 管理者")
         admin_login_ui()
 
-        # Admin upload UI (only after admin auth)
         if is_admin_authed():
             st.markdown("**Upload latest CSV (更新最新CSV)**")
             up_admin = st.file_uploader(
-                "Upload any CSV → it will overwrite latest.csv and push to GitHub",
+                "Upload any CSV → overwrite latest.csv and push to GitHub",
                 type=["csv"],
                 key="admin_latest_uploader",
             )
@@ -451,10 +453,8 @@ try:
             if up_admin is not None:
                 csv_bytes = up_admin.getvalue()
 
-                # 1) save locally so current session can refresh immediately
                 save_local_latest_csv(csv_bytes)
 
-                # 2) push to GitHub so everyone gets it (and Streamlit can redeploy)
                 msg = f"Update latest.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
                 try:
                     github_put_file(
@@ -467,12 +467,13 @@ try:
                     st.success("✅ Uploaded + pushed to GitHub. Friends can refresh to see latest.")
                 except Exception as e:
                     st.error(f"GitHub push failed: {e}")
+
                 st.rerun()
 
     # Colors
     if tw_colors:
-        PROFIT_COLOR = "#E74C3C"  # red
-        LOSS_COLOR = "#2ECC71"    # green
+        PROFIT_COLOR = "#E74C3C"
+        LOSS_COLOR = "#2ECC71"
     else:
         PROFIT_COLOR = "#2ECC71"
         LOSS_COLOR = "#E74C3C"
@@ -480,7 +481,7 @@ try:
     NEUTRAL_BLUE = "#4C78A8"
     NEUTRAL_PURPLE = "#6F42C1"
 
-    # Ensure latest.csv exists (admin must upload once)
+    # Load data
     if not os.path.exists(DATA_FILE):
         st.warning(T(lang, "No latest.csv yet. Admin please upload in sidebar.", "尚未有 latest.csv，請管理者在左側上傳。"))
         st.stop()
@@ -492,7 +493,6 @@ try:
         st.dataframe(raw_df.head(80), width="stretch")
         st.stop()
 
-    # Display types
     TYPE_ZH = {"day_trade": "當沖交易", "cash": "現股交易"}
     TYPE_EN = {"day_trade": "Day trade", "cash": "Cash trade"}
     METHOD_ZH = {"day_trade": "當沖", "cash": "現股"}
@@ -546,6 +546,7 @@ try:
             method_display=("method_display", lambda s: " / ".join(sorted(set(map(str, s))))),
         )
     )
+
     f_view["realized_return_pct"] = np.where(
         f_view["allocated_cost"] != 0,
         f_view["realized_pnl"] / f_view["allocated_cost"] * 100.0,
@@ -572,32 +573,68 @@ try:
     k1, k2, k3, k4, k5 = st.columns([1, 1, 1, 1, 1], gap="medium")
 
     with k1:
-        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl), total_color, T(lang, "Realized (filtered)", "已實現（依篩選範圍）"))
+        KPI_CARD(
+            T(lang, "Total P/L", "總損益"),
+            fmt_signed_money(total_pnl),
+            total_color,
+            T(lang, "Realized (filtered)", "已實現（依篩選範圍）"),
+        )
     with k2:
-        KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, T(lang, f"Base capital {INVESTMENT_TWD:,.0f}", f"基準資金 {INVESTMENT_TWD:,.0f}"))
+        KPI_CARD(
+            T(lang, "Total P/L %", "總損益%"),
+            fmt_signed_pct(total_pl_pct),
+            plpct_color,
+            T(lang, f"Base capital {INVESTMENT_TWD:,.0f}", f"基準資金 {INVESTMENT_TWD:,.0f}"),
+        )
     with k3:
-        KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, T(lang, "Aggregated rows", "以彙總列計算"))
+        KPI_CARD(
+            T(lang, "Win rate", "勝率"),
+            f"{win_rate*100:.1f}%",
+            win_color,
+            T(lang, "Aggregated rows", "以彙總列計算"),
+        )
     with k4:
-        KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, T(lang, "Aggregated (day+stock+type)", "已彙總（日+股票+類型）"))
+        KPI_CARD(
+            T(lang, "Trades", "筆數"),
+            f"{trades}",
+            NEUTRAL_PURPLE,
+            T(lang, "Aggregated (day+stock+type)", "已彙總（日+股票+類型）"),
+        )
     with k5:
-        KPI_CARD(T(lang, "Trade volume", "交易量"), f"{trade_volume:,.0f}", NEUTRAL_BLUE, T(lang, "Total allocated cost", "分攤成本合計"))
+        KPI_CARD(
+            T(lang, "Trade volume", "交易量"),
+            f"{trade_volume:,.0f}",
+            NEUTRAL_BLUE,
+            T(lang, "Total allocated cost", "分攤成本合計"),
+        )
 
     hr()
 
     tab_overview, tab_leader, tab_monthly, tab_trades = st.tabs(
-        [T(lang, "Overview", "總覽"), T(lang, "Leaderboard", "排行"), T(lang, "Monthly report", "月報"), T(lang, "Trades", "交易")]
+        [
+            T(lang, "Overview", "總覽"),
+            T(lang, "Leaderboard", "排行"),
+            T(lang, "Monthly report", "月報"),
+            T(lang, "Trades", "交易"),
+        ]
     )
 
-    # --- Overview
+    # -------------------- Overview --------------------
     with tab_overview:
         st.subheader(T(lang, "Equity Curve", "資金曲線"))
         scaled_cum, unit_lbl, _ = scale_unit(f_sorted["cum_pnl"], lang)
 
         fig_eq = go.Figure()
-        fig_eq.add_trace(go.Scatter(x=f_sorted["date"], y=scaled_cum, mode="lines", line=dict(width=3),
-                                    name=T(lang, "Cumulative P/L", "累計損益")))
+        fig_eq.add_trace(
+            go.Scatter(
+                x=f_sorted["date"],
+                y=scaled_cum,
+                mode="lines",
+                name=T(lang, "Cumulative P/L", "累計損益"),
+                line=dict(width=3),
+            )
+        )
 
-        # Month ticks + light daily grid
         fig_eq.update_layout(
             title=T(lang, "Cumulative Realized P/L", "累計已實現損益"),
             xaxis=dict(
@@ -656,7 +693,7 @@ try:
         add_zero_line(fig_bar, axis="x", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_bar, width="stretch")
 
-    # --- Leaderboard
+    # -------------------- Leaderboard (Tab 2) --------------------
     with tab_leader:
         st.subheader(T(lang, "Win / Loss Leaderboard", "勝負排行"))
 
@@ -738,7 +775,7 @@ try:
                 height=420,
             )
 
-    # --- Monthly
+    # -------------------- Monthly report (Tab 3) --------------------
     with tab_monthly:
         st.subheader(T(lang, "Monthly Snapshot (month-end)", "月報（月末快照）"))
 
@@ -760,6 +797,7 @@ try:
                 cum_volume=("cum_volume", "sum"),
             )
         )
+
         m_cum["cum_pl_pct"] = np.where(INVESTMENT_TWD != 0, m_cum["cum_pnl"] / float(INVESTMENT_TWD) * 100.0, 0.0)
         m_cum["cum_win_rate_pct"] = np.where(m_cum["cum_trades"] > 0, m_cum["cum_wins"] / m_cum["cum_trades"] * 100.0, 0.0)
 
@@ -802,11 +840,6 @@ try:
                 text=labels,
                 textposition="top center",
                 textfont=dict(size=12),
-                hovertemplate=(
-                    "month=%{x|%Y-%m}<br>"
-                    + T(lang, "cum_pnl", "累計損益")
-                    + f"=%{{y:.2f}} {unit_lbl_m}<extra></extra>"
-                ),
             )
         )
         fig_m.update_layout(
@@ -818,7 +851,7 @@ try:
         add_zero_line(fig_m, axis="y", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_m, width="stretch")
 
-    # --- Trades
+    # -------------------- Trades (Tab 4) --------------------
     with tab_trades:
         st.subheader(T(lang, "Realized Trades (Aggregated)", "已實現交易（已彙總）"))
 
@@ -835,7 +868,14 @@ try:
         )
 
         df_show = view_show[
-            ["date", "stock", T(lang, "Type", "類型"), T(lang, "Method", "方式"), T(lang, "Realized P/L", "已實現損益"), T(lang, "Realized %", "已實現%")]
+            [
+                "date",
+                "stock",
+                T(lang, "Type", "類型"),
+                T(lang, "Method", "方式"),
+                T(lang, "Realized P/L", "已實現損益"),
+                T(lang, "Realized %", "已實現%"),
+            ]
         ].copy()
 
         st.dataframe(
