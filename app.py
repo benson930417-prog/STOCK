@@ -902,22 +902,39 @@ try:
                         push_master_and_meta_to_github(message_suffix=suffix)
 
                         st.session_state["last_upload_stats"] = stats
-
-                    st.success(T(lang, "✅ Master updated & pushed.", "✅ Master 已更新並推送。"))
-                    st.caption(
-                        f"{T(lang,'Old','舊資料')}={stats['old_rows']}  |  "
-                        f"{T(lang,'Uploaded','本次上傳')}={stats['uploaded_rows']}  |  "
-                        f"{T(lang,'Added','新增')}={stats['added_rows']}  |  "
-                        f"{T(lang,'Ignored (dup)','忽略(重複)')}={stats['dup_skipped']}  |  "
-                        f"{T(lang,'After','合併後')}={stats['after_rows']}"
-                    )
-                    if stats["min_date"] is not None:
-                        st.caption(
-                            f"{T(lang,'Range','範圍')}: "
-                            f"{pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}"
+                        
+                        # Create explanation text
+                        stats_msg = (
+                             f"{T(lang,'Old','舊資料')}={stats['old_rows']}  |  "
+                             f"{T(lang,'Uploaded','本次上傳')}={stats['uploaded_rows']}  |  "
+                             f"{T(lang,'Added','新增')}={stats['added_rows']}  |  "
+                             f"{T(lang,'Ignored (dup)','忽略(重複)')}={stats['dup_skipped']}  |  "
+                             f"{T(lang,'After','合併後')}={stats['after_rows']}"
                         )
+                        range_msg = ""
+                        if stats["min_date"] is not None:
+                             range_msg = (
+                                 f"{T(lang,'Range','範圍')}: "
+                                 f"{pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}"
+                             )
 
-                    st.rerun()
+                        # Show temporary message (3 seconds)
+                        msg_placeholder = st.empty()
+                        with msg_placeholder.container():
+                            st.success(T(lang, "✅ Master updated & pushed.", "✅ Master 已更新並推送。"))
+                            st.caption(stats_msg)
+                            if range_msg:
+                                st.caption(range_msg)
+                        
+                        time.sleep(3)
+                        msg_placeholder.empty()
+
+                        # Clear standard success message and rerun to refresh data
+                        # st.rerun()  <-- Removing immediate rerun inside the flow to let user see msg? 
+                        # Actually the user wants it to be temporary for 3s THEN disappear.
+                        # If we rerun immediately, it flashes.
+                        # Logic: Show for 3s -> Empty -> Rerun to refresh app data
+                        st.rerun()
 
     # Colors
     if tw_colors:
