@@ -56,6 +56,30 @@ GITHUB_REPO = _get_secret("GITHUB_REPO", "")
 GITHUB_BRANCH = _get_secret("GITHUB_BRANCH", "main")
 GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
 
+def canonical_num_str(x, decimals=4, force_int=False) -> str:
+    """
+    Make numbers stable for key-building:
+    - "0" and "0.0" -> "0"
+    - "205450" and "205450.0" -> "205450"
+    - prices keep fixed decimals if needed
+    """
+    if pd.isna(x):
+        return "0"
+    try:
+        v = float(str(x).replace(",", "").strip())
+    except Exception:
+        return str(x).strip()
+
+    if force_int:
+        return str(int(round(v)))
+
+    # If it's basically an integer, store as integer string
+    if abs(v - round(v)) < 1e-9:
+        return str(int(round(v)))
+
+    # Otherwise keep decimals (trim trailing zeros)
+    s = f"{v:.{decimals}f}".rstrip("0").rstrip(".")
+    return s
 
 def require_view_password_centered():
     # If not set, do not lock (dev mode)
@@ -290,23 +314,21 @@ def _norm_str(x) -> str:
 
 def make_combo_key(df: pd.DataFrame) -> pd.Series:
     """
-    Multi-column combo key (no overwrite/correction workflow assumed).
-    We intentionally DO NOT rely on 委託書號 uniqueness.
+    Multi-column combo key (stable formatting).
     """
-    # Use robust fields that define a "trade line" in export.
-    # If two lines are truly identical, we treat it as duplicate and keep one.
-    parts = [
-        df["股名"].astype(str).str.strip(),
-        pd.to_datetime(df["日期"], errors="coerce").dt.strftime("%Y-%m-%d"),
-        df["成交股數"].apply(to_int).astype(str),
-        df["淨收付金額"].apply(to_float).round(2).astype(str),
-        df["買賣別"].astype(str).str.strip(),
-        df["成交價"].astype(str).str.replace(",", "", regex=False).str.strip(),
-        df["成本"].astype(str).str.replace(",", "", regex=False).str.strip(),
-        df["手續費"].astype(str).str.replace(",", "", regex=False).str.strip(),
-        df["交易稅"].astype(str).str.replace(",", "", regex=False).str.strip(),
-    ]
-    return parts[0].str.cat(parts[1:], sep="|")
+    stock = df["股名"].astype(str).str.strip()
+    date = pd.to_datetime(df["日期"], errors="coerce").dt.strftime("%Y-%m-%d")
+    qty = df["成交股數"].apply(to_int).astype(str)
+
+    net = df["淨收付金額"].apply(lambda x: canonical_num_str(x, force_int=True))
+    side = df["買賣別"].astype(str).str.strip()
+
+    price = df["成交價"].apply(lambda x: canonical_num_str(x, decimals=4, force_int=False))
+    cost  = df["成本"].apply(lambda x: canonical_num_str(x, force_int=True))
+    fee   = df["手續費"].apply(lambda x: canonical_num_str(x, force_int=True))
+    tax   = df["交易稅"].apply(lambda x: canonical_num_str(x, force_int=True))
+
+    return stock.str.cat([date, qty, net, side, price, cost, fee, tax], sep="|")
 
 
 def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
@@ -361,10 +383,14 @@ def load_master_trades() -> pd.DataFrame:
         return out
 
     df = read_cathay_csv_any(str(MASTER_PATH))
-
-    # Master might not have __key yet (older versions) -> normalize will add it
     df = normalize_raw_trades(df)
+
+    # ✅ rebuild keys using new canonical rules + remove duplicates
+    df["__key"] = make_combo_key(df)
+    df = df.drop_duplicates(subset=["__key"], keep="first").reset_index(drop=True)
+
     return df
+
 
 
 def save_master_trades(df_master: pd.DataFrame):
