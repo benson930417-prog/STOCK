@@ -987,7 +987,9 @@ try:
         st.subheader(T(lang, "Per-stock Contribution", "各股貢獻"))
 
         by_stock = f_view.groupby("stock", as_index=False)["realized_pnl"].sum()
-        by_stock["sign"] = np.where(by_stock["realized_pnl"] >= 0, "Profit", "Loss")
+        profit_label = T(lang, "Profit", "獲利")
+        loss_label = T(lang, "Loss", "虧損")
+        by_stock["sign"] = np.where(by_stock["realized_pnl"] >= 0, profit_label, loss_label)
         by_stock["abs"] = by_stock["realized_pnl"].abs()
         by_stock = by_stock.sort_values("abs", ascending=False)
 
@@ -1001,7 +1003,7 @@ try:
             y="stock",
             orientation="h",
             color="sign",
-            color_discrete_map={"Profit": PROFIT_COLOR, "Loss": LOSS_COLOR},
+            color_discrete_map={profit_label: PROFIT_COLOR, loss_label: LOSS_COLOR},
             text=sorted_df["_scaled_pnl"].map(lambda v: f"{v:.2f} {unit_lbl2}"),
         )
         fig_bar.update_traces(textposition="outside", cliponaxis=False)
@@ -1184,7 +1186,6 @@ try:
         view_show = view.rename(
             columns={
                 "type_display": T(lang, "Type", "類型"),
-                "method_display": T(lang, "Method", "方式"),
                 "realized_pnl": T(lang, "Realized P/L", "已實現損益"),
                 "realized_return_pct": T(lang, "Realized %", "已實現%"),
             }
@@ -1195,7 +1196,6 @@ try:
                 "date",
                 "stock",
                 T(lang, "Type", "類型"),
-                T(lang, "Method", "方式"),
                 T(lang, "Realized P/L", "已實現損益"),
                 T(lang, "Realized %", "已實現%"),
             ]
