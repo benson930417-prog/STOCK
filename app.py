@@ -767,36 +767,30 @@ def add_month_major_lines(fig: go.Figure, dates: pd.Series):
 def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str = "#E74C3C", loss_color: str = "#2ECC71"):
     """
     Histogram of P/L distribution.
-    Expects df with column 'realized_pnl'.
+    Expects df with column 'realized_return_pct'.
     """
     if df.empty:
         return go.Figure()
 
-    # Scale units first
-    # unit_val is the series of scaled values, unit_txt is the label (e.g., '萬')
-    scaled_vals, unit_txt, _ = scale_unit(df["realized_pnl"], lang)
-    vals = scaled_vals.to_numpy()
-
+    # Use realized_return_pct (already in 0-100 scale usually? Checks code: yes * 100.0)
+    vals = df["realized_return_pct"].to_numpy()
+    
     # Pre-calculate histogram bins with 0 alignment
     # We want bins to start/end exactly at 0.
     if len(vals) > 0:
         v_min, v_max = vals.min(), vals.max()
-        # Estimate ideal bin width using "auto" logic or FD rule on the whole set
-        # Then align to 0
+        
+        # Estimate ideal bin width. For %, maybe a minimum of 1% or 0.5% width?
         iqr = np.subtract(*np.percentile(vals, [75, 25]))
-        # Use a higher resolution (smaller width) than standard FD rule
-        # Standard: 2 * IQR / n^(1/3). We use 1 * IQR ... essentially double the bins
+        # High resolution
         fd_width = 1.0 * iqr / (len(vals) ** (1/3)) if iqr > 0 else 0
         
         if fd_width == 0:
-             # Fallback if IQR is 0 (low variation)
              fd_width = (v_max - v_min) / 80 if v_max != v_min else 1.0
-
+             
         # Construct edges: 0 to max, and 0 to min
-        # use ceil to cover full range
         pos_edges = np.arange(0, v_max + fd_width, fd_width)
         neg_edges = np.arange(0, v_min - fd_width, -fd_width)
-        # neg_edges starts 0, -w, -2w... need to reverse and be unique
         bin_edges = np.unique(np.concatenate([neg_edges, pos_edges]))
         bin_edges.sort()
     else:
@@ -808,8 +802,7 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str = "#E74
     # Color condition: center >= 0 is profit
     colors = [profit_color if c >= 0 else loss_color for c in centers]
     
-    # Filter out zero-count bins to avoid clutter? No, histogram usually shows gaps.
-    # But for labels, maybe only show non-zero?
+    # Text labels
     text_labels = [str(int(x)) if x > 0 else "" for x in counts]
 
     fig = go.Figure(
@@ -819,20 +812,16 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str = "#E74
             marker_color=colors,
             text=text_labels,
             textposition="outside",
-            # Make bars look connected like a histogram
-            # Width needs to be calculated or let plotly handle it?
-            # Setting width to (edge[1] - edge[0]) * 0.9 close gaps
         )
     )
     
-    # Calculate approximate bar width
     if len(bin_edges) > 1:
         width = (bin_edges[-1] - bin_edges[0]) / len(counts)
         fig.update_traces(width=width * 0.95)
 
     fig.update_layout(
-        title=T(lang, "P/L Distribution", "損益分佈"),
-        xaxis_title=f"{T(lang, 'Realized P/L', '已實現損益')} ({unit_txt})",
+        title=T(lang, "Return % Distribution", "報酬率分佈"),
+        xaxis_title=f"{T(lang, 'Return %', '報酬率')} (%)",
         yaxis_title=T(lang, "Count", "筆數"),
         height=380,
         bargap=0.05,
