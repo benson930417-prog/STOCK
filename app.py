@@ -4,7 +4,7 @@
 # Master design:
 # - Store ONLY raw trades in data/master_trades.csv
 # - Admin uploads monthly Cathay export CSV (filename can vary)
-# - Merge into master using composite key (NOT 委託書號)
+# - Merge into master by a multi-column combo key (NO overwrite/correction workflow)
 # - All calculations (FIFO + same-day match + board/odd pools) derived from master
 #
 # Required Streamlit Secrets:
@@ -20,6 +20,7 @@
 
 INVESTMENT_TWD = 3_080_000
 
+import os
 import base64
 import json
 import traceback
@@ -57,6 +58,7 @@ GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
 
 
 def require_view_password_centered():
+    # If not set, do not lock (dev mode)
     if not VIEW_PASSWORD:
         return
 
@@ -70,11 +72,11 @@ def require_view_password_centered():
     with mid:
         st.markdown("## 🔒 Enter password to view")
         typed = st.text_input("Password", type="password", key="view_pw_input_main")
-        if st.button("Enter", use_container_width=True) or typed:
+        if st.button("Enter", use_container_width=True):
             if typed == VIEW_PASSWORD:
                 st.session_state.authed_view = True
                 st.rerun()
-            elif typed:
+            else:
                 st.error("Wrong password")
 
     st.stop()
@@ -101,7 +103,7 @@ def admin_login_ui():
         return
 
     typed = st.text_input("Admin password", type="password", key="admin_pw_input")
-    if typed:
+    if st.button("Login admin", use_container_width=True):
         if typed == ADMIN_PASSWORD:
             st.session_state.authed_admin = True
             st.rerun()
@@ -201,55 +203,6 @@ def T(lang, en, zh):
     return zh if lang == "中文" else en
 
 
-def configure_equity_xaxis(fig, date_min: pd.Timestamp, date_max: pd.Timestamp):
-    """
-    X-axis: always show YYYY-MM-DD, but auto adjust density for short/long ranges.
-    - <= 45 days: daily ticks
-    - <= 180 days: weekly ticks
-    - > 180 days: monthly ticks
-    """
-    if pd.isna(date_min) or pd.isna(date_max):
-        return fig
-
-    span_days = max(1, int((date_max - date_min).days))
-
-    # Always show full date format
-    tickformat = "%Y-%m-%d"
-    tickangle = -35
-
-    if span_days <= 45:
-        dtick = 24 * 60 * 60 * 1000  # 1 day
-        minor_dtick = None
-    elif span_days <= 180:
-        dtick = 7 * 24 * 60 * 60 * 1000  # 1 week
-        minor_dtick = 24 * 60 * 60 * 1000  # daily light grid
-    else:
-        dtick = "M1"  # monthly ticks
-        minor_dtick = 7 * 24 * 60 * 60 * 1000  # weekly light grid
-
-    xaxis_cfg = dict(
-        title="",
-        tickformat=tickformat,
-        tickangle=tickangle,
-        dtick=dtick,
-        showgrid=True,
-        gridcolor="rgba(255,255,255,0.14)",
-        gridwidth=1,
-    )
-
-    # add light "minor" gridlines (works in recent plotly)
-    if minor_dtick is not None:
-        xaxis_cfg["minor"] = dict(
-            dtick=minor_dtick,
-            showgrid=True,
-            gridcolor="rgba(255,255,255,0.05)",
-            gridwidth=1,
-        )
-
-    fig.update_layout(xaxis=xaxis_cfg)
-    return fig
-
-
 # -------------------- GitHub push helpers --------------------
 def github_api_headers():
     return {
@@ -307,19 +260,6 @@ RAW_REQUIRED = [
     "委託書號",
 ]
 
-# ✅ Composite PK (do NOT use 委託書號 alone)
-PK_COLS = [
-    "股名",
-    "日期",
-    "買賣別",
-    "成交股數",
-    "淨收付金額",
-    "成交價",
-    "成本",
-    "手續費",
-    "交易稅",
-]
-
 
 def read_cathay_csv_any(file_like_or_path) -> pd.DataFrame:
     """
@@ -327,6 +267,7 @@ def read_cathay_csv_any(file_like_or_path) -> pd.DataFrame:
     - Cathay export: row1 banner, row2 header -> header=1
     - Master CSV: normal header=0
     """
+    # Try Cathay export style first
     try:
         df = pd.read_csv(file_like_or_path, header=1, encoding="utf-8-sig")
         df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
@@ -335,9 +276,37 @@ def read_cathay_csv_any(file_like_or_path) -> pd.DataFrame:
     except Exception:
         pass
 
+    # Fallback: normal CSV
     df = pd.read_csv(file_like_or_path, header=0, encoding="utf-8-sig")
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
     return df
+
+
+def _norm_str(x) -> str:
+    if pd.isna(x):
+        return ""
+    return str(x).strip()
+
+
+def make_combo_key(df: pd.DataFrame) -> pd.Series:
+    """
+    Multi-column combo key (no overwrite/correction workflow assumed).
+    We intentionally DO NOT rely on 委託書號 uniqueness.
+    """
+    # Use robust fields that define a "trade line" in export.
+    # If two lines are truly identical, we treat it as duplicate and keep one.
+    parts = [
+        df["股名"].astype(str).str.strip(),
+        pd.to_datetime(df["日期"], errors="coerce").dt.strftime("%Y-%m-%d"),
+        df["成交股數"].apply(to_int).astype(str),
+        df["淨收付金額"].apply(to_float).round(2).astype(str),
+        df["買賣別"].astype(str).str.strip(),
+        df["成交價"].astype(str).str.replace(",", "", regex=False).str.strip(),
+        df["成本"].astype(str).str.replace(",", "", regex=False).str.strip(),
+        df["手續費"].astype(str).str.replace(",", "", regex=False).str.strip(),
+        df["交易稅"].astype(str).str.replace(",", "", regex=False).str.strip(),
+    ]
+    return parts[0].str.cat(parts[1:], sep="|")
 
 
 def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
@@ -350,87 +319,96 @@ def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df[RAW_REQUIRED].copy()
 
-    # Core numeric types
+    # Normalize types
     df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
     df["成交股數"] = df["成交股數"].apply(to_int)
     df["淨收付金額"] = df["淨收付金額"].apply(to_float)
 
-    # Strings
-    df["委託書號"] = df["委託書號"].astype(str).str.strip()
+    # Trim strings
     df["股名"] = df["股名"].astype(str).str.strip()
     df["買賣別"] = df["買賣別"].astype(str).str.strip()
+    df["委託書號"] = df["委託書號"].astype(str).str.strip()
 
-    # Make key numeric columns consistent
-    for c in ["成交價", "成本", "手續費", "交易稅"]:
-        if c in df.columns:
-            df[c] = df[c].apply(to_float)
-
-    # Optional numeric columns
-    opt_cols = [
+    # Normalize comma numbers in other fields (keep as string in master)
+    for c in [
+        "成交價",
+        "成本",
+        "手續費",
+        "交易稅",
         "利息",
         "稅款",
         "券手續費/標借費",
         "融資金額/券擔保品",
         "資自備款/券保證金",
-    ]
-    for c in opt_cols:
-        if c in df.columns:
-            df[c] = df[c].apply(lambda x: to_float(x) if str(x).strip() != "" else 0.0)
+    ]:
+        df[c] = df[c].apply(lambda x: str(x).replace(",", "").strip() if isinstance(x, str) else x)
 
+    # Drop invalid date rows
     df = df.dropna(subset=["日期"])
-    return df.reset_index(drop=True)
+
+    # Build combo key
+    df["__key"] = make_combo_key(df)
+
+    # Drop empty key
+    df = df[df["__key"].astype(str).str.len() > 0].copy()
+
+    return df
 
 
 def load_master_trades() -> pd.DataFrame:
     if not MASTER_PATH.exists():
-        return pd.DataFrame(columns=RAW_REQUIRED)
+        out = pd.DataFrame(columns=RAW_REQUIRED + ["__key"])
+        return out
 
     df = read_cathay_csv_any(str(MASTER_PATH))
+
+    # Master might not have __key yet (older versions) -> normalize will add it
     df = normalize_raw_trades(df)
     return df
 
 
 def save_master_trades(df_master: pd.DataFrame):
     MASTER_PATH.parent.mkdir(parents=True, exist_ok=True)
-    df_master.to_csv(MASTER_PATH, index=False, encoding="utf-8-sig")
+
+    # Store raw columns + __key (for fast dedupe)
+    cols = RAW_REQUIRED + ["__key"]
+    for c in cols:
+        if c not in df_master.columns:
+            df_master[c] = ""
+    df_master[cols].to_csv(MASTER_PATH, index=False, encoding="utf-8-sig")
 
 
 def merge_into_master(new_month_df: pd.DataFrame):
     master = load_master_trades()
     n_old = len(master)
+    n_new = len(new_month_df)
 
     combined = pd.concat([master, new_month_df], ignore_index=True)
 
-    # ✅ Dedup by composite key (NOT 委託書號)
-    combined = combined.drop_duplicates(subset=PK_COLS, keep="last")
+    # Deduplicate by combo key; keep FIRST (older master wins). No overwrite workflow.
+    before = len(combined)
+    combined = combined.drop_duplicates(subset=["__key"], keep="first")
+    after = len(combined)
 
-    combined = combined.sort_values(["日期", "股名", "買賣別", "成交股數"]).reset_index(drop=True)
+    n_added = max(0, after - n_old)
+    n_ignored = (n_old + n_new) - after
 
-    n_new_total = len(new_month_df)
-    n_after = len(combined)
-    n_added = max(0, n_after - n_old)
-    n_ignored = (n_old + n_new_total) - n_after  # ignored duplicates
+    combined = combined.sort_values(["日期", "股名", "買賣別", "成交股數", "淨收付金額"]).reset_index(drop=True)
 
     save_master_trades(combined)
 
-    # upload range feedback
-    up_min = new_month_df["日期"].min() if len(new_month_df) else None
-    up_max = new_month_df["日期"].max() if len(new_month_df) else None
-
     return {
         "old_rows": n_old,
-        "uploaded_rows": n_new_total,
-        "after_rows": n_after,
+        "uploaded_rows": n_new,
+        "after_rows": after,
         "added_rows": n_added,
         "ignored_rows": n_ignored,
-        "upload_min_date": up_min,
-        "upload_max_date": up_max,
-        "min_date": combined["日期"].min() if n_after else None,
-        "max_date": combined["日期"].max() if n_after else None,
+        "min_date": combined["日期"].min() if after else None,
+        "max_date": combined["日期"].max() if after else None,
     }
 
 
-# -------------------- accounting --------------------
+# -------------------- accounting (same logic as before) --------------------
 def pool_of(qty: int) -> str:
     return "board" if qty % 1000 == 0 else "odd"  # 整股 vs 零股
 
@@ -605,6 +583,58 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
     return styler
 
 
+# -------------------- plotting helpers --------------------
+DAY_MS = 24 * 60 * 60 * 1000
+WEEK_MS = 7 * DAY_MS
+
+
+def add_month_major_lines_and_labels(fig: go.Figure, x_dates: pd.Series, lang: str):
+    """
+    Major = month: thick vlines + month text labels (annotations).
+    Adaptive: if too many months, show every 2 or 3 months.
+    """
+    if x_dates.empty:
+        return fig
+
+    dmin = pd.to_datetime(x_dates.min()).floor("D")
+    dmax = pd.to_datetime(x_dates.max()).floor("D")
+
+    month_starts = pd.date_range(dmin.replace(day=1), dmax + pd.offsets.MonthBegin(1), freq="MS")
+    months = list(month_starts)
+
+    # Adaptive spacing for long ranges
+    step = 1
+    if len(months) > 24:
+        step = 3
+    elif len(months) > 14:
+        step = 2
+
+    # Thick month boundary lines
+    for dt in months:
+        fig.add_vline(
+            x=dt,
+            line_width=2.2,
+            line_color="rgba(255,255,255,0.22)",
+        )
+
+    # Month labels (top). Use fewer labels if long range.
+    show_months = months[::step]
+    for dt in show_months:
+        label = dt.strftime("%Y-%m")
+        fig.add_annotation(
+            x=dt,
+            y=1.06,
+            xref="x",
+            yref="paper",
+            text=label,
+            showarrow=False,
+            font=dict(size=12, color="rgba(255,255,255,0.70)"),
+            align="left",
+        )
+
+    return fig
+
+
 # -------------------- app --------------------
 try:
     # Sidebar (admin stays here)
@@ -621,69 +651,104 @@ try:
             value=True,
         )
 
+        # Persistent upload report (Bonus UX)
+        if "last_upload_report" in st.session_state and st.session_state["last_upload_report"]:
+            rep = st.session_state["last_upload_report"]
+            hr()
+            st.subheader(T(lang, "Last update", "最近更新"))
+            st.success(f"✅ {T(lang, 'Master updated + pushed', 'Master 已更新並推送')}")
+            st.caption(f"{T(lang, 'Updated at', '時間')}: {rep['timestamp']}")
+            st.caption(f"{T(lang, 'Range', '範圍')}: {rep['range_str']}")
+            with st.expander(T(lang, "Details", "詳細資訊"), expanded=False):
+                st.write(rep["details_md"])
+
         hr()
         st.subheader("Admin / 管理者")
         admin_login_ui()
 
-        # ✅ Admin upload uses st.form to avoid infinite push/rerun
+        # Upload form (prevents re-run infinite push behavior)
         if is_admin_authed():
-            st.markdown("**Upload monthly CSV → merge into master (複合 key 去重)**")
+            st.markdown("**Upload monthly CSV → merge into master (combo key 去重，不覆蓋修正)**")
 
-            with st.form("admin_upload_form", clear_on_submit=True):
+            if "uploader_nonce" not in st.session_state:
+                st.session_state.uploader_nonce = 0
+
+            with st.form("admin_upload_form", clear_on_submit=False):
                 up_admin = st.file_uploader(
-                    "Upload Cathay CSV (any filename). It will merge into master and push to GitHub.",
+                    T(
+                        lang,
+                        "Upload Cathay CSV (any filename). It will merge into data/master_trades.csv and push to GitHub.",
+                        "上傳國泰 CSV（檔名可不同）。將合併到 data/master_trades.csv 並推送 GitHub。",
+                    ),
                     type=["csv"],
-                    key="admin_month_uploader",
+                    key=f"admin_month_uploader_{st.session_state.uploader_nonce}",
                 )
-                submitted = st.form_submit_button("Merge + Push", use_container_width=True)
+                submitted = st.form_submit_button(T(lang, "Upload & Update Master", "上傳並更新 Master"), use_container_width=True)
 
             if submitted:
                 if up_admin is None:
-                    st.warning("請先選擇檔案再按 Merge + Push")
-                    st.stop()
+                    st.warning(T(lang, "Please choose a CSV first.", "請先選擇 CSV 檔。"))
+                else:
+                    with st.spinner(T(lang, "Processing upload...", "正在處理上傳...")):
+                        monthly_df = read_cathay_csv_any(up_admin)
+                        monthly_df = normalize_raw_trades(monthly_df)
 
-                with st.spinner("Processing upload → merge → push ..."):
-                    # Read & normalize monthly file
-                    monthly_df = read_cathay_csv_any(up_admin)
-                    monthly_df = normalize_raw_trades(monthly_df)
+                        # Quick upload feedback (counts before merge)
+                        upload_count = len(monthly_df)
 
-                    stats = merge_into_master(monthly_df)
+                        stats = merge_into_master(monthly_df)
 
-                    # Push master to GitHub
-                    master_bytes = MASTER_PATH.read_bytes()
-                    msg = f"Update master_trades.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+                        # Push master to GitHub
+                        master_bytes = MASTER_PATH.read_bytes()
+                        msg = f"Update master_trades.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
 
-                    github_put_file(
-                        repo=GITHUB_REPO,
-                        path=GITHUB_FILE_PATH,
-                        ref=GITHUB_BRANCH,
-                        content_bytes=master_bytes,
-                        message=msg,
-                    )
+                        try:
+                            github_put_file(
+                                repo=GITHUB_REPO,
+                                path=GITHUB_FILE_PATH,
+                                ref=GITHUB_BRANCH,
+                                content_bytes=master_bytes,
+                                message=msg,
+                            )
 
-                st.success("✅ Master updated + pushed to GitHub.")
+                            # Build persistent report
+                            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            rng = ""
+                            if stats["min_date"] is not None:
+                                rng = f"{pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}"
+                            else:
+                                rng = "-"
 
-                # ✅ Upload + merge feedback (clear & compact)
-                up_range = ""
-                if stats["upload_min_date"] is not None:
-                    up_range = f"{pd.to_datetime(stats['upload_min_date']).date()} ~ {pd.to_datetime(stats['upload_max_date']).date()}"
+                            details_md = (
+                                f"- old: **{stats['old_rows']}**\n"
+                                f"- uploaded: **{stats['uploaded_rows']}**\n"
+                                f"- added: **{stats['added_rows']}**\n"
+                                f"- ignored(duplicate): **{stats['ignored_rows']}**\n"
+                                f"- after: **{stats['after_rows']}**\n"
+                            )
 
-                st.info(
-                    f"📦 Upload rows: {stats['uploaded_rows']}\n\n"
-                    f"🧩 Merge result:\n"
-                    f"- Old master: {stats['old_rows']}\n"
-                    f"- Added new: {stats['added_rows']}\n"
-                    f"- Ignored (duplicates): {stats['ignored_rows']}\n"
-                    f"- Final master: {stats['after_rows']}\n\n"
-                    f"📅 Upload range: {up_range}"
-                )
+                            st.session_state["last_upload_report"] = {
+                                "timestamp": ts,
+                                "range_str": rng,
+                                "details_md": details_md,
+                            }
 
-                if stats["min_date"] is not None:
-                    st.caption(
-                        f"Master total range: {pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}"
-                    )
+                            st.success("✅ Master updated + pushed to GitHub.")
+                            st.info(
+                                T(
+                                    lang,
+                                    f"Upload rows: {upload_count} | Added: {stats['added_rows']} | Ignored: {stats['ignored_rows']} | Total: {stats['after_rows']}",
+                                    f"上傳: {upload_count} | 新增: {stats['added_rows']} | 忽略(重複): {stats['ignored_rows']} | 總筆數: {stats['after_rows']}",
+                                )
+                            )
 
-                st.rerun()
+                            # Reset uploader widget after successful submit
+                            st.session_state.uploader_nonce += 1
+
+                            st.rerun()
+
+                        except Exception as e:
+                            st.error(f"GitHub push failed: {e}")
 
     # Colors
     if tw_colors:
@@ -710,7 +775,6 @@ try:
         st.dataframe(raw_df.head(80), width="stretch")
         st.stop()
 
-    # Display mapping (2 types only)
     TYPE_ZH = {"day_trade": "當沖交易", "cash": "現股交易"}
     TYPE_EN = {"day_trade": "Day trade", "cash": "Cash trade"}
     METHOD_ZH = {"day_trade": "當沖", "cash": "現股"}
@@ -810,6 +874,7 @@ try:
     # -------------------- Overview --------------------
     with tab_overview:
         st.subheader(T(lang, "Equity Curve", "資金曲線"))
+
         scaled_cum, unit_lbl, _ = scale_unit(f_sorted["cum_pnl"], lang)
 
         fig_eq = go.Figure()
@@ -820,18 +885,35 @@ try:
                 mode="lines",
                 name=T(lang, "Cumulative P/L", "累計損益"),
                 line=dict(width=3),
+                hovertemplate="%{x|%Y-%m-%d}<br>%{y:.2f} " + unit_lbl + "<extra></extra>",
             )
         )
 
+        # Weekly labels (bottom), Daily minor grid (no labels), Month major vlines + labels
         fig_eq.update_layout(
             title=T(lang, "Cumulative Realized P/L", "累計已實現損益"),
+            xaxis=dict(
+                title="",
+                dtick=WEEK_MS,
+                tickformat="%m-%d",
+                tickangle=-45,
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.14)",
+                gridwidth=1,
+                minor=dict(
+                    dtick=DAY_MS,
+                    showgrid=True,
+                    gridcolor="rgba(255,255,255,0.05)",
+                    gridwidth=1,
+                ),
+            ),
             yaxis_title=f"{T(lang, 'P/L', '損益')} ({unit_lbl})",
-            height=460,
-            margin=dict(l=10, r=10, t=60, b=10),
+            height=480,
+            margin=dict(l=10, r=10, t=70, b=40),
             legend_title_text="",
         )
 
-        fig_eq = configure_equity_xaxis(fig_eq, f_sorted["date"].min(), f_sorted["date"].max())
+        fig_eq = add_month_major_lines_and_labels(fig_eq, f_sorted["date"], lang)
         add_zero_line(fig_eq, axis="y", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_eq, width="stretch")
 
