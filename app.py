@@ -1,48 +1,110 @@
-INVESTMENT_TWD = 3_080_000  # <-- change this anytime
-APP_PASSWORD = "tony"     # <-- change this (hardcoded password as you requested)
+# app.py
+# Realized P/L Dashboard (Cathay / 國泰 CSV)
+#
+# Goal:
+# - Friends can view YOUR latest data without uploading anything.
+# - You (admin) can upload from phone inside the website.
+# - Upload auto-overwrites latest.csv and pushes to GitHub (commit).
+# - App reads latest.csv from local repo checkout (Streamlit Cloud pulls repo).
+#
+# Required Streamlit Secrets:
+#   GITHUB_TOKEN
+#   ADMIN_PASSWORD
+#   VIEW_PASSWORD
+#   GITHUB_REPO        e.g. "benson930417-prog/STOCK"
+#   GITHUB_BRANCH      e.g. "main"
+#   GITHUB_FILE_PATH   e.g. "latest.csv"
+
+INVESTMENT_TWD = 3_080_000
 
 import io
 import os
+import base64
+import json
 import traceback
+from datetime import datetime
+from pathlib import Path
 from collections import defaultdict, deque
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import requests
 import streamlit as st
 
 st.set_page_config(page_title="Realized P/L Dashboard", layout="wide")
 
+DATA_FILE = "latest.csv"
 
-# -------------------- simple password gate (hardcoded) --------------------
-def require_password():
-    pw = APP_PASSWORD.strip()
 
-    # if you set APP_PASSWORD="" then no lock (dev mode)
-    if not pw:
+# -------------------- auth --------------------
+def _get_secret(key: str, default=""):
+    try:
+        return st.secrets.get(key, default)
+    except Exception:
+        return default
+
+
+VIEW_PASSWORD = str(_get_secret("VIEW_PASSWORD", "")).strip()
+ADMIN_PASSWORD = str(_get_secret("ADMIN_PASSWORD", "")).strip()
+
+
+def require_view_password():
+    # If not set, do not lock (dev mode)
+    if not VIEW_PASSWORD:
         return
 
-    if "authed" not in st.session_state:
-        st.session_state.authed = False
+    if "authed_view" not in st.session_state:
+        st.session_state.authed_view = False
 
-    if st.session_state.authed:
+    if st.session_state.authed_view:
         return
 
     with st.sidebar:
         st.markdown("### 🔒 Access")
         typed = st.text_input("Password", type="password")
         if typed:
-            if typed == pw:
-                st.session_state.authed = True
+            if typed == VIEW_PASSWORD:
+                st.session_state.authed_view = True
                 st.rerun()
             else:
                 st.error("Wrong password")
-
     st.stop()
 
 
-require_password()
+def is_admin_authed() -> bool:
+    # admin is optional; if not set, disable admin features
+    if not ADMIN_PASSWORD:
+        return False
+
+    if "authed_admin" not in st.session_state:
+        st.session_state.authed_admin = False
+    return bool(st.session_state.authed_admin)
+
+
+def admin_login_ui():
+    if not ADMIN_PASSWORD:
+        st.info("Admin upload disabled (ADMIN_PASSWORD not set).")
+        return
+
+    if is_admin_authed():
+        st.success("Admin mode enabled.")
+        if st.button("Logout admin"):
+            st.session_state.authed_admin = False
+            st.rerun()
+        return
+
+    typed = st.text_input("Admin password", type="password", key="admin_pw_input")
+    if typed:
+        if typed == ADMIN_PASSWORD:
+            st.session_state.authed_admin = True
+            st.rerun()
+        else:
+            st.error("Wrong admin password")
+
+
+require_view_password()
 
 
 # -------------------- helpers --------------------
@@ -77,11 +139,6 @@ def fmt_signed_pct(x) -> str:
 
 
 def scale_unit(values: pd.Series, lang: str):
-    """Scale for chart axes.
-
-    EN: TWD / K / M
-    中文: 元 / 千 / 萬 / 百萬
-    """
     max_abs = float(np.nanmax(np.abs(values.to_numpy()))) if len(values) else 0.0
 
     if lang == "中文":
@@ -139,14 +196,61 @@ def T(lang, en, zh):
     return zh if lang == "中文" else en
 
 
-# -------------------- accounting (board/odd pools, displayed as 2 types) --------------------
+# -------------------- GitHub uploader --------------------
+GITHUB_TOKEN = _get_secret("GITHUB_TOKEN", "")
+GITHUB_REPO = _get_secret("GITHUB_REPO", "")
+GITHUB_BRANCH = _get_secret("GITHUB_BRANCH", "main")
+GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "latest.csv")
+
+
+def github_api_headers():
+    return {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+
+def github_get_file_sha(repo: str, path: str, ref: str) -> str | None:
+    url = f"https://api.github.com/repos/{repo}/contents/{path}"
+    r = requests.get(url, headers=github_api_headers(), params={"ref": ref}, timeout=20)
+    if r.status_code == 404:
+        return None
+    r.raise_for_status()
+    j = r.json()
+    return j.get("sha")
+
+
+def github_put_file(repo: str, path: str, ref: str, content_bytes: bytes, message: str):
+    if not GITHUB_TOKEN or not repo:
+        raise RuntimeError("Missing GITHUB_TOKEN or GITHUB_REPO in Streamlit Secrets.")
+
+    sha = github_get_file_sha(repo, path, ref)
+
+    url = f"https://api.github.com/repos/{repo}/contents/{path}"
+    payload = {
+        "message": message,
+        "content": base64.b64encode(content_bytes).decode("utf-8"),
+        "branch": ref,
+    }
+    if sha:
+        payload["sha"] = sha
+
+    r = requests.put(url, headers=github_api_headers(), data=json.dumps(payload), timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+
+def save_local_latest_csv(content_bytes: bytes):
+    Path(DATA_FILE).write_bytes(content_bytes)
+
+
+# -------------------- accounting --------------------
 def pool_of(qty: int) -> str:
-    return "board" if qty % 1000 == 0 else "odd"  # 整股 vs 零股
+    return "board" if qty % 1000 == 0 else "odd"
 
 
 def realized_match_first_then_fifo_separate_pools(uploaded_file_like_or_path):
-    """Cathay CSV: row1 banner, row2 header -> header=1"""
-
     df = pd.read_csv(uploaded_file_like_or_path, header=1, encoding="utf-8-sig")
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
 
@@ -159,10 +263,9 @@ def realized_match_first_then_fifo_separate_pools(uploaded_file_like_or_path):
     df["成交股數"] = df["成交股數"].apply(to_int)
     df["淨收付金額"] = df["淨收付金額"].apply(to_float)
     df["買賣別"] = df["買賣別"].astype(str).str.strip()
-
     df = df.sort_values(["股名", "日期"]).reset_index(drop=True)
 
-    inventory = defaultdict(deque)  # (stock, pool) -> deque lots {qty, cps}
+    inventory = defaultdict(deque)
     realized_rows = []
 
     def sell_against_inventory(stock, pool, date, qty, cash_in):
@@ -227,7 +330,7 @@ def realized_match_first_then_fifo_separate_pools(uploaded_file_like_or_path):
                     pps = cash_in / qty
                     day_sell_lots.append({"qty": qty, "pps": pps})
 
-                # 1) Same-day match (當沖)
+                # 1) same-day match
                 intraday_qty = 0
                 intraday_cost = 0.0
                 intraday_cash = 0.0
@@ -266,12 +369,12 @@ def realized_match_first_then_fifo_separate_pools(uploaded_file_like_or_path):
                         )
                     )
 
-                # 2) Remaining buys -> inventory
+                # 2) remaining buys -> inventory
                 for lot in list(day_buy_lots):
                     if lot["qty"] > 0:
                         inventory[(stock, pool)].append({"qty": int(lot["qty"]), "cps": float(lot["cps"])})
 
-                # 3) Remaining sells -> inventory
+                # 3) remaining sells -> inventory
                 for lot in list(day_sell_lots):
                     if lot["qty"] > 0:
                         qty = int(lot["qty"])
@@ -282,7 +385,7 @@ def realized_match_first_then_fifo_separate_pools(uploaded_file_like_or_path):
     return df, realized
 
 
-# -------------------- styling (tables) --------------------
+# -------------------- styling --------------------
 def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str):
     def color_pl(v):
         try:
@@ -316,20 +419,9 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
     return styler
 
 
-# -------------------- data source: latest.csv in repo --------------------
-def repo_latest_csv_path():
-    p = "latest.csv"  # repo root
-    return p if os.path.exists(p) else None
-
-
 # -------------------- app --------------------
 try:
-    # session cache (used only if latest.csv not present)
-    if "csv_bytes" not in st.session_state:
-        st.session_state.csv_bytes = None
-        st.session_state.csv_name = None
-
-    # Sidebar: language/theme + data source hint + (optional) filters
+    # Sidebar basics
     with st.sidebar:
         lang = st.radio("Language / 語言", ["EN", "中文"], index=1, horizontal=True)
 
@@ -343,65 +435,66 @@ try:
             value=True,
         )
 
+        hr()
+        st.subheader("Admin / 管理者")
+        admin_login_ui()
+
+        # Admin upload UI (only after admin auth)
+        if is_admin_authed():
+            st.markdown("**Upload latest CSV (更新最新CSV)**")
+            up_admin = st.file_uploader(
+                "Upload any CSV → it will overwrite latest.csv and push to GitHub",
+                type=["csv"],
+                key="admin_latest_uploader",
+            )
+
+            if up_admin is not None:
+                csv_bytes = up_admin.getvalue()
+
+                # 1) save locally so current session can refresh immediately
+                save_local_latest_csv(csv_bytes)
+
+                # 2) push to GitHub so everyone gets it (and Streamlit can redeploy)
+                msg = f"Update latest.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+                try:
+                    github_put_file(
+                        repo=GITHUB_REPO,
+                        path=GITHUB_FILE_PATH,
+                        ref=GITHUB_BRANCH,
+                        content_bytes=csv_bytes,
+                        message=msg,
+                    )
+                    st.success("✅ Uploaded + pushed to GitHub. Friends can refresh to see latest.")
+                except Exception as e:
+                    st.error(f"GitHub push failed: {e}")
+                st.rerun()
+
     # Colors
     if tw_colors:
         PROFIT_COLOR = "#E74C3C"  # red
         LOSS_COLOR = "#2ECC71"    # green
     else:
-        PROFIT_COLOR = "#2ECC71"  # green
-        LOSS_COLOR = "#E74C3C"    # red
+        PROFIT_COLOR = "#2ECC71"
+        LOSS_COLOR = "#E74C3C"
 
     NEUTRAL_BLUE = "#4C78A8"
     NEUTRAL_PURPLE = "#6F42C1"
 
-    # Decide data source
-    latest_path = repo_latest_csv_path()
+    # Ensure latest.csv exists (admin must upload once)
+    if not os.path.exists(DATA_FILE):
+        st.warning(T(lang, "No latest.csv yet. Admin please upload in sidebar.", "尚未有 latest.csv，請管理者在左側上傳。"))
+        st.stop()
 
-    with st.sidebar:
-        hr()
-        st.subheader(T(lang, "Data Source", "資料來源"))
-        if latest_path is not None:
-            st.success(T(lang, "Using repo file: latest.csv", "使用 repo 檔案：latest.csv"))
-        else:
-            st.warning(T(lang, "latest.csv not found. Using upload fallback.", "找不到 latest.csv，改用上傳模式（備援）。"))
-
-            st.subheader(T(lang, "Upload CSV", "上傳 CSV"))
-            up = st.file_uploader(
-                T(lang, "Cathay CSV", "國泰 CSV"),
-                type=["csv"],
-                key="uploader_csv",
-                help=T(
-                    lang,
-                    "Upload only for local/dev. For sharing, add latest.csv to the repo root.",
-                    "僅供本機/開發備援。要分享給朋友請把 latest.csv 放在 repo 根目錄。",
-                ),
-            )
-            if up is not None:
-                st.session_state.csv_bytes = up.getvalue()
-                st.session_state.csv_name = up.name
-
-            if st.session_state.csv_bytes is None:
-                st.info(T(lang, "Upload your CSV to start.", "請上傳 CSV 開始。"))
-                st.stop()
-
-            st.success(T(lang, "Currently loaded:", "目前使用檔案：") + f" {st.session_state.csv_name}")
-            st.caption(T(lang, "To update, upload a new CSV above (overwrites).", "要更新只要再上傳一次新的 CSV（會覆蓋）。"))
-
-    # Load data
-    if latest_path is not None:
-        raw_df, realized = realized_match_first_then_fifo_separate_pools(latest_path)
-    else:
-        file_like = io.BytesIO(st.session_state.csv_bytes)
-        raw_df, realized = realized_match_first_then_fifo_separate_pools(file_like)
+    raw_df, realized = realized_match_first_then_fifo_separate_pools(DATA_FILE)
 
     if realized.empty:
         st.warning(T(lang, "No realized sells found.", "找不到已實現賣出紀錄。"))
         st.dataframe(raw_df.head(80), width="stretch")
         st.stop()
 
+    # Display types
     TYPE_ZH = {"day_trade": "當沖交易", "cash": "現股交易"}
     TYPE_EN = {"day_trade": "Day trade", "cash": "Cash trade"}
-
     METHOD_ZH = {"day_trade": "當沖", "cash": "現股"}
     METHOD_EN = {"day_trade": "Day trade", "cash": "Cash"}
 
@@ -409,7 +502,7 @@ try:
     realized["method_display"] = realized["method_key"].map(METHOD_ZH if lang == "中文" else METHOD_EN).fillna(realized["method_key"])
     realized["sign"] = np.where(realized["realized_pnl"] >= 0, "Profit", "Loss")
 
-    # Filters in sidebar
+    # Filters (sidebar)
     with st.sidebar:
         hr()
         st.subheader(T(lang, "Selection", "篩選"))
@@ -439,7 +532,7 @@ try:
         st.warning(T(lang, "No trades match the current filters.", "目前篩選條件沒有任何交易。"))
         st.stop()
 
-    # Aggregate: day + stock + type
+    # Aggregate view: day + stock + type
     f_view = f.copy()
     f_view["day"] = pd.to_datetime(f_view["date"]).dt.floor("D")
 
@@ -453,7 +546,6 @@ try:
             method_display=("method_display", lambda s: " / ".join(sorted(set(map(str, s))))),
         )
     )
-
     f_view["realized_return_pct"] = np.where(
         f_view["allocated_cost"] != 0,
         f_view["realized_pnl"] / f_view["allocated_cost"] * 100.0,
@@ -465,7 +557,7 @@ try:
     f_sorted = f_view.sort_values(["date", "stock", "type_display"]).copy()
     f_sorted["cum_pnl"] = f_sorted["realized_pnl"].cumsum()
 
-    # KPIs (main first)
+    # KPIs
     total_pnl = float(f_sorted["realized_pnl"].sum())
     trades = int(len(f_sorted))
     win_rate = float((f_sorted["realized_pnl"].to_numpy() > 0).mean()) if trades else 0.0
@@ -480,109 +572,32 @@ try:
     k1, k2, k3, k4, k5 = st.columns([1, 1, 1, 1, 1], gap="medium")
 
     with k1:
-        KPI_CARD(
-            T(lang, "Total P/L", "總損益"),
-            fmt_signed_money(total_pnl),
-            total_color,
-            T(lang, "Realized (filtered)", "已實現（依篩選範圍）"),
-        )
+        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl), total_color, T(lang, "Realized (filtered)", "已實現（依篩選範圍）"))
     with k2:
-        KPI_CARD(
-            T(lang, "Total P/L %", "總損益%"),
-            fmt_signed_pct(total_pl_pct),
-            plpct_color,
-            T(lang, f"Base capital {INVESTMENT_TWD:,.0f}", f"基準資金 {INVESTMENT_TWD:,.0f}"),
-        )
+        KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, T(lang, f"Base capital {INVESTMENT_TWD:,.0f}", f"基準資金 {INVESTMENT_TWD:,.0f}"))
     with k3:
-        KPI_CARD(
-            T(lang, "Win rate", "勝率"),
-            f"{win_rate*100:.1f}%",
-            win_color,
-            T(lang, "Aggregated rows", "以彙總列計算"),
-        )
+        KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, T(lang, "Aggregated rows", "以彙總列計算"))
     with k4:
-        KPI_CARD(
-            T(lang, "Trades", "筆數"),
-            f"{trades}",
-            NEUTRAL_PURPLE,
-            T(lang, "Aggregated (day+stock+type)", "已彙總（日+股票+類型）"),
-        )
+        KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, T(lang, "Aggregated (day+stock+type)", "已彙總（日+股票+類型）"))
     with k5:
-        KPI_CARD(
-            T(lang, "Trade volume", "交易量"),
-            f"{trade_volume:,.0f}",
-            NEUTRAL_BLUE,
-            T(lang, "Total allocated cost", "分攤成本合計"),
-        )
+        KPI_CARD(T(lang, "Trade volume", "交易量"), f"{trade_volume:,.0f}", NEUTRAL_BLUE, T(lang, "Total allocated cost", "分攤成本合計"))
 
     hr()
 
     tab_overview, tab_leader, tab_monthly, tab_trades = st.tabs(
-        [
-            T(lang, "Overview", "總覽"),
-            T(lang, "Leaderboard", "排行"),
-            T(lang, "Monthly report", "月報"),
-            T(lang, "Trades", "交易"),
-        ]
+        [T(lang, "Overview", "總覽"), T(lang, "Leaderboard", "排行"), T(lang, "Monthly report", "月報"), T(lang, "Trades", "交易")]
     )
 
-    # -------------------- Overview --------------------
+    # --- Overview
     with tab_overview:
         st.subheader(T(lang, "Equity Curve", "資金曲線"))
         scaled_cum, unit_lbl, _ = scale_unit(f_sorted["cum_pnl"], lang)
 
         fig_eq = go.Figure()
-        fig_eq.add_trace(
-            go.Scatter(
-                x=f_sorted["date"],
-                y=scaled_cum,
-                mode="lines",
-                name=T(lang, "Cumulative P/L", "累計損益"),
-                line=dict(width=3),
-                hovertemplate=(
-                    "date=%{x|%Y-%m-%d}<br>"
-                    + T(lang, "cum_pnl", "累計損益")
-                    + f"=%{{y:.2f}} {unit_lbl}<extra></extra>"
-                ),
-            )
-        )
+        fig_eq.add_trace(go.Scatter(x=f_sorted["date"], y=scaled_cum, mode="lines", line=dict(width=3),
+                                    name=T(lang, "Cumulative P/L", "累計損益")))
 
-        for sign_name, color in [("Profit", PROFIT_COLOR), ("Loss", LOSS_COLOR)]:
-            sub = f_sorted[f_sorted["sign"] == sign_name]
-            if sub.empty:
-                continue
-            sub_scaled = scale_unit(sub["cum_pnl"], lang)[0]
-            custom = np.column_stack(
-                [
-                    sub["stock"].astype(str).to_numpy(),
-                    sub["type_display"].astype(str).to_numpy(),
-                    sub["realized_pnl"].to_numpy(),
-                    sub["realized_return_pct"].to_numpy(),
-                ]
-            )
-            fig_eq.add_trace(
-                go.Scatter(
-                    x=sub["date"],
-                    y=sub_scaled,
-                    mode="markers",
-                    name=T(lang, "Profit" if sign_name == "Profit" else "Loss", "獲利" if sign_name == "Profit" else "虧損"),
-                    marker=dict(size=8, color=color),
-                    customdata=custom,
-                    hovertemplate=(
-                        "date=%{x|%Y-%m-%d}<br>"
-                        + T(lang, "stock", "股票")
-                        + "=%{customdata[0]}<br>"
-                        + T(lang, "type", "類型")
-                        + "=%{customdata[1]}<br>"
-                        + T(lang, "pnl", "損益")
-                        + "=%{customdata[2]:,.0f}<br>"
-                        + T(lang, "return", "報酬")
-                        + "=%{customdata[3]:.2f}%<extra></extra>"
-                    ),
-                )
-            )
-
-        # Month major ticks + light daily vertical grid lines
+        # Month ticks + light daily grid
         fig_eq.update_layout(
             title=T(lang, "Cumulative Realized P/L", "累計已實現損益"),
             xaxis=dict(
@@ -594,7 +609,7 @@ try:
                 gridcolor="rgba(255,255,255,0.18)",
                 gridwidth=1,
                 minor=dict(
-                    dtick=24 * 60 * 60 * 1000,  # 1 day (ms)
+                    dtick=24 * 60 * 60 * 1000,
                     showgrid=True,
                     gridcolor="rgba(255,255,255,0.06)",
                     gridwidth=1,
@@ -641,7 +656,7 @@ try:
         add_zero_line(fig_bar, axis="x", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_bar, width="stretch")
 
-    # -------------------- Leaderboard (Tab 2) --------------------
+    # --- Leaderboard
     with tab_leader:
         st.subheader(T(lang, "Win / Loss Leaderboard", "勝負排行"))
 
@@ -676,7 +691,6 @@ try:
                     "win_rate_pct": T(lang, "Win rate %", "勝率%"),
                 }
             )
-
             out[T(lang, "Total P/L", "總損益")] = out[T(lang, "Total P/L", "總損益")].round(0).astype(int)
             out[T(lang, "P/L % (vs cost)", "損益%（對成本）")] = out[T(lang, "P/L % (vs cost)", "損益%（對成本）")].round(2)
             out[T(lang, "Win rate %", "勝率%")] = out[T(lang, "Win rate %", "勝率%")].round(1)
@@ -724,7 +738,7 @@ try:
                 height=420,
             )
 
-    # -------------------- Monthly report (Tab 3) --------------------
+    # --- Monthly
     with tab_monthly:
         st.subheader(T(lang, "Monthly Snapshot (month-end)", "月報（月末快照）"))
 
@@ -746,7 +760,6 @@ try:
                 cum_volume=("cum_volume", "sum"),
             )
         )
-
         m_cum["cum_pl_pct"] = np.where(INVESTMENT_TWD != 0, m_cum["cum_pnl"] / float(INVESTMENT_TWD) * 100.0, 0.0)
         m_cum["cum_win_rate_pct"] = np.where(m_cum["cum_trades"] > 0, m_cum["cum_wins"] / m_cum["cum_trades"] * 100.0, 0.0)
 
@@ -805,7 +818,7 @@ try:
         add_zero_line(fig_m, axis="y", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_m, width="stretch")
 
-    # -------------------- Trades (Tab 4) --------------------
+    # --- Trades
     with tab_trades:
         st.subheader(T(lang, "Realized Trades (Aggregated)", "已實現交易（已彙總）"))
 
@@ -822,14 +835,7 @@ try:
         )
 
         df_show = view_show[
-            [
-                "date",
-                "stock",
-                T(lang, "Type", "類型"),
-                T(lang, "Method", "方式"),
-                T(lang, "Realized P/L", "已實現損益"),
-                T(lang, "Realized %", "已實現%"),
-            ]
+            ["date", "stock", T(lang, "Type", "類型"), T(lang, "Method", "方式"), T(lang, "Realized P/L", "已實現損益"), T(lang, "Realized %", "已實現%")]
         ].copy()
 
         st.dataframe(
