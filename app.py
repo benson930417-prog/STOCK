@@ -1,12 +1,11 @@
 # app.py
-# Realized P/L Dashboard (Cathay / 國泰 CSV)
+# Realized P/L Dashboard (Cathay / 國泰 CSV) - Master Raw Trades
 #
-# Goal:
-# - Friends can view YOUR latest data without uploading anything.
-# - View password prompt appears on MAIN page (centered, mobile-friendly).
-# - Admin password + upload stays in SIDEBAR (as before).
-# - Admin upload overwrites latest.csv and pushes to GitHub (commit).
-# - App reads latest.csv locally (written on upload; otherwise must exist).
+# Master design:
+# - Store ONLY raw trades in data/master_trades.csv
+# - Admin uploads monthly Cathay export CSV (filename can vary)
+# - Merge into master by 委託書號 (unique), keep="last" (new upload overwrites)
+# - All calculations (FIFO + same-day match + board/odd pools) derived from master
 #
 # Required Streamlit Secrets:
 #   GITHUB_TOKEN
@@ -14,14 +13,13 @@
 #   VIEW_PASSWORD
 #   GITHUB_REPO        e.g. "benson930417-prog/STOCK"
 #   GITHUB_BRANCH      e.g. "main"
-#   GITHUB_FILE_PATH   e.g. "latest.csv"
+#   GITHUB_FILE_PATH   e.g. "data/master_trades.csv"
 #
-# requirements.txt add:
+# requirements.txt:
 #   requests>=2.31
 
 INVESTMENT_TWD = 3_080_000
 
-import io
 import os
 import base64
 import json
@@ -39,7 +37,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Realized P/L Dashboard", layout="wide")
 
-DATA_FILE = "latest.csv"
+MASTER_PATH = Path("data") / "master_trades.csv"
 
 
 # -------------------- secrets / auth --------------------
@@ -56,7 +54,7 @@ ADMIN_PASSWORD = str(_get_secret("ADMIN_PASSWORD", "")).strip()
 GITHUB_TOKEN = _get_secret("GITHUB_TOKEN", "")
 GITHUB_REPO = _get_secret("GITHUB_REPO", "")
 GITHUB_BRANCH = _get_secret("GITHUB_BRANCH", "main")
-GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "latest.csv")
+GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
 
 
 def require_view_password_centered():
@@ -70,7 +68,6 @@ def require_view_password_centered():
     if st.session_state.authed_view:
         return
 
-    # Main-page centered login (mobile-friendly)
     left, mid, right = st.columns([1, 2, 1])
     with mid:
         st.markdown("## 🔒 Enter password to view")
@@ -206,7 +203,7 @@ def T(lang, en, zh):
     return zh if lang == "中文" else en
 
 
-# -------------------- GitHub uploader --------------------
+# -------------------- GitHub push helpers --------------------
 def github_api_headers():
     return {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
@@ -244,19 +241,142 @@ def github_put_file(repo: str, path: str, ref: str, content_bytes: bytes, messag
     return r.json()
 
 
-def save_local_latest_csv(content_bytes: bytes):
-    Path(DATA_FILE).write_bytes(content_bytes)
+# -------------------- master file handling --------------------
+RAW_REQUIRED = [
+    "股名",
+    "日期",
+    "成交股數",
+    "淨收付金額",
+    "買賣別",
+    "成交價",
+    "成本",
+    "手續費",
+    "交易稅",
+    "融資金額/券擔保品",
+    "資自備款/券保證金",
+    "利息",
+    "稅款",
+    "券手續費/標借費",
+    "委託書號",
+]
 
 
-# -------------------- accounting --------------------
-def pool_of(qty: int) -> str:
-    return "board" if qty % 1000 == 0 else "odd"
+def read_cathay_csv_any(file_like_or_path) -> pd.DataFrame:
+    """
+    Supports:
+    - Cathay export: row1 banner, row2 header -> header=1
+    - Master CSV: normal header=0
+    """
+    # Try Cathay export style first
+    try:
+        df = pd.read_csv(file_like_or_path, header=1, encoding="utf-8-sig")
+        df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
+        if all(c in df.columns for c in RAW_REQUIRED):
+            return df
+    except Exception:
+        pass
+
+    # Fallback: normal CSV
+    df = pd.read_csv(file_like_or_path, header=0, encoding="utf-8-sig")
+    df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
+    return df
 
 
-def realized_match_first_then_fifo_separate_pools(uploaded_file_like_or_path):
-    df = pd.read_csv(uploaded_file_like_or_path, header=1, encoding="utf-8-sig")
+def normalize_raw_trades(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
 
+    missing = [c for c in RAW_REQUIRED if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing columns: {missing}\nFound: {list(df.columns)}")
+
+    # Keep only required columns (master stores raw trades only)
+    df = df[RAW_REQUIRED].copy()
+
+    # Normalize types
+    df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
+    df["成交股數"] = df["成交股數"].apply(to_int)
+    df["淨收付金額"] = df["淨收付金額"].apply(to_float)
+
+    # Keep 委託書號 as string (unique key)
+    df["委託書號"] = df["委託書號"].astype(str).str.strip()
+
+    # Trim strings
+    df["股名"] = df["股名"].astype(str).str.strip()
+    df["買賣別"] = df["買賣別"].astype(str).str.strip()
+
+    # Optional numeric columns: keep as-is (string/float), but normalize commas if present
+    for c in ["成交價", "成本", "手續費", "交易稅", "利息", "稅款", "券手續費/標借費", "融資金額/券擔保品", "資自備款/券保證金"]:
+        if c in df.columns:
+            df[c] = df[c].apply(lambda x: x.replace(",", "").strip() if isinstance(x, str) else x)
+
+    # Drop rows with invalid key/date
+    df = df.dropna(subset=["日期"])
+    df = df[df["委託書號"].astype(str).str.len() > 0]
+
+    return df
+
+
+def load_master_trades() -> pd.DataFrame:
+    if not MASTER_PATH.exists():
+        return pd.DataFrame(columns=RAW_REQUIRED)
+
+    df = read_cathay_csv_any(str(MASTER_PATH))
+    df = normalize_raw_trades(df)
+    return df
+
+
+def save_master_trades(df_master: pd.DataFrame):
+    MASTER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    df_master.to_csv(MASTER_PATH, index=False, encoding="utf-8-sig")
+
+
+def merge_into_master(new_month_df: pd.DataFrame):
+    master = load_master_trades()
+    n_old = len(master)
+
+    combined = pd.concat([master, new_month_df], ignore_index=True)
+
+    # unique by 委託書號 (user confirmed always unique in their case)
+    # keep="last" so if you re-upload a corrected record, it overwrites.
+    combined = combined.drop_duplicates(subset=["委託書號"], keep="last")
+
+    combined = combined.sort_values(["日期", "股名", "委託書號"]).reset_index(drop=True)
+
+    n_new_total = len(new_month_df)
+    n_after = len(combined)
+    n_added = max(0, n_after - n_old)
+    n_dup_skipped = (n_old + n_new_total) - n_after
+
+    save_master_trades(combined)
+
+    return {
+        "old_rows": n_old,
+        "uploaded_rows": n_new_total,
+        "after_rows": n_after,
+        "added_rows": n_added,
+        "dup_skipped": n_dup_skipped,
+        "min_date": combined["日期"].min() if n_after else None,
+        "max_date": combined["日期"].max() if n_after else None,
+    }
+
+
+# -------------------- accounting (same logic as before) --------------------
+def pool_of(qty: int) -> str:
+    return "board" if qty % 1000 == 0 else "odd"  # 整股 vs 零股
+
+
+def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd.DataFrame):
+    """
+    Input raw_trades is a normalized DataFrame with required columns.
+    Uses:
+      - board/odd pools based on 成交股數
+      - same-day match first (當沖)
+      - FIFO inventory for remaining
+    """
+    df = raw_trades.copy()
+
+    # Use only fields we need for matching (same as original logic)
     required = ["股名", "日期", "成交股數", "淨收付金額", "買賣別"]
     missing = [c for c in required if c not in df.columns]
     if missing:
@@ -266,9 +386,11 @@ def realized_match_first_then_fifo_separate_pools(uploaded_file_like_or_path):
     df["成交股數"] = df["成交股數"].apply(to_int)
     df["淨收付金額"] = df["淨收付金額"].apply(to_float)
     df["買賣別"] = df["買賣別"].astype(str).str.strip()
+    df["股名"] = df["股名"].astype(str).str.strip()
+
     df = df.sort_values(["股名", "日期"]).reset_index(drop=True)
 
-    inventory = defaultdict(deque)
+    inventory = defaultdict(deque)  # (stock, pool) -> deque lots {qty, cps}
     realized_rows = []
 
     def sell_against_inventory(stock, pool, date, qty, cash_in):
@@ -279,7 +401,7 @@ def realized_match_first_then_fifo_separate_pools(uploaded_file_like_or_path):
             if not inventory[(stock, pool)]:
                 raise ValueError(
                     f"Sell without inventory: {stock} ({pool}) on {pd.to_datetime(date).date()} sell_qty={qty}. "
-                    "Export likely missing earlier BUYs. Export a wider date range."
+                    "Master may be missing older BUYs."
                 )
             lot = inventory[(stock, pool)][0]
             take = min(remaining, lot["qty"])
@@ -333,7 +455,7 @@ def realized_match_first_then_fifo_separate_pools(uploaded_file_like_or_path):
                     pps = cash_in / qty
                     day_sell_lots.append({"qty": qty, "pps": pps})
 
-                # 1) same-day match
+                # 1) Same-day match (當沖)
                 intraday_qty = 0
                 intraday_cost = 0.0
                 intraday_cash = 0.0
@@ -372,12 +494,12 @@ def realized_match_first_then_fifo_separate_pools(uploaded_file_like_or_path):
                         )
                     )
 
-                # 2) remaining buys -> inventory
+                # 2) Remaining buys -> inventory FIFO
                 for lot in list(day_buy_lots):
                     if lot["qty"] > 0:
                         inventory[(stock, pool)].append({"qty": int(lot["qty"]), "cps": float(lot["cps"])})
 
-                # 3) remaining sells -> inventory
+                # 3) Remaining sells -> inventory FIFO
                 for lot in list(day_sell_lots):
                     if lot["qty"] > 0:
                         qty = int(lot["qty"])
@@ -443,28 +565,40 @@ try:
         admin_login_ui()
 
         if is_admin_authed():
-            st.markdown("**Upload latest CSV (更新最新CSV)**")
+            st.markdown("**Upload monthly CSV → merge into master (依委託書號去重)**")
             up_admin = st.file_uploader(
-                "Upload any CSV → overwrite latest.csv and push to GitHub",
+                "Upload Cathay CSV (any filename). It will merge into data/master_trades.csv and push to GitHub.",
                 type=["csv"],
-                key="admin_latest_uploader",
+                key="admin_month_uploader",
             )
 
             if up_admin is not None:
-                csv_bytes = up_admin.getvalue()
+                # Read monthly file (Cathay export)
+                monthly_df = read_cathay_csv_any(up_admin)
+                monthly_df = normalize_raw_trades(monthly_df)
 
-                save_local_latest_csv(csv_bytes)
+                stats = merge_into_master(monthly_df)
 
-                msg = f"Update latest.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+                # Push master to GitHub
+                master_bytes = MASTER_PATH.read_bytes()
+                msg = f"Update master_trades.csv ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+
                 try:
                     github_put_file(
                         repo=GITHUB_REPO,
                         path=GITHUB_FILE_PATH,
                         ref=GITHUB_BRANCH,
-                        content_bytes=csv_bytes,
+                        content_bytes=master_bytes,
                         message=msg,
                     )
-                    st.success("✅ Uploaded + pushed to GitHub. Friends can refresh to see latest.")
+                    st.success("✅ Master updated + pushed to GitHub.")
+                    st.caption(
+                        f"old={stats['old_rows']} | uploaded={stats['uploaded_rows']} | "
+                        f"added={stats['added_rows']} | dup_skipped={stats['dup_skipped']} | "
+                        f"after={stats['after_rows']}"
+                    )
+                    if stats["min_date"] is not None:
+                        st.caption(f"range: {pd.to_datetime(stats['min_date']).date()} ~ {pd.to_datetime(stats['max_date']).date()}")
                 except Exception as e:
                     st.error(f"GitHub push failed: {e}")
 
@@ -481,18 +615,21 @@ try:
     NEUTRAL_BLUE = "#4C78A8"
     NEUTRAL_PURPLE = "#6F42C1"
 
-    # Load data
-    if not os.path.exists(DATA_FILE):
-        st.warning(T(lang, "No latest.csv yet. Admin please upload in sidebar.", "尚未有 latest.csv，請管理者在左側上傳。"))
+    # Load master trades
+    if not MASTER_PATH.exists():
+        st.warning(T(lang, "No master file yet. Admin please upload in sidebar.", "尚未有 master 檔，請管理者在左側上傳當月 CSV。"))
         st.stop()
 
-    raw_df, realized = realized_match_first_then_fifo_separate_pools(DATA_FILE)
+    master_trades = load_master_trades()
+
+    raw_df, realized = realized_match_first_then_fifo_separate_pools_from_raw_trades(master_trades)
 
     if realized.empty:
         st.warning(T(lang, "No realized sells found.", "找不到已實現賣出紀錄。"))
         st.dataframe(raw_df.head(80), width="stretch")
         st.stop()
 
+    # Display mapping (2 types only)
     TYPE_ZH = {"day_trade": "當沖交易", "cash": "現股交易"}
     TYPE_EN = {"day_trade": "Day trade", "cash": "Cash trade"}
     METHOD_ZH = {"day_trade": "當沖", "cash": "現股"}
@@ -573,50 +710,20 @@ try:
     k1, k2, k3, k4, k5 = st.columns([1, 1, 1, 1, 1], gap="medium")
 
     with k1:
-        KPI_CARD(
-            T(lang, "Total P/L", "總損益"),
-            fmt_signed_money(total_pnl),
-            total_color,
-            T(lang, "Realized (filtered)", "已實現（依篩選範圍）"),
-        )
+        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl), total_color, T(lang, "Realized (filtered)", "已實現（依篩選範圍）"))
     with k2:
-        KPI_CARD(
-            T(lang, "Total P/L %", "總損益%"),
-            fmt_signed_pct(total_pl_pct),
-            plpct_color,
-            T(lang, f"Base capital {INVESTMENT_TWD:,.0f}", f"基準資金 {INVESTMENT_TWD:,.0f}"),
-        )
+        KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, T(lang, f"Base capital {INVESTMENT_TWD:,.0f}", f"基準資金 {INVESTMENT_TWD:,.0f}"))
     with k3:
-        KPI_CARD(
-            T(lang, "Win rate", "勝率"),
-            f"{win_rate*100:.1f}%",
-            win_color,
-            T(lang, "Aggregated rows", "以彙總列計算"),
-        )
+        KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, T(lang, "Aggregated rows", "以彙總列計算"))
     with k4:
-        KPI_CARD(
-            T(lang, "Trades", "筆數"),
-            f"{trades}",
-            NEUTRAL_PURPLE,
-            T(lang, "Aggregated (day+stock+type)", "已彙總（日+股票+類型）"),
-        )
+        KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, T(lang, "Aggregated (day+stock+type)", "已彙總（日+股票+類型）"))
     with k5:
-        KPI_CARD(
-            T(lang, "Trade volume", "交易量"),
-            f"{trade_volume:,.0f}",
-            NEUTRAL_BLUE,
-            T(lang, "Total allocated cost", "分攤成本合計"),
-        )
+        KPI_CARD(T(lang, "Trade volume", "交易量"), f"{trade_volume:,.0f}", NEUTRAL_BLUE, T(lang, "Total allocated cost", "分攤成本合計"))
 
     hr()
 
     tab_overview, tab_leader, tab_monthly, tab_trades = st.tabs(
-        [
-            T(lang, "Overview", "總覽"),
-            T(lang, "Leaderboard", "排行"),
-            T(lang, "Monthly report", "月報"),
-            T(lang, "Trades", "交易"),
-        ]
+        [T(lang, "Overview", "總覽"), T(lang, "Leaderboard", "排行"), T(lang, "Monthly report", "月報"), T(lang, "Trades", "交易")]
     )
 
     # -------------------- Overview --------------------
