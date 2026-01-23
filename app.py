@@ -55,31 +55,7 @@ def T(lang: str, en: str, zh: str) -> str:
 
 # Check for upload success toast (Moved here to ensure T is defined)
 if st.session_state.get("upload_toast"):
-     msg = T(st.session_state.get("lang", "中文"), "Master updated & pushed.", "Master 已更新並推送。")
-     # CSS animation to fade out after 3s without blocking Python
-     st.markdown(
-        f"""
-        <div style="
-            padding: 1rem;
-            border-radius: 0.5rem;
-            background-color: rgba(46, 204, 113, 0.2);
-            border: 1px solid rgba(46, 204, 113, 0.2);
-            color: #2ecc71;
-            margin-bottom: 1rem;
-            animation: fadeOut 3.5s forwards;
-        ">
-            ✅ {msg}
-        </div>
-        <style>
-            @keyframes fadeOut {{
-                0% {{ opacity: 1; }}
-                99% {{ opacity: 1; }}
-                100% {{ opacity: 0; display: none; height: 0; margin: 0; padding: 0; border: 0; }}
-            }}
-        </style>
-        """,
-        unsafe_allow_html=True
-     )
+     st.toast(T(st.session_state.get("lang", "中文"), "✅ Master updated & pushed.", "✅ Master 已更新並推送。"), icon="✅")
      del st.session_state["upload_toast"]
 
 
