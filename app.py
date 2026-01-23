@@ -73,7 +73,7 @@ if st.session_state.get("upload_toast"):
         <style>
             @keyframes fadeOut {{
                 0% {{ opacity: 1; }}
-                80% {{ opacity: 1; }}
+                99% {{ opacity: 1; }}
                 100% {{ opacity: 0; display: none; height: 0; margin: 0; padding: 0; border: 0; }}
             }}
         </style>
