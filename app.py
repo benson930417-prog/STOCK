@@ -1240,10 +1240,10 @@ try:
                 T(lang, "Date", "日期"),
                 T(lang, "Stock", "股名"),
                 T(lang, "Type", "類型"),
-                T(lang, "Total Buy Cost", "買入總額"),
-                T(lang, "Total Sell Proceeds", "賣出總額"),
                 T(lang, "Avg Buy Price", "買入均價"),
+                T(lang, "Total Buy Cost", "買入總額"),
                 T(lang, "Avg Sell Price", "賣出均價"),
+                T(lang, "Total Sell Proceeds", "賣出總額"),
                 T(lang, "Realized P/L", "已實現損益"),
                 T(lang, "Realized %", "已實現%"),
             ]
@@ -1252,10 +1252,10 @@ try:
         st.dataframe(
             make_trade_styler(df_show, PROFIT_COLOR, LOSS_COLOR).format(
                 {
-                    T(lang, "Total Buy Cost", "買入總額"): "{:,.0f}",
                     T(lang, "Avg Buy Price", "買入均價"): "{:,.2f}",
-                    T(lang, "Total Sell Proceeds", "賣出總額"): "{:,.0f}",
+                    T(lang, "Total Buy Cost", "買入總額"): "{:,.0f}",
                     T(lang, "Avg Sell Price", "賣出均價"): "{:,.2f}",
+                    T(lang, "Total Sell Proceeds", "賣出總額"): "{:,.0f}",
                     T(lang, "Realized P/L", "已實現損益"): "{:,.0f}",
                     T(lang, "Realized %", "已實現%"): "{:.2f}",
                 }
