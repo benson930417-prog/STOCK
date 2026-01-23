@@ -25,6 +25,7 @@
 INVESTMENT_TWD = 3_080_000
 
 import os
+import time
 import base64
 import json
 import traceback
@@ -788,6 +789,16 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str = "#E74
         # Standard: 2 * IQR / n^(1/3). We use 1 * IQR ... essentially double the bins
         fd_width = 1.0 * iqr / (len(vals) ** (1/3)) if iqr > 0 else 0
         
+        # Enforce max step size of 10,000 (scaled)
+        # We need the scale factor used in scale_unit.
+        # scale_unit returns (series, label, divisor) -> divisor is what we divided by.
+        # So 10,000 real = 10,000 / divisor (scaled)
+        _, _, divisor = scale_unit(pd.Series([10000]), lang)
+        max_width = 10000.0 / divisor if divisor else 10000.0
+        
+        if fd_width > max_width:
+             fd_width = max_width
+
         if fd_width == 0:
              # Fallback if IQR is 0 (low variation)
              fd_width = (v_max - v_min) / 80 if v_max != v_min else 1.0
