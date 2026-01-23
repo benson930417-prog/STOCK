@@ -784,11 +784,13 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str = "#E74
         # Estimate ideal bin width using "auto" logic or FD rule on the whole set
         # Then align to 0
         iqr = np.subtract(*np.percentile(vals, [75, 25]))
-        fd_width = 2 * iqr / (len(vals) ** (1/3)) if iqr > 0 else 0
+        # Use a higher resolution (smaller width) than standard FD rule
+        # Standard: 2 * IQR / n^(1/3). We use 1 * IQR ... essentially double the bins
+        fd_width = 1.0 * iqr / (len(vals) ** (1/3)) if iqr > 0 else 0
         
         if fd_width == 0:
              # Fallback if IQR is 0 (low variation)
-             fd_width = (v_max - v_min) / 40 if v_max != v_min else 1.0
+             fd_width = (v_max - v_min) / 80 if v_max != v_min else 1.0
 
         # Construct edges: 0 to max, and 0 to min
         # use ceil to cover full range
