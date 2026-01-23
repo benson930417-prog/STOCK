@@ -48,15 +48,15 @@ DATA_DIR = Path("data")
 MASTER_PATH = DATA_DIR / "master_trades.csv"
 META_PATH = DATA_DIR / "master_meta.json"
 
-# Check for upload success toast
-if st.session_state.get("upload_toast"):
-     st.toast(T(st.session_state.get("lang", "中文"), "✅ Master updated & pushed.", "✅ Master 已更新並推送。"), icon="✅")
-     del st.session_state["upload_toast"]
-
-
 # -------------------- translations --------------------
 def T(lang: str, en: str, zh: str) -> str:
     return zh if lang == "中文" else en
+
+
+# Check for upload success toast (Moved here to ensure T is defined)
+if st.session_state.get("upload_toast"):
+     st.toast(T(st.session_state.get("lang", "中文"), "✅ Master updated & pushed.", "✅ Master 已更新並推送。"), icon="✅")
+     del st.session_state["upload_toast"]
 
 
 # -------------------- secrets --------------------
