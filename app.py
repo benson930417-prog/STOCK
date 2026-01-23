@@ -517,9 +517,10 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
     inventory = defaultdict(deque)  # (stock, pool) -> deque lots {qty, cps}
     realized_rows = []
 
-    def sell_against_inventory(stock, pool, date, qty, cash_in):
+    def sell_against_inventory(stock, pool, date, qty, cash_in, sell_fee_tot, sell_tax_tot):
         remaining = int(qty)
         allocated_cost = 0.0
+        allocated_buy_fee = 0.0
 
         while remaining > 0:
             if not inventory[(stock, pool)]:
@@ -530,6 +531,8 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
             lot = inventory[(stock, pool)][0]
             take = min(remaining, lot["qty"])
             allocated_cost += take * lot["cps"]
+            allocated_buy_fee += take * lot["fee_per_share"]
+
             lot["qty"] -= take
             remaining -= take
             if lot["qty"] == 0:
@@ -547,6 +550,8 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                 allocated_cost=float(allocated_cost),
                 realized_pnl=float(pnl),
                 realized_return_pct=float(ret_pct),
+                total_fee=float(allocated_buy_fee + sell_fee_tot),
+                total_tax=float(sell_tax_tot),
                 method_key="cash",
                 type_key="cash",
                 pool_key=pool,
@@ -569,20 +574,29 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                 for _, r in buys.iterrows():
                     qty = int(r["成交股數"])
                     cash_out = -float(r["淨收付金額"])
+                    fee = float(r["手續費"])
                     cps = cash_out / qty
-                    day_buy_lots.append({"qty": qty, "cps": cps})
+                    fps = fee / qty
+                    day_buy_lots.append({"qty": qty, "cps": cps, "fee_per_share": fps})
 
                 day_sell_lots = deque()
                 for _, r in sells.iterrows():
                     qty = int(r["成交股數"])
                     cash_in = float(r["淨收付金額"])
+                    fee = float(r["手續費"])
+                    tax = float(r["交易稅"])
                     pps = cash_in / qty
-                    day_sell_lots.append({"qty": qty, "pps": pps})
+                    fps = fee / qty
+                    tps = tax / qty
+                    day_sell_lots.append({"qty": qty, "pps": pps, "fee_per_share": fps, "tax_per_share": tps})
 
                 # 1) Same-day match
                 intraday_qty = 0
                 intraday_cost = 0.0
                 intraday_cash = 0.0
+                intraday_buy_fee = 0.0
+                intraday_sell_fee = 0.0
+                intraday_sell_tax = 0.0
 
                 while day_buy_lots and day_sell_lots:
                     b = day_buy_lots[0]
@@ -592,6 +606,9 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                     intraday_qty += take
                     intraday_cost += take * b["cps"]
                     intraday_cash += take * s["pps"]
+                    intraday_buy_fee += take * b["fee_per_share"]
+                    intraday_sell_fee += take * s["fee_per_share"]
+                    intraday_sell_tax += take * s["tax_per_share"]
 
                     b["qty"] -= take
                     s["qty"] -= take
@@ -612,6 +629,8 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                             allocated_cost=float(intraday_cost),
                             realized_pnl=float(pnl),
                             realized_return_pct=float(ret_pct),
+                            total_fee=float(intraday_buy_fee + intraday_sell_fee),
+                            total_tax=float(intraday_sell_tax),
                             method_key="day_trade",
                             type_key="day_trade",
                             pool_key=pool,
@@ -621,14 +640,20 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                 # 2) Remaining buys -> inventory
                 for lot in list(day_buy_lots):
                     if lot["qty"] > 0:
-                        inventory[(stock, pool)].append({"qty": int(lot["qty"]), "cps": float(lot["cps"])})
+                        inventory[(stock, pool)].append({
+                            "qty": int(lot["qty"]), 
+                            "cps": float(lot["cps"]),
+                            "fee_per_share": float(lot["fee_per_share"])
+                        })
 
                 # 3) Remaining sells -> inventory
                 for lot in list(day_sell_lots):
                     if lot["qty"] > 0:
                         qty = int(lot["qty"])
                         cash_in = float(lot["pps"] * qty)
-                        sell_against_inventory(stock, pool, date, qty, cash_in)
+                        s_fee = float(lot["fee_per_share"] * qty)
+                        s_tax = float(lot["tax_per_share"] * qty)
+                        sell_against_inventory(stock, pool, date, qty, cash_in, s_fee, s_tax)
 
     realized = pd.DataFrame(realized_rows).sort_values(["date", "stock"]).reset_index(drop=True)
     return df, realized
@@ -889,6 +914,8 @@ try:
             allocated_cost=("allocated_cost", "sum"),
             sell_cash_in=("sell_cash_in", "sum"),
             realized_pnl=("realized_pnl", "sum"),
+            total_fee=("total_fee", "sum"),
+            total_tax=("total_tax", "sum"),
             method_display=("method_display", lambda s: " / ".join(sorted(set(map(str, s))))),
         )
     )
@@ -899,7 +926,14 @@ try:
         0.0,
     )
     f_view["date"] = f_view["day"]
-    f_view["sign"] = np.where(f_view["realized_pnl"] >= 0, "Profit", "Loss")
+    
+    # Calculate averages for display
+    f_view["avg_buy_price"] = np.where(f_view["sell_qty"] > 0, f_view["allocated_cost"] / f_view["sell_qty"], 0.0)
+    f_view["avg_sell_price"] = np.where(f_view["sell_qty"] > 0, f_view["sell_cash_in"] / f_view["sell_qty"], 0.0)
+
+    profit_label = T(lang, "Profit", "獲利")
+    loss_label = T(lang, "Loss", "虧損")
+    f_view["sign"] = np.where(f_view["realized_pnl"] >= 0, profit_label, loss_label)
 
     f_sorted = f_view.sort_values(["date", "stock", "type_display"]).copy()
     f_sorted["cum_pnl"] = f_sorted["realized_pnl"].cumsum()
@@ -927,7 +961,9 @@ try:
     with k4:
         KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, T(lang, "Aggregated (day+stock+type)", "已彙總（日+股票+類型）"))
     with k5:
-        KPI_CARD(T(lang, "Trade volume", "交易量"), f"{trade_volume:,.0f}", NEUTRAL_BLUE, T(lang, "Total allocated cost", "分攤成本合計"))
+        # Squeeze fee/tax into subtitle or separate
+        total_fee_tax = float(f_sorted["total_fee"].sum() + f_sorted["total_tax"].sum())
+        KPI_CARD(T(lang, "Trade volume", "交易量"), f"{trade_volume:,.0f}", NEUTRAL_BLUE, f"{T(lang, 'Fees+Tax', '手續費+稅')}: {total_fee_tax:,.0f}")
 
     hr()
 
@@ -1185,7 +1221,13 @@ try:
 
         view_show = view.rename(
             columns={
+                "date": T(lang, "Date", "日期"),
+                "stock": T(lang, "Stock", "股名"),
                 "type_display": T(lang, "Type", "類型"),
+                "allocated_cost": T(lang, "Total Buy Cost", "買入總額"),
+                "avg_buy_price": T(lang, "Avg Buy Price", "買入均價"),
+                "sell_cash_in": T(lang, "Total Sell Proceeds", "賣出總額"),
+                "avg_sell_price": T(lang, "Avg Sell Price", "賣出均價"),
                 "realized_pnl": T(lang, "Realized P/L", "已實現損益"),
                 "realized_return_pct": T(lang, "Realized %", "已實現%"),
             }
@@ -1193,9 +1235,13 @@ try:
 
         df_show = view_show[
             [
-                "date",
-                "stock",
+                T(lang, "Date", "日期"),
+                T(lang, "Stock", "股名"),
                 T(lang, "Type", "類型"),
+                T(lang, "Total Buy Cost", "買入總額"),
+                T(lang, "Avg Buy Price", "買入均價"),
+                T(lang, "Total Sell Proceeds", "賣出總額"),
+                T(lang, "Avg Sell Price", "賣出均價"),
                 T(lang, "Realized P/L", "已實現損益"),
                 T(lang, "Realized %", "已實現%"),
             ]
@@ -1204,6 +1250,10 @@ try:
         st.dataframe(
             make_trade_styler(df_show, PROFIT_COLOR, LOSS_COLOR).format(
                 {
+                    T(lang, "Total Buy Cost", "買入總額"): "{:,.0f}",
+                    T(lang, "Avg Buy Price", "買入均價"): "{:,.2f}",
+                    T(lang, "Total Sell Proceeds", "賣出總額"): "{:,.0f}",
+                    T(lang, "Avg Sell Price", "賣出均價"): "{:,.2f}",
                     T(lang, "Realized P/L", "已實現損益"): "{:,.0f}",
                     T(lang, "Realized %", "已實現%"): "{:.2f}",
                 }
