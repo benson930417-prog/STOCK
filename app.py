@@ -1824,7 +1824,13 @@ try:
              ),
              height=460,
              margin=dict(l=10, r=20, t=60, b=10),
-             legend_title_text="",
+             legend=dict(
+                 x=0.01,
+                 y=0.99,
+                 xanchor="left",
+                 yanchor="top",
+                 bgcolor="rgba(0,0,0,0)"
+             ),
              hovermode="x unified",
         )
 
