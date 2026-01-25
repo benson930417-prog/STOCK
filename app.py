@@ -303,10 +303,10 @@ def get_twd_to_eur_rate():
         return None
 
 
-def get_twse_data(days=365):
-    # Fetch TWSE (^TWII) data from Yahoo Finance Chart API
+def get_market_data(symbol, days=365):
+    # Fetch Market data (e.g. ^TWII, ^DJI) from Yahoo Finance Chart API
     # Cache in session
-    cache_key = f"twse_data_{days}"
+    cache_key = f"market_data_{symbol}_{days}"
     if cache_key in st.session_state:
         return st.session_state[cache_key]
 
@@ -317,7 +317,8 @@ def get_twse_data(days=365):
         if days > 365 * 2: range_str = "5y"
         elif days > 365: range_str = "2y"
         
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/^TWII?interval=1d&range={range_str}"
+        # URL encode symbol if needed, but simple ones are safe
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range={range_str}"
         headers = {"User-Agent": "Mozilla/5.0"}
         r = requests.get(url, headers=headers, timeout=5.0)
         r.raise_for_status()
@@ -1564,57 +1565,75 @@ try:
                  )
              )
              
-             # TWSE Benchmark Overlay
-             # Only if we have data and user investment is not zero
-             twse_df = get_twse_data(days=(daily_agg["date"].max() - daily_agg["date"].min()).days + 30)
-             if not twse_df.empty:
-                 # Align TWSE data to the user's date range
-                 start_date = daily_agg["date"].min()
-                 end_date = daily_agg["date"].max()
-                 
-                 # Filter TWSE
-                 mask = (twse_df["date"] >= start_date) & (twse_df["date"] <= end_date)
-                 twse_rel = twse_df[mask].copy()
-                 
-                 if not twse_rel.empty:
-                     # Find base price at start (or closest to start)
-                     base_price = twse_rel["close"].iloc[0]
-                     if base_price > 0:
-                         twse_rel["pct"] = (twse_rel["close"] - base_price) / base_price * 100.0
-                         
-                         fig_eq.add_trace(
-                             go.Scatter(
-                                 x=twse_rel["date"],
-                                 y=twse_rel["pct"],
-                                 mode="lines",
-                                 name="TAIEX (Ref)",
-                                 line=dict(color='rgba(150,150,150,0.5)', width=1.5, dash='dash'),
-                                 yaxis="y2",
-                                 hovertemplate="TAIEX: %{y:.2f}%<extra></extra>"
-                         )
-                     )
-
-        # Calculates Range for Synchronization of Axes
-        # We need Yaxis(Money) and Yaxis2(%) to be perfectly aligned.
-        # factor maps % -> Money Value (on axis)
-        # Formula: Money = Pct * (Cap * Rate / 100 / Divisor)
-        # Note: INVESTMENT_TWD is base capital in TWD.
-        # CURRENCY_RATE converts TWD -> DispCurr.
-        # unit_div scales DispCurr -> AxisValue.
-        
-        y_max_pct = 0.0
-        y_min_pct = 0.0
-        
-        # User P/L bounds
-        if not daily_agg.empty and INVESTMENT_TWD:
-             user_pcts = (daily_agg["cum_pnl"] / float(INVESTMENT_TWD)) * 100.0
-             y_max_pct = max(y_max_pct, user_pcts.max())
-             y_min_pct = min(y_min_pct, user_pcts.min())
+             # Market Overlays (User Selection)
+             market_opts = {
+                 "TAIEX": "^TWII",
+                 "Dow Jones": "^DJI",
+                 "S&P 500": "^GSPC",
+                 "PHLX Semi": "^SOX"
+             }
              
-        # TWSE bounds (if present)
-        if 'twse_rel' in locals() and not twse_rel.empty:
-             y_max_pct = max(y_max_pct, twse_rel["pct"].max())
-             y_min_pct = min(y_min_pct, twse_rel["pct"].min())
+             # UI Control 
+             try:
+                 cols_opts = st.columns([2, 1])
+                 with cols_opts[0]:
+                      sel_indices = st.multiselect(
+                          T(lang, "Market Comparison", "大盤指數對照"),
+                          options=list(market_opts.keys()),
+                          default=["TAIEX"]
+                      )
+             except:
+                 sel_indices = []
+
+             # Bounds Initialization
+             y_max_pct = 0.0
+             y_min_pct = 0.0
+             
+             if not daily_agg.empty and INVESTMENT_TWD:
+                  user_pcts = (daily_agg["cum_pnl"] / float(INVESTMENT_TWD)) * 100.0
+                  y_max_pct = user_pcts.max()
+                  y_min_pct = user_pcts.min()
+             
+             # Fetch and Plot Selected Indices
+             color_map = {
+                 "TAIEX": "rgba(150,150,150,0.5)",
+                 "Dow Jones": "rgba(50, 100, 200, 0.5)",
+                 "S&P 500": "rgba(200, 150, 50, 0.5)",
+                 "PHLX Semi": "rgba(100, 200, 150, 0.5)"
+             }
+
+             for m_name in sel_indices:
+                 symbol = market_opts[m_name]
+                 m_df = get_market_data(symbol, days=(daily_agg["date"].max() - daily_agg["date"].min()).days + 30)
+                 
+                 if not m_df.empty:
+                     start_date_m = daily_agg["date"].min()
+                     end_date_m = daily_agg["date"].max()
+                     mask = (m_df["date"] >= start_date_m) & (m_df["date"] <= end_date_m)
+                     m_rel = m_df[mask].copy()
+                     
+                     if not m_rel.empty:
+                         base_price = m_rel["close"].iloc[0]
+                         if base_price > 0:
+                             m_rel["pct"] = (m_rel["close"] - base_price) / base_price * 100.0
+                             
+                             c_line = color_map.get(m_name, "rgba(150,150,150,0.5)")
+                             
+                             fig_eq.add_trace(
+                                 go.Scatter(
+                                     x=m_rel["date"],
+                                     y=m_rel["pct"],
+                                     mode="lines",
+                                     name=m_name,
+                                     line=dict(color=c_line, width=1.5, dash='dash'),
+                                     yaxis="y2",
+                                     hovertemplate=f"{m_name}: %{{y:.2f}}%<extra></extra>"
+                                 )
+                             )
+                             
+                             y_max_pct = max(y_max_pct, m_rel["pct"].max())
+                             y_min_pct = min(y_min_pct, m_rel["pct"].min())
+
              
         # Add padding (e.g. 10%)
         rng = y_max_pct - y_min_pct
