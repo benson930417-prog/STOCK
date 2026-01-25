@@ -1351,6 +1351,7 @@ try:
             xaxis=dict(
                 type="date",
                 tickformat="%b %Y" if lang != "中文" else "%Y-%m",
+                dtick="M1", # Force 1 month ticks to prevent repetition
             )
         )
         add_zero_line(fig_m, axis="y", color="#A9B1BD", width=3, dash="dash")
