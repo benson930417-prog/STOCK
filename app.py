@@ -303,6 +303,41 @@ def get_twd_to_eur_rate():
         return None
 
 
+def get_twse_data(days=365):
+    # Fetch TWSE (^TWII) data from Yahoo Finance Chart API
+    # Cache in session
+    cache_key = f"twse_data_{days}"
+    if cache_key in st.session_state:
+        return st.session_state[cache_key]
+
+    try:
+        # Range: roughly days -> 1y, 2y, 5y etc.
+        # Yahoo ranges: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
+        range_str = "1y"
+        if days > 365 * 2: range_str = "5y"
+        elif days > 365: range_str = "2y"
+        
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/^TWII?interval=1d&range={range_str}"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        r = requests.get(url, headers=headers, timeout=5.0)
+        r.raise_for_status()
+        data = r.json()
+        
+        result = data["chart"]["result"][0]
+        timestamps = result["timestamp"]
+        closes = result["indicators"]["quote"][0]["close"]
+        
+        # Create DataFrame
+        df = pd.DataFrame({"ts": timestamps, "close": closes})
+        df["date"] = pd.to_datetime(df["ts"], unit="s").dt.normalize()
+        df = df.dropna().sort_values("date")
+        
+        st.session_state[cache_key] = df
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+
 # -------------------- GitHub push helpers --------------------
 def github_api_headers():
     return {
@@ -1494,6 +1529,36 @@ try:
                      yaxis="y2"
                  )
              )
+             
+             # TWSE Benchmark Overlay
+             # Only if we have data and user investment is not zero
+             twse_df = get_twse_data(days=(daily_agg["date"].max() - daily_agg["date"].min()).days + 30)
+             if not twse_df.empty:
+                 # Align TWSE data to the user's date range
+                 start_date = daily_agg["date"].min()
+                 end_date = daily_agg["date"].max()
+                 
+                 # Filter TWSE
+                 mask = (twse_df["date"] >= start_date) & (twse_df["date"] <= end_date)
+                 twse_rel = twse_df[mask].copy()
+                 
+                 if not twse_rel.empty:
+                     # Find base price at start (or closest to start)
+                     base_price = twse_rel["close"].iloc[0]
+                     if base_price > 0:
+                         twse_rel["pct"] = (twse_rel["close"] - base_price) / base_price * 100.0
+                         
+                         fig_eq.add_trace(
+                             go.Scatter(
+                                 x=twse_rel["date"],
+                                 y=twse_rel["pct"],
+                                 mode="lines",
+                                 name="TAIEX (Ref)",
+                                 line=dict(color='rgba(150,150,150,0.5)', width=1.5, dash='dash'),
+                                 yaxis="y2",
+                                 hovertemplate="TAIEX: %{y:.2f}%<extra></extra>"
+                             )
+                         )
          
         # Calculate range padding
         if not daily_agg.empty:
