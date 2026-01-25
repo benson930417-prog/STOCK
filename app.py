@@ -1412,7 +1412,7 @@ try:
                          else:
                              status = T(lang, "Behind", "落後")
                              
-                         alpha_text = f"{status} {T(lang,'','加權')} {abs(diff):.2f}%"
+                         alpha_text = f"{status} {T(lang,'TAIEX','加權')} {abs(diff):.2f}%"
         except Exception:
              pass
 
