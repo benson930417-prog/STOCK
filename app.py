@@ -938,13 +938,15 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         left = bin_edges[i]
         right = bin_edges[i+1]
         
-        # Determine strict sign for the bin based on center
-        # This helps grouping 0-5 as positive
-        mid = (left + right) / 2
-        
         l_str = fmt_edge(left)
         r_str = fmt_edge(right)
-        label = f"{l_str}~{r_str}"
+        
+        # Add unit to the label
+        if unit_txt == "€":
+            label = f"€{l_str}~{r_str}"
+        else:
+            label = f"{l_str}~{r_str}{unit_txt}"
+            
         bin_labels.append(label)
 
     # Color condition: center >= 0 is profit
@@ -986,7 +988,7 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
 
     fig.update_layout(
         title=T(lang, "P/L Distribution", "損益分佈"),
-        xaxis_title=f"{T(lang, 'Realized P/L', '已實現損益')} ({unit_txt})",
+        xaxis_title=T(lang, 'Realized P/L', '已實現損益'),
         yaxis_title=T(lang, "Count", "筆數"),
         height=380,
         bargap=0.1,
