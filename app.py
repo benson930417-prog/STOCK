@@ -1179,6 +1179,27 @@ try:
             )
         )
         
+        # Add marker/label for the latest point
+        if not daily_agg.empty:
+            last_idx = daily_agg.index[-1]
+            last_date = daily_agg["date"].iloc[-1]
+            last_val = scaled_cum.iloc[-1]
+            last_txt = f"{last_val:,.2f} {unit_lbl}"
+
+            fig_eq.add_trace(
+                go.Scatter(
+                    x=[last_date],
+                    y=[last_val],
+                    mode="markers+text",
+                    text=[last_txt],
+                    textposition="top left",
+                    textfont=dict(size=11, color="#EAEAEA"),
+                    marker=dict(size=6, color=curve_color, line=dict(width=1, color="white")),
+                    showlegend=False,
+                    hoverinfo="skip",
+                )
+            )
+        
         # Calculate range padding
         if not daily_agg.empty:
             min_date = daily_agg["date"].min()
