@@ -817,6 +817,42 @@ def add_month_major_lines(fig: go.Figure, dates: pd.Series):
     return fig
 
 
+def augment_zero_crossings(df: pd.DataFrame, date_col: str, val_col: str) -> pd.DataFrame:
+    """
+    Insert rows where the value crosses zero to ensure smooth filled area transitions.
+    Assumes df is sorted by date.
+    """
+    if df.empty or len(df) < 2:
+        return df
+
+    out_rows = []
+    recs = df.to_dict("records")
+    out_rows.append(recs[0])
+    
+    for i in range(len(recs) - 1):
+        curr = recs[i]
+        next_ = recs[i+1]
+        y1 = curr[val_col]
+        y2 = next_[val_col]
+        
+        # Check strictly crossing zero
+        if (y1 > 0 and y2 < 0) or (y1 < 0 and y2 > 0):
+            # linear interpolation fraction
+            f = -y1 / (y2 - y1)
+            t1 = curr[date_col].timestamp()
+            t2 = next_[date_col].timestamp()
+            t_cross = t1 + (t2 - t1) * f
+            
+            row = curr.copy()
+            row[date_col] = pd.to_datetime(t_cross, unit="s")
+            row[val_col] = 0.0
+            out_rows.append(row)
+        
+        out_rows.append(next_)
+        
+    return pd.DataFrame(out_rows)
+
+
 
 
 
