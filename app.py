@@ -1048,9 +1048,9 @@ try:
     with k2:
         KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, T(lang, f"Base capital {INVESTMENT_TWD:,.0f}", f"基準資金 {INVESTMENT_TWD:,.0f}"))
     with k3:
-        KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, T(lang, "By aggregated rows", "以彙總列計算"))
+        KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, T(lang, "Based on closed transactions", "基於已完成交易"))
     with k4:
-        KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, T(lang, "Aggregated (day+stock+type)", "已彙總（日+股票+類型）"))
+        KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, T(lang, "Closed transactions", "已完成交易"))
     with k5:
         # Split fee/tax
         total_fee = float(f_sorted["total_fee"].sum())
@@ -1073,43 +1073,67 @@ try:
     with tab_overview:
         st.subheader(T(lang, "Equity Curve", "資金曲線"))
 
-        scaled_cum, unit_lbl, _ = scale_unit(f_sorted["cum_pnl"], lang)
+        # Aggregate to Daily Close for a smooth "Pro" curve
+        daily_agg = f_sorted.groupby("date", as_index=False)["realized_pnl"].sum()
+        daily_agg["cum_pnl"] = daily_agg["realized_pnl"].cumsum()
+
+        scaled_cum, unit_lbl, _ = scale_unit(daily_agg["cum_pnl"], lang)
+
+        # Dynamic color based on final result? or just a pro theme color.
+        # Let's use a premium blue-ish theme.
+        curve_color = "#3B82F6" 
+        fill_color = "rgba(59, 130, 246, 0.15)"
 
         fig_eq = go.Figure()
         fig_eq.add_trace(
             go.Scatter(
-                x=f_sorted["date"],
+                x=daily_agg["date"],
                 y=scaled_cum,
                 mode="lines",
                 name=T(lang, "Cumulative P/L", "累計損益"),
-                line=dict(width=3),
+                line=dict(width=3, color=curve_color),
+                fill="tozeroy",
+                fillcolor=fill_color,
             )
         )
+        
+        # Calculate range padding
+        if not daily_agg.empty:
+            min_date = daily_agg["date"].min()
+            max_date = daily_agg["date"].max()
+            # Add small padding (e.g. 5%) or tight? User asked for tight left.
+            # We can set range explicitly.
+            range_x = [min_date, max_date]
+        else:
+            range_x = None
 
         fig_eq.update_layout(
-            title=T(lang, "Cumulative Realized P/L", "累計已實現損益"),
+            title=dict(
+                 text=T(lang, "Cumulative Realized P/L (Daily Close)", "累計已實現損益（日結）"),
+                 font=dict(size=18)
+            ),
             xaxis=dict(
                 title="",
-                dtick=7 * 24 * 60 * 60 * 1000,
+                dtick=7 * 24 * 60 * 60 * 1000, # Weekly ticks
                 tickformat="%m/%d",
                 showgrid=True,
-                gridcolor="rgba(255,255,255,0.10)",
+                gridcolor="rgba(255,255,255,0.08)",
                 gridwidth=1,
-                minor=dict(
-                    dtick=24 * 60 * 60 * 1000,
-                    showgrid=True,
-                    gridcolor="rgba(255,255,255,0.04)",
-                    gridwidth=1,
-                ),
+                range=range_x, # Tight range
             ),
-            yaxis_title=f"{T(lang, 'P/L', '損益')} ({unit_lbl})",
+            yaxis=dict(
+                title=f"{T(lang, 'P/L', '損益')} ({unit_lbl})",
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.08)",
+            ),
             height=460,
-            margin=dict(l=10, r=10, t=60, b=10),
+            margin=dict(l=10, r=20, t=60, b=10),
             legend_title_text="",
+            hovermode="x unified",
         )
 
-        fig_eq = add_month_major_lines(fig_eq, f_sorted["date"])
-        add_zero_line(fig_eq, axis="y", color="#A9B1BD", width=3, dash="dash")
+        # fig_eq = add_month_major_lines(fig_eq, daily_agg["date"]) # Optional, cleaning up to look simpler
+        add_zero_line(fig_eq, axis="y", color="#A9B1BD", width=2, dash="dash")
         st.plotly_chart(fig_eq, width="stretch")
 
         hr()
@@ -1330,7 +1354,7 @@ try:
 
     # -------------------- Trades --------------------
     with tab_trades:
-        st.subheader(T(lang, "Realized Trades (Aggregated)", "已實現交易（已彙總）"))
+        st.subheader(T(lang, "Trade History", "交易紀錄"))
 
         view = f_view.sort_values(["date", "stock", "type_display"], ascending=[False, True, True]).copy()
         view["date"] = pd.to_datetime(view["date"]).dt.strftime("%Y-%m-%d")
