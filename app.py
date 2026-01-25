@@ -1570,7 +1570,8 @@ try:
                  "TAIEX": "^TWII",
                  "Dow Jones": "^DJI",
                  "S&P 500": "^GSPC",
-                 "PHLX Semi": "^SOX"
+                 "PHLX Semi": "^SOX",
+                 "NASDAQ": "^IXIC"
              }
              
              # UI Control 
@@ -1599,7 +1600,8 @@ try:
                  "TAIEX": "rgba(150,150,150,0.5)",
                  "Dow Jones": "rgba(50, 100, 200, 0.5)",
                  "S&P 500": "rgba(200, 150, 50, 0.5)",
-                 "PHLX Semi": "rgba(100, 200, 150, 0.5)"
+                 "PHLX Semi": "rgba(100, 200, 150, 0.5)",
+                 "NASDAQ": "rgba(180, 50, 200, 0.5)"
              }
 
              for m_name in sel_indices:
