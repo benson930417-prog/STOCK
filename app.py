@@ -1413,7 +1413,9 @@ try:
         daily_agg = f_sorted.groupby("date", as_index=False)["realized_pnl"].sum()
         daily_agg["cum_pnl"] = daily_agg["realized_pnl"].cumsum()
 
-        scaled_cum, unit_lbl, _ = scale_unit(daily_agg["cum_pnl"], lang, CURRENCY_RATE)
+        daily_agg["cum_pnl"] = daily_agg["realized_pnl"].cumsum()
+
+        scaled_cum, unit_lbl, unit_div = scale_unit(daily_agg["cum_pnl"], lang, CURRENCY_RATE)
 
         # Dynamic color based on final result? or just a pro theme color.
         # User wants split coloring based on 0 line.
@@ -1557,9 +1559,47 @@ try:
                                  line=dict(color='rgba(150,150,150,0.5)', width=1.5, dash='dash'),
                                  yaxis="y2",
                                  hovertemplate="TAIEX: %{y:.2f}%<extra></extra>"
-                             )
                          )
-         
+                     )
+
+        # Calculates Range for Synchronization of Axes
+        # We need Yaxis(Money) and Yaxis2(%) to be perfectly aligned.
+        # factor maps % -> Money Value (on axis)
+        # Formula: Money = Pct * (Cap * Rate / 100 / Divisor)
+        # Note: INVESTMENT_TWD is base capital in TWD.
+        # CURRENCY_RATE converts TWD -> DispCurr.
+        # unit_div scales DispCurr -> AxisValue.
+        
+        y_max_pct = 0.0
+        y_min_pct = 0.0
+        
+        # User P/L bounds
+        if not daily_agg.empty and INVESTMENT_TWD:
+             user_pcts = (daily_agg["cum_pnl"] / float(INVESTMENT_TWD)) * 100.0
+             y_max_pct = max(y_max_pct, user_pcts.max())
+             y_min_pct = min(y_min_pct, user_pcts.min())
+             
+        # TWSE bounds (if present)
+        if 'twse_rel' in locals() and not twse_rel.empty:
+             y_max_pct = max(y_max_pct, twse_rel["pct"].max())
+             y_min_pct = min(y_min_pct, twse_rel["pct"].min())
+             
+        # Add padding (e.g. 10%)
+        rng = y_max_pct - y_min_pct
+        if rng == 0: rng = 10.0 # default buffer if flat
+        
+        # Ensure 0 is visible? Plotly usually does.
+        # But for padding:
+        pad = rng * 0.1
+        final_max_pct = y_max_pct + pad
+        final_min_pct = y_min_pct - pad
+        
+        # Calculate corresponding Money Range
+        factor = (float(INVESTMENT_TWD) * CURRENCY_RATE) / (100.0 * unit_div) if (INVESTMENT_TWD and unit_div) else 0.0
+        
+        final_max_val = final_max_pct * factor
+        final_min_val = final_min_pct * factor
+        
         # Calculate range padding
         if not daily_agg.empty:
             min_date = daily_agg["date"].min()
@@ -1588,6 +1628,7 @@ try:
                  title=f"{T(lang, 'P/L', '損益')} ({unit_lbl})",
                  showgrid=True,
                  gridcolor="rgba(255,255,255,0.08)",
+                 range=[final_min_val, final_max_val]
              ),
              yaxis2=dict(
                  title=T(lang, "Return %", "報酬率 %"),
@@ -1597,6 +1638,7 @@ try:
                  tickformat=".1f",
                  ticksuffix="%",
                  title_standoff=10,
+                 range=[final_min_pct, final_max_pct]
              ),
              height=460,
              margin=dict(l=10, r=20, t=60, b=10),
