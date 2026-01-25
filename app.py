@@ -999,7 +999,7 @@ try:
     f_view["day"] = pd.to_datetime(f_view["date"]).dt.floor("D")
 
     f_view = (
-        f_view.groupby(["day", "stock", "type_display"], as_index=False)
+        f_view.groupby(["day", "stock", "type_display", "type_key"], as_index=False)
         .agg(
             sell_qty=("sell_qty", "sum"),
             allocated_cost=("allocated_cost", "sum"),
@@ -1043,19 +1043,29 @@ try:
     st.markdown(f"### {T(lang, 'Key Metrics', '關鍵指標')}")
     k1, k2, k3, k4, k5 = st.columns([1, 1, 1, 1, 1], gap="medium")
 
+    # Sub-win rates
+    def calc_wr(df_in):
+        if df_in.empty: return 0.0
+        return (df_in["realized_pnl"] > 0).mean() * 100.0
+
+    wr_day = calc_wr(f_sorted[f_sorted["type_key"] == "day_trade"])
+    wr_cash = calc_wr(f_sorted[f_sorted["type_key"] == "cash"])
+
     with k1:
-        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl), total_color, T(lang, "Realized (filtered)", "已實現（依篩選範圍）"))
+        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl), total_color, "")
     with k2:
-        KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, T(lang, f"Base capital {INVESTMENT_TWD:,.0f}", f"基準資金 {INVESTMENT_TWD:,.0f}"))
+        KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, "")
     with k3:
-        KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, T(lang, "Based on closed transactions", "基於已完成交易"))
+        sub_wr = f"{T(lang, 'DT', '當沖')}: {wr_day:.0f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.0f}%"
+        KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, sub_wr)
     with k4:
-        KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, T(lang, "Closed transactions", "已完成交易"))
+        KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, "")
     with k5:
         # Split fee/tax
         total_fee = float(f_sorted["total_fee"].sum())
         total_tax = float(f_sorted["total_tax"].sum())
-        sub_lbl = f"{T(lang, 'Fee', '手續費')}:{total_fee:,.0f}  {T(lang, 'Tax', '稅')}:{total_tax:,.0f}"
+        # Simplified sub label
+        sub_lbl = f"{total_fee:,.0f} / {total_tax:,.0f}"
         KPI_CARD(T(lang, "Trade volume", "交易量"), f"{trade_volume:,.0f}", NEUTRAL_BLUE, sub_lbl)
 
     hr()
