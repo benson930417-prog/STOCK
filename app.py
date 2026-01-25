@@ -180,6 +180,15 @@ def fmt_signed_pct(x) -> str:
 
 
 def scale_unit(values: pd.Series, lang: str, rate: float = 1.0):
+    # Currency conversion first
+    vals = values * rate
+    
+    # If using Euro (implied by rate != 1.0), prioritize Euro formatting
+    # Or strict check? For now rate != 1.0 is the flag.
+    if rate != 1.0:
+         # Euro mode: Use k/M or just plain EUR
+         return vals, "€", 1.0
+
     max_abs = float(np.nanmax(np.abs(values.to_numpy()))) if len(values) else 0.0
     if lang == "中文":
         if max_abs >= 1e6:
@@ -190,15 +199,9 @@ def scale_unit(values: pd.Series, lang: str, rate: float = 1.0):
             return values / 1e3, "千", 1e3
         return values, "元", 1.0
     else:
-        # Currency conversion
-        vals = values * rate
-        
+        # TWD English mode
         # User requested FULL NUMBER for Euro, no K/M scaling.
-        if rate != 1.0:
-             return vals, "€", 1.0
-        
-        # Fallback to TWD or other logic if rate == 1.0 but lang=EN? 
-        # For now assume rate==1.0 is TWD-like
+        # But this is now TWD English mode.
         max_abs_conv = float(np.nanmax(np.abs(vals.to_numpy()))) if len(vals) else 0.0
         
         if max_abs_conv >= 1e6:
@@ -1018,6 +1021,12 @@ try:
             index=1,
             horizontal=True,
         )
+        currency_opt = st.radio(
+            "Currency / 幣別",
+            ["TWD (NTD)", "EUR (€)"],
+            index=0,
+            horizontal=True,
+        )
 
 
     # Gate everything else behind VIEW password
@@ -1028,11 +1037,11 @@ try:
         sidebar_recent_update(lang)
         hr()
 
-        # st.markdown(f"## {T(lang,'Theme','主題')}")
-        # tw_colors = st.toggle(
-        #     T(lang, "Taiwan colors (red=profit, green=loss)", "台股顏色（紅=賺、綠=虧）"),
-        #     value=True,
-        # )
+        st.markdown(f"## {T(lang,'Theme','主題')}")
+        tw_colors = st.toggle(
+            T(lang, "Taiwan colors (red=profit, green=loss)", "台股顏色（紅=賺、綠=虧）"),
+            value=True,
+        )
 
         hr()
         st.markdown(f"## {T(lang,'Admin','管理者')}")
@@ -1081,7 +1090,9 @@ try:
 
     # Colors
     # Colors (Auto based on Language)
-    if lang == "中文":
+    # Colors
+    # Colors (Controlled by toggle)
+    if tw_colors:
         # Taiwan: Red = Profit, Green = Loss
         PROFIT_COLOR = "#E74C3C" 
         LOSS_COLOR = "#2ECC71"
@@ -1097,7 +1108,11 @@ try:
     CURRENCY_RATE = 1.0
     CURRENCY_SYMBOL = ""
     
-    if lang != "中文":
+    curr_code = "TWD"
+    if "EUR" in currency_opt:
+        curr_code = "EUR"
+
+    if curr_code == "EUR":
         # Try to get EUR rate
         rate_found = get_twd_to_eur_rate()
         if rate_found:
@@ -1111,6 +1126,8 @@ try:
             CURRENCY_RATE = 1.0
             CURRENCY_SYMBOL = ""
     else:
+        CURRENCY_RATE = 1.0
+        CURRENCY_SYMBOL = ""
         # Reset toast flag if switching back to ZH
         if "currency_fail_toast" in st.session_state:
             del st.session_state["currency_fail_toast"]
