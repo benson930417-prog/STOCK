@@ -950,10 +950,12 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
              start_s, end_s = l_str, r_str
         
         # Add unit to the label
+        # Use ' to ' as separator to distinguish from negative sign
+        sep = " to "
         if unit_txt == "€":
-            label = f"€{start_s}~{end_s}"
+            label = f"€{start_s}{sep}{end_s}"
         else:
-            label = f"{start_s}~{end_s}{unit_txt}"
+            label = f"{start_s}{sep}{end_s}{unit_txt}"
             
         bin_labels.append(label)
 
