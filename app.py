@@ -758,7 +758,7 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
         low = str(col).lower()
         if low in ["realized p/l", "total p/l", "month p/l"] or col in ["已實現損益", "總損益", "損益", "月損益"]:
             styler = styler.applymap(color_pl, subset=[col])
-        if low in ["realized %", "total p/l %", "month %"] or col in ["已實現%", "總損益%", "報酬%", "月報酬%"]:
+        if low in ["realized %", "total p/l %", "month %", "p/l %"] or col in ["已實現%", "總損益%", "報酬%", "月報酬%", "損益%"]:
             styler = styler.applymap(color_pct, subset=[col])
         if low in ["win rate %", "win rate"] or col in ["勝率%", "勝率"]:
             styler = styler.applymap(color_winrate, subset=[col])
