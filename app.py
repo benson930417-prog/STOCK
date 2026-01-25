@@ -162,6 +162,14 @@ def fmt_signed_money(x, rate: float = 1.0, currency: str = "") -> str:
         return str(x)
 
 
+def fmt_money(x, rate: float = 1.0, currency: str = "") -> str:
+    try:
+        v = float(x) * rate
+        return f"{currency}{v:,.0f}"
+    except Exception:
+        return str(x)
+
+
 def fmt_signed_pct(x) -> str:
     try:
         v = float(x)
@@ -1121,12 +1129,16 @@ try:
         sub_tr = f"{T(lang, 'Day Trade', '當沖')}: {n_day}  {T(lang, 'Cash', '現股')}: {n_cash}"
         KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, sub_tr)
     with k5:
-        # Split fee/tax
+        # Split fee/tax (Converted)
         total_fee = float(f_sorted["total_fee"].sum())
         total_tax = float(f_sorted["total_tax"].sum())
+        
         # Sub label with full text
-        sub_lbl = f"{T(lang, 'Fee', '手續費')}: {total_fee:,.0f}  {T(lang, 'Tax', '稅')}: {total_tax:,.0f}"
-        KPI_CARD(T(lang, "Trade volume", "交易量"), f"{trade_volume:,.0f}", NEUTRAL_BLUE, sub_lbl)
+        fee_str = fmt_money(total_fee, CURRENCY_RATE, CURRENCY_SYMBOL)
+        tax_str = fmt_money(total_tax, CURRENCY_RATE, CURRENCY_SYMBOL)
+        
+        sub_lbl = f"{T(lang, 'Fee', '手續費')}: {fee_str}  {T(lang, 'Tax', '稅')}: {tax_str}"
+        KPI_CARD(T(lang, "Trade volume", "交易量"), fmt_money(trade_volume, 1.0, CURRENCY_SYMBOL), NEUTRAL_BLUE, sub_lbl)
 
     hr()
 
@@ -1390,7 +1402,7 @@ try:
                     T(lang, "Month %", "月報酬%"): "{:.2f}",
                     T(lang, "Trades", "筆數"): "{:.0f}",
                     T(lang, "Win rate %", "勝率%"): "{:.1f}",
-                    T(lang, "Trade volume", "交易量"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Trade volume", "交易量"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                 }
             ),
             width="stretch",
@@ -1470,10 +1482,10 @@ try:
         st.dataframe(
             make_trade_styler(df_show, PROFIT_COLOR, LOSS_COLOR).format(
                 {
-                    T(lang, "Avg Buy Price", "買入均價"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
-                    T(lang, "Total Buy Cost", "買入總額"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
-                    T(lang, "Avg Sell Price", "賣出均價"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
-                    T(lang, "Total Sell Proceeds", "賣出總額"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Avg Buy Price", "買入均價"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Total Buy Cost", "買入總額"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Avg Sell Price", "賣出均價"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Total Sell Proceeds", "賣出總額"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                     T(lang, "Realized P/L", "已實現損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                     T(lang, "Realized %", "已實現%"): "{:.2f}",
                 }
