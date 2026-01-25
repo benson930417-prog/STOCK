@@ -195,16 +195,20 @@ def scale_unit(values: pd.Series, lang: str, rate: float = 1.0):
     else:
         # Currency conversion
         vals = values * rate
+        
+        # User requested FULL NUMBER for Euro, no K/M scaling.
+        if rate != 1.0:
+             return vals, "€", 1.0
+        
+        # Fallback to TWD or other logic if rate == 1.0 but lang=EN? 
+        # For now assume rate==1.0 is TWD-like
         max_abs_conv = float(np.nanmax(np.abs(vals.to_numpy()))) if len(vals) else 0.0
         
-        # If showing EUR (rate != 1.0)
-        unit = "EUR" if rate != 1.0 else "TWD"
-        
         if max_abs_conv >= 1e6:
-            return vals / 1e6, f"M {unit}", 1e6
+            return vals / 1e6, "M TWD", 1e6
         if max_abs_conv >= 1e3:
-            return vals / 1e3, f"K {unit}", 1e3
-        return vals, unit, 1.0
+            return vals / 1e3, "K TWD", 1e3
+        return vals, "TWD", 1.0
 
 
 def add_zero_line(fig, axis="y", color="#A9B1BD", width=3, dash="dash"):
@@ -808,7 +812,7 @@ def add_month_major_lines(fig: go.Figure, dates: pd.Series):
 
 
 
-def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str = "#E74C3C", loss_color: str = "#2ECC71"):
+def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_color: str, rate: float = 1.0):
     """
     Histogram of P/L distribution.
     Expects df with column 'realized_pnl'.
@@ -817,8 +821,8 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str = "#E74
         return go.Figure()
 
     # Scale units first
-    # unit_val is the series of scaled values, unit_txt is the label (e.g., '萬')
-    scaled_vals, unit_txt, _ = scale_unit(df["realized_pnl"], lang)
+    # unit_val is the series of scaled values, unit_txt is the label (e.g., '萬' or '€')
+    scaled_vals, unit_txt, _ = scale_unit(df["realized_pnl"], lang, rate)
     vals = scaled_vals.to_numpy()
 
     # Pre-calculate histogram bins with 0 alignment
@@ -1254,7 +1258,7 @@ try:
         
         # New Visualizations
         st.subheader(T(lang, "P/L Distribution", "損益分佈"))
-        fig_hist = plot_pnl_distribution(f, lang, PROFIT_COLOR, LOSS_COLOR)
+        fig_hist = plot_pnl_distribution(f, lang, PROFIT_COLOR, LOSS_COLOR, CURRENCY_RATE)
         st.plotly_chart(fig_hist, width="stretch")
 
         hr()
