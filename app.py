@@ -1050,6 +1050,12 @@ try:
             index=1,
             horizontal=True,
         )
+    # Gate everything else behind VIEW password
+    require_view_password_centered(lang)
+
+    # Sidebar post-auth: recent update + everything else
+    with st.sidebar:
+        st.markdown(f"## {T(lang, 'Preferences', '設定')}")
         currency_opt = st.radio(
             "Currency / 幣別",
             ["TWD (NTD)", "EUR (€)"],
@@ -1073,7 +1079,6 @@ try:
                 
                 st.caption(
                     f"1 EUR ≈ {eur_to_twd:.2f} TWD"
-                    f"\n\n{T(lang, 'Updated', '更新於')}: {date_str}"
                 )
         
         st.markdown(f"**{T(lang,'Theme','主題')}**")
@@ -1081,13 +1086,8 @@ try:
             T(lang, "Taiwan colors (red=profit, green=loss)", "台股顏色（紅=賺、綠=虧）"),
             value=True,
         )
+        hr()
 
-
-    # Gate everything else behind VIEW password
-    require_view_password_centered(lang)
-
-    # Sidebar post-auth: recent update + everything else
-    with st.sidebar:
         sidebar_recent_update(lang)
         hr()
 
