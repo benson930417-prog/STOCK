@@ -1302,10 +1302,12 @@ try:
     n_cash = len(f_sorted[f_sorted["type_key"] == "cash"])
 
     with k1:
-        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), total_color, "&nbsp;")
+        # User request: include base capital on total PL kpi
+        base_cap_converted = float(INVESTMENT_TWD) * CURRENCY_RATE
+        base_cap_str = fmt_money(base_cap_converted, 1.0, CURRENCY_SYMBOL)
+        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), total_color, f"Base: {base_cap_str}")
     with k2:
         # Percentage is invariant to currency
-        base_cap_converted = float(INVESTMENT_TWD) * CURRENCY_RATE
         KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, "&nbsp;")
     with k3:
         sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.1f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.1f}%"
@@ -1403,34 +1405,61 @@ try:
         
         # Add marker/label for the latest point
         if not daily_agg.empty:
-            last_idx = daily_agg.index[-1]
-            last_date = daily_agg["date"].iloc[-1]
-            last_val = scaled_cum.iloc[-1]
-            # Match strict format +€1000 where applicable
-            # unit_lbl is "€" or "M TWD" etc.
-            if "€" in unit_lbl:
-                 s_last = "+" if last_val > 0 else "-" if last_val < 0 else ""
-                 last_txt = f"{s_last}€{abs(last_val):,.2f}"
-            else:
-                 last_txt = f"{last_val:,.2f} {unit_lbl}"
-            
-            # Determine color for the marker based on final value
-            final_color = PROFIT_COLOR if last_val >= 0 else LOSS_COLOR
+             last_idx = daily_agg.index[-1]
+             last_date = daily_agg["date"].iloc[-1]
+             last_val = scaled_cum.iloc[-1]
+             # Match strict format +€1000 where applicable
+             # unit_lbl is "€" or "M TWD" etc.
+             if "€" in unit_lbl:
+                  s_last = "+" if last_val > 0 else "-" if last_val < 0 else ""
+                  last_txt = f"{s_last}€{abs(last_val):,.2f}"
+             else:
+                  last_txt = f"{last_val:,.2f} {unit_lbl}"
+             
+             # Determine color for the marker based on final value
+             final_color = PROFIT_COLOR if last_val >= 0 else LOSS_COLOR
+ 
+             fig_eq.add_trace(
+                 go.Scatter(
+                     x=[last_date],
+                     y=[last_val],
+                     mode="markers+text",
+                     text=[last_txt],
+                     textposition="top left",
+                     textfont=dict(size=11, color="#EAEAEA"),
+                     marker=dict(size=6, color=final_color, line=dict(width=1, color="white")),
+                     showlegend=False,
+                     hoverinfo="skip",
+                 )
+             )
 
-            fig_eq.add_trace(
-                go.Scatter(
-                    x=[last_date],
-                    y=[last_val],
-                    mode="markers+text",
-                    text=[last_txt],
-                    textposition="top left",
-                    textfont=dict(size=11, color="#EAEAEA"),
-                    marker=dict(size=6, color=final_color, line=dict(width=1, color="white")),
-                    showlegend=False,
-                    hoverinfo="skip",
-                )
-            )
+        # User request: add a right y axis as reletive % to base capital
+        # We need a trace that maps to yaxis2.
+        # We can use the same x values, but y values will be % of base capital.
+        # scaled_cum is in currency units (maybe scaled). daily_agg["cum_pnl"] is raw value.
+        # Base capital is INVESTMENT_TWD (raw TWD).
+        # So pct = (daily_agg["cum_pnl"] / INVESTMENT_TWD) * 100
         
+        if INVESTMENT_TWD and not daily_agg.empty:
+             pct_vals = (daily_agg["cum_pnl"] / float(INVESTMENT_TWD)) * 100.0
+             
+             # Add a invisible trace to force axis scaling
+             fig_eq.add_trace(
+                 go.Scatter(
+                     x=dates_aug, # Use augmented dates for alignment? Or just daily_agg['date']?
+                     # dates_aug includes interpolated points. calculating pct for them is safer to match shape
+                     # But getting the raw P/L for aug dates is complex (we only have 'vals' which are scaled).
+                     # Simpler: just use daily_agg dates for this invisible trace, or rely on Plotly's multiple axes
+                     # If we use daily_agg, the x-axis range is same.
+                     y=pct_vals,
+                     mode="lines",
+                     line=dict(width=0), # invisible
+                     showlegend=False,
+                     hoverinfo="skip",
+                     yaxis="y2"
+                 )
+             )
+         
         # Calculate range padding
         if not daily_agg.empty:
             min_date = daily_agg["date"].min()
@@ -1440,30 +1469,39 @@ try:
             range_x = [min_date, max_date]
         else:
             range_x = None
-
+ 
         fig_eq.update_layout(
-            title=dict(
-                 text=T(lang, "Cumulative Realized P/L (Daily Close)", "累計已實現損益（日結）"),
-                 font=dict(size=18)
-            ),
-            xaxis=dict(
-                title="",
-                dtick=7 * 24 * 60 * 60 * 1000, # Weekly ticks
-                tickformat="%b %d" if lang != "中文" else "%m/%d",
-                showgrid=True,
-                gridcolor="rgba(255,255,255,0.08)",
-                gridwidth=1,
-                range=range_x, # Tight range
-            ),
-            yaxis=dict(
-                title=f"{T(lang, 'P/L', '損益')} ({unit_lbl})",
-                showgrid=True,
-                gridcolor="rgba(255,255,255,0.08)",
-            ),
-            height=460,
-            margin=dict(l=10, r=20, t=60, b=10),
-            legend_title_text="",
-            hovermode="x unified",
+             title=dict(
+                  text=T(lang, "Cumulative Realized P/L (Daily Close)", "累計已實現損益（日結）"),
+                  font=dict(size=18)
+             ),
+             xaxis=dict(
+                 title="",
+                 dtick=7 * 24 * 60 * 60 * 1000, # Weekly ticks
+                 tickformat="%b %d" if lang != "中文" else "%m/%d",
+                 showgrid=True,
+                 gridcolor="rgba(255,255,255,0.08)",
+                 gridwidth=1,
+                 range=range_x, # Tight range
+             ),
+             yaxis=dict(
+                 title=f"{T(lang, 'P/L', '損益')} ({unit_lbl})",
+                 showgrid=True,
+                 gridcolor="rgba(255,255,255,0.08)",
+             ),
+             yaxis2=dict(
+                 title=T(lang, "Return %", "報酬率 %"),
+                 overlaying="y",
+                 side="right",
+                 showgrid=False,
+                 tickformat=".1f",
+                 ticksuffix="%",
+                 title_standoff=10,
+             ),
+             height=460,
+             margin=dict(l=10, r=20, t=60, b=10),
+             legend_title_text="",
+             hovermode="x unified",
         )
 
         # fig_eq = add_month_major_lines(fig_eq, daily_agg["date"]) # Optional, cleaning up to look simpler
