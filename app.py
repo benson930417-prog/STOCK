@@ -1017,6 +1017,9 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         )
     )
     
+    # Allow text to overflow
+    fig.update_traces(cliponaxis=False)
+
     # Calculate approximate bar width
     if len(bin_edges) > 1:
         # Avoid forcing manual width if possible, let plotly handle or use gaps
@@ -1031,9 +1034,38 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         yaxis_title=T(lang, "Count", "筆數"),
         height=380,
         bargap=0.1,
-        margin=dict(l=10, r=10, t=40, b=10),
+        margin=dict(l=10, r=10, t=60, b=10), # Increased top margin to prevent title/label clash
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.08)",
+            # Add padding to top of y-axis to fit labels
+            # range=[0, max(counts)*1.15] if len(counts) else None
+        )
     )
-    add_zero_line(fig, axis="x", color="#A9B1BD", width=2, dash="dash")
+    
+    # Fix Zero Line: Find index where edges cross 0
+    # bin_edges has size len(bin_labels) + 1.
+    # The split is at edge value 0.
+    zero_idx = -1
+    for i, e in enumerate(bin_edges):
+        if e == 0:
+            zero_idx = i
+            break
+            
+    if zero_idx != -1:
+         # Plotly categorical axis indices are 0, 1, 2... for bins.
+         # Edge i=0 is left of bin 0. Edge i=1 is right of bin 0 / left of bin 1.
+         # So edge index 'zero_idx' corresponds to position 'zero_idx - 0.5'
+         # Wait, let's verify:
+         # Bins: [A, B, C] -> indices 0, 1, 2.
+         # Edges: [e0, e1, e2, e3]
+         # Bin 0 is e0-e1. Bin 1 is e1-e2.
+         # If e1 is 0, then the split is between Bin 0 and Bin 1.
+         # The visual coordinate for center of Bin 0 is 0. Center of Bin 1 is 1.
+         # The boundary is 0.5.
+         # So position = zero_idx - 0.5.
+         fig.add_vline(x=zero_idx - 0.5, line_width=2, line_dash="dash", line_color="#A9B1BD")
+    
     return fig
 
 
@@ -1432,6 +1464,9 @@ try:
                      hoverinfo="skip",
                  )
              )
+        
+        # Allow labels to overflow
+        fig_eq.update_traces(cliponaxis=False)
 
         # User request: add a right y axis as reletive % to base capital
         # We need a trace that maps to yaxis2.
@@ -1545,7 +1580,8 @@ try:
             xaxis_title=f"{T(lang, 'P/L', '損益')} ({unit_lbl2})",
             yaxis_title="",
             height=520,
-            margin=dict(l=10, r=10, t=60, b=10),
+            # Increase right margin for labels
+            margin=dict(l=10, r=60, t=60, b=10),
             legend_title_text="",
         )
         add_zero_line(fig_bar, axis="x", color="#A9B1BD", width=3, dash="dash")
@@ -1719,9 +1755,10 @@ try:
                 textfont=dict(size=12),
             )
         )
+        fig_m.update_traces(cliponaxis=False)
         fig_m.update_layout(
             height=360,
-            margin=dict(l=10, r=10, t=40, b=10),
+            margin=dict(l=10, r=10, t=60, b=10), # Increased top margin to 60
             xaxis_title="",
             yaxis_title=f"{T(lang, 'Cumulative', '累計')} ({unit_lbl_m})",
             xaxis=dict(
