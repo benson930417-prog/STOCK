@@ -1498,7 +1498,7 @@ try:
                 y=scaled_cum,
                 mode="markers",
                 name=T(lang, "Cumulative P/L", "累計損益"),
-                marker=dict(size=4, color=marker_colors),
+                marker=dict(size=6, color=marker_colors, line=dict(width=1, color="white")),
                 hovertemplate="%{text}<extra></extra>",
                 text=hover_texts,
                 showlegend=False,
