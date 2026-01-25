@@ -209,7 +209,7 @@ def KPI_CARD(title: str, value: str, color_hex: str, subtitle: str = ""):
 ">
   <div style="font-size: 12px; opacity: 0.95; letter-spacing: 0.2px;">{title}</div>
   <div style="font-size: 26px; font-weight: 700; margin-top: 6px; line-height: 1.05;">{value}</div>
-  <div style="font-size: 12px; opacity: 0.85; margin-top: 4px;">{subtitle}</div>
+  <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">{subtitle}</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -1056,7 +1056,7 @@ try:
     with k2:
         KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, "")
     with k3:
-        sub_wr = f"{T(lang, 'DT', '當沖')}: {wr_day:.0f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.0f}%"
+        sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.0f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.0f}%"
         KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, sub_wr)
     with k4:
         KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, "")
@@ -1064,8 +1064,8 @@ try:
         # Split fee/tax
         total_fee = float(f_sorted["total_fee"].sum())
         total_tax = float(f_sorted["total_tax"].sum())
-        # Simplified sub label
-        sub_lbl = f"{total_fee:,.0f} / {total_tax:,.0f}"
+        # Sub label with full text
+        sub_lbl = f"{T(lang, 'Fee', '手續費')}: {total_fee:,.0f}  {T(lang, 'Tax', '稅')}: {total_tax:,.0f}"
         KPI_CARD(T(lang, "Trade volume", "交易量"), f"{trade_volume:,.0f}", NEUTRAL_BLUE, sub_lbl)
 
     hr()
