@@ -896,11 +896,11 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
 
         # FORCE STEP SIZE based on user request / unit
         if unit_txt == "萬":
-            # User wants step of 5000 TWD -> 0.5 萬
-            fd_width = 0.5
+            # User wants step of 50000 TWD -> 5.0 萬
+            fd_width = 5.0
         elif unit_txt == "€":
-            # User wants step of 100 EUR
-            fd_width = 100.0
+            # User wants step of 1000 EUR
+            fd_width = 1000.0
 
         # Enforce a minimum width to prevent needle-like bars
         min_w = 0.1 if unit_txt == "萬" else 1.0
@@ -1251,8 +1251,10 @@ try:
         vals = df_chart["val"].to_numpy()
         dates_aug = df_chart["date"]
         
-        y_pos = np.where(vals >= 0, vals, 0)
-        y_neg = np.where(vals < 0, vals, 0)
+        # Use np.nan to hide the line when it's "inactive" (on the other side of zero)
+        # This prevents the "red line on zero" artifact
+        y_pos = np.where(vals >= 0, vals, np.nan)
+        y_neg = np.where(vals <= 0, vals, np.nan)
         
         profit_fill = hex_to_rgba(PROFIT_COLOR, 0.15)
         loss_fill = hex_to_rgba(LOSS_COLOR, 0.15)
