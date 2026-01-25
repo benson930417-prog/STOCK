@@ -1115,7 +1115,7 @@ try:
             xaxis=dict(
                 title="",
                 dtick=7 * 24 * 60 * 60 * 1000, # Weekly ticks
-                tickformat="%m/%d",
+                tickformat="%b %d" if lang != "中文" else "%m/%d",
                 showgrid=True,
                 gridcolor="rgba(255,255,255,0.08)",
                 gridwidth=1,
@@ -1348,6 +1348,10 @@ try:
             margin=dict(l=10, r=10, t=40, b=10),
             xaxis_title="",
             yaxis_title=f"{T(lang, 'Cumulative', '累計')} ({unit_lbl_m})",
+            xaxis=dict(
+                type="date",
+                tickformat="%b %Y" if lang != "中文" else "%Y-%m",
+            )
         )
         add_zero_line(fig_m, axis="y", color="#A9B1BD", width=3, dash="dash")
         st.plotly_chart(fig_m, width="stretch")
@@ -1357,7 +1361,12 @@ try:
         st.subheader(T(lang, "Trade History", "交易紀錄"))
 
         view = f_view.sort_values(["date", "stock", "type_display"], ascending=[False, True, True]).copy()
-        view["date"] = pd.to_datetime(view["date"]).dt.strftime("%Y-%m-%d")
+        
+        # Consistent date formatting for table
+        if lang == "中文":
+            view["date"] = pd.to_datetime(view["date"]).dt.strftime("%Y-%m-%d")
+        else:
+            view["date"] = pd.to_datetime(view["date"]).dt.strftime("%b %d, %Y")
 
         view_show = view.rename(
             columns={
