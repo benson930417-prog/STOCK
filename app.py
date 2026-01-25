@@ -707,21 +707,24 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
             x = float(v)
         except Exception:
             return ""
-        return f"color: {profit_color};" if x > 0 else (f"color: {loss_color};" if x < 0 else "")
+        if x == 0: return "color: #FFFFFF;"
+        return f"color: {profit_color};" if x > 0 else f"color: {loss_color};"
 
     def color_pct(v):
         try:
             x = float(str(v).replace("%", ""))
         except Exception:
             return ""
-        return f"color: {profit_color};" if x > 0 else (f"color: {loss_color};" if x < 0 else "")
+        if x == 0: return "color: #FFFFFF;"
+        return f"color: {profit_color};" if x > 0 else f"color: {loss_color};"
 
     def color_winrate(v):
         try:
             x = float(str(v).replace("%", ""))
         except Exception:
             return ""
-        return f"color: {profit_color};" if x >= 50.0 else f"color: {loss_color};"
+        if abs(x - 50.0) < 0.01: return "color: #FFFFFF;"
+        return f"color: {profit_color};" if x > 50.0 else f"color: {loss_color};"
 
     styler = df_show.style
     for col in df_show.columns:
@@ -1097,9 +1100,17 @@ try:
     total_pl_pct = (total_pnl / float(INVESTMENT_TWD) * 100.0) if INVESTMENT_TWD else 0.0
     trade_volume = float(f_sorted["allocated_cost"].sum()) * CURRENCY_RATE
 
-    total_color = PROFIT_COLOR if total_pnl >= 0 else LOSS_COLOR
-    plpct_color = PROFIT_COLOR if total_pl_pct >= 0 else LOSS_COLOR
-    win_color = PROFIT_COLOR if (win_rate * 100.0) >= 50.0 else LOSS_COLOR
+    total_color = PROFIT_COLOR if total_pnl > 0 else (LOSS_COLOR if total_pnl < 0 else "#FFFFFF")
+    plpct_color = PROFIT_COLOR if total_pl_pct > 0 else (LOSS_COLOR if total_pl_pct < 0 else "#FFFFFF")
+    
+    # Win rate: 50% is neutral (White)
+    wr_val = win_rate * 100.0
+    if abs(wr_val - 50.0) < 0.01:
+        win_color = "#FFFFFF"
+    elif wr_val > 50.0:
+        win_color = PROFIT_COLOR
+    else:
+        win_color = LOSS_COLOR
 
     st.markdown(f"### {T(lang, 'Key Metrics', '關鍵指標')}")
     k1, k2, k3, k4, k5 = st.columns([1, 1, 1, 1, 1], gap="medium")
@@ -1339,7 +1350,7 @@ try:
                 make_trade_styler(wtbl, PROFIT_COLOR, LOSS_COLOR).format(
                     {
                         T(lang, "Total P/L", "總損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
-                        T(lang, "P/L % (vs cost)", "損益%（對成本）"): "{:.2f}",
+                        T(lang, "P/L %", "損益%"): "{:+.2f}",
                         T(lang, "Trades", "筆數"): "{:.0f}",
                         T(lang, "Win rate %", "勝率%"): "{:.1f}",
                     }
@@ -1354,7 +1365,7 @@ try:
                 make_trade_styler(ltbl, PROFIT_COLOR, LOSS_COLOR).format(
                     {
                         T(lang, "Total P/L", "總損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
-                        T(lang, "P/L % (vs cost)", "損益%（對成本）"): "{:.2f}",
+                        T(lang, "P/L %", "損益%"): "{:+.2f}",
                         T(lang, "Trades", "筆數"): "{:.0f}",
                         T(lang, "Win rate %", "勝率%"): "{:.1f}",
                     }
@@ -1420,7 +1431,7 @@ try:
                     # T(lang, "Total P/L", "總損益"): "{:,.0f}",
                     # T(lang, "Total P/L %", "總損益%"): "{:.2f}",
                     T(lang, "Month P/L", "月損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
-                    T(lang, "Month %", "月報酬%"): "{:.2f}",
+                    T(lang, "Month %", "月報酬%"): "{:+.2f}",
                     T(lang, "Trades", "筆數"): "{:.0f}",
                     T(lang, "Win rate %", "勝率%"): "{:.1f}",
                     T(lang, "Trade volume", "交易量"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
@@ -1508,7 +1519,7 @@ try:
                     T(lang, "Avg Sell Price", "賣出均價"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                     T(lang, "Total Sell Proceeds", "賣出總額"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                     T(lang, "Realized P/L", "已實現損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
-                    T(lang, "Realized %", "已實現%"): "{:.2f}",
+                    T(lang, "Realized %", "已實現%"): "{:+.2f}",
                 }
             ),
             width="stretch",
