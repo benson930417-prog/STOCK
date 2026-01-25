@@ -1069,7 +1069,7 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         yaxis_title=T(lang, "Count", "筆數"),
         height=380,
         bargap=0.1,
-        margin=dict(l=10, r=10, t=60, b=10), # Increased top margin to prevent title/label clash
+        margin=dict(l=10, r=10, t=80, b=40), # Increased top margin to prevent title/label clash, bottom for x-labels
         yaxis=dict(
             showgrid=True,
             gridcolor="rgba(255,255,255,0.08)",
@@ -1083,7 +1083,7 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
     # The split is at edge value 0.
     zero_idx = -1
     for i, e in enumerate(bin_edges):
-        if e == 0:
+        if abs(e) < 1e-9:
             zero_idx = i
             break
             
@@ -1481,7 +1481,7 @@ try:
              # unit_lbl is "€" or "M TWD" etc.
              if "€" in unit_lbl:
                   s_last = "+" if last_val > 0 else "-" if last_val < 0 else ""
-                  last_txt = f"{s_last}€{abs(last_val):,.2f}"
+                  last_txt = f"{s_last}€{abs(last_val):,.0f}"
              else:
                   last_txt = f"{last_val:,.2f} {unit_lbl}"
              
@@ -1495,8 +1495,8 @@ try:
                      mode="markers+text",
                      text=[last_txt],
                      textposition="top left",
-                     textfont=dict(size=11, color="#EAEAEA"),
-                     marker=dict(size=6, color=final_color, line=dict(width=1, color="white")),
+                     textfont=dict(size=12, color="#EAEAEA"),
+                     marker=dict(size=8, color=final_color, line=dict(width=1, color="white")),
                      showlegend=False,
                      hoverinfo="skip",
                  )
