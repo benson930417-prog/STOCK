@@ -162,10 +162,10 @@ def fmt_signed_money(x, rate: float = 1.0, currency: str = "") -> str:
         return str(x)
 
 
-def fmt_money(x, rate: float = 1.0, currency: str = "") -> str:
+def fmt_money(x, rate: float = 1.0, currency: str = "", decimals: int = 0) -> str:
     try:
         v = float(x) * rate
-        return f"{currency}{v:,.0f}"
+        return f"{currency}{v:,.{decimals}f}"
     except Exception:
         return str(x)
 
@@ -261,6 +261,17 @@ def humanize_ago_from_utc_epoch(epoch_utc: float, lang: str) -> str:
         h = sec // 3600
     d = sec // 86400
     return T(lang, f"{d} days ago", f"{d} 天前")
+
+
+    d = sec // 86400
+    return T(lang, f"{d} days ago", f"{d} 天前")
+
+
+def hex_to_rgba(hex_color: str, alpha: float = 0.2) -> str:
+    hex_color = hex_color.lstrip("#")
+    if len(hex_color) == 3:
+        hex_color = "".join([c * 2 for c in hex_color])
+    return f"rgba({int(hex_color[:2], 16)}, {int(hex_color[2:4], 16)}, {int(hex_color[4:], 16)}, {alpha})"
 
 
 def get_twd_to_eur_rate():
@@ -848,7 +859,12 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
 
         if fd_width == 0:
              # Fallback if IQR is 0 (low variation)
-             fd_width = (v_max - v_min) / 80 if v_max != v_min else 1.0
+             fd_width = (v_max - v_min) / 20 if v_max != v_min else 10.0
+
+        # Enforce a minimum width to prevent needle-like bars
+        min_w = 10.0
+        if fd_width < min_w:
+            fd_width = min_w
 
         # Construct edges: 0 to max, and 0 to min
         # use ceil to cover full range
@@ -885,15 +901,19 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
     
     # Calculate approximate bar width
     if len(bin_edges) > 1:
-        width = (bin_edges[-1] - bin_edges[0]) / len(counts)
-        fig.update_traces(width=width * 0.95)
+        # Avoid forcing manual width if possible, let plotly handle or use gaps
+        # But if we want connected look...
+        pass 
+        # width = (bin_edges[-1] - bin_edges[0]) / len(counts)
+        # fig.update_traces(width=width * 0.95)
 
     fig.update_layout(
         title=T(lang, "P/L Distribution", "損益分佈"),
         xaxis_title=f"{T(lang, 'Realized P/L', '已實現損益')} ({unit_txt})",
         yaxis_title=T(lang, "Count", "筆數"),
+        yaxis_title=T(lang, "Count", "筆數"),
         height=380,
-        bargap=0.05,
+        bargap=0.1,
         margin=dict(l=10, r=10, t=40, b=10),
     )
     add_zero_line(fig, axis="x", color="#A9B1BD", width=2, dash="dash")
@@ -1177,20 +1197,45 @@ try:
         scaled_cum, unit_lbl, _ = scale_unit(daily_agg["cum_pnl"], lang, CURRENCY_RATE)
 
         # Dynamic color based on final result? or just a pro theme color.
-        # Let's use a premium blue-ish theme.
-        curve_color = "#3B82F6" 
-        fill_color = "rgba(59, 130, 246, 0.15)"
+        # User wants split coloring based on 0 line.
+        
+        # Prepare Split Data
+        vals = scaled_cum.to_numpy()
+        y_pos = np.where(vals >= 0, vals, 0)
+        y_neg = np.where(vals < 0, vals, 0)
+        
+        profit_fill = hex_to_rgba(PROFIT_COLOR, 0.15)
+        loss_fill = hex_to_rgba(LOSS_COLOR, 0.15)
 
         fig_eq = go.Figure()
+        
+        # Negative Trace (Loss)
         fig_eq.add_trace(
             go.Scatter(
                 x=daily_agg["date"],
-                y=scaled_cum,
+                y=y_neg,
                 mode="lines",
-                name=T(lang, "Cumulative P/L", "累計損益"),
-                line=dict(width=3, color=curve_color),
+                name=T(lang, "Cumulative Loss", "累計虧損"),
+                line=dict(width=2, color=LOSS_COLOR),
                 fill="tozeroy",
-                fillcolor=fill_color,
+                fillcolor=loss_fill,
+                hoverinfo="x+y",
+                showlegend=False,
+            )
+        )
+
+        # Positive Trace (Profit)
+        fig_eq.add_trace(
+            go.Scatter(
+                x=daily_agg["date"],
+                y=y_pos,
+                mode="lines",
+                name=T(lang, "Cumulative Profit", "累計獲利"),
+                line=dict(width=2, color=PROFIT_COLOR),
+                fill="tozeroy",
+                fillcolor=profit_fill,
+                hoverinfo="x+y",
+                showlegend=False,
             )
         )
         
@@ -1200,6 +1245,9 @@ try:
             last_date = daily_agg["date"].iloc[-1]
             last_val = scaled_cum.iloc[-1]
             last_txt = f"{last_val:,.2f} {unit_lbl}"
+            
+            # Determine color for the marker based on final value
+            final_color = PROFIT_COLOR if last_val >= 0 else LOSS_COLOR
 
             fig_eq.add_trace(
                 go.Scatter(
@@ -1209,7 +1257,7 @@ try:
                     text=[last_txt],
                     textposition="top left",
                     textfont=dict(size=11, color="#EAEAEA"),
-                    marker=dict(size=6, color=curve_color, line=dict(width=1, color="white")),
+                    marker=dict(size=6, color=final_color, line=dict(width=1, color="white")),
                     showlegend=False,
                     hoverinfo="skip",
                 )
@@ -1282,7 +1330,7 @@ try:
             orientation="h",
             color="sign",
             color_discrete_map={profit_label: PROFIT_COLOR, loss_label: LOSS_COLOR},
-            text=sorted_df["_scaled_pnl"].map(lambda v: f"{v:.2f} {unit_lbl2}"),
+            text=sorted_df["_scaled_pnl"].map(lambda v: f"{v:+.2f} {unit_lbl2}"),
         )
         fig_bar.update_traces(textposition="outside", cliponaxis=False)
         fig_bar.update_layout(
@@ -1327,12 +1375,12 @@ try:
                     "stock": T(lang, "Stock", "股票"),
                     "trades": T(lang, "Trades", "筆數"),
                     "total_pnl": T(lang, "Total P/L", "總損益"),
-                    "total_pnl_pct": T(lang, "P/L % (vs cost)", "損益%（對成本）"),
+                    "total_pnl_pct": T(lang, "P/L %", "損益%"),
                     "win_rate_pct": T(lang, "Win rate %", "勝率%"),
                 }
             )
             out[T(lang, "Total P/L", "總損益")] = out[T(lang, "Total P/L", "總損益")].round(0).astype(int)
-            out[T(lang, "P/L % (vs cost)", "損益%（對成本）")] = out[T(lang, "P/L % (vs cost)", "損益%（對成本）")].round(2)
+            out[T(lang, "P/L %", "損益%")] = out[T(lang, "P/L %", "損益%")].round(2)
             out[T(lang, "Win rate %", "勝率%")] = out[T(lang, "Win rate %", "勝率%")].round(1)
             out[T(lang, "Trades", "筆數")] = out[T(lang, "Trades", "筆數")].astype(int)
 
@@ -1340,7 +1388,7 @@ try:
                 [
                     T(lang, "Stock", "股票"),
                     T(lang, "Total P/L", "總損益"),
-                    T(lang, "P/L % (vs cost)", "損益%（對成本）"),
+                    T(lang, "P/L %", "損益%"),
                     T(lang, "Trades", "筆數"),
                     T(lang, "Win rate %", "勝率%"),
                 ]
@@ -1518,9 +1566,9 @@ try:
         st.dataframe(
             make_trade_styler(df_show, PROFIT_COLOR, LOSS_COLOR).format(
                 {
-                    T(lang, "Avg Buy Price", "買入均價"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Avg Buy Price", "買入均價"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL, 2),
                     T(lang, "Total Buy Cost", "買入總額"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
-                    T(lang, "Avg Sell Price", "賣出均價"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Avg Sell Price", "賣出均價"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL, 2),
                     T(lang, "Total Sell Proceeds", "賣出總額"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                     T(lang, "Realized P/L", "已實現損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                     T(lang, "Realized %", "已實現%"): "{:+.2f}",
