@@ -869,8 +869,6 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
 
     # Scale units first
     # unit_val is the series of scaled values, unit_txt is the label (e.g., '萬' or '€')
-    # Scale units first
-    # unit_val is the series of scaled values, unit_txt is the label (e.g., '萬' or '€')
     scaled_vals, unit_txt, divisor = scale_unit(df["realized_pnl"], lang, rate)
     vals = scaled_vals.to_numpy()
 
@@ -885,20 +883,6 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         # Standard: 2 * IQR / n^(1/3). We use 1 * IQR ... essentially double the bins
         fd_width = 1.0 * iqr / (len(vals) ** (1/3)) if iqr > 0 else 0
         
-        # Enforce max step size of 10,000 (scaled)
-        # We need the scale factor used in scale_unit.
-        # scale_unit returns (series, label, divisor) -> divisor is what we divided by.
-        # So 10,000 real = 10,000 / divisor (scaled)
-        _, _, divisor = scale_unit(pd.Series([10000]), lang)
-        max_width = 10000.0 / divisor if divisor else 10000.0
-        
-        if fd_width > max_width:
-             fd_width = max_width
-
-        if fd_width == 0:
-             # Fallback if IQR is 0 (low variation)
-             fd_width = (v_max - v_min) / 20 if v_max != v_min else 10.0
-
         # FORCE STEP SIZE based on user request / unit
         # Use divisor to determine correct step in scaled units.
         # Target: 50000 TWD or 1000 EUR
