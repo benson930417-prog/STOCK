@@ -1016,6 +1016,12 @@ try:
             index=0,
             horizontal=True,
         )
+        
+        st.markdown(f"**{T(lang,'Theme','主題')}**")
+        tw_colors = st.toggle(
+            T(lang, "Taiwan colors (red=profit, green=loss)", "台股顏色（紅=賺、綠=虧）"),
+            value=True,
+        )
 
 
     # Gate everything else behind VIEW password
@@ -1025,12 +1031,6 @@ try:
     with st.sidebar:
         sidebar_recent_update(lang)
         hr()
-
-        st.markdown(f"## {T(lang,'Theme','主題')}")
-        tw_colors = st.toggle(
-            T(lang, "Taiwan colors (red=profit, green=loss)", "台股顏色（紅=賺、綠=虧）"),
-            value=True,
-        )
 
         hr()
         st.markdown(f"## {T(lang,'Admin','管理者')}")
