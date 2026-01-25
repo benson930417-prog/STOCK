@@ -1606,7 +1606,8 @@ try:
              )
              
              # Market Overlays (User Selection)
-             market_opts = {
+             market_keys = ["TAIEX", "Dow Jones", "S&P 500", "PHLX Semi", "NASDAQ"]
+             market_symbols = {
                  "TAIEX": "^TWII",
                  "Dow Jones": "^DJI",
                  "S&P 500": "^GSPC",
@@ -1614,14 +1615,29 @@ try:
                  "NASDAQ": "^IXIC"
              }
              
+             # Chinese Translations
+             MARKET_ZH = {
+                 "TAIEX": "加權指數",
+                 "Dow Jones": "道瓊工業",
+                 "S&P 500": "標普500",
+                 "PHLX Semi": "費城半導體",
+                 "NASDAQ": "那斯達克"
+             }
+             
+             # Helper to format option
+             def fmt_mkt(k):
+                 return f"{k} {MARKET_ZH.get(k, '')}" if lang == "中文" else k
+
              # UI Control 
              try:
                  cols_opts = st.columns([2, 1])
                  with cols_opts[0]:
+                      # Use format_func to display
                       sel_indices = st.multiselect(
                           T(lang, "Market Comparison", "大盤指數對照"),
-                          options=list(market_opts.keys()),
-                          default=["TAIEX"]
+                          options=market_keys,
+                          default=["TAIEX"],
+                          format_func=fmt_mkt
                       )
              except:
                  sel_indices = []
@@ -1644,24 +1660,34 @@ try:
                  "NASDAQ": "rgba(180, 50, 200, 0.5)"
              }
 
-             # Stock Overlays (User Selection)
-             stock_opts = {
+             # Stock Overlays
+             stock_keys = ["2330 TSMC", "0050 Yuanta 50"]
+             stock_symbols = {
                  "2330 TSMC": "2330.TW",
                  "0050 Yuanta 50": "0050.TW"
              }
              
+             STOCK_ZH = {
+                 "2330 TSMC": "2330 台積電",
+                 "0050 Yuanta 50": "0050 元大台灣50"
+             }
+             
+             def fmt_stk(k):
+                 return STOCK_ZH.get(k, k) if lang == "中文" else k
+             
              # UI Control for Stock
              try:
-                  with cols_opts[0]: # Re-use the column container if possible, or creates new line
+                  with cols_opts[0]: 
                        sel_stocks = st.multiselect(
                            T(lang, "Stock Comparison", "個股對照"),
-                           options=list(stock_opts.keys()),
-                           default=[]
+                           options=stock_keys,
+                           default=[],
+                           format_func=fmt_stk
                        )
              except:
                   sel_stocks = []
                   
-             # Extend colors for stocks (Cyan/Magenta style?)
+             # Extend colors for stocks
              stock_colors = {
                  "2330 TSMC": "rgba(0, 255, 255, 0.6)",
                  "0050 Yuanta 50": "rgba(255, 0, 255, 0.6)"
@@ -1669,7 +1695,7 @@ try:
 
              # Process Market Indices
              for m_name in sel_indices:
-                 symbol = market_opts[m_name]
+                 symbol = market_symbols[m_name]
                  m_df = get_market_data(symbol, days=(daily_agg["date"].max() - daily_agg["date"].min()).days + 30)
                  
                  if not m_df.empty:
@@ -1685,15 +1711,17 @@ try:
                              
                              c_line = color_map.get(m_name, "rgba(150,150,150,0.5)")
                              
+                             disp_name = fmt_mkt(m_name)
+                             
                              fig_eq.add_trace(
                                  go.Scatter(
                                      x=m_rel["date"],
                                      y=m_rel["pct"],
                                      mode="lines",
-                                     name=m_name,
+                                     name=disp_name,
                                      line=dict(color=c_line, width=1.5, dash='dash'),
                                      yaxis="y2",
-                                     hovertemplate=f"{m_name}: %{{y:.2f}}%<extra></extra>"
+                                     hovertemplate=f"{disp_name}: %{{y:.2f}}%<extra></extra>"
                                  )
                              )
                              
@@ -1702,8 +1730,8 @@ try:
 
              # Process Stocks
              for s_name in sel_stocks:
-                 symbol = stock_opts[s_name]
-                 # Reuse get_market_data as it fetches generic Yahoo Finance data
+                 symbol = stock_symbols[s_name]
+                 # Reuse get_market_data
                  s_df = get_market_data(symbol, days=(daily_agg["date"].max() - daily_agg["date"].min()).days + 30)
                  
                  if not s_df.empty:
@@ -1719,20 +1747,23 @@ try:
                              
                              c_line = stock_colors.get(s_name, "rgba(200,200,200,0.5)")
                              
+                             disp_name = fmt_stk(s_name)
+                             
                              fig_eq.add_trace(
                                  go.Scatter(
                                      x=s_rel["date"],
                                      y=s_rel["pct"],
                                      mode="lines",
-                                     name=s_name,
+                                     name=disp_name,
                                      line=dict(color=c_line, width=1.5, dash='dot'), 
                                      yaxis="y2",
-                                     hovertemplate=f"{s_name}: %{{y:.2f}}%<extra></extra>"
+                                     hovertemplate=f"{disp_name}: %{{y:.2f}}%<extra></extra>"
                                  )
                              )
                              
                              y_max_pct = max(y_max_pct, s_rel["pct"].max())
                              y_min_pct = min(y_min_pct, s_rel["pct"].min())
+
 
              
         # Add padding (e.g. 10%)
