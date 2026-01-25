@@ -152,11 +152,12 @@ def to_int(x):
     return int(round(to_float(x)))
 
 
-def fmt_signed_money(x) -> str:
+
+def fmt_signed_money(x, rate: float = 1.0, currency: str = "") -> str:
     try:
-        v = float(x)
+        v = float(x) * rate
         sign = "+" if v > 0 else ""
-        return f"{sign}{v:,.0f}"
+        return f"{sign}{currency}{v:,.0f}"
     except Exception:
         return str(x)
 
@@ -170,7 +171,7 @@ def fmt_signed_pct(x) -> str:
         return str(x)
 
 
-def scale_unit(values: pd.Series, lang: str):
+def scale_unit(values: pd.Series, lang: str, rate: float = 1.0):
     max_abs = float(np.nanmax(np.abs(values.to_numpy()))) if len(values) else 0.0
     if lang == "中文":
         if max_abs >= 1e6:
@@ -180,12 +181,22 @@ def scale_unit(values: pd.Series, lang: str):
         if max_abs >= 1e3:
             return values / 1e3, "千", 1e3
         return values, "元", 1.0
-    else:
-        if max_abs >= 1e6:
-            return values / 1e6, "M", 1e6
         if max_abs >= 1e3:
-            return values / 1e3, "K", 1e3
-        return values, "TWD", 1.0
+            return values / 1e3, "千", 1e3
+        return values, "元", 1.0
+    else:
+        # Currency conversion
+        vals = values * rate
+        max_abs_conv = float(np.nanmax(np.abs(vals.to_numpy()))) if len(vals) else 0.0
+        
+        # If showing EUR (rate != 1.0)
+        unit = "EUR" if rate != 1.0 else "TWD"
+        
+        if max_abs_conv >= 1e6:
+            return vals / 1e6, f"M {unit}", 1e6
+        if max_abs_conv >= 1e3:
+            return vals / 1e3, f"K {unit}", 1e3
+        return vals, unit, 1.0
 
 
 def add_zero_line(fig, axis="y", color="#A9B1BD", width=3, dash="dash"):
@@ -236,9 +247,25 @@ def humanize_ago_from_utc_epoch(epoch_utc: float, lang: str) -> str:
         return T(lang, f"{m} min ago", f"{m} 分鐘前")
     if sec < 86400:
         h = sec // 3600
-        return T(lang, f"{h} hr ago", f"{h} 小時前")
     d = sec // 86400
     return T(lang, f"{d} days ago", f"{d} 天前")
+
+
+def get_twd_to_eur_rate():
+    # Cache in session to avoid spamming API on rerun
+    if "eur_rate" in st.session_state:
+        return st.session_state["eur_rate"]
+    
+    try:
+        url = "https://api.exchangerate-api.com/v4/latest/TWD"
+        r = requests.get(url, timeout=3.0)
+        r.raise_for_status()
+        data = r.json()
+        rate = float(data["rates"]["EUR"])
+        st.session_state["eur_rate"] = rate
+        return rate
+    except Exception:
+        return None
 
 
 # -------------------- GitHub push helpers --------------------
@@ -878,11 +905,11 @@ try:
         sidebar_recent_update(lang)
         hr()
 
-        st.markdown(f"## {T(lang,'Theme','主題')}")
-        tw_colors = st.toggle(
-            T(lang, "Taiwan colors (red=profit, green=loss)", "台股顏色（紅=賺、綠=虧）"),
-            value=True,
-        )
+        # st.markdown(f"## {T(lang,'Theme','主題')}")
+        # tw_colors = st.toggle(
+        #     T(lang, "Taiwan colors (red=profit, green=loss)", "台股顏色（紅=賺、綠=虧）"),
+        #     value=True,
+        # )
 
         hr()
         st.markdown(f"## {T(lang,'Admin','管理者')}")
@@ -930,15 +957,40 @@ try:
                         st.rerun()
 
     # Colors
-    if tw_colors:
-        PROFIT_COLOR = "#E74C3C"  # red profit
-        LOSS_COLOR = "#2ECC71"    # green loss
+    # Colors (Auto based on Language)
+    if lang == "中文":
+        # Taiwan: Red = Profit, Green = Loss
+        PROFIT_COLOR = "#E74C3C" 
+        LOSS_COLOR = "#2ECC71"
     else:
+        # Western: Green = Profit, Red = Loss
         PROFIT_COLOR = "#2ECC71"
         LOSS_COLOR = "#E74C3C"
-
+        
     NEUTRAL_BLUE = "#4C78A8"
     NEUTRAL_PURPLE = "#6F42C1"
+
+    # Currency Rate Logic
+    CURRENCY_RATE = 1.0
+    CURRENCY_SYMBOL = ""
+    
+    if lang != "中文":
+        # Try to get EUR rate
+        rate_found = get_twd_to_eur_rate()
+        if rate_found:
+            CURRENCY_RATE = rate_found
+            CURRENCY_SYMBOL = "€"
+        else:
+            # Fallback
+            if "currency_fail_toast" not in st.session_state:
+                st.toast("Currency API failed. Displaying TWD.", icon="⚠️")
+                st.session_state["currency_fail_toast"] = True
+            CURRENCY_RATE = 1.0
+            CURRENCY_SYMBOL = ""
+    else:
+        # Reset toast flag if switching back to ZH
+        if "currency_fail_toast" in st.session_state:
+            del st.session_state["currency_fail_toast"]
 
     # Master availability
     if not MASTER_PATH.exists():
@@ -1034,7 +1086,8 @@ try:
     trades = int(len(f_sorted))
     win_rate = float((f_sorted["realized_pnl"].to_numpy() > 0).mean()) if trades else 0.0
     total_pl_pct = (total_pnl / float(INVESTMENT_TWD) * 100.0) if INVESTMENT_TWD else 0.0
-    trade_volume = float(f_sorted["allocated_cost"].sum())
+    total_pl_pct = (total_pnl / float(INVESTMENT_TWD) * 100.0) if INVESTMENT_TWD else 0.0
+    trade_volume = float(f_sorted["allocated_cost"].sum()) * CURRENCY_RATE
 
     total_color = PROFIT_COLOR if total_pnl >= 0 else LOSS_COLOR
     plpct_color = PROFIT_COLOR if total_pl_pct >= 0 else LOSS_COLOR
@@ -1056,8 +1109,10 @@ try:
     n_cash = len(f_sorted[f_sorted["type_key"] == "cash"])
 
     with k1:
-        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl), total_color, "&nbsp;")
+        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), total_color, "&nbsp;")
     with k2:
+        # Percentage is invariant to currency
+        base_cap_converted = float(INVESTMENT_TWD) * CURRENCY_RATE
         KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, "&nbsp;")
     with k3:
         sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.0f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.0f}%"
@@ -1092,7 +1147,7 @@ try:
         daily_agg = f_sorted.groupby("date", as_index=False)["realized_pnl"].sum()
         daily_agg["cum_pnl"] = daily_agg["realized_pnl"].cumsum()
 
-        scaled_cum, unit_lbl, _ = scale_unit(daily_agg["cum_pnl"], lang)
+        scaled_cum, unit_lbl, _ = scale_unit(daily_agg["cum_pnl"], lang, CURRENCY_RATE)
 
         # Dynamic color based on final result? or just a pro theme color.
         # Let's use a premium blue-ish theme.
@@ -1168,7 +1223,7 @@ try:
         by_stock["abs"] = by_stock["realized_pnl"].abs()
         by_stock = by_stock.sort_values("abs", ascending=False)
 
-        scaled_vals, unit_lbl2, _ = scale_unit(by_stock["realized_pnl"], lang)
+        scaled_vals, unit_lbl2, _ = scale_unit(by_stock["realized_pnl"], lang, CURRENCY_RATE)
         by_stock["_scaled_pnl"] = scaled_vals
 
         sorted_df = by_stock.sort_values("_scaled_pnl")
@@ -1250,7 +1305,7 @@ try:
             st.dataframe(
                 make_trade_styler(wtbl, PROFIT_COLOR, LOSS_COLOR).format(
                     {
-                        T(lang, "Total P/L", "總損益"): "{:,.0f}",
+                        T(lang, "Total P/L", "總損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                         T(lang, "P/L % (vs cost)", "損益%（對成本）"): "{:.2f}",
                         T(lang, "Trades", "筆數"): "{:.0f}",
                         T(lang, "Win rate %", "勝率%"): "{:.1f}",
@@ -1265,7 +1320,7 @@ try:
             st.dataframe(
                 make_trade_styler(ltbl, PROFIT_COLOR, LOSS_COLOR).format(
                     {
-                        T(lang, "Total P/L", "總損益"): "{:,.0f}",
+                        T(lang, "Total P/L", "總損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                         T(lang, "P/L % (vs cost)", "損益%（對成本）"): "{:.2f}",
                         T(lang, "Trades", "筆數"): "{:.0f}",
                         T(lang, "Win rate %", "勝率%"): "{:.1f}",
@@ -1331,11 +1386,11 @@ try:
                 {
                     # T(lang, "Total P/L", "總損益"): "{:,.0f}",
                     # T(lang, "Total P/L %", "總損益%"): "{:.2f}",
-                    T(lang, "Month P/L", "月損益"): "{:,.0f}",
+                    T(lang, "Month P/L", "月損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                     T(lang, "Month %", "月報酬%"): "{:.2f}",
                     T(lang, "Trades", "筆數"): "{:.0f}",
                     T(lang, "Win rate %", "勝率%"): "{:.1f}",
-                    T(lang, "Trade volume", "交易量"): "{:,.0f}",
+                    T(lang, "Trade volume", "交易量"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                 }
             ),
             width="stretch",
@@ -1344,7 +1399,7 @@ try:
         hr()
         st.subheader(T(lang, "Cumulative P/L by Month", "月度累計損益"))
 
-        scaled_vals, unit_lbl_m, _ = scale_unit(m_cum["cum_pnl"], lang)
+        scaled_vals, unit_lbl_m, _ = scale_unit(m_cum["cum_pnl"], lang, CURRENCY_RATE)
         labels = [f"{v:.2f} {unit_lbl_m}" for v in scaled_vals.to_numpy()]
 
         fig_m = go.Figure()
@@ -1415,11 +1470,11 @@ try:
         st.dataframe(
             make_trade_styler(df_show, PROFIT_COLOR, LOSS_COLOR).format(
                 {
-                    T(lang, "Avg Buy Price", "買入均價"): "{:,.2f}",
-                    T(lang, "Total Buy Cost", "買入總額"): "{:,.0f}",
-                    T(lang, "Avg Sell Price", "賣出均價"): "{:,.2f}",
-                    T(lang, "Total Sell Proceeds", "賣出總額"): "{:,.0f}",
-                    T(lang, "Realized P/L", "已實現損益"): "{:,.0f}",
+                    T(lang, "Avg Buy Price", "買入均價"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Total Buy Cost", "買入總額"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Avg Sell Price", "賣出均價"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Total Sell Proceeds", "賣出總額"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Realized P/L", "已實現損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                     T(lang, "Realized %", "已實現%"): "{:.2f}",
                 }
             ),
