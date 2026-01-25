@@ -91,7 +91,7 @@ def require_view_password_centered(lang: str):
     with mid:
         st.markdown(f"## 🔒 {T(lang,'Enter password to view','輸入密碼以查看')}")
         typed = st.text_input(T(lang, "Password", "密碼"), type="password", key="view_pw_input_main")
-        if st.button(T(lang, "Enter", "確認"), use_container_width=True):
+        if typed:
             if typed == VIEW_PASSWORD:
                 st.session_state.authed_view = True
                 st.rerun()
