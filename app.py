@@ -1051,15 +1051,20 @@ try:
     wr_day = calc_wr(f_sorted[f_sorted["type_key"] == "day_trade"])
     wr_cash = calc_wr(f_sorted[f_sorted["type_key"] == "cash"])
 
+    # Sub-trades
+    n_day = len(f_sorted[f_sorted["type_key"] == "day_trade"])
+    n_cash = len(f_sorted[f_sorted["type_key"] == "cash"])
+
     with k1:
-        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl), total_color, "")
+        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl), total_color, "&nbsp;")
     with k2:
-        KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, "")
+        KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, "&nbsp;")
     with k3:
         sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.0f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.0f}%"
         KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, sub_wr)
     with k4:
-        KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, "")
+        sub_tr = f"{T(lang, 'Day Trade', '當沖')}: {n_day}  {T(lang, 'Cash', '現股')}: {n_cash}"
+        KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, sub_tr)
     with k5:
         # Split fee/tax
         total_fee = float(f_sorted["total_fee"].sum())
