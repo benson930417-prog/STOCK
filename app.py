@@ -918,18 +918,54 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         bin_edges = "auto"
 
     counts, bin_edges = np.histogram(vals, bins=bin_edges)
-    centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+    # Create categorical labels for bins
+    # e.g. "0~5", "5~10", "-5~0"
+    bin_labels = []
     
+    def fmt_edge(val):
+        # Format edge value smoothly
+        # For Eur (1000 step) -> 1k, 2k...
+        # For Wan (5 step) -> 5, 10...
+        if unit_txt == "€":
+             if abs(val) >= 1000:
+                 return f"{int(val/1000)}k"
+             return f"{int(val)}"
+        else:
+             # Wan: just int
+             return f"{int(val)}"
+
+    for i in range(len(bin_edges) - 1):
+        left = bin_edges[i]
+        right = bin_edges[i+1]
+        
+        # Determine strict sign for the bin based on center
+        # This helps grouping 0-5 as positive
+        mid = (left + right) / 2
+        
+        l_str = fmt_edge(left)
+        r_str = fmt_edge(right)
+        label = f"{l_str}~{r_str}"
+        bin_labels.append(label)
+
     # Color condition: center >= 0 is profit
-    colors = [profit_color if c >= 0 else loss_color for c in centers]
-    
+    # IMPORTANT: center > 0 or center < 0. What about strictly 0?
+    # Our bins are aligned to 0. So 0~5 is positive. -5~0 is negative.
+    colors = []
+    for i in range(len(bin_edges) - 1):
+        mid = (bin_edges[i] + bin_edges[i+1]) / 2
+        if mid > 0:
+            colors.append(profit_color)
+        else:
+             # This handles -5~0 as negative
+            colors.append(loss_color)
+
     # Filter out zero-count labels
     times_unit = "次" if lang == "中文" else "x"
     text_labels = [f"{int(x)}{times_unit}" if x > 0 else "" for x in counts]
 
     fig = go.Figure(
         data=go.Bar(
-            x=centers,
+            x=bin_labels,
             y=counts,
             marker_color=colors,
             text=text_labels,
