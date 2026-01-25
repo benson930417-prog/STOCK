@@ -869,7 +869,9 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
 
     # Scale units first
     # unit_val is the series of scaled values, unit_txt is the label (e.g., '萬' or '€')
-    scaled_vals, unit_txt, _ = scale_unit(df["realized_pnl"], lang, rate)
+    # Scale units first
+    # unit_val is the series of scaled values, unit_txt is the label (e.g., '萬' or '€')
+    scaled_vals, unit_txt, divisor = scale_unit(df["realized_pnl"], lang, rate)
     vals = scaled_vals.to_numpy()
 
     # Pre-calculate histogram bins with 0 alignment
@@ -898,12 +900,15 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
              fd_width = (v_max - v_min) / 20 if v_max != v_min else 10.0
 
         # FORCE STEP SIZE based on user request / unit
-        if unit_txt == "萬":
-            # User wants step of 50000 TWD -> 5.0 萬
-            fd_width = 5.0
-        elif unit_txt == "€":
-            # User wants step of 1000 EUR
-            fd_width = 1000.0
+        # Use divisor to determine correct step in scaled units.
+        # Target: 50000 TWD or 1000 EUR
+        
+        target_step = 50000.0
+        if "€" in unit_txt or unit_txt == "EUR":
+            target_step = 1000.0
+            
+        d_val = divisor if divisor else 1.0
+        fd_width = target_step / d_val
 
         # Enforce a minimum width to prevent needle-like bars
         min_w = 0.1 if unit_txt == "萬" else 1.0
