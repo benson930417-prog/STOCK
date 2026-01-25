@@ -280,8 +280,9 @@ def hex_to_rgba(hex_color: str, alpha: float = 0.2) -> str:
 
 def get_twd_to_eur_rate():
     # Cache in session to avoid spamming API on rerun
-    if "eur_rate" in st.session_state:
-        return st.session_state["eur_rate"]
+    # Structure: {"rate": float, "date": str, "timestamp": float}
+    if "eur_rate_data" in st.session_state:
+        return st.session_state["eur_rate_data"]
     
     try:
         url = "https://api.exchangerate-api.com/v4/latest/TWD"
@@ -289,8 +290,18 @@ def get_twd_to_eur_rate():
         r.raise_for_status()
         data = r.json()
         rate = float(data["rates"]["EUR"])
-        st.session_state["eur_rate"] = rate
-        return rate
+        
+        # also capture date/timestamp from API if available or use current
+        updated_date = data.get("date", "")
+        updated_ts = data.get("time_last_updated", 0)
+        
+        res = {
+            "rate": rate,
+            "date": updated_date,
+            "timestamp": updated_ts
+        }
+        st.session_state["eur_rate_data"] = res
+        return res
     except Exception:
         return None
 
@@ -1046,6 +1057,25 @@ try:
             horizontal=True,
         )
         
+        # Display Rate Info if available (always try to fetch to show user)
+        # But maybe only if user cares? User request: "display... on the section"
+        # It implies showing it always or at least when EUR is relevant.
+        # Let's fetch it if possible.
+        rate_info = get_twd_to_eur_rate()
+        if rate_info:
+            r_val = rate_info["rate"]
+            # 1 EUR = ? TWD => 1 / r_val
+            if r_val > 0:
+                eur_to_twd = 1.0 / r_val
+                # formatting date
+                # api returns date string usually YYYY-MM-DD
+                date_str = rate_info.get("date", "")
+                
+                st.caption(
+                    f"1 EUR ≈ {eur_to_twd:.2f} TWD"
+                    f"\n\n{T(lang, 'Updated', '更新於')}: {date_str}"
+                )
+        
         st.markdown(f"**{T(lang,'Theme','主題')}**")
         tw_colors = st.toggle(
             T(lang, "Taiwan colors (red=profit, green=loss)", "台股顏色（紅=賺、綠=虧）"),
@@ -1132,9 +1162,9 @@ try:
 
     if curr_code == "EUR":
         # Try to get EUR rate
-        rate_found = get_twd_to_eur_rate()
-        if rate_found:
-            CURRENCY_RATE = rate_found
+        rate_info = get_twd_to_eur_rate()
+        if rate_info:
+            CURRENCY_RATE = rate_info["rate"]
             CURRENCY_SYMBOL = "€"
         else:
             # Fallback
