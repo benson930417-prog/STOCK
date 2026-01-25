@@ -1644,6 +1644,30 @@ try:
                  "NASDAQ": "rgba(180, 50, 200, 0.5)"
              }
 
+             # Stock Overlays (User Selection)
+             stock_opts = {
+                 "2330 TSMC": "2330.TW",
+                 "0050 Yuanta 50": "0050.TW"
+             }
+             
+             # UI Control for Stock
+             try:
+                  with cols_opts[0]: # Re-use the column container if possible, or creates new line
+                       sel_stocks = st.multiselect(
+                           T(lang, "Stock Comparison", "個股對照"),
+                           options=list(stock_opts.keys()),
+                           default=[]
+                       )
+             except:
+                  sel_stocks = []
+                  
+             # Extend colors for stocks (Cyan/Magenta style?)
+             stock_colors = {
+                 "2330 TSMC": "rgba(0, 255, 255, 0.6)",
+                 "0050 Yuanta 50": "rgba(255, 0, 255, 0.6)"
+             }
+
+             # Process Market Indices
              for m_name in sel_indices:
                  symbol = market_opts[m_name]
                  m_df = get_market_data(symbol, days=(daily_agg["date"].max() - daily_agg["date"].min()).days + 30)
@@ -1675,6 +1699,40 @@ try:
                              
                              y_max_pct = max(y_max_pct, m_rel["pct"].max())
                              y_min_pct = min(y_min_pct, m_rel["pct"].min())
+
+             # Process Stocks
+             for s_name in sel_stocks:
+                 symbol = stock_opts[s_name]
+                 # Reuse get_market_data as it fetches generic Yahoo Finance data
+                 s_df = get_market_data(symbol, days=(daily_agg["date"].max() - daily_agg["date"].min()).days + 30)
+                 
+                 if not s_df.empty:
+                     start_date_s = daily_agg["date"].min()
+                     end_date_s = daily_agg["date"].max()
+                     mask = (s_df["date"] >= start_date_s) & (s_df["date"] <= end_date_s)
+                     s_rel = s_df[mask].copy()
+                     
+                     if not s_rel.empty:
+                         base_price = s_rel["close"].iloc[0]
+                         if base_price > 0:
+                             s_rel["pct"] = (s_rel["close"] - base_price) / base_price * 100.0
+                             
+                             c_line = stock_colors.get(s_name, "rgba(200,200,200,0.5)")
+                             
+                             fig_eq.add_trace(
+                                 go.Scatter(
+                                     x=s_rel["date"],
+                                     y=s_rel["pct"],
+                                     mode="lines",
+                                     name=s_name,
+                                     line=dict(color=c_line, width=1.5, dash='dot'), 
+                                     yaxis="y2",
+                                     hovertemplate=f"{s_name}: %{{y:.2f}}%<extra></extra>"
+                                 )
+                             )
+                             
+                             y_max_pct = max(y_max_pct, s_rel["pct"].max())
+                             y_min_pct = min(y_min_pct, s_rel["pct"].min())
 
              
         # Add padding (e.g. 10%)
