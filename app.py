@@ -189,9 +189,6 @@ def scale_unit(values: pd.Series, lang: str, rate: float = 1.0):
         if max_abs >= 1e3:
             return values / 1e3, "千", 1e3
         return values, "元", 1.0
-        if max_abs >= 1e3:
-            return values / 1e3, "千", 1e3
-        return values, "元", 1.0
     else:
         # Currency conversion
         vals = values * rate
@@ -861,8 +858,16 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
              # Fallback if IQR is 0 (low variation)
              fd_width = (v_max - v_min) / 20 if v_max != v_min else 10.0
 
+        # FORCE STEP SIZE based on user request / unit
+        if unit_txt == "萬":
+            # User wants step of 5000 TWD -> 0.5 萬
+            fd_width = 0.5
+        elif unit_txt == "€":
+            # User wants step of 100 EUR
+            fd_width = 100.0
+
         # Enforce a minimum width to prevent needle-like bars
-        min_w = 10.0
+        min_w = 0.1 if unit_txt == "萬" else 1.0
         if fd_width < min_w:
             fd_width = min_w
 
@@ -882,9 +887,9 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
     # Color condition: center >= 0 is profit
     colors = [profit_color if c >= 0 else loss_color for c in centers]
     
-    # Filter out zero-count bins to avoid clutter? No, histogram usually shows gaps.
-    # But for labels, maybe only show non-zero?
-    text_labels = [str(int(x)) if x > 0 else "" for x in counts]
+    # Filter out zero-count labels
+    times_unit = "次" if lang == "中文" else "x"
+    text_labels = [f"{int(x)}{times_unit}" if x > 0 else "" for x in counts]
 
     fig = go.Figure(
         data=go.Bar(
@@ -1198,8 +1203,18 @@ try:
         # Dynamic color based on final result? or just a pro theme color.
         # User wants split coloring based on 0 line.
         
-        # Prepare Split Data
-        vals = scaled_cum.to_numpy()
+        # Prepare Split Data (Augment with zero crossings)
+        # We need to act on 'scaled_cum' which matches x-axis 'daily_agg["date"]'
+        # Let's create a temp DF
+        df_chart = pd.DataFrame({
+            "date": daily_agg["date"], 
+            "val": scaled_cum.values
+        })
+        df_chart = augment_zero_crossings(df_chart, "date", "val")
+        
+        vals = df_chart["val"].to_numpy()
+        dates_aug = df_chart["date"]
+        
         y_pos = np.where(vals >= 0, vals, 0)
         y_neg = np.where(vals < 0, vals, 0)
         
@@ -1211,7 +1226,7 @@ try:
         # Negative Trace (Loss)
         fig_eq.add_trace(
             go.Scatter(
-                x=daily_agg["date"],
+                x=dates_aug,
                 y=y_neg,
                 mode="lines",
                 name=T(lang, "Cumulative Loss", "累計虧損"),
@@ -1226,7 +1241,7 @@ try:
         # Positive Trace (Profit)
         fig_eq.add_trace(
             go.Scatter(
-                x=daily_agg["date"],
+                x=dates_aug,
                 y=y_pos,
                 mode="lines",
                 name=T(lang, "Cumulative Profit", "累計獲利"),
