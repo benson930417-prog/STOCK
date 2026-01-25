@@ -941,11 +941,19 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         l_str = fmt_edge(left)
         r_str = fmt_edge(right)
         
+        # User request: "negative should be less (-) to more (-)"
+        # This implies swapping the order for negative bins to read "closer to 0 ~ further from 0"
+        # Standard: -10 ~ -5. Desired: -5 ~ -10.
+        if right <= 0:
+             start_s, end_s = r_str, l_str
+        else:
+             start_s, end_s = l_str, r_str
+        
         # Add unit to the label
         if unit_txt == "€":
-            label = f"€{l_str}~{r_str}"
+            label = f"€{start_s}~{end_s}"
         else:
-            label = f"{l_str}~{r_str}{unit_txt}"
+            label = f"{start_s}~{end_s}{unit_txt}"
             
         bin_labels.append(label)
 
