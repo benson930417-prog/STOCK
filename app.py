@@ -156,11 +156,10 @@ def to_int(x):
 def fmt_signed_money(x, rate: float = 1.0, currency: str = "") -> str:
     try:
         v = float(x) * rate
-        suffix = f" {currency}" if currency else ""
         if v < 0:
-            return f"-{abs(v):,.0f}{suffix}"
+            return f"-{currency}{abs(v):,.0f}"
         sign = "+" if v > 0 else ""
-        return f"{sign}{v:,.0f}{suffix}"
+        return f"{sign}{currency}{v:,.0f}"
     except Exception:
         return str(x)
 
@@ -168,10 +167,9 @@ def fmt_signed_money(x, rate: float = 1.0, currency: str = "") -> str:
 def fmt_money(x, rate: float = 1.0, currency: str = "", decimals: int = 0) -> str:
     try:
         v = float(x) * rate
-        suffix = f" {currency}" if currency else ""
         if v < 0:
-            return f"-{abs(v):,.{decimals}f}{suffix}"
-        return f"{v:,.{decimals}f}{suffix}"
+            return f"-{currency}{abs(v):,.{decimals}f}"
+        return f"{currency}{v:,.{decimals}f}"
     except Exception:
         return str(x)
 
@@ -950,8 +948,11 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         # Add unit to the label
         # Use ' to ' as separator to distinguish from negative sign
         sep = " to "
-        suffix = f" {unit_txt}" if unit_txt == "€" else unit_txt
-        label = f"{start_s}{sep}{end_s}{suffix}"
+        # Revert to prefix for Euro as requested (+€1000)
+        if unit_txt == "€":
+             label = f"€{start_s}{sep}€{end_s}"
+        else:
+             label = f"{start_s}{sep}{end_s}{unit_txt}"
             
         bin_labels.append(label)
 
