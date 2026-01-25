@@ -1373,10 +1373,50 @@ try:
         # User request: include base capital on total PL kpi
         base_cap_converted = float(INVESTMENT_TWD) * CURRENCY_RATE
         base_cap_str = fmt_money(base_cap_converted, 1.0, CURRENCY_SYMBOL)
-        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), total_color, f"Base: {base_cap_str}")
+        base_lbl = T(lang, "Base", "本金")
+        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), total_color, f"{base_lbl}: {base_cap_str}")
     with k2:
         # Percentage is invariant to currency
-        KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, "&nbsp;")
+        # Calculate vs TAIEX
+        alpha_text = "&nbsp;"
+        try:
+             # Get TAIEX data for the same range
+             d_min = f_sorted["date"].min()
+             d_max = f_sorted["date"].max()
+             days_range = (d_max - d_min).days + 10
+             
+             tw_df = get_market_data("^TWII", days=max(30, days_range))
+             if not tw_df.empty:
+                 # Find closest close to start and end
+                 # We need open of start_date (or close of prev day) vs close of end_date
+                 # Simplified: Close of first available day in range vs Close of last available day
+                 
+                 mask = (tw_df["date"] >= d_min) & (tw_df["date"] <= d_max)
+                 tw_rel = tw_df[mask]
+                 
+                 if not tw_rel.empty:
+                     start_price = tw_rel["close"].iloc[0]
+                     end_price = tw_rel["close"].iloc[-1]
+                     if start_price > 0:
+                         tw_pct = (end_price - start_price) / start_price * 100.0
+                         diff = total_pl_pct - tw_pct
+                         
+                         # Format text
+                         lbl = T(lang, "vs TAIEX", "加權指數")
+                         sign_str = "+" if diff > 0 else "-" if diff < 0 else "" 
+                         # Use logic: 'Ahead' or 'Behind' or just signed diff
+                         # User asked: "how much behind or ahead"
+                         # "Ahead by 5%" or "Behind by 5%"
+                         if diff > 0:
+                             status = T(lang, "Ahead", "領先")
+                         else:
+                             status = T(lang, "Behind", "落後")
+                             
+                         alpha_text = f"{status} {T(lang,'','加權')} {abs(diff):.2f}%"
+        except Exception:
+             pass
+
+        KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, alpha_text)
     with k3:
         sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.1f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.1f}%"
         KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, sub_wr)
