@@ -1472,25 +1472,32 @@ try:
             )
         )
         
-        # Hidden Hover Trace (Original Daily Points Only)
+        # Hidden Hover Trace -> Visual Data Points (Original Daily Points Only)
         # Fixes the "0" artifact at zero-crossings by ignoring interpolated points
         # Also ensures strict +€1000 formatting in hover
         hover_texts = []
+        marker_colors = []
         for val in scaled_cum:
              if "€" in unit_lbl:
+                  s_val = "+" if val >= 0 else "-" # Zero is positive or strictly signed? val >=0 usually +
+                  # But wait, logic above: s_val = "+" if val > 0 else "-" if val < 0 else ""
+                  # Let's keep consistent with previous logic
                   s_val = "+" if val > 0 else "-" if val < 0 else ""
                   txt = f"{s_val}€{abs(val):,.2f}"
              else:
                   txt = f"{val:,.2f} {unit_lbl}"
              hover_texts.append(txt)
+             # Marker color
+             c = PROFIT_COLOR if val >= 0 else LOSS_COLOR
+             marker_colors.append(c)
 
         fig_eq.add_trace(
             go.Scatter(
                 x=daily_agg["date"],
                 y=scaled_cum,
-                mode="lines",
+                mode="markers",
                 name=T(lang, "Cumulative P/L", "累計損益"),
-                line=dict(width=0), # Invisible line for hover only
+                marker=dict(size=4, color=marker_colors),
                 hovertemplate="%{text}<extra></extra>",
                 text=hover_texts,
                 showlegend=False,
