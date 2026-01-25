@@ -691,9 +691,9 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
     styler = df_show.style
     for col in df_show.columns:
         low = str(col).lower()
-        if low in ["realized p/l", "total p/l"] or col in ["已實現損益", "總損益", "損益"]:
+        if low in ["realized p/l", "total p/l", "month p/l"] or col in ["已實現損益", "總損益", "損益", "月損益"]:
             styler = styler.applymap(color_pl, subset=[col])
-        if low in ["realized %", "total p/l %"] or col in ["已實現%", "總損益%", "報酬%"]:
+        if low in ["realized %", "total p/l %", "month %"] or col in ["已實現%", "總損益%", "報酬%", "月報酬%"]:
             styler = styler.applymap(color_pct, subset=[col])
         if low in ["win rate %", "win rate"] or col in ["勝率%", "勝率"]:
             styler = styler.applymap(color_winrate, subset=[col])
@@ -1259,14 +1259,28 @@ try:
             )
         )
 
+        m_cum["prev_cum_pnl"] = m_cum["cum_pnl"].shift(1).fillna(0.0)
+        m_cum["month_pnl"] = m_cum["cum_pnl"] - m_cum["prev_cum_pnl"]
+        
+        # Start equity for the month = Initial Investment + Previous Cumulative P/L
+        m_cum["start_equity"] = float(INVESTMENT_TWD) + m_cum["prev_cum_pnl"]
+        
+        m_cum["month_pct"] = np.where(
+            m_cum["start_equity"] != 0, 
+            m_cum["month_pnl"] / m_cum["start_equity"] * 100.0, 
+            0.0
+        )
+        
         m_cum["cum_pl_pct"] = np.where(INVESTMENT_TWD != 0, m_cum["cum_pnl"] / float(INVESTMENT_TWD) * 100.0, 0.0)
         m_cum["cum_win_rate_pct"] = np.where(m_cum["cum_trades"] > 0, m_cum["cum_wins"] / m_cum["cum_trades"] * 100.0, 0.0)
 
         table = pd.DataFrame(
             {
                 T(lang, "Month", "月份"): pd.to_datetime(m_cum["month"]).dt.strftime("%Y-%m"),
-                T(lang, "Total P/L", "總損益"): m_cum["cum_pnl"].round(0).astype(int),
-                T(lang, "Total P/L %", "總損益%"): m_cum["cum_pl_pct"].round(2),
+                # T(lang, "Total P/L", "總損益"): m_cum["cum_pnl"].round(0).astype(int),
+                # T(lang, "Total P/L %", "總損益%"): m_cum["cum_pl_pct"].round(2),
+                T(lang, "Month P/L", "月損益"): m_cum["month_pnl"].round(0).astype(int),
+                T(lang, "Month %", "月報酬%"): m_cum["month_pct"].round(2),
                 T(lang, "Trades", "筆數"): m_cum["cum_trades"].astype(int),
                 T(lang, "Win rate %", "勝率%"): m_cum["cum_win_rate_pct"].round(1),
                 T(lang, "Trade volume", "交易量"): m_cum["cum_volume"].round(0).astype(int),
@@ -1276,8 +1290,10 @@ try:
         st.dataframe(
             make_trade_styler(table, PROFIT_COLOR, LOSS_COLOR).format(
                 {
-                    T(lang, "Total P/L", "總損益"): "{:,.0f}",
-                    T(lang, "Total P/L %", "總損益%"): "{:.2f}",
+                    # T(lang, "Total P/L", "總損益"): "{:,.0f}",
+                    # T(lang, "Total P/L %", "總損益%"): "{:.2f}",
+                    T(lang, "Month P/L", "月損益"): "{:,.0f}",
+                    T(lang, "Month %", "月報酬%"): "{:.2f}",
                     T(lang, "Trades", "筆數"): "{:.0f}",
                     T(lang, "Win rate %", "勝率%"): "{:.1f}",
                     T(lang, "Trade volume", "交易量"): "{:,.0f}",
