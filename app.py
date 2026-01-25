@@ -1069,7 +1069,7 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         yaxis_title=T(lang, "Count", "筆數"),
         height=380,
         bargap=0.1,
-        margin=dict(l=10, r=10, t=80, b=40), # Increased top margin to prevent title/label clash, bottom for x-labels
+        margin=dict(l=10, r=10, t=60, b=10), # Increased top margin to prevent title/label clash
         yaxis=dict(
             showgrid=True,
             gridcolor="rgba(255,255,255,0.08)",
@@ -1083,7 +1083,7 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
     # The split is at edge value 0.
     zero_idx = -1
     for i, e in enumerate(bin_edges):
-        if abs(e) < 1e-9:
+        if e == 0:
             zero_idx = i
             break
             
@@ -1452,7 +1452,7 @@ try:
                 line=dict(width=2, color=LOSS_COLOR),
                 fill="tozeroy",
                 fillcolor=loss_fill,
-                hoverinfo="x+y",
+                hoverinfo="skip",
                 showlegend=False,
             )
         )
@@ -1467,11 +1467,36 @@ try:
                 line=dict(width=2, color=PROFIT_COLOR),
                 fill="tozeroy",
                 fillcolor=profit_fill,
-                hoverinfo="x+y",
+                hoverinfo="skip",
                 showlegend=False,
             )
         )
         
+        # Hidden Hover Trace (Original Daily Points Only)
+        # Fixes the "0" artifact at zero-crossings by ignoring interpolated points
+        # Also ensures strict +€1000 formatting in hover
+        hover_texts = []
+        for val in scaled_cum:
+             if "€" in unit_lbl:
+                  s_val = "+" if val > 0 else "-" if val < 0 else ""
+                  txt = f"{s_val}€{abs(val):,.2f}"
+             else:
+                  txt = f"{val:,.2f} {unit_lbl}"
+             hover_texts.append(txt)
+
+        fig_eq.add_trace(
+            go.Scatter(
+                x=daily_agg["date"],
+                y=scaled_cum,
+                mode="lines",
+                name=T(lang, "Cumulative P/L", "累計損益"),
+                line=dict(width=0), # Invisible line for hover only
+                hovertemplate="%{text}<extra></extra>",
+                text=hover_texts,
+                showlegend=False,
+            )
+        )
+
         # Add marker/label for the latest point
         if not daily_agg.empty:
              last_idx = daily_agg.index[-1]
@@ -1481,7 +1506,7 @@ try:
              # unit_lbl is "€" or "M TWD" etc.
              if "€" in unit_lbl:
                   s_last = "+" if last_val > 0 else "-" if last_val < 0 else ""
-                  last_txt = f"{s_last}€{abs(last_val):,.0f}"
+                  last_txt = f"{s_last}€{abs(last_val):,.2f}"
              else:
                   last_txt = f"{last_val:,.2f} {unit_lbl}"
              
@@ -1495,8 +1520,8 @@ try:
                      mode="markers+text",
                      text=[last_txt],
                      textposition="top left",
-                     textfont=dict(size=12, color="#EAEAEA"),
-                     marker=dict(size=8, color=final_color, line=dict(width=1, color="white")),
+                     textfont=dict(size=11, color="#EAEAEA"),
+                     marker=dict(size=6, color=final_color, line=dict(width=1, color="white")),
                      showlegend=False,
                      hoverinfo="skip",
                  )
