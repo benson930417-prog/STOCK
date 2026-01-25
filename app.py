@@ -911,7 +911,6 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         title=T(lang, "P/L Distribution", "損益分佈"),
         xaxis_title=f"{T(lang, 'Realized P/L', '已實現損益')} ({unit_txt})",
         yaxis_title=T(lang, "Count", "筆數"),
-        yaxis_title=T(lang, "Count", "筆數"),
         height=380,
         bargap=0.1,
         margin=dict(l=10, r=10, t=40, b=10),
