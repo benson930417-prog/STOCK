@@ -1246,7 +1246,7 @@ try:
         base_cap_converted = float(INVESTMENT_TWD) * CURRENCY_RATE
         KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, "&nbsp;")
     with k3:
-        sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.0f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.0f}%"
+        sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.1f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.1f}%"
         KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, sub_wr)
     with k4:
         sub_tr = f"{T(lang, 'Day Trade', '當沖')}: {n_day}  {T(lang, 'Cash', '現股')}: {n_cash}"
