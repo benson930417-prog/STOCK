@@ -263,10 +263,7 @@ def humanize_ago_from_utc_epoch(epoch_utc: float, lang: str) -> str:
         return T(lang, f"{m} min ago", f"{m} 分鐘前")
     if sec < 86400:
         h = sec // 3600
-    d = sec // 86400
-    return T(lang, f"{d} days ago", f"{d} 天前")
-
-
+        return T(lang, f"{h} hours ago", f"{h} 小時前")
     d = sec // 86400
     return T(lang, f"{d} days ago", f"{d} 天前")
 
