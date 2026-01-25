@@ -949,10 +949,34 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         # Use ' to ' as separator to distinguish from negative sign
         sep = " to "
         # Revert to prefix for Euro as requested (+€1000)
-        if unit_txt == "€":
-             label = f"€{start_s}{sep}€{end_s}"
+        # Actually user wants "sign+euro+value".
+        # fmt_edge returns "7k" or "7".
+        # We need to construct labels like "-€7k to -€8k" or "+€0 to +€1k"
+        
+        # Helper to strict format edge
+        def fmt_lbl(val_edge):
+             s_edge = "+" if val_edge > 0 else "-" if val_edge < 0 else ""
+             # remove sign from fmt_edge result if any (it usually doesn't have sign if we just pass abs, but let's be safe)
+             # fmt_edge uses raw value.
+             # let's map val_edge to abs val for fmt_edge
+             abs_v = abs(val_edge)
+             
+             # Re-use logic:
+             txt_v = fmt_edge(abs_v) # e.g. "7k"
+             
+             if unit_txt == "€":
+                 return f"{s_edge}€{txt_v}"
+             else:
+                 return f"{s_edge}{txt_v}{unit_txt}"
+
+        l_str_fmt = fmt_lbl(left)
+        r_str_fmt = fmt_lbl(right)
+        
+        if right <= 0:
+             # swap for negative range readability: -5k to -10k
+             label = f"{r_str_fmt}{sep}{l_str_fmt}"
         else:
-             label = f"{start_s}{sep}{end_s}{unit_txt}"
+             label = f"{l_str_fmt}{sep}{r_str_fmt}"
             
         bin_labels.append(label)
 
@@ -1355,7 +1379,13 @@ try:
             last_idx = daily_agg.index[-1]
             last_date = daily_agg["date"].iloc[-1]
             last_val = scaled_cum.iloc[-1]
-            last_txt = f"{last_val:,.2f} {unit_lbl}"
+            # Match strict format +€1000 where applicable
+            # unit_lbl is "€" or "M TWD" etc.
+            if "€" in unit_lbl:
+                 s_last = "+" if last_val > 0 else "-" if last_val < 0 else ""
+                 last_txt = f"{s_last}€{abs(last_val):,.2f}"
+            else:
+                 last_txt = f"{last_val:,.2f} {unit_lbl}"
             
             # Determine color for the marker based on final value
             final_color = PROFIT_COLOR if last_val >= 0 else LOSS_COLOR
@@ -1441,7 +1471,8 @@ try:
             orientation="h",
             color="sign",
             color_discrete_map={profit_label: PROFIT_COLOR, loss_label: LOSS_COLOR},
-            text=sorted_df["_scaled_pnl"].map(lambda v: f"{v:+.2f} {unit_lbl2}"),
+            # Strict format +€1000
+            text=sorted_df["_scaled_pnl"].map(lambda v: (f"{'+' if v>0 else '-' if v<0 else ''}€{abs(v):.2f}" if "€" in unit_lbl2 else f"{v:+.2f} {unit_lbl2}")),
         )
         fig_bar.update_traces(textposition="outside", cliponaxis=False)
         fig_bar.update_layout(
@@ -1607,7 +1638,10 @@ try:
         st.subheader(T(lang, "Cumulative P/L by Month", "月度累計損益"))
 
         scaled_vals, unit_lbl_m, _ = scale_unit(m_cum["cum_pnl"], lang, CURRENCY_RATE)
-        labels = [f"{v:.2f} {unit_lbl_m}" for v in scaled_vals.to_numpy()]
+        if "€" in unit_lbl_m:
+             labels = [f"{'+' if v>0 else '-' if v<0 else ''}€{abs(v):.2f}" for v in scaled_vals.to_numpy()]
+        else:
+             labels = [f"{v:.2f} {unit_lbl_m}" for v in scaled_vals.to_numpy()]
 
         fig_m = go.Figure()
         fig_m.add_trace(
