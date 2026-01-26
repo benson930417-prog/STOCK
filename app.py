@@ -1650,6 +1650,16 @@ try:
                   
                   # Placeholder for time status (will update later)
                  status_container = cols_opts[2].empty()
+                 
+                 # Refresh Button
+                 with cols_opts[2]:
+                      if st.button("🔄", help=T(lang, "Refresh market data", "更新行情資料"), key="btn_refresh_market"):
+                          # Clear cache keys starting with market_data_
+                          keys_to_del = [k for k in st.session_state.keys() if k.startswith("market_data_")]
+                          for k in keys_to_del:
+                              del st.session_state[k]
+                          st.rerun()
+
 
 
              except:
