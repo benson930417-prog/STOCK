@@ -307,7 +307,10 @@ def get_market_data(symbol, days=365):
     # Fetch Market data (e.g. ^TWII, ^DJI) from Yahoo Finance Chart API
     # Cache in session
     cache_key = f"market_data_{symbol}_{days}"
-    if cache_key in st.session_state:
+    ts_key = f"market_ts_{symbol}"
+    
+    # Check if BOTH data and timestamp are cached
+    if cache_key in st.session_state and ts_key in st.session_state:
         return st.session_state[cache_key]
 
     try:
