@@ -1456,7 +1456,68 @@ try:
 
     # -------------------- Overview --------------------
     with tab_overview:
-        st.subheader(T(lang, "Equity Curve", "資金曲線"))
+        
+        # --- Definitions ---
+        market_keys = ["TAIEX", "Dow Jones", "S&P 500", "PHLX Semi", "NASDAQ"]
+        market_symbols = {
+             "TAIEX": "^TWII",
+             "Dow Jones": "^DJI",
+             "S&P 500": "^GSPC",
+             "PHLX Semi": "^SOX",
+             "NASDAQ": "^IXIC"
+        }
+        MARKET_ZH = {
+             "TAIEX": "加權指數",
+             "Dow Jones": "道瓊工業",
+             "S&P 500": "標普500",
+             "PHLX Semi": "費城半導體",
+             "NASDAQ": "那斯達克"
+        }
+        def fmt_mkt(k):
+             return f"{k} {MARKET_ZH.get(k, '')}" if lang == "中文" else k
+
+        stock_keys = ["2330 TSMC", "0050 Yuanta 50", "TSMC ADR"]
+        stock_symbols = {
+             "2330 TSMC": "2330.TW",
+             "0050 Yuanta 50": "0050.TW",
+             "TSMC ADR": "TSM"
+        }
+        STOCK_ZH = {
+             "2330 TSMC": "2330 台積電",
+             "0050 Yuanta 50": "0050 元大台灣50",
+             "TSMC ADR": "台積電 ADR"
+        }
+        def fmt_stk(k):
+             return STOCK_ZH.get(k, k) if lang == "中文" else k
+
+        # --- Header & Controls Layout ---
+        col_header, col_controls = st.columns([1, 2.5])
+        with col_header:
+            st.subheader(T(lang, "Equity Curve", "資金曲線"))
+        
+        status_placeholder = st.empty()
+        
+        with col_controls:
+            with st.container(border=True):
+                c_mkt, c_stk, c_stat = st.columns([1, 1, 1])
+                with c_mkt:
+                     sel_indices = st.multiselect(
+                         T(lang, "Market Comparison", "大盤指數對照"),
+                         options=market_keys,
+                         default=["TAIEX"],
+                         format_func=fmt_mkt
+                     )
+                with c_stk:
+                     sel_stocks = st.multiselect(
+                         T(lang, "Stock Comparison", "個股對照"),
+                         options=stock_keys,
+                         default=[],
+                         format_func=fmt_stk
+                     )
+                with c_stat:
+                     # Placeholder for status UI (will be filled later)
+                     status_placeholder = st.empty()
+
 
         # Aggregate to Daily Close for a smooth "Pro" curve
         daily_agg = f_sorted.groupby("date", as_index=False)["realized_pnl"].sum()
@@ -1613,74 +1674,6 @@ try:
                  )
              )
              
-             # Market Overlays (User Selection)
-             market_keys = ["TAIEX", "Dow Jones", "S&P 500", "PHLX Semi", "NASDAQ"]
-             market_symbols = {
-                 "TAIEX": "^TWII",
-                 "Dow Jones": "^DJI",
-                 "S&P 500": "^GSPC",
-                 "PHLX Semi": "^SOX",
-                 "NASDAQ": "^IXIC"
-             }
-             
-             # Chinese Translations
-             MARKET_ZH = {
-                 "TAIEX": "加權指數",
-                 "Dow Jones": "道瓊工業",
-                 "S&P 500": "標普500",
-                 "PHLX Semi": "費城半導體",
-                 "NASDAQ": "那斯達克"
-             }
-             
-             # Helper to format option
-             def fmt_mkt(k):
-                 return f"{k} {MARKET_ZH.get(k, '')}" if lang == "中文" else k
-
-             # Stock Overlays
-             stock_keys = ["2330 TSMC", "0050 Yuanta 50", "TSMC ADR"]
-             stock_symbols = {
-                 "2330 TSMC": "2330.TW",
-                 "0050 Yuanta 50": "0050.TW",
-                 "TSMC ADR": "TSM"
-             }
-
-             
-             STOCK_ZH = {
-                 "2330 TSMC": "2330 台積電",
-                 "0050 Yuanta 50": "0050 元大台灣50",
-                 "TSMC ADR": "台積電 ADR"
-             }
-             
-             def fmt_stk(k):
-                 return STOCK_ZH.get(k, k) if lang == "中文" else k
-
-             # UI Control 
-             try:
-                 cols_opts = st.columns([1, 1])
-                 with cols_opts[0]:
-                      # Use format_func to display
-                      sel_indices = st.multiselect(
-                          T(lang, "Market Comparison", "大盤指數對照"),
-                          options=market_keys,
-                          default=["TAIEX"],
-                          format_func=fmt_mkt
-                      )
-                  
-                 with cols_opts[1]: 
-                      sel_stocks = st.multiselect(
-                          T(lang, "Stock Comparison", "個股對照"),
-                          options=stock_keys,
-                          default=[],
-                          format_func=fmt_stk
-                      )
-                  
-
-
-
-
-             except Exception:
-                 sel_indices = []
-
              # Bounds Initialization
              y_max_pct = 0.0
              y_min_pct = 0.0
@@ -1892,31 +1885,29 @@ try:
         add_zero_line(fig_eq, axis="y", color="#A9B1BD", width=2, dash="dash")
         st.plotly_chart(fig_eq, width="stretch")
         
-        # Status Bar (Below Graph)
-        with st.container(border=True):
-            cols_status = st.columns([6, 1])
-            with cols_status[1]:
-                 if st.button(T(lang, "Refresh Data", "更新資料"), key="btn_refresh_market", use_container_width=True):
-                      keys_to_del = [k for k in st.session_state.keys() if k.startswith("market_data_")]
-                      for k in keys_to_del:
-                          del st.session_state[k]
-                      st.rerun()
+        # Inject Status to Top Right Placeholder
+        status_parts = []
+        if max_tw_ts > 0:
+             ago_tw = humanize_ago_from_utc_epoch(max_tw_ts, lang)
+             status_parts.append(f"TW: {ago_tw}")
+        if max_us_ts > 0:
+             ago_us = humanize_ago_from_utc_epoch(max_us_ts, lang)
+             status_parts.append(f"US: {ago_us}")
+        
+        with status_placeholder.container():
+             # Status text
+             if status_parts:
+                 full_status = f"**{T(lang, 'Data Status', '資料狀態')}**: " + " | ".join(status_parts)
+                 st.caption(full_status)
+             else:
+                 st.caption(f"**{T(lang, 'Data Status', '資料狀態')}**")
 
-            # Calculate and display status text directly
-            status_parts = []
-            if max_tw_ts > 0:
-                 ago_tw = humanize_ago_from_utc_epoch(max_tw_ts, lang)
-                 status_parts.append(f"TW: {ago_tw}")
-            if max_us_ts > 0:
-                 ago_us = humanize_ago_from_utc_epoch(max_us_ts, lang)
-                 status_parts.append(f"US: {ago_us}")
-            
-            with cols_status[0]:
-                 if status_parts:
-                     full_status = f"**{T(lang, 'Data Status', '資料狀態')}**: " + " | ".join(status_parts)
-                     st.markdown(full_status)
-                 else:
-                     st.write("")
+             # Refresh Button
+             if st.button(T(lang, "Refresh Data", "更新資料"), key="btn_refresh_market", use_container_width=True):
+                  keys_to_del = [k for k in st.session_state.keys() if k.startswith("market_data_")]
+                  for k in keys_to_del:
+                      del st.session_state[k]
+                  st.rerun()
 
         hr()
         
