@@ -1476,20 +1476,22 @@ try:
         def fmt_mkt(k):
              return f"{k} {MARKET_ZH.get(k, '')}" if lang == "中文" else k
 
-        stock_keys = ["2330 TSMC", "0050 Yuanta 50", "TSMC ADR", "1306 TPX", "1321 NK225"]
+        stock_keys = ["2330 TSMC", "0050 Yuanta 50", "TSMC ADR", "1306 TPX", "1321 NK225", "VOO"]
         stock_symbols = {
              "2330 TSMC": "2330.TW",
              "0050 Yuanta 50": "0050.TW",
              "TSMC ADR": "TSM",
              "1306 TPX": "1306.T",
-             "1321 NK225": "1321.T"
+             "1321 NK225": "1321.T",
+             "VOO": "VOO"
         }
         STOCK_ZH = {
              "2330 TSMC": "2330 台積電",
              "0050 Yuanta 50": "0050 元大台灣50",
              "TSMC ADR": "台積電 ADR",
              "1306 TPX": "1306 東証 TOPIX ETF",
-             "1321 NK225": "1321 日經 225 ETF"
+             "1321 NK225": "1321 日經 225 ETF",
+             "VOO": "VOO 標普500 ETF"
         }
         def fmt_stk(k):
              return STOCK_ZH.get(k, k) if lang == "中文" else k
@@ -1703,7 +1705,8 @@ try:
                  "0050 Yuanta 50": "rgba(255, 0, 255, 0.6)",
                  "TSMC ADR": "rgba(255, 100, 50, 0.6)",
                  "1306 TPX": "rgba(255, 100, 100, 0.6)",
-                 "1321 NK225": "rgba(100, 100, 255, 0.6)"
+                 "1321 NK225": "rgba(100, 100, 255, 0.6)",
+                 "VOO": "rgba(255, 215, 0, 0.6)"
              }
 
              max_tw_ts = 0
