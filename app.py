@@ -1823,7 +1823,16 @@ try:
              
              if status_parts:
                  full_status = f"{T(lang, 'Market data', '行情更新')}: " + "  |  ".join(status_parts)
-                 status_container.caption(full_status)
+                 # Use status_container to display status AND button
+                 with status_container:
+                     st.caption(full_status)
+                     if st.button(T(lang, "Refresh Data", "更新報價"), key="btn_refresh_market", use_container_width=True):
+                          # Clear cache
+                          keys_to_del = [k for k in st.session_state.keys() if k.startswith("market_data_")]
+                          for k in keys_to_del:
+                              del st.session_state[k]
+                          st.toast(T(lang, "Market data cache cleared.", "行情快取已清除。"), icon="🧹")
+                          st.rerun()
 
 
 
