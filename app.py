@@ -1674,15 +1674,18 @@ try:
              }
 
              # Stock Overlays
-             stock_keys = ["2330 TSMC", "0050 Yuanta 50"]
+             stock_keys = ["2330 TSMC", "0050 Yuanta 50", "TSMC ADR"]
              stock_symbols = {
                  "2330 TSMC": "2330.TW",
-                 "0050 Yuanta 50": "0050.TW"
+                 "0050 Yuanta 50": "0050.TW",
+                 "TSMC ADR": "TSM"
              }
+
              
              STOCK_ZH = {
                  "2330 TSMC": "2330 台積電",
-                 "0050 Yuanta 50": "0050 元大台灣50"
+                 "0050 Yuanta 50": "0050 元大台灣50",
+                 "TSMC ADR": "台積電 ADR"
              }
              
              def fmt_stk(k):
@@ -1703,7 +1706,8 @@ try:
              # Extend colors for stocks
              stock_colors = {
                  "2330 TSMC": "rgba(0, 255, 255, 0.6)",
-                 "0050 Yuanta 50": "rgba(255, 0, 255, 0.6)"
+                 "0050 Yuanta 50": "rgba(255, 0, 255, 0.6)",
+                 "TSMC ADR": "rgba(100, 100, 255, 0.6)"
              }
 
              max_tw_ts = 0
