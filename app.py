@@ -337,10 +337,8 @@ def get_market_data(symbol, days=365):
         df["date"] = pd.to_datetime(df["ts"], unit="s").dt.normalize()
         df = df.dropna().sort_values("date")
         
-        # Store metadata
-        df.attrs["last_update"] = last_trade_ts
-
-        
+        # Store metadata in session state to survive cache reload
+        st.session_state[f"market_ts_{symbol}"] = last_trade_ts
         st.session_state[cache_key] = df
         return df
     except Exception:
@@ -1731,7 +1729,8 @@ try:
                      m_rel = m_df[mask].copy()
                      
                      # Track latest update time
-                     ts = m_df.attrs.get("last_update", 0)
+                     # Track latest update time
+                     ts = st.session_state.get(f"market_ts_{symbol}", 0)
                      if "^TWII" in symbol or ".TW" in symbol:
                          if ts > max_tw_ts: max_tw_ts = ts
                      else:
@@ -1779,7 +1778,8 @@ try:
                      s_rel = s_df[mask].copy()
                      
                      # Track latest update time
-                     ts = s_df.attrs.get("last_update", 0)
+                     # Track latest update time
+                     ts = st.session_state.get(f"market_ts_{symbol}", 0)
                      if "^TWII" in symbol or ".TW" in symbol:
                          if ts > max_tw_ts: max_tw_ts = ts
                      else:
@@ -1828,7 +1828,7 @@ try:
                      st.caption(full_status)
                      if st.button(T(lang, "Refresh Data", "更新報價"), key="btn_refresh_market", use_container_width=True):
                           # Clear cache
-                          keys_to_del = [k for k in st.session_state.keys() if k.startswith("market_data_")]
+                          keys_to_del = [k for k in st.session_state.keys() if k.startswith("market_data_") or k.startswith("market_ts_")]
                           for k in keys_to_del:
                               del st.session_state[k]
                           st.toast(T(lang, "Market data cache cleared.", "行情快取已清除。"), icon="🧹")
