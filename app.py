@@ -1491,32 +1491,29 @@ try:
              return STOCK_ZH.get(k, k) if lang == "中文" else k
 
         # --- Header & Controls Layout ---
-        col_header, col_controls = st.columns([1, 2.5])
-        with col_header:
-            st.subheader(T(lang, "Equity Curve", "資金曲線"))
+        st.subheader(T(lang, "Equity Curve", "資金曲線"))
         
-        status_placeholder = st.empty()
-        
-        with col_controls:
-            with st.container(border=True):
-                c_mkt, c_stk, c_stat = st.columns([1, 1, 1])
-                with c_mkt:
-                     sel_indices = st.multiselect(
-                         T(lang, "Market Comparison", "大盤指數對照"),
-                         options=market_keys,
-                         default=["TAIEX"],
-                         format_func=fmt_mkt
-                     )
-                with c_stk:
-                     sel_stocks = st.multiselect(
-                         T(lang, "Stock Comparison", "個股對照"),
-                         options=stock_keys,
-                         default=[],
-                         format_func=fmt_stk
-                     )
-                with c_stat:
-                     # Placeholder for status UI (will be filled later)
-                     status_placeholder = st.empty()
+        with st.container(border=True):
+             c_mkt, c_stk, c_stat = st.columns([2, 2, 1.2])
+             with c_mkt:
+                  sel_indices = st.multiselect(
+                      T(lang, "Market Comparison", "大盤指數對照"),
+                      options=market_keys,
+                      default=["TAIEX"],
+                      format_func=fmt_mkt
+                  )
+             with c_stk:
+                  sel_stocks = st.multiselect(
+                      T(lang, "Stock Comparison", "個股對照"),
+                      options=stock_keys,
+                      default=[],
+                      format_func=fmt_stk
+                  )
+
+             with c_stat:
+                  # Placeholder for status UI (filled after data fetch)
+                  status_placeholder = st.empty()
+
 
 
         # Aggregate to Daily Close for a smooth "Pro" curve
@@ -1908,6 +1905,7 @@ try:
                   for k in keys_to_del:
                       del st.session_state[k]
                   st.rerun()
+        
 
         hr()
         
