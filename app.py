@@ -1706,7 +1706,9 @@ try:
                  "0050 Yuanta 50": "rgba(255, 0, 255, 0.6)"
              }
 
-             max_market_ts = 0
+             max_tw_ts = 0
+             max_us_ts = 0
+
 
 
              # Process Market Indices
@@ -1726,8 +1728,11 @@ try:
                      
                      # Track latest update time
                      ts = m_df.attrs.get("last_update", 0)
-                     if ts > max_market_ts:
-                         max_market_ts = ts
+                     if "^TWII" in symbol or ".TW" in symbol:
+                         if ts > max_tw_ts: max_tw_ts = ts
+                     else:
+                         if ts > max_us_ts: max_us_ts = ts
+
 
                      
                      if not m_rel.empty:
@@ -1770,8 +1775,11 @@ try:
                      
                      # Track latest update time
                      ts = s_df.attrs.get("last_update", 0)
-                     if ts > max_market_ts:
-                         max_market_ts = ts
+                     if "^TWII" in symbol or ".TW" in symbol:
+                         if ts > max_tw_ts: max_tw_ts = ts
+                     else:
+                         if ts > max_us_ts: max_us_ts = ts
+
 
                      
                      if not s_rel.empty:
@@ -1799,9 +1807,18 @@ try:
                              y_min_pct = min(y_min_pct, s_rel["pct"].min())
 
              # Display Market Update Time
-             if max_market_ts > 0:
-                 ago = humanize_ago_from_utc_epoch(max_market_ts, lang)
-                 status_container.caption(f"{T(lang, 'Market data', '行情更新')}: {ago}")
+             status_parts = []
+             if max_tw_ts > 0:
+                 ago_tw = humanize_ago_from_utc_epoch(max_tw_ts, lang)
+                 status_parts.append(f"TW: {ago_tw}")
+             if max_us_ts > 0:
+                 ago_us = humanize_ago_from_utc_epoch(max_us_ts, lang)
+                 status_parts.append(f"US: {ago_us}")
+             
+             if status_parts:
+                 full_status = f"{T(lang, 'Market data', '行情更新')}: " + "  |  ".join(status_parts)
+                 status_container.caption(full_status)
+
 
 
 
