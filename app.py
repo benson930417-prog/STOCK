@@ -1662,7 +1662,7 @@ try:
 
 
 
-             except:
+             except Exception:
                  sel_indices = []
 
              # Bounds Initialization
