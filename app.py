@@ -1476,16 +1476,20 @@ try:
         def fmt_mkt(k):
              return f"{k} {MARKET_ZH.get(k, '')}" if lang == "中文" else k
 
-        stock_keys = ["2330 TSMC", "0050 Yuanta 50", "TSMC ADR"]
+        stock_keys = ["2330 TSMC", "0050 Yuanta 50", "TSMC ADR", "1306 TPX", "1321 NK225"]
         stock_symbols = {
              "2330 TSMC": "2330.TW",
              "0050 Yuanta 50": "0050.TW",
-             "TSMC ADR": "TSM"
+             "TSMC ADR": "TSM",
+             "1306 TPX": "1306.T",
+             "1321 NK225": "1321.T"
         }
         STOCK_ZH = {
              "2330 TSMC": "2330 台積電",
              "0050 Yuanta 50": "0050 元大台灣50",
-             "TSMC ADR": "台積電 ADR"
+             "TSMC ADR": "台積電 ADR",
+             "1306 TPX": "1306 東証 TOPIX ETF",
+             "1321 NK225": "1321 日經 225 ETF"
         }
         def fmt_stk(k):
              return STOCK_ZH.get(k, k) if lang == "中文" else k
@@ -1686,7 +1690,9 @@ try:
                  "Dow Jones": "rgba(50, 100, 200, 0.5)",
                  "S&P 500": "rgba(200, 150, 50, 0.5)",
                  "PHLX Semi": "rgba(100, 200, 150, 0.5)",
-                 "NASDAQ": "rgba(180, 50, 200, 0.5)"
+                 "NASDAQ": "rgba(180, 50, 200, 0.5)",
+                 "1306 TPX": "rgba(255, 100, 100, 0.5)",
+                 "1321 NK225": "rgba(100, 100, 255, 0.5)"
              }
 
 
@@ -1695,13 +1701,20 @@ try:
              stock_colors = {
                  "2330 TSMC": "rgba(0, 255, 255, 0.6)",
                  "0050 Yuanta 50": "rgba(255, 0, 255, 0.6)",
-                 "TSMC ADR": "rgba(100, 100, 255, 0.6)"
+                 "TSMC ADR": "rgba(255, 100, 50, 0.6)",
+                 "1306 TPX": "rgba(255, 100, 100, 0.6)",
+                 "1321 NK225": "rgba(100, 100, 255, 0.6)"
              }
 
              max_tw_ts = 0
              max_us_ts = 0
 
 
+
+             # Pre-calculate bounds
+             max_tw_ts = 0
+             max_us_ts = 0
+             max_jp_ts = 0
 
              # Process Market Indices
              for m_name in sel_indices:
@@ -1722,6 +1735,8 @@ try:
                      ts = m_df.attrs.get("last_update", 0)
                      if "^TWII" in symbol or ".TW" in symbol:
                          if ts > max_tw_ts: max_tw_ts = ts
+                     elif ".T" in symbol:
+                         if ts > max_jp_ts: max_jp_ts = ts
                      else:
                          if ts > max_us_ts: max_us_ts = ts
 
@@ -1770,6 +1785,8 @@ try:
                      ts = s_df.attrs.get("last_update", 0)
                      if "^TWII" in symbol or ".TW" in symbol:
                          if ts > max_tw_ts: max_tw_ts = ts
+                     elif ".T" in symbol:
+                         if ts > max_jp_ts: max_jp_ts = ts
                      else:
                          if ts > max_us_ts: max_us_ts = ts
 
@@ -1887,6 +1904,9 @@ try:
         if max_tw_ts > 0:
              ago_tw = humanize_ago_from_utc_epoch(max_tw_ts, lang)
              status_parts.append(f"TW: {ago_tw}")
+        if max_jp_ts > 0:
+             ago_jp = humanize_ago_from_utc_epoch(max_jp_ts, lang)
+             status_parts.append(f"JP: {ago_jp}")
         if max_us_ts > 0:
              ago_us = humanize_ago_from_utc_epoch(max_us_ts, lang)
              status_parts.append(f"US: {ago_us}")
