@@ -307,10 +307,7 @@ def get_market_data(symbol, days=365):
     # Fetch Market data (e.g. ^TWII, ^DJI) from Yahoo Finance Chart API
     # Cache in session
     cache_key = f"market_data_{symbol}_{days}"
-    ts_key = f"market_ts_{symbol}"
-    
-    # Check if BOTH data and timestamp are cached
-    if cache_key in st.session_state and ts_key in st.session_state:
+    if cache_key in st.session_state:
         return st.session_state[cache_key]
 
     try:
@@ -340,8 +337,10 @@ def get_market_data(symbol, days=365):
         df["date"] = pd.to_datetime(df["ts"], unit="s").dt.normalize()
         df = df.dropna().sort_values("date")
         
-        # Store metadata in session state to survive cache reload
-        st.session_state[f"market_ts_{symbol}"] = last_trade_ts
+        # Store metadata
+        df.attrs["last_update"] = last_trade_ts
+
+        
         st.session_state[cache_key] = df
         return df
     except Exception:
@@ -1732,8 +1731,7 @@ try:
                      m_rel = m_df[mask].copy()
                      
                      # Track latest update time
-                     # Track latest update time
-                     ts = st.session_state.get(f"market_ts_{symbol}", 0)
+                     ts = m_df.attrs.get("last_update", 0)
                      if "^TWII" in symbol or ".TW" in symbol:
                          if ts > max_tw_ts: max_tw_ts = ts
                      else:
@@ -1781,8 +1779,7 @@ try:
                      s_rel = s_df[mask].copy()
                      
                      # Track latest update time
-                     # Track latest update time
-                     ts = st.session_state.get(f"market_ts_{symbol}", 0)
+                     ts = s_df.attrs.get("last_update", 0)
                      if "^TWII" in symbol or ".TW" in symbol:
                          if ts > max_tw_ts: max_tw_ts = ts
                      else:
@@ -1826,16 +1823,7 @@ try:
              
              if status_parts:
                  full_status = f"{T(lang, 'Market data', '行情更新')}: " + "  |  ".join(status_parts)
-                 # Use status_container to display status AND button
-                 with status_container:
-                     st.caption(full_status)
-                     if st.button(T(lang, "Refresh Data", "更新報價"), key="btn_refresh_market", use_container_width=True):
-                          # Clear cache
-                          keys_to_del = [k for k in st.session_state.keys() if k.startswith("market_data_") or k.startswith("market_ts_")]
-                          for k in keys_to_del:
-                              del st.session_state[k]
-                          st.toast(T(lang, "Market data cache cleared.", "行情快取已清除。"), icon="🧹")
-                          st.rerun()
+                 status_container.caption(full_status)
 
 
 
