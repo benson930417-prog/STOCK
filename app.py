@@ -328,10 +328,18 @@ def get_market_data(symbol, days=365):
         timestamps = result["timestamp"]
         closes = result["indicators"]["quote"][0]["close"]
         
+        # Meta for last update time
+        meta = result.get("meta", {})
+        last_trade_ts = meta.get("regularMarketTime", 0)
+        
         # Create DataFrame
         df = pd.DataFrame({"ts": timestamps, "close": closes})
         df["date"] = pd.to_datetime(df["ts"], unit="s").dt.normalize()
         df = df.dropna().sort_values("date")
+        
+        # Store metadata
+        df.attrs["last_update"] = last_trade_ts
+
         
         st.session_state[cache_key] = df
         return df
@@ -1639,6 +1647,11 @@ try:
                           default=["TAIEX"],
                           format_func=fmt_mkt
                       )
+                  
+                  # Placeholder for time status (will update later)
+                 status_container = cols_opts[1].empty()
+
+
              except:
                  sel_indices = []
 
@@ -1693,16 +1706,29 @@ try:
                  "0050 Yuanta 50": "rgba(255, 0, 255, 0.6)"
              }
 
+             max_market_ts = 0
+
+
              # Process Market Indices
              for m_name in sel_indices:
                  symbol = market_symbols[m_name]
-                 m_df = get_market_data(symbol, days=(daily_agg["date"].max() - daily_agg["date"].min()).days + 30)
+                 # Fetch up to today to ensure we get latest data even if personal data is old
+                 # Add buffer to days calculation
+                 days_needed = (pd.Timestamp.now().normalize() - daily_agg["date"].min()).days + 10
+                 m_df = get_market_data(symbol, days=max(days_needed, 365))
+
                  
                  if not m_df.empty:
                      start_date_m = daily_agg["date"].min()
-                     end_date_m = daily_agg["date"].max()
-                     mask = (m_df["date"] >= start_date_m) & (m_df["date"] <= end_date_m)
+                     # Decouple: End date is open (up to today/future)
+                     mask = (m_df["date"] >= start_date_m)
                      m_rel = m_df[mask].copy()
+                     
+                     # Track latest update time
+                     ts = m_df.attrs.get("last_update", 0)
+                     if ts > max_market_ts:
+                         max_market_ts = ts
+
                      
                      if not m_rel.empty:
                          base_price = m_rel["close"].iloc[0]
@@ -1731,14 +1757,22 @@ try:
              # Process Stocks
              for s_name in sel_stocks:
                  symbol = stock_symbols[s_name]
-                 # Reuse get_market_data
-                 s_df = get_market_data(symbol, days=(daily_agg["date"].max() - daily_agg["date"].min()).days + 30)
+                 # Reuse get_market_data logic for duration
+                 days_needed = (pd.Timestamp.now().normalize() - daily_agg["date"].min()).days + 10
+                 s_df = get_market_data(symbol, days=max(days_needed, 365))
+
                  
                  if not s_df.empty:
                      start_date_s = daily_agg["date"].min()
-                     end_date_s = daily_agg["date"].max()
-                     mask = (s_df["date"] >= start_date_s) & (s_df["date"] <= end_date_s)
+                     # Decouple: End date is open
+                     mask = (s_df["date"] >= start_date_s)
                      s_rel = s_df[mask].copy()
+                     
+                     # Track latest update time
+                     ts = s_df.attrs.get("last_update", 0)
+                     if ts > max_market_ts:
+                         max_market_ts = ts
+
                      
                      if not s_rel.empty:
                          base_price = s_rel["close"].iloc[0]
@@ -1764,6 +1798,13 @@ try:
                              y_max_pct = max(y_max_pct, s_rel["pct"].max())
                              y_min_pct = min(y_min_pct, s_rel["pct"].min())
 
+             # Display Market Update Time
+             if max_market_ts > 0:
+                 ago = humanize_ago_from_utc_epoch(max_market_ts, lang)
+                 status_container.caption(f"{T(lang, 'Market data', '行情更新')}: {ago}")
+
+
+
 
              
         # Add padding (e.g. 10%)
@@ -1788,7 +1829,10 @@ try:
             max_date = daily_agg["date"].max()
             # Add small padding (e.g. 5%) or tight? User asked for tight left.
             # We can set range explicitly.
-            range_x = [min_date, max_date]
+            # Use max of personal data OR market data (today)
+            end_x = max(max_date, pd.Timestamp.now().normalize())
+            range_x = [min_date, end_x]
+
         else:
             range_x = None
  
