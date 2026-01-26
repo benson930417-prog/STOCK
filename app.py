@@ -1656,7 +1656,7 @@ try:
 
              # UI Control 
              try:
-                 cols_opts = st.columns([2, 2, 1])
+                 cols_opts = st.columns([1, 1])
                  with cols_opts[0]:
                       # Use format_func to display
                       sel_indices = st.multiselect(
@@ -1674,18 +1674,7 @@ try:
                           format_func=fmt_stk
                       )
                   
-                  # Placeholder for time status (will update later)
-                 # Status Zone
-                 with cols_opts[2]:
-                     with st.container(border=True):
-                         st.caption(f"**{T(lang, 'Data Status', '資料狀態')}**")
-                         status_container = st.empty()
-                         
-                         if st.button(T(lang, "Refresh Data", "更新資料"), key="btn_refresh_market", use_container_width=True):
-                             keys_to_del = [k for k in st.session_state.keys() if k.startswith("market_data_")]
-                             for k in keys_to_del:
-                                 del st.session_state[k]
-                             st.rerun()
+
 
 
 
@@ -1821,18 +1810,7 @@ try:
                              y_max_pct = max(y_max_pct, s_rel["pct"].max())
                              y_min_pct = min(y_min_pct, s_rel["pct"].min())
 
-             # Display Market Update Time
-             status_parts = []
-             if max_tw_ts > 0:
-                 ago_tw = humanize_ago_from_utc_epoch(max_tw_ts, lang)
-                 status_parts.append(f"TW: {ago_tw}")
-             if max_us_ts > 0:
-                 ago_us = humanize_ago_from_utc_epoch(max_us_ts, lang)
-                 status_parts.append(f"US: {ago_us}")
-             
-             if status_parts:
-                 full_status = f"{T(lang, 'Market data', '行情更新')}:\n\n" + "\n\n".join(status_parts)
-                 status_container.caption(full_status)
+
 
 
 
@@ -1913,6 +1891,32 @@ try:
         # fig_eq = add_month_major_lines(fig_eq, daily_agg["date"]) # Optional, cleaning up to look simpler
         add_zero_line(fig_eq, axis="y", color="#A9B1BD", width=2, dash="dash")
         st.plotly_chart(fig_eq, width="stretch")
+        
+        # Status Bar (Below Graph)
+        with st.container(border=True):
+            cols_status = st.columns([6, 1])
+            with cols_status[1]:
+                 if st.button(T(lang, "Refresh Data", "更新資料"), key="btn_refresh_market", use_container_width=True):
+                      keys_to_del = [k for k in st.session_state.keys() if k.startswith("market_data_")]
+                      for k in keys_to_del:
+                          del st.session_state[k]
+                      st.rerun()
+
+            # Calculate and display status text directly
+            status_parts = []
+            if max_tw_ts > 0:
+                 ago_tw = humanize_ago_from_utc_epoch(max_tw_ts, lang)
+                 status_parts.append(f"TW: {ago_tw}")
+            if max_us_ts > 0:
+                 ago_us = humanize_ago_from_utc_epoch(max_us_ts, lang)
+                 status_parts.append(f"US: {ago_us}")
+            
+            with cols_status[0]:
+                 if status_parts:
+                     full_status = f"**{T(lang, 'Data Status', '資料狀態')}**: " + " | ".join(status_parts)
+                     st.markdown(full_status)
+                 else:
+                     st.write("")
 
         hr()
         
