@@ -1752,7 +1752,8 @@ try:
                                  go.Scatter(
                                      x=m_rel["date"],
                                      y=m_rel["pct"],
-                                     mode="lines",
+                                     mode="lines+markers",
+                                     marker=dict(size=3),
                                      name=disp_name,
                                      line=dict(color=c_line, width=1.5, dash='dash'),
                                      yaxis="y2",
@@ -1799,7 +1800,8 @@ try:
                                  go.Scatter(
                                      x=s_rel["date"],
                                      y=s_rel["pct"],
-                                     mode="lines",
+                                     mode="lines+markers",
+                                     marker=dict(size=3),
                                      name=disp_name,
                                      line=dict(color=c_line, width=1.5, dash='dot'), 
                                      yaxis="y2",
