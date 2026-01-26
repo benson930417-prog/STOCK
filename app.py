@@ -1636,6 +1636,24 @@ try:
              def fmt_mkt(k):
                  return f"{k} {MARKET_ZH.get(k, '')}" if lang == "中文" else k
 
+             # Stock Overlays
+             stock_keys = ["2330 TSMC", "0050 Yuanta 50", "TSMC ADR"]
+             stock_symbols = {
+                 "2330 TSMC": "2330.TW",
+                 "0050 Yuanta 50": "0050.TW",
+                 "TSMC ADR": "TSM"
+             }
+
+             
+             STOCK_ZH = {
+                 "2330 TSMC": "2330 台積電",
+                 "0050 Yuanta 50": "0050 元大台灣50",
+                 "TSMC ADR": "台積電 ADR"
+             }
+             
+             def fmt_stk(k):
+                 return STOCK_ZH.get(k, k) if lang == "中文" else k
+
              # UI Control 
              try:
                  cols_opts = st.columns([2, 2, 1])
@@ -1646,6 +1664,14 @@ try:
                           options=market_keys,
                           default=["TAIEX"],
                           format_func=fmt_mkt
+                      )
+                  
+                 with cols_opts[1]: 
+                      sel_stocks = st.multiselect(
+                          T(lang, "Stock Comparison", "個股對照"),
+                          options=stock_keys,
+                          default=[],
+                          format_func=fmt_stk
                       )
                   
                   # Placeholder for time status (will update later)
@@ -1684,35 +1710,7 @@ try:
                  "NASDAQ": "rgba(180, 50, 200, 0.5)"
              }
 
-             # Stock Overlays
-             stock_keys = ["2330 TSMC", "0050 Yuanta 50", "TSMC ADR"]
-             stock_symbols = {
-                 "2330 TSMC": "2330.TW",
-                 "0050 Yuanta 50": "0050.TW",
-                 "TSMC ADR": "TSM"
-             }
 
-             
-             STOCK_ZH = {
-                 "2330 TSMC": "2330 台積電",
-                 "0050 Yuanta 50": "0050 元大台灣50",
-                 "TSMC ADR": "台積電 ADR"
-             }
-             
-             def fmt_stk(k):
-                 return STOCK_ZH.get(k, k) if lang == "中文" else k
-             
-             # UI Control for Stock
-             try:
-                  with cols_opts[1]: 
-                       sel_stocks = st.multiselect(
-                           T(lang, "Stock Comparison", "個股對照"),
-                           options=stock_keys,
-                           default=[],
-                           format_func=fmt_stk
-                       )
-             except:
-                  sel_stocks = []
                   
              # Extend colors for stocks
              stock_colors = {
