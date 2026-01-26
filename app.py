@@ -1864,7 +1864,10 @@ try:
                  tickformat=".1f",
                  ticksuffix="%",
                  title_standoff=10,
-                 range=[final_min_pct, final_max_pct]
+                 range=[final_min_pct, final_max_pct],
+                 # Lock scale to primary axis
+                 scaleanchor="y",
+                 scaleratio=(1.0 / factor) if factor > 0 else 1
              ),
              height=460,
              margin=dict(l=10, r=20, t=60, b=10),
