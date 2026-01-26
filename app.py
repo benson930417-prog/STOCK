@@ -1833,7 +1833,7 @@ try:
                  status_parts.append(f"US: {ago_us}")
              
              if status_parts:
-                 full_status = f"{T(lang, 'Market data', '行情更新')}: " + "  |  ".join(status_parts)
+                 full_status = f"{T(lang, 'Market data', '行情更新')}:\n\n" + "\n\n".join(status_parts)
                  status_container.caption(full_status)
 
 
