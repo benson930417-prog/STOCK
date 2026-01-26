@@ -1638,7 +1638,7 @@ try:
 
              # UI Control 
              try:
-                 cols_opts = st.columns([2, 1])
+                 cols_opts = st.columns([2, 2, 1])
                  with cols_opts[0]:
                       # Use format_func to display
                       sel_indices = st.multiselect(
@@ -1649,7 +1649,7 @@ try:
                       )
                   
                   # Placeholder for time status (will update later)
-                 status_container = cols_opts[1].empty()
+                 status_container = cols_opts[2].empty()
 
 
              except:
@@ -1693,7 +1693,7 @@ try:
              
              # UI Control for Stock
              try:
-                  with cols_opts[0]: 
+                  with cols_opts[1]: 
                        sel_stocks = st.multiselect(
                            T(lang, "Stock Comparison", "個股對照"),
                            options=stock_keys,
