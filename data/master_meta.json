@@ -1,18 +1,18 @@
 {
-  "last_update_utc_epoch": 1769485567.463386,
-  "rows": 94,
+  "last_update_utc_epoch": 1769582210.117619,
+  "rows": 97,
   "min_date": "2025-11-26",
-  "max_date": "2026-01-27",
+  "max_date": "2026-01-28",
   "last_upload": {
-    "filename": "證券對帳單 20260127114504.csv",
+    "filename": "證券對帳單 20260128143612.csv",
     "uploaded_rows": 50,
-    "old_rows": 90,
-    "added_rows": 4,
-    "dup_skipped": 46,
-    "after_rows": 94,
+    "old_rows": 94,
+    "added_rows": 3,
+    "dup_skipped": 47,
+    "after_rows": 97,
     "range_after": {
       "min_date": "2025-11-26",
-      "max_date": "2026-01-27"
+      "max_date": "2026-01-28"
     }
   }
 }
