@@ -675,98 +675,93 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
         sdf = sdf.sort_values("日期")
 
         for date, ddf in sdf.groupby(sdf["日期"].dt.date, sort=False):
-            for pool in ["board", "odd"]:
-                dpool = ddf[ddf["成交股數"].apply(lambda q: pool_of(q) == pool)].copy()
-                if dpool.empty:
-                    continue
+            buys = ddf[ddf["淨收付金額"] < 0].copy()
+            sells = ddf[ddf["淨收付金額"] > 0].copy()
 
-                buys = dpool[dpool["淨收付金額"] < 0].copy()
-                sells = dpool[dpool["淨收付金額"] > 0].copy()
+            day_buy_lots = deque()
+            for _, r in buys.iterrows():
+                qty = int(r["成交股數"])
+                cash_out = -float(r["淨收付金額"])
+                fee = float(r["手續費"])
+                cps = cash_out / qty
+                fps = fee / qty
+                day_buy_lots.append({"qty": qty, "cps": cps, "fee_per_share": fps})
 
-                day_buy_lots = deque()
-                for _, r in buys.iterrows():
-                    qty = int(r["成交股數"])
-                    cash_out = -float(r["淨收付金額"])
-                    fee = float(r["手續費"])
-                    cps = cash_out / qty
-                    fps = fee / qty
-                    day_buy_lots.append({"qty": qty, "cps": cps, "fee_per_share": fps})
+            day_sell_lots = deque()
+            for _, r in sells.iterrows():
+                qty = int(r["成交股數"])
+                cash_in = float(r["淨收付金額"])
+                fee = float(r["手續費"])
+                tax = float(r["交易稅"])
+                pps = cash_in / qty
+                fps = fee / qty
+                tps = tax / qty
+                day_sell_lots.append({"qty": qty, "pps": pps, "fee_per_share": fps, "tax_per_share": tps})
 
-                day_sell_lots = deque()
-                for _, r in sells.iterrows():
-                    qty = int(r["成交股數"])
-                    cash_in = float(r["淨收付金額"])
-                    fee = float(r["手續費"])
-                    tax = float(r["交易稅"])
-                    pps = cash_in / qty
-                    fps = fee / qty
-                    tps = tax / qty
-                    day_sell_lots.append({"qty": qty, "pps": pps, "fee_per_share": fps, "tax_per_share": tps})
+            # 1) Same-day match
+            intraday_qty = 0
+            intraday_cost = 0.0
+            intraday_cash = 0.0
+            intraday_buy_fee = 0.0
+            intraday_sell_fee = 0.0
+            intraday_sell_tax = 0.0
 
-                # 1) Same-day match
-                intraday_qty = 0
-                intraday_cost = 0.0
-                intraday_cash = 0.0
-                intraday_buy_fee = 0.0
-                intraday_sell_fee = 0.0
-                intraday_sell_tax = 0.0
+            while day_buy_lots and day_sell_lots:
+                b = day_buy_lots[0]
+                s = day_sell_lots[0]
+                take = min(b["qty"], s["qty"])
 
-                while day_buy_lots and day_sell_lots:
-                    b = day_buy_lots[0]
-                    s = day_sell_lots[0]
-                    take = min(b["qty"], s["qty"])
+                intraday_qty += take
+                intraday_cost += take * b["cps"]
+                intraday_cash += take * s["pps"]
+                intraday_buy_fee += take * b["fee_per_share"]
+                intraday_sell_fee += take * s["fee_per_share"]
+                intraday_sell_tax += take * s["tax_per_share"]
 
-                    intraday_qty += take
-                    intraday_cost += take * b["cps"]
-                    intraday_cash += take * s["pps"]
-                    intraday_buy_fee += take * b["fee_per_share"]
-                    intraday_sell_fee += take * s["fee_per_share"]
-                    intraday_sell_tax += take * s["tax_per_share"]
+                b["qty"] -= take
+                s["qty"] -= take
+                if b["qty"] == 0:
+                    day_buy_lots.popleft()
+                if s["qty"] == 0:
+                    day_sell_lots.popleft()
 
-                    b["qty"] -= take
-                    s["qty"] -= take
-                    if b["qty"] == 0:
-                        day_buy_lots.popleft()
-                    if s["qty"] == 0:
-                        day_sell_lots.popleft()
-
-                if intraday_qty > 0:
-                    pnl = intraday_cash - intraday_cost
-                    ret_pct = (pnl / intraday_cost * 100.0) if intraday_cost else 0.0
-                    realized_rows.append(
-                        dict(
-                            date=pd.to_datetime(date),
-                            stock=stock,
-                            sell_qty=int(intraday_qty),
-                            sell_cash_in=float(intraday_cash),
-                            allocated_cost=float(intraday_cost),
-                            realized_pnl=float(pnl),
-                            realized_return_pct=float(ret_pct),
-                            total_fee=float(intraday_buy_fee + intraday_sell_fee),
-                            total_tax=float(intraday_sell_tax),
-                            method_key="day_trade",
-                            type_key="day_trade",
-                            pool_key=pool,
-                        )
+            if intraday_qty > 0:
+                pnl = intraday_cash - intraday_cost
+                ret_pct = (pnl / intraday_cost * 100.0) if intraday_cost else 0.0
+                realized_rows.append(
+                    dict(
+                        date=pd.to_datetime(date),
+                        stock=stock,
+                        sell_qty=int(intraday_qty),
+                        sell_cash_in=float(intraday_cash),
+                        allocated_cost=float(intraday_cost),
+                        realized_pnl=float(pnl),
+                        realized_return_pct=float(ret_pct),
+                        total_fee=float(intraday_buy_fee + intraday_sell_fee),
+                        total_tax=float(intraday_sell_tax),
+                        method_key="day_trade",
+                        type_key="day_trade",
+                        pool_key=pool_of(intraday_qty),
                     )
+                )
 
-                # 2) Remaining buys -> inventory
-                for lot in list(day_buy_lots):
-                    if lot["qty"] > 0:
-                        inventory[stock].append({
-                            "qty": int(lot["qty"]), 
-                            "cps": float(lot["cps"]),
-                            "fee_per_share": float(lot["fee_per_share"])
-                        })
+            # 2) Remaining buys -> inventory
+            for lot in list(day_buy_lots):
+                if lot["qty"] > 0:
+                    inventory[stock].append({
+                        "qty": int(lot["qty"]), 
+                        "cps": float(lot["cps"]),
+                        "fee_per_share": float(lot["fee_per_share"])
+                    })
 
-                # 3) Remaining sells -> inventory
-                for lot in list(day_sell_lots):
-                    if lot["qty"] > 0:
-                        qty = int(lot["qty"])
-                        cash_in = float(lot["pps"] * qty)
-                        s_fee = float(lot["fee_per_share"] * qty)
-                        s_tax = float(lot["tax_per_share"] * qty)
-                        sell_against_inventory(stock, pool, date, qty, cash_in, s_fee, s_tax)
+            # 3) Remaining sells -> inventory
+            for lot in list(day_sell_lots):
+                if lot["qty"] > 0:
+                    qty = int(lot["qty"])
+                    cash_in = float(lot["pps"] * qty)
+                    s_fee = float(lot["fee_per_share"] * qty)
+                    s_tax = float(lot["tax_per_share"] * qty)
+                    sell_against_inventory(stock, pool_of(qty), date, qty, cash_in, s_fee, s_tax)
 
     realized = pd.DataFrame(realized_rows).sort_values(["date", "stock"]).reset_index(drop=True)
     return df, realized
@@ -1269,11 +1264,23 @@ try:
 
     chrono_df = raw_df.copy()
     chrono_df["date"] = pd.to_datetime(chrono_df["日期"]).dt.floor("D")
-    chrono_df = chrono_df.sort_values("日期").reset_index(drop=True)
-    chrono_df["invested_capital"] = -chrono_df["淨收付金額"].cumsum()
-    daily_base = chrono_df.groupby("date")["invested_capital"].last().reset_index()
+    
+    # 🚨 CRITICAL FIX: Aggregate cash flows by day FIRST, then cumsum.
+    # Because Taiwan bank settles T+2 as a single daily net transfer, 
+    # intraday sequences (buy then sell) don't trigger multiple bank transfers.
+    daily_net_flows = chrono_df.groupby("date")["淨收付金額"].sum().reset_index()
+    daily_net_flows = daily_net_flows.sort_values("date").reset_index(drop=True)
+    daily_net_flows["invested_capital"] = -daily_net_flows["淨收付金額"].cumsum()
+    
+    daily_base = daily_net_flows.copy()
+    
+    # For chart scaling, we use the expanding max to prevent artificial spikes when withdrawing funds
     daily_base["dynamic_base"] = daily_base["invested_capital"].expanding().max().clip(lower=1.0)
-    peak_base = daily_base["dynamic_base"].iloc[-1]
+    
+    # Mathematically derived Base Capital (Final Active Principal before liquidation)
+    # This precisely matches the user's derivation: Proceeds - Total PNL
+    active_bases = daily_base[daily_base["invested_capital"] >= 100]["invested_capital"]
+    peak_base = float(active_bases.iloc[-1]) if not active_bases.empty else 1.0
 
     TYPE_ZH = {"day_trade": "當沖交易", "cash": "現股交易"}
     TYPE_EN = {"day_trade": "Day trade", "cash": "Cash trade"}
@@ -1354,6 +1361,7 @@ try:
     # KPIs
     total_pnl = float(f_sorted["realized_pnl"].sum())
     trades = int(len(f_sorted))
+    
     win_rate = float((f_sorted["realized_pnl"].to_numpy() > 0).mean()) if trades else 0.0
     total_pl_pct = (total_pnl / float(peak_base) * 100.0) if peak_base else 0.0
     trade_volume = float(f_sorted["allocated_cost"].sum()) * CURRENCY_RATE
