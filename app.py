@@ -22,8 +22,6 @@
 #   plotly
 #   requests
 
-INVESTMENT_TWD = 3_080_000
-
 import os
 import time
 import base64
@@ -626,7 +624,7 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
 
     df = df.sort_values(["股名", "日期"]).reset_index(drop=True)
 
-    inventory = defaultdict(deque)  # (stock, pool) -> deque lots {qty, cps}
+    inventory = defaultdict(deque)  # stock -> deque lots {qty, cps}
     realized_rows = []
 
     def sell_against_inventory(stock, pool, date, qty, cash_in, sell_fee_tot, sell_tax_tot):
@@ -635,12 +633,15 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
         allocated_buy_fee = 0.0
 
         while remaining > 0:
-            if not inventory[(stock, pool)]:
-                raise ValueError(
-                    f"Sell without inventory: {stock} ({pool}) on {pd.to_datetime(date).date()} sell_qty={qty}. "
-                    "Master may be missing older BUYs."
+            if not inventory[stock]:
+                import streamlit as st
+                st.warning(
+                    f"Sell without inventory: {stock} on {pd.to_datetime(date).date()} sell_qty={remaining}. "
+                    "Master may be missing older BUYs. Assuming zero cost basis for remaining shares."
                 )
-            lot = inventory[(stock, pool)][0]
+                break
+                
+            lot = inventory[stock][0]
             take = min(remaining, lot["qty"])
             allocated_cost += take * lot["cps"]
             allocated_buy_fee += take * lot["fee_per_share"]
@@ -648,7 +649,7 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
             lot["qty"] -= take
             remaining -= take
             if lot["qty"] == 0:
-                inventory[(stock, pool)].popleft()
+                inventory[stock].popleft()
 
         pnl = float(cash_in) - allocated_cost
         ret_pct = (pnl / allocated_cost * 100.0) if allocated_cost else 0.0
@@ -752,7 +753,7 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                 # 2) Remaining buys -> inventory
                 for lot in list(day_buy_lots):
                     if lot["qty"] > 0:
-                        inventory[(stock, pool)].append({
+                        inventory[stock].append({
                             "qty": int(lot["qty"]), 
                             "cps": float(lot["cps"]),
                             "fee_per_share": float(lot["fee_per_share"])
@@ -1266,6 +1267,14 @@ try:
         st.dataframe(raw_df.head(80), width="stretch")
         st.stop()
 
+    chrono_df = raw_df.copy()
+    chrono_df["date"] = pd.to_datetime(chrono_df["日期"]).dt.floor("D")
+    chrono_df = chrono_df.sort_values("日期").reset_index(drop=True)
+    chrono_df["invested_capital"] = -chrono_df["淨收付金額"].cumsum()
+    daily_base = chrono_df.groupby("date")["invested_capital"].last().reset_index()
+    daily_base["dynamic_base"] = daily_base["invested_capital"].expanding().max().clip(lower=1.0)
+    peak_base = daily_base["dynamic_base"].iloc[-1]
+
     TYPE_ZH = {"day_trade": "當沖交易", "cash": "現股交易"}
     TYPE_EN = {"day_trade": "Day trade", "cash": "Cash trade"}
     METHOD_ZH = {"day_trade": "當沖", "cash": "現股"}
@@ -1346,8 +1355,7 @@ try:
     total_pnl = float(f_sorted["realized_pnl"].sum())
     trades = int(len(f_sorted))
     win_rate = float((f_sorted["realized_pnl"].to_numpy() > 0).mean()) if trades else 0.0
-    total_pl_pct = (total_pnl / float(INVESTMENT_TWD) * 100.0) if INVESTMENT_TWD else 0.0
-    total_pl_pct = (total_pnl / float(INVESTMENT_TWD) * 100.0) if INVESTMENT_TWD else 0.0
+    total_pl_pct = (total_pnl / float(peak_base) * 100.0) if peak_base else 0.0
     trade_volume = float(f_sorted["allocated_cost"].sum()) * CURRENCY_RATE
 
     total_color = PROFIT_COLOR if total_pnl > 0 else (LOSS_COLOR if total_pnl < 0 else "#FFFFFF")
@@ -1378,10 +1386,10 @@ try:
     n_cash = len(f_sorted[f_sorted["type_key"] == "cash"])
 
     with k1:
-        # User request: include base capital on total PL kpi
-        base_cap_converted = float(INVESTMENT_TWD) * CURRENCY_RATE
+        # User request: include Base Capital (Dynamic Max Drawdown) on total PL kpi
+        base_cap_converted = float(peak_base) * CURRENCY_RATE
         base_cap_str = fmt_money(base_cap_converted, 1.0, CURRENCY_SYMBOL)
-        base_lbl = T(lang, "Base", "本金")
+        base_lbl = T(lang, "Base", "累計投入本金")
         KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), total_color, f"{base_lbl}: {base_cap_str}")
     with k2:
         # Percentage is invariant to currency
@@ -1650,24 +1658,25 @@ try:
         # Allow labels to overflow
         fig_eq.update_traces(cliponaxis=False)
 
-        # User request: add a right y axis as reletive % to base capital
+        # User request: add a right y axis as reletive % to dynamic base capital
         # We need a trace that maps to yaxis2.
-        # We can use the same x values, but y values will be % of base capital.
-        # scaled_cum is in currency units (maybe scaled). daily_agg["cum_pnl"] is raw value.
-        # Base capital is INVESTMENT_TWD (raw TWD).
-        # So pct = (daily_agg["cum_pnl"] / INVESTMENT_TWD) * 100
         
-        if INVESTMENT_TWD and not daily_agg.empty:
-             pct_vals = (daily_agg["cum_pnl"] / float(INVESTMENT_TWD)) * 100.0
+        if not daily_agg.empty:
+             # Merge dynamic base into daily_agg
+             daily_agg = pd.merge_asof(
+                 daily_agg.sort_values("date"), 
+                 daily_base.sort_values("date"), 
+                 on="date"
+             )
+             # Fill missing if any trades existed before any cashflow (shouldn't happen but safe)
+             daily_agg["dynamic_base"] = daily_agg["dynamic_base"].ffill().bfill().replace(0, 1.0)
              
-             # Add a invisible trace to force axis scaling
+             pct_vals = (daily_agg["cum_pnl"] / daily_agg["dynamic_base"]) * 100.0
+             
+             # Add an invisible trace to force axis scaling
              fig_eq.add_trace(
                  go.Scatter(
-                     x=dates_aug, # Use augmented dates for alignment? Or just daily_agg['date']?
-                     # dates_aug includes interpolated points. calculating pct for them is safer to match shape
-                     # But getting the raw P/L for aug dates is complex (we only have 'vals' which are scaled).
-                     # Simpler: just use daily_agg dates for this invisible trace, or rely on Plotly's multiple axes
-                     # If we use daily_agg, the x-axis range is same.
+                     x=daily_agg["date"], 
                      y=pct_vals,
                      mode="lines",
                      line=dict(width=0), # invisible
@@ -1678,13 +1687,8 @@ try:
              )
              
              # Bounds Initialization
-             y_max_pct = 0.0
-             y_min_pct = 0.0
-             
-             if not daily_agg.empty and INVESTMENT_TWD:
-                  user_pcts = (daily_agg["cum_pnl"] / float(INVESTMENT_TWD)) * 100.0
-                  y_max_pct = user_pcts.max()
-                  y_min_pct = user_pcts.min()
+             y_max_pct = pct_vals.max() if not pct_vals.empty else 0.0
+             y_min_pct = pct_vals.min() if not pct_vals.empty else 0.0
              
              # Fetch and Plot Selected Indices
              color_map = {
