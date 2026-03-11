@@ -1671,9 +1671,9 @@ try:
                      y=scaled_invested,
                      mode="lines",
                      name=T(lang, "Money Invested", "投入本金"),
-                     line=dict(width=2, color="rgba(100, 200, 255, 0.8)", shape="hv"), # Step outline
+                     line=dict(width=2, color="#4FC3F7", shape="hv"), # Light Blue line
                      fill="tozeroy",
-                     fillcolor="rgba(100, 200, 255, 0.2)",
+                     fillcolor="rgba(79, 195, 247, 0.15)", # Subtle blue fill
                      hovertemplate=f"%{{y:,.2f}} {unit_lbl_inv}<extra></extra>",
                      showlegend=True,
                  )
@@ -1692,8 +1692,10 @@ try:
                      x=daily_agg["date"],
                      y=scaled_equity_for_inv,
                      mode="lines",
-                     name=T(lang, "Total Equity (Capital + P/L)", "總權益 (本金+損益)"),
-                     line=dict(width=2, color="rgba(200, 200, 200, 0.9)", dash="dash", shape="hv"),
+                     name=T(lang, "Total Equity", "總權益 (本金+損益)"),
+                     line=dict(width=2, color="#F5A623", dash="dash", shape="hv"), # Orange/Gold dashed line
+                     fill="tonexty", # Fill the gap between invested and equity
+                     fillcolor="rgba(245, 166, 35, 0.1)",
                      hovertemplate="%{text}<extra></extra>",
                      text=hover_texts_equity_inv,
                      showlegend=True,
