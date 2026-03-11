@@ -1569,95 +1569,79 @@ try:
         profit_fill = hex_to_rgba(PROFIT_COLOR, 0.15)
         loss_fill = hex_to_rgba(LOSS_COLOR, 0.15)
 
-        fig_eq = go.Figure()
-        
-        # Negative Trace (Loss)
-        fig_eq.add_trace(
-            go.Scatter(
-                x=dates_aug,
-                y=y_neg,
-                mode="lines",
-                name=T(lang, "Cumulative Loss", "累計虧損"),
-                line=dict(width=2, color=LOSS_COLOR),
-                fill="tozeroy",
-                fillcolor=loss_fill,
-                hoverinfo="skip",
-                showlegend=False,
-            )
-        )
-
-        # Positive Trace (Profit)
-        fig_eq.add_trace(
-            go.Scatter(
-                x=dates_aug,
-                y=y_pos,
-                mode="lines",
-                name=T(lang, "Cumulative Profit", "累計獲利"),
-                line=dict(width=2, color=PROFIT_COLOR),
-                fill="tozeroy",
-                fillcolor=profit_fill,
-                hoverinfo="skip",
-                showlegend=False,
-            )
-        )
+        # We remove the line trace/fill areas since we are moving to Bar charts for P/L now.
         
         # Hidden Hover Trace -> Visual Data Points (Original Daily Points Only)
         # Fixes the "0" artifact at zero-crossings by ignoring interpolated points
         # Also ensures strict +€1000 formatting in hover
-        hover_texts = []
-        marker_colors = []
-        for val in scaled_cum:
+        # Daily Realized P/L is scaled identically
+        scaled_daily = (daily_agg["realized_pnl"] * CURRENCY_RATE) / unit_div
+
+        hover_texts_daily = []
+        marker_colors_daily = []
+        for val in scaled_daily:
              if "€" in unit_lbl:
-                  s_val = "+" if val >= 0 else "-" # Zero is positive or strictly signed? val >=0 usually +
-                  # But wait, logic above: s_val = "+" if val > 0 else "-" if val < 0 else ""
-                  # Let's keep consistent with previous logic
                   s_val = "+" if val > 0 else "-" if val < 0 else ""
                   txt = f"{s_val}€{abs(val):,.2f}"
              else:
                   txt = f"{val:,.2f} {unit_lbl}"
-             hover_texts.append(txt)
-             # Marker color
+             hover_texts_daily.append(txt)
              c = PROFIT_COLOR if val >= 0 else LOSS_COLOR
-             marker_colors.append(c)
+             marker_colors_daily.append(c)
 
+        hover_texts_cum = []
+        for val in scaled_cum:
+             if "€" in unit_lbl:
+                  s_val = "+" if val > 0 else "-" if val < 0 else ""
+                  txt = f"{s_val}€{abs(val):,.2f}"
+             else:
+                  txt = f"{val:,.2f} {unit_lbl}"
+             hover_texts_cum.append(txt)
+
+        fig_eq = go.Figure()
+        
+        # 1. Daily Realized P/L as Bars
         fig_eq.add_trace(
-            go.Scatter(
-                x=daily_agg["date"],
-                y=scaled_cum,
-                mode="markers",
-                name=T(lang, "Cumulative P/L", "累計損益"),
-                marker=dict(size=6, color=marker_colors, line=dict(width=1, color="white")),
-                hovertemplate="%{text}<extra></extra>",
-                text=hover_texts,
-                showlegend=False,
-            )
+             go.Bar(
+                 x=daily_agg["date"],
+                 y=scaled_daily,
+                 name=T(lang, "Daily P/L", "單日損益"),
+                 marker_color=marker_colors_daily,
+                 hovertemplate="%{text}<extra></extra>",
+                 text=hover_texts_daily,
+                 textposition="none",
+                 showlegend=True,
+             )
         )
 
-        # Add marker/label for the latest point
+        # 2. Cumulative P/L as a Line Overlay
+        fig_eq.add_trace(
+             go.Scatter(
+                 x=daily_agg["date"],
+                 y=scaled_cum,
+                 mode="lines",
+                 name=T(lang, "Cumulative P/L", "累計損益"),
+                 line=dict(width=2, color="rgba(255, 255, 255, 0.8)"),
+                 hovertemplate="%{text}<extra></extra>",
+                 text=hover_texts_cum,
+                 showlegend=True,
+             )
+        )
+
+        # Add marker/label for the latest cumulative point
         if not daily_agg.empty:
-             last_idx = daily_agg.index[-1]
              last_date = daily_agg["date"].iloc[-1]
              last_val = scaled_cum.iloc[-1]
-             # Match strict format +€1000 where applicable
-             # unit_lbl is "€" or "M TWD" etc.
-             if "€" in unit_lbl:
-                  s_last = "+" if last_val > 0 else "-" if last_val < 0 else ""
-                  last_txt = f"{s_last}€{abs(last_val):,.2f}"
-             else:
-                  last_txt = f"{last_val:,.2f} {unit_lbl}"
+             last_txt = hover_texts_cum[-1]
              
-             # Determine color for the marker based on final value
-             final_color = PROFIT_COLOR if last_val >= 0 else LOSS_COLOR
- 
              fig_eq.add_trace(
                  go.Scatter(
                      x=[last_date],
                      y=[last_val],
-                     mode="markers+text",
+                     mode="text",
                      text=[last_txt],
-                     textposition="top left",
+                     textposition="top center",
                      textfont=dict(size=11, color="#EAEAEA"),
-                     marker=dict(size=6, color=final_color, line=dict(width=1, color="white")),
                      showlegend=False,
                      hoverinfo="skip",
                  )
@@ -1665,34 +1649,55 @@ try:
         
         # Allow labels to overflow
         fig_eq.update_traces(cliponaxis=False)
-
-        # User request: add a right y axis as reletive % to dynamic base capital
-        # We need a trace that maps to yaxis2.
         
+        # Ensure we have fig_base initialized
+        fig_base = go.Figure()
+        
+        # Dedicated trace for Money Invested (dynamic_base)
         if not daily_agg.empty:
-             # Merge dynamic base into daily_agg
              daily_agg = pd.merge_asof(
                  daily_agg.sort_values("date"), 
                  daily_base.sort_values("date"), 
                  on="date"
              )
-             # Fill missing if any trades existed before any cashflow (shouldn't happen but safe)
              daily_agg["dynamic_base"] = daily_agg["dynamic_base"].ffill().bfill().replace(0, 1.0)
              
+             # Scale invested capital using the same scale function
+             scaled_invested, unit_lbl_inv, _ = scale_unit(daily_agg["dynamic_base"], lang, CURRENCY_RATE)
+             
+             fig_base.add_trace(
+                 go.Scatter(
+                     x=daily_agg["date"],
+                     y=scaled_invested,
+                     mode="lines",
+                     name=T(lang, "Money Invested", "投入本金"),
+                     line=dict(width=2, color="rgba(100, 200, 255, 0.8)", shape="hv"), # Step outline
+                     fill="tozeroy",
+                     fillcolor="rgba(100, 200, 255, 0.2)",
+                     hovertemplate=f"%{{y:,.2f}} {unit_lbl_inv}<extra></extra>",
+                     showlegend=False,
+                 )
+             )
+        
+        # We'll create a second figure for Percentage Return later.
+        # But first let's calculate the pct_vals which we need for the second chart and its bounds.
+        fig_pct = go.Figure()
+        
+        if not daily_agg.empty:
              pct_vals = (daily_agg["cum_pnl"] / daily_agg["dynamic_base"]) * 100.0
              
-             # Add an invisible trace to force axis scaling
-             fig_eq.add_trace(
+             # Plot personal percentage return on the new fig_pct
+             fig_pct.add_trace(
                  go.Scatter(
                      x=daily_agg["date"], 
                      y=pct_vals,
                      mode="lines",
-                     line=dict(width=0), # invisible
-                     showlegend=False,
-                     hoverinfo="skip",
-                     yaxis="y2"
+                     name=T(lang, "Personal Return %", "個人報酬率 %"),
+                     line=dict(width=3, color=PROFIT_COLOR), # Or maybe a neutral gold depending on preference, let's stick to PROFIT_COLOR for visibility or dynamic
                  )
              )
+             
+             # No need for invisible trace on secondary axis since we have a dedicated chart
              
              # Bounds Initialization
              y_max_pct = pct_vals.max() if not pct_vals.empty else 0.0
@@ -1766,7 +1771,7 @@ try:
                              
                              disp_name = fmt_mkt(m_name)
                              
-                             fig_eq.add_trace(
+                             fig_pct.add_trace(
                                  go.Scatter(
                                      x=m_rel["date"],
                                      y=m_rel["pct"],
@@ -1774,7 +1779,6 @@ try:
                                      marker=dict(size=6),
                                      name=disp_name,
                                      line=dict(color=c_line, width=1.5, dash='dash'),
-                                     yaxis="y2",
                                      hovertemplate=f"{disp_name}: %{{y:.2f}}%<extra></extra>"
                                  )
                              )
@@ -1816,7 +1820,7 @@ try:
                              
                              disp_name = fmt_stk(s_name)
                              
-                             fig_eq.add_trace(
+                             fig_pct.add_trace(
                                  go.Scatter(
                                      x=s_rel["date"],
                                      y=s_rel["pct"],
@@ -1824,7 +1828,6 @@ try:
                                      marker=dict(size=6),
                                      name=disp_name,
                                      line=dict(color=c_line, width=1.5, dash='dot'), 
-                                     yaxis="y2",
                                      hovertemplate=f"{disp_name}: %{{y:.2f}}%<extra></extra>"
                                  )
                              )
@@ -1849,28 +1852,32 @@ try:
         final_max_pct = y_max_pct + pad
         final_min_pct = y_min_pct - pad
         
-        # Calculate corresponding Money Range
-        factor = (float(INVESTMENT_TWD) * CURRENCY_RATE) / (100.0 * unit_div) if (INVESTMENT_TWD and unit_div) else 0.0
+        # Calculate bounds for secondary axis (Invested)
+        if not scaled_invested.empty:
+            inv_max = scaled_invested.max()
+            inv_pad = inv_max * 0.1 if inv_max > 0 else 10
+            final_max_inv = inv_max + inv_pad
+        else:
+            final_max_inv = 100
+
+        # Also recalculate final_max_val and final_min_val for the primary chart (scaled_cum + scaled_daily)
+        all_vals = list(scaled_cum) + list(scaled_daily) if 'scaled_daily' in locals() else list(scaled_cum)
+        final_max_val = max([val for val in all_vals if not pd.isna(val)] + [10.0]) * 1.2
+        final_min_val = min([val for val in all_vals if not pd.isna(val)] + [0.0]) * 1.2
         
-        final_max_val = final_max_pct * factor
-        final_min_val = final_min_pct * factor
-        
-        # Calculate range padding
+        # Calculate range boundary
         if not daily_agg.empty:
             min_date = daily_agg["date"].min()
             max_date = daily_agg["date"].max()
-            # Add small padding (e.g. 5%) or tight? User asked for tight left.
-            # We can set range explicitly.
-            # Use max of personal data OR market data (today)
             end_x = max(max_date, pd.Timestamp.now().normalize())
             range_x = [min_date, end_x]
-
         else:
             range_x = None
+            final_max_inv = 100
  
         fig_eq.update_layout(
              title=dict(
-                  text=T(lang, "Cumulative Realized P/L (Daily Close)", "累計已實現損益（日結）"),
+                  text=T(lang, "Absolute P/L", "絕對損益"),
                   font=dict(size=18)
              ),
              xaxis=dict(
@@ -1888,17 +1895,7 @@ try:
                  gridcolor="rgba(255,255,255,0.08)",
                  range=[final_min_val, final_max_val]
              ),
-             yaxis2=dict(
-                 title=T(lang, "Return %", "報酬率 %"),
-                 overlaying="y",
-                 side="right",
-                 showgrid=False,
-                 tickformat=".1f",
-                 ticksuffix="%",
-                 title_standoff=10,
-                 range=[final_min_pct, final_max_pct]
-             ),
-             height=460,
+             height=350,
              margin=dict(l=10, r=20, t=60, b=10),
              legend=dict(
                  x=0.01,
@@ -1910,9 +1907,70 @@ try:
              hovermode="x unified",
         )
 
-        # fig_eq = add_month_major_lines(fig_eq, daily_agg["date"]) # Optional, cleaning up to look simpler
         add_zero_line(fig_eq, axis="y", color="#A9B1BD", width=2, dash="dash")
         st.plotly_chart(fig_eq, width="stretch")
+        
+        # Configure and rendering Money Invested Figure
+        fig_base.update_layout(
+             title=dict(
+                  text=T(lang, "Money Invested", "投入本金"),
+                  font=dict(size=18)
+             ),
+             xaxis=dict(
+                 title="",
+                 dtick=7 * 24 * 60 * 60 * 1000,
+                 tickformat="%b %d" if lang != "中文" else "%m/%d",
+                 showgrid=True,
+                 gridcolor="rgba(255,255,255,0.08)",
+                 gridwidth=1,
+                 range=range_x, 
+             ),
+             yaxis=dict(
+                 title=f"{T(lang, 'Capital', '本金')} ({unit_lbl_inv if not daily_agg.empty else unit_lbl})",
+                 showgrid=True,
+                 gridcolor="rgba(255,255,255,0.08)",
+                 range=[0, max(final_max_inv, 1.0)] # Capital bounds start at 0
+             ),
+             height=300,
+             margin=dict(l=10, r=20, t=60, b=10),
+             hovermode="x unified",
+        )
+        st.plotly_chart(fig_base, width="stretch")
+        
+        hr()
+        st.subheader(T(lang, "Percentage Return Comparison", "報酬率對照"))
+        
+        fig_pct.update_layout(
+             xaxis=dict(
+                 title="",
+                 dtick=7 * 24 * 60 * 60 * 1000, # Weekly ticks
+                 tickformat="%b %d" if lang != "中文" else "%m/%d",
+                 showgrid=True,
+                 gridcolor="rgba(255,255,255,0.08)",
+                 gridwidth=1,
+                 range=range_x, # Tight range
+             ),
+             yaxis=dict(
+                 title=T(lang, "Return %", "報酬率 %"),
+                 showgrid=True,
+                 gridcolor="rgba(255,255,255,0.08)",
+                 tickformat=".1f",
+                 ticksuffix="%",
+                 range=[final_min_pct, final_max_pct]
+             ),
+             height=400,
+             margin=dict(l=10, r=20, t=40, b=10),
+             legend=dict(
+                 x=0.01,
+                 y=0.99,
+                 xanchor="left",
+                 yanchor="top",
+                 bgcolor="rgba(0,0,0,0.5)"
+             ),
+             hovermode="x unified",
+        )
+        add_zero_line(fig_pct, axis="y", color="#A9B1BD", width=2, dash="dash")
+        st.plotly_chart(fig_pct, width="stretch")
         
         # Inject Status to Top Right Placeholder
         status_parts = []
@@ -2095,7 +2153,7 @@ try:
         m_cum["month_pnl"] = m_cum["cum_pnl"] - m_cum["prev_cum_pnl"]
         
         # Start equity for the month = Initial Investment + Previous Cumulative P/L
-        m_cum["start_equity"] = float(INVESTMENT_TWD) + m_cum["prev_cum_pnl"]
+        m_cum["start_equity"] = peak_base + m_cum["prev_cum_pnl"]
         
         m_cum["month_pct"] = np.where(
             m_cum["start_equity"] != 0, 
@@ -2103,7 +2161,7 @@ try:
             0.0
         )
         
-        m_cum["cum_pl_pct"] = np.where(INVESTMENT_TWD != 0, m_cum["cum_pnl"] / float(INVESTMENT_TWD) * 100.0, 0.0)
+        m_cum["cum_pl_pct"] = np.where(peak_base != 0, m_cum["cum_pnl"] / peak_base * 100.0, 0.0)
         m_cum["cum_win_rate_pct"] = np.where(m_cum["cum_trades"] > 0, m_cum["cum_wins"] / m_cum["cum_trades"] * 100.0, 0.0)
 
         table = pd.DataFrame(
