@@ -1515,29 +1515,6 @@ try:
         # --- Header & Controls Layout ---
         st.subheader(T(lang, "Equity Curve", "資金曲線"))
         
-        with st.container(border=True):
-             c_mkt, c_stk, c_stat = st.columns([2, 2, 1.2])
-             with c_mkt:
-                  sel_indices = st.multiselect(
-                      T(lang, "Market Comparison", "大盤指數對照"),
-                      options=market_keys,
-                      default=["TAIEX"],
-                      format_func=fmt_mkt
-                  )
-             with c_stk:
-                  sel_stocks = st.multiselect(
-                      T(lang, "Stock Comparison", "個股對照"),
-                      options=stock_keys,
-                      default=[],
-                      format_func=fmt_stk
-                  )
-
-             with c_stat:
-                  # Placeholder for status UI (filled after data fetch)
-                  status_placeholder = st.empty()
-
-
-
         # Aggregate to Daily Close for a smooth "Pro" curve
         daily_agg = f_sorted.groupby("date", as_index=False)["realized_pnl"].sum()
         daily_agg["cum_pnl"] = daily_agg["realized_pnl"].cumsum()
@@ -1682,7 +1659,31 @@ try:
         # We'll create a second figure for Percentage Return later.
         # But first let's calculate the pct_vals which we need for the second chart and its bounds.
         fig_pct = go.Figure()
-        
+        hr()
+
+        st.subheader(T(lang, "Percentage Return Comparison", "投資報酬率對照"))
+
+        with st.container(border=True):
+             c_mkt, c_stk, c_stat = st.columns([2, 2, 1.2])
+             with c_mkt:
+                  sel_indices = st.multiselect(
+                      T(lang, "Market Comparison", "大盤指數對照"),
+                      options=market_keys,
+                      default=["TAIEX"],
+                      format_func=fmt_mkt
+                  )
+             with c_stk:
+                  sel_stocks = st.multiselect(
+                      T(lang, "Stock Comparison", "個股對照"),
+                      options=stock_keys,
+                      default=[],
+                      format_func=fmt_stk
+                  )
+
+             with c_stat:
+                  # Placeholder for status UI (filled after data fetch)
+                  status_placeholder = st.empty()
+
         if not daily_agg.empty:
              pct_vals = (daily_agg["cum_pnl"] / daily_agg["dynamic_base"]) * 100.0
              
