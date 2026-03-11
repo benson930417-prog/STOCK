@@ -1515,6 +1515,29 @@ try:
         # --- Header & Controls Layout ---
         st.subheader(T(lang, "Equity Curve", "資金曲線"))
         
+        with st.container(border=True):
+             c_mkt, c_stk, c_stat = st.columns([2, 2, 1.2])
+             with c_mkt:
+                  sel_indices = st.multiselect(
+                      T(lang, "Market Comparison", "大盤指數對照"),
+                      options=market_keys,
+                      default=["TAIEX"],
+                      format_func=fmt_mkt
+                  )
+             with c_stk:
+                  sel_stocks = st.multiselect(
+                      T(lang, "Stock Comparison", "個股對照"),
+                      options=stock_keys,
+                      default=[],
+                      format_func=fmt_stk
+                  )
+
+             with c_stat:
+                  # Placeholder for status UI (filled after data fetch)
+                  status_placeholder = st.empty()
+
+
+
         # Aggregate to Daily Close for a smooth "Pro" curve
         daily_agg = f_sorted.groupby("date", as_index=False)["realized_pnl"].sum()
         daily_agg["cum_pnl"] = daily_agg["realized_pnl"].cumsum()
@@ -1659,32 +1682,7 @@ try:
         # We'll create a second figure for Percentage Return later.
         # But first let's calculate the pct_vals which we need for the second chart and its bounds.
         fig_pct = go.Figure()
-        hr()
-
-        st.subheader(T(lang, "Percentage Return Comparison", "投資報酬率對照"))
-
-        with st.container(border=True):
-             c_mkt, c_stk, c_stat = st.columns([2, 2, 1.2])
-             with c_mkt:
-                  sel_indices = st.multiselect(
-                      T(lang, "Market Comparison", "大盤指數對照"),
-                      options=market_keys,
-                      default=["TAIEX"],
-                      format_func=fmt_mkt
-                  )
-             with c_stk:
-                  sel_stocks = st.multiselect(
-                      T(lang, "Stock Comparison", "個股對照"),
-                      options=stock_keys,
-                      default=[],
-                      format_func=fmt_stk
-                  )
-
-             with c_stat:
-                  # Placeholder for status UI (filled after data fetch)
-                  status_placeholder = st.empty()
-
-
+        
         if not daily_agg.empty:
              pct_vals = (daily_agg["cum_pnl"] / daily_agg["dynamic_base"]) * 100.0
              
@@ -1876,7 +1874,44 @@ try:
         else:
             range_x = None
             final_max_inv = 100
- 
+
+        # ========== CHART 1: Percentage Return Comparison ==========
+        st.subheader(T(lang, "Percentage Return Comparison", "報酬率對照"))
+        
+        fig_pct.update_layout(
+             xaxis=dict(
+                 title="",
+                 dtick=7 * 24 * 60 * 60 * 1000, # Weekly ticks
+                 tickformat="%b %d" if lang != "中文" else "%m/%d",
+                 showgrid=True,
+                 gridcolor="rgba(255,255,255,0.08)",
+                 gridwidth=1,
+                 range=range_x, # Tight range
+             ),
+             yaxis=dict(
+                 title=T(lang, "Return %", "報酬率 %"),
+                 showgrid=True,
+                 gridcolor="rgba(255,255,255,0.08)",
+                 tickformat=".1f",
+                 ticksuffix="%",
+                 range=[final_min_pct, final_max_pct]
+             ),
+             height=400,
+             margin=dict(l=10, r=20, t=40, b=10),
+             legend=dict(
+                 x=0.01,
+                 y=0.99,
+                 xanchor="left",
+                 yanchor="top",
+                 bgcolor="rgba(0,0,0,0.5)"
+             ),
+             hovermode="x unified",
+        )
+        add_zero_line(fig_pct, axis="y", color="#A9B1BD", width=2, dash="dash")
+        st.plotly_chart(fig_pct, width="stretch")
+        hr()
+  
+        # ========== CHART 2: Absolute P/L ==========
         fig_eq.update_layout(
              title=dict(
                   text=T(lang, "Absolute P/L", "絕對損益"),
@@ -1938,63 +1973,6 @@ try:
              hovermode="x unified",
         )
         st.plotly_chart(fig_base, width="stretch")
-        
-        hr()
-        st.subheader(T(lang, "Percentage Return Comparison", "報酬率對照"))
-
-        with st.container(border=True):
-             c_mkt, c_stk, c_stat = st.columns([2, 2, 1.2])
-             with c_mkt:
-                  sel_indices = st.multiselect(
-                      T(lang, "Market Comparison", "大盤指數對照"),
-                      options=market_keys,
-                      default=["TAIEX"],
-                      format_func=fmt_mkt
-                  )
-             with c_stk:
-                  sel_stocks = st.multiselect(
-                      T(lang, "Stock Comparison", "個股對照"),
-                      options=stock_keys,
-                      default=[],
-                      format_func=fmt_stk
-                  )
-
-             with c_stat:
-                  # Placeholder for status UI (filled after data fetch)
-                  status_placeholder = st.empty()
-
-        
-        fig_pct.update_layout(
-             xaxis=dict(
-                 title="",
-                 dtick=7 * 24 * 60 * 60 * 1000, # Weekly ticks
-                 tickformat="%b %d" if lang != "中文" else "%m/%d",
-                 showgrid=True,
-                 gridcolor="rgba(255,255,255,0.08)",
-                 gridwidth=1,
-                 range=range_x, # Tight range
-             ),
-             yaxis=dict(
-                 title=T(lang, "Return %", "報酬率 %"),
-                 showgrid=True,
-                 gridcolor="rgba(255,255,255,0.08)",
-                 tickformat=".1f",
-                 ticksuffix="%",
-                 range=[final_min_pct, final_max_pct]
-             ),
-             height=400,
-             margin=dict(l=10, r=20, t=40, b=10),
-             legend=dict(
-                 x=0.01,
-                 y=0.99,
-                 xanchor="left",
-                 yanchor="top",
-                 bgcolor="rgba(0,0,0,0.5)"
-             ),
-             hovermode="x unified",
-        )
-        add_zero_line(fig_pct, axis="y", color="#A9B1BD", width=2, dash="dash")
-        st.plotly_chart(fig_pct, width="stretch")
         
         # Inject Status to Top Right Placeholder
         status_parts = []
