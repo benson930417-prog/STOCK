@@ -1663,7 +1663,7 @@ try:
              daily_agg["dynamic_base"] = daily_agg["dynamic_base"].ffill().bfill().replace(0, 1.0)
              
              # Scale invested capital using the same scale function
-             scaled_invested, unit_lbl_inv, _ = scale_unit(daily_agg["dynamic_base"], lang, CURRENCY_RATE)
+             scaled_invested, unit_lbl_inv, inv_div = scale_unit(daily_agg["dynamic_base"], lang, CURRENCY_RATE)
              
              fig_base.add_trace(
                  go.Scatter(
@@ -1675,7 +1675,32 @@ try:
                      fill="tozeroy",
                      fillcolor="rgba(100, 200, 255, 0.2)",
                      hovertemplate=f"%{{y:,.2f}} {unit_lbl_inv}<extra></extra>",
-                     showlegend=False,
+                     showlegend=True,
+                 )
+             )
+
+             # Align the cumulative P/L to the same y-axis scale
+             scaled_cum_for_inv = (daily_agg["cum_pnl"] * CURRENCY_RATE) / inv_div
+             
+             hover_texts_cum_inv = []
+             for val in scaled_cum_for_inv:
+                  if "€" in unit_lbl_inv:
+                       s_val = "+" if val >= 0 else "-"
+                       txt = f"{s_val}€{abs(val):,.2f}"
+                  else:
+                       txt = f"{val:,.2f} {unit_lbl_inv}"
+                  hover_texts_cum_inv.append(txt)
+
+             fig_base.add_trace(
+                 go.Scatter(
+                     x=daily_agg["date"],
+                     y=scaled_cum_for_inv,
+                     mode="lines",
+                     name=T(lang, "Cumulative P/L", "累計損益"),
+                     line=dict(width=2, color="rgba(200, 200, 200, 0.9)", dash="dash", shape="hv"),
+                     hovertemplate="%{text}<extra></extra>",
+                     text=hover_texts_cum_inv,
+                     showlegend=True,
                  )
              )
         
@@ -1854,11 +1879,15 @@ try:
         
         # Calculate bounds for secondary axis (Invested)
         if not scaled_invested.empty:
-            inv_max = scaled_invested.max()
-            inv_pad = inv_max * 0.1 if inv_max > 0 else 10
+            scaled_cum_for_inv = (daily_agg["cum_pnl"] * CURRENCY_RATE) / inv_div
+            inv_max = max(scaled_invested.max(), scaled_cum_for_inv.max())
+            inv_min = min(0, scaled_cum_for_inv.min())
+            inv_pad = (inv_max - inv_min) * 0.1 if (inv_max - inv_min) > 0 else 10
             final_max_inv = inv_max + inv_pad
+            final_min_inv = inv_min - inv_pad
         else:
             final_max_inv = 100
+            final_min_inv = 0
 
         # Also recalculate final_max_val and final_min_val for the primary chart (scaled_cum + scaled_daily)
         all_vals = list(scaled_cum) + list(scaled_daily) if 'scaled_daily' in locals() else list(scaled_cum)
@@ -1966,7 +1995,7 @@ try:
                  title=f"{T(lang, 'Capital', '本金')} ({unit_lbl_inv if not daily_agg.empty else unit_lbl})",
                  showgrid=True,
                  gridcolor="rgba(255,255,255,0.08)",
-                 range=[0, max(final_max_inv, 1.0)] # Capital bounds start at 0
+                 range=[final_min_inv, final_max_inv] # Capital bounds including cum P/L
              ),
              height=300,
              margin=dict(l=10, r=20, t=60, b=10),
