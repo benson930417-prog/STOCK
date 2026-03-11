@@ -1679,27 +1679,23 @@ try:
                  )
              )
 
-             # Align the cumulative P/L to the same y-axis scale
-             scaled_cum_for_inv = (daily_agg["cum_pnl"] * CURRENCY_RATE) / inv_div
+             # Align the Total Equity (Capital + Cumulative P/L) to the same y-axis scale
+             scaled_equity_for_inv = ((daily_agg["dynamic_base"] + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
              
-             hover_texts_cum_inv = []
-             for val in scaled_cum_for_inv:
-                  if "€" in unit_lbl_inv:
-                       s_val = "+" if val >= 0 else "-"
-                       txt = f"{s_val}€{abs(val):,.2f}"
-                  else:
-                       txt = f"{val:,.2f} {unit_lbl_inv}"
-                  hover_texts_cum_inv.append(txt)
+             hover_texts_equity_inv = []
+             for val in scaled_equity_for_inv:
+                  txt = f"{val:,.2f} {unit_lbl_inv}"
+                  hover_texts_equity_inv.append(txt)
 
              fig_base.add_trace(
                  go.Scatter(
                      x=daily_agg["date"],
-                     y=scaled_cum_for_inv,
+                     y=scaled_equity_for_inv,
                      mode="lines",
-                     name=T(lang, "Cumulative P/L", "累計損益"),
+                     name=T(lang, "Total Equity (Capital + P/L)", "總權益 (本金+損益)"),
                      line=dict(width=2, color="rgba(200, 200, 200, 0.9)", dash="dash", shape="hv"),
                      hovertemplate="%{text}<extra></extra>",
-                     text=hover_texts_cum_inv,
+                     text=hover_texts_equity_inv,
                      showlegend=True,
                  )
              )
@@ -1879,9 +1875,9 @@ try:
         
         # Calculate bounds for secondary axis (Invested)
         if not scaled_invested.empty:
-            scaled_cum_for_inv = (daily_agg["cum_pnl"] * CURRENCY_RATE) / inv_div
-            inv_max = max(scaled_invested.max(), scaled_cum_for_inv.max())
-            inv_min = min(0, scaled_cum_for_inv.min())
+            scaled_equity_for_inv = ((daily_agg["dynamic_base"] + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
+            inv_max = max(scaled_invested.max(), scaled_equity_for_inv.max())
+            inv_min = min(0, scaled_equity_for_inv.min())
             inv_pad = (inv_max - inv_min) * 0.1 if (inv_max - inv_min) > 0 else 10
             final_max_inv = inv_max + inv_pad
             final_min_inv = inv_min - inv_pad
