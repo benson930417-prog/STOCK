@@ -1452,7 +1452,7 @@ try:
              pass
 
         # TWR is standard for strategy performance.
-        KPI_CARD(T(lang, "Time-Weighted Return", "策略報酬率 (TWR)"), fmt_signed_pct(total_pl_pct), plpct_color, alpha_text)
+        KPI_CARD(T(lang, "Personal Return %", "個人報酬率 %"), fmt_signed_pct(total_pl_pct), plpct_color, alpha_text)
     with k3:
         sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.1f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.1f}%"
         KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, sub_wr)
@@ -1738,21 +1738,9 @@ try:
                      x=daily_agg["date"], 
                      y=pct_vals,
                      mode="lines",
-                     name=T(lang, "Strategy Return (TWR)", "策略報酬率 (TWR)"),
+                     name=T(lang, "Personal Return %", "個人報酬率 %"),
                      line=dict(width=3, color=PROFIT_COLOR),
-                     hovertemplate="TWR: %{y:.2f}%<extra></extra>",
-                 )
-             )
-
-             # Add Simple Return (Pocket Return) as a reference line
-             fig_pct.add_trace(
-                 go.Scatter(
-                     x=daily_agg["date"], 
-                     y=simple_vals,
-                     mode="lines",
-                     name=T(lang, "Simple Return (Pocket)", "實際資金報酬率"),
-                     line=dict(width=1.5, color="rgba(200, 200, 200, 0.4)", dash="dot"),
-                     hovertemplate=T(lang, "Simple: %{y:.2f}%", "實際: %{y:.2f}%") + "<extra></extra>",
+                     hovertemplate="%{y:.2f}%<extra></extra>",
                  )
              )
              
