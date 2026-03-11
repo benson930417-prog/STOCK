@@ -1362,8 +1362,19 @@ try:
     total_pnl = float(f_sorted["realized_pnl"].sum())
     trades = int(len(f_sorted))
     
+    # Calculate Time-Weighted Return (TWR) for the KPI
+    # 1. Get daily pnl
+    d_pnl = f_sorted.groupby("date")["realized_pnl"].sum().reset_index()
+    # 2. Merge with daily_base to get dynamic_base
+    d_merge = pd.merge_asof(d_pnl.sort_values("date"), daily_base.sort_values("date"), on="date")
+    d_merge["dynamic_base"] = d_merge["dynamic_base"].ffill().bfill().replace(0, 1.0)
+    # 3. Daily returns r_t
+    d_merge["r_t"] = d_merge["realized_pnl"] / d_merge["dynamic_base"]
+    # 4. Cumulative TWR: product(1 + r_t) - 1
+    final_twr = ((1.0 + d_merge["r_t"]).prod() - 1.0) * 100.0
+    
     win_rate = float((f_sorted["realized_pnl"].to_numpy() > 0).mean()) if trades else 0.0
-    total_pl_pct = (total_pnl / float(peak_base) * 100.0) if peak_base else 0.0
+    total_pl_pct = final_twr # Use TWR for the headline percentage
     trade_volume = float(f_sorted["allocated_cost"].sum()) * CURRENCY_RATE
 
     total_color = PROFIT_COLOR if total_pnl > 0 else (LOSS_COLOR if total_pnl < 0 else "#FFFFFF")
@@ -1440,7 +1451,8 @@ try:
         except Exception:
              pass
 
-        KPI_CARD(T(lang, "Total P/L %", "總損益%"), fmt_signed_pct(total_pl_pct), plpct_color, alpha_text)
+        # TWR is standard for strategy performance.
+        KPI_CARD(T(lang, "Time-Weighted Return", "策略報酬率 (TWR)"), fmt_signed_pct(total_pl_pct), plpct_color, alpha_text)
     with k3:
         sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.1f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.1f}%"
         KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, sub_wr)
@@ -1540,10 +1552,21 @@ try:
 
         # Aggregate to Daily Close for a smooth "Pro" curve
         daily_agg = f_sorted.groupby("date", as_index=False)["realized_pnl"].sum()
+        
+        # Merge with daily_base early for TWR calculation
+        daily_agg = pd.merge_asof(
+            daily_agg.sort_values("date"), 
+            daily_base.sort_values("date"), 
+            on="date"
+        )
+        daily_agg["dynamic_base"] = daily_agg["dynamic_base"].ffill().bfill().replace(0, 1.0)
+        
+        # Calculate TWR curve
+        daily_agg["r_t"] = daily_agg["realized_pnl"] / daily_agg["dynamic_base"]
+        daily_agg["cum_twr"] = (1.0 + daily_agg["r_t"]).cumprod() - 1.0
+        daily_agg["twr_pct"] = daily_agg["cum_twr"] * 100.0
+        
         daily_agg["cum_pnl"] = daily_agg["realized_pnl"].cumsum()
-
-        daily_agg["cum_pnl"] = daily_agg["realized_pnl"].cumsum()
-
         scaled_cum, unit_lbl, unit_div = scale_unit(daily_agg["cum_pnl"], lang, CURRENCY_RATE)
 
         # Dynamic color based on final result? or just a pro theme color.
@@ -1655,12 +1678,8 @@ try:
         
         # Dedicated trace for Money Invested (dynamic_base)
         if not daily_agg.empty:
-             daily_agg = pd.merge_asof(
-                 daily_agg.sort_values("date"), 
-                 daily_base.sort_values("date"), 
-                 on="date"
-             )
-             daily_agg["dynamic_base"] = daily_agg["dynamic_base"].ffill().bfill().replace(0, 1.0)
+             # Already merged earlier
+             pass
              
              # Scale invested capital using the same scale function
              scaled_invested, unit_lbl_inv, inv_div = scale_unit(daily_agg["dynamic_base"], lang, CURRENCY_RATE)
@@ -1707,16 +1726,33 @@ try:
         fig_pct = go.Figure()
         
         if not daily_agg.empty:
-             pct_vals = (daily_agg["cum_pnl"] / daily_agg["dynamic_base"]) * 100.0
+             # Use TWR instead of Simple Return to prevent dilution artifacts
+             pct_vals = daily_agg["twr_pct"]
              
-             # Plot personal percentage return on the new fig_pct
+             # Calculate Simple Return for comparison (optional secondary line could be added)
+             simple_vals = (daily_agg["cum_pnl"] / daily_agg["dynamic_base"]) * 100.0
+             
+             # Plot personal Time-Weighted Return (TWR)
              fig_pct.add_trace(
                  go.Scatter(
                      x=daily_agg["date"], 
                      y=pct_vals,
                      mode="lines",
-                     name=T(lang, "Personal Return %", "個人報酬率 %"),
-                     line=dict(width=3, color=PROFIT_COLOR), # Or maybe a neutral gold depending on preference, let's stick to PROFIT_COLOR for visibility or dynamic
+                     name=T(lang, "Strategy Return (TWR)", "策略報酬率 (TWR)"),
+                     line=dict(width=3, color=PROFIT_COLOR),
+                     hovertemplate="TWR: %{y:.2f}%<extra></extra>",
+                 )
+             )
+
+             # Add Simple Return (Pocket Return) as a reference line
+             fig_pct.add_trace(
+                 go.Scatter(
+                     x=daily_agg["date"], 
+                     y=simple_vals,
+                     mode="lines",
+                     name=T(lang, "Simple Return (Pocket)", "實際資金報酬率"),
+                     line=dict(width=1.5, color="rgba(200, 200, 200, 0.4)", dash="dot"),
+                     hovertemplate=T(lang, "Simple: %{y:.2f}%", "實際: %{y:.2f}%") + "<extra></extra>",
                  )
              )
              
