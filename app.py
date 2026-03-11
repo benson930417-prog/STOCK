@@ -2116,7 +2116,6 @@ try:
             )
         )
         lb["win_rate_pct"] = np.where(lb["trades"] > 0, lb["win"] / lb["trades"] * 100.0, 0.0)
-        lb["total_pnl_pct"] = np.where(lb["total_cost"] > 0, lb["total_pnl"] / lb["total_cost"] * 100.0, 0.0)
 
         winners = lb[lb["total_pnl"] > 0].sort_values("total_pnl", ascending=False)
         losers = lb[lb["total_pnl"] < 0].sort_values("total_pnl", ascending=True)
@@ -2128,12 +2127,10 @@ try:
                     "stock": T(lang, "Stock", "股票"),
                     "trades": T(lang, "Trades", "筆數"),
                     "total_pnl": T(lang, "Total P/L", "總損益"),
-                    "total_pnl_pct": T(lang, "P/L %", "損益%"),
                     "win_rate_pct": T(lang, "Win rate %", "勝率%"),
                 }
             )
             out[T(lang, "Total P/L", "總損益")] = out[T(lang, "Total P/L", "總損益")].round(0).astype(int)
-            out[T(lang, "P/L %", "損益%")] = out[T(lang, "P/L %", "損益%")].round(2)
             out[T(lang, "Win rate %", "勝率%")] = out[T(lang, "Win rate %", "勝率%")].round(1)
             out[T(lang, "Trades", "筆數")] = out[T(lang, "Trades", "筆數")].astype(int)
 
@@ -2141,7 +2138,6 @@ try:
                 [
                     T(lang, "Stock", "股票"),
                     T(lang, "Total P/L", "總損益"),
-                    T(lang, "P/L %", "損益%"),
                     T(lang, "Trades", "筆數"),
                     T(lang, "Win rate %", "勝率%"),
                 ]
@@ -2155,7 +2151,6 @@ try:
                 make_trade_styler(wtbl, PROFIT_COLOR, LOSS_COLOR).format(
                     {
                         T(lang, "Total P/L", "總損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
-                        T(lang, "P/L %", "損益%"): "{:+.2f}",
                         T(lang, "Trades", "筆數"): "{:.0f}",
                         T(lang, "Win rate %", "勝率%"): "{:.1f}",
                     }
@@ -2170,7 +2165,6 @@ try:
                 make_trade_styler(ltbl, PROFIT_COLOR, LOSS_COLOR).format(
                     {
                         T(lang, "Total P/L", "總損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
-                        T(lang, "P/L %", "損益%"): "{:+.2f}",
                         T(lang, "Trades", "筆數"): "{:.0f}",
                         T(lang, "Win rate %", "勝率%"): "{:.1f}",
                     }
