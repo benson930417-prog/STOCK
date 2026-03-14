@@ -665,6 +665,8 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                 realized_return_pct=float(ret_pct),
                 total_fee=float(allocated_buy_fee + sell_fee_tot),
                 total_tax=float(sell_tax_tot),
+                gross_cost=float(allocated_cost - allocated_buy_fee),
+                gross_sell_cash_in=float(cash_in + sell_fee_tot + sell_tax_tot),
                 method_key="cash",
                 type_key="cash",
                 pool_key=pool,
@@ -739,6 +741,8 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                         realized_return_pct=float(ret_pct),
                         total_fee=float(intraday_buy_fee + intraday_sell_fee),
                         total_tax=float(intraday_sell_tax),
+                        gross_cost=float(intraday_cost - intraday_buy_fee),
+                        gross_sell_cash_in=float(intraday_cash + intraday_sell_fee + intraday_sell_tax),
                         method_key="day_trade",
                         type_key="day_trade",
                         pool_key=pool_of(intraday_qty),
@@ -1336,6 +1340,8 @@ try:
             realized_pnl=("realized_pnl", "sum"),
             total_fee=("total_fee", "sum"),
             total_tax=("total_tax", "sum"),
+            gross_cost=("gross_cost", "sum"),
+            gross_sell_cash_in=("gross_sell_cash_in", "sum"),
             method_display=("method_display", lambda s: " / ".join(sorted(set(map(str, s))))),
         )
     )
@@ -1348,8 +1354,8 @@ try:
     f_view["date"] = f_view["day"]
     
     # Calculate averages for display
-    f_view["avg_buy_price"] = np.where(f_view["sell_qty"] > 0, f_view["allocated_cost"] / f_view["sell_qty"], 0.0)
-    f_view["avg_sell_price"] = np.where(f_view["sell_qty"] > 0, f_view["sell_cash_in"] / f_view["sell_qty"], 0.0)
+    f_view["avg_buy_price"] = np.where(f_view["sell_qty"] > 0, f_view["gross_cost"] / f_view["sell_qty"], 0.0)
+    f_view["avg_sell_price"] = np.where(f_view["sell_qty"] > 0, f_view["gross_sell_cash_in"] / f_view["sell_qty"], 0.0)
 
     profit_label = T(lang, "Profit", "獲利")
     loss_label = T(lang, "Loss", "虧損")
@@ -2295,6 +2301,8 @@ try:
                 "avg_buy_price": T(lang, "Avg Buy Price", "買入均價"),
                 "sell_cash_in": T(lang, "Total Sell Proceeds", "賣出總額"),
                 "avg_sell_price": T(lang, "Avg Sell Price", "賣出均價"),
+                "total_fee": T(lang, "Total Fee", "總手續費"),
+                "total_tax": T(lang, "Total Tax", "總交易稅"),
                 "realized_pnl": T(lang, "Realized P/L", "已實現損益"),
                 "realized_return_pct": T(lang, "Realized %", "已實現%"),
             }
@@ -2309,6 +2317,8 @@ try:
                 T(lang, "Total Buy Cost", "買入總額"),
                 T(lang, "Avg Sell Price", "賣出均價"),
                 T(lang, "Total Sell Proceeds", "賣出總額"),
+                T(lang, "Total Fee", "總手續費"),
+                T(lang, "Total Tax", "總交易稅"),
                 T(lang, "Realized P/L", "已實現損益"),
                 T(lang, "Realized %", "已實現%"),
             ]
@@ -2321,6 +2331,8 @@ try:
                     T(lang, "Total Buy Cost", "買入總額"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                     T(lang, "Avg Sell Price", "賣出均價"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL, 2),
                     T(lang, "Total Sell Proceeds", "賣出總額"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Total Fee", "總手續費"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
+                    T(lang, "Total Tax", "總交易稅"): lambda x: fmt_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                     T(lang, "Realized P/L", "已實現損益"): lambda x: fmt_signed_money(x, CURRENCY_RATE, CURRENCY_SYMBOL),
                     T(lang, "Realized %", "已實現%"): "{:+.2f}",
                 }
