@@ -2390,8 +2390,10 @@ try:
                   st.info(f"**{T(lang, 'Tracker Status', '更新追蹤狀態')}**: {status_msg}  \n"
                           f"**{T(lang, 'Last checked', '最後檢查')}**: {checked_str}  \n"
                           f"**{T(lang, 'Last updated', '最後資料變動')}**: {update_str}")
-             except Exception:
-                  pass
+             except Exception as e:
+                  st.error(f"Tracker UI Error: {e}")
+        else:
+             st.write("DEBUG: log_file does not exist. Checked path:", log_file.absolute())
         # ----------------------
 
         etf_file = DATA_DIR / "etf_00981A_history.json"
