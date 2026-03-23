@@ -11,4 +11,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping App
-        run: curl -sL https://benson.streamlit.app/ > /dev/null
+        run: curl -sI https://benson.streamlit.app/ > /dev/null || true
