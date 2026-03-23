@@ -1483,12 +1483,13 @@ try:
 
     hr()
 
-    tab_overview, tab_leader, tab_monthly, tab_trades = st.tabs(
+    tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf = st.tabs(
         [
             T(lang, "Overview", "總覽"),
             T(lang, "Leaderboard", "排行"),
             T(lang, "Monthly report", "月報"),
             T(lang, "Trades", "交易"),
+            T(lang, "ETF (00981A)", "00981A 持股"),
         ]
     )
 
@@ -2353,6 +2354,148 @@ try:
             file_name="realized_fifo_aggregated.csv",
             mime="text/csv",
         )
+
+    # -------------------- ETF (00981A) --------------------
+    with tab_etf:
+        st.subheader(T(lang, "00981A ETF Holdings", "00981A 基金投資組合"))
+        
+        # --- NEW TRACKER UI ---
+        log_file = DATA_DIR / "etf_update_log.json"
+        if log_file.exists():
+             try:
+                  with open(log_file, "r", encoding="utf-8") as fl:
+                       log_data = json.loads(fl.read())
+                       
+                  def _time_ago(dt_str, lang):
+                       if not dt_str:
+                            return T(lang, "Unknown", "未知")
+                       dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+                       now = datetime.now(timezone.utc)
+                       diff = (now - dt).total_seconds()
+                       mins = int(diff / 60)
+                       if mins < 60:
+                            return f"{mins} mins ago" if lang != "中文" else f"{mins} 分鐘前"
+                       elif mins < 1440:
+                            return f"{mins//60} hrs ago" if lang != "中文" else f"{mins//60} 小時前"
+                       else:
+                            return f"{mins//1440} days ago" if lang != "中文" else f"{mins//1440} 天前"
+                       
+                  lcu = log_data.get("last_checked_utc")
+                  luu = log_data.get("last_updated_utc")
+                  status_msg = log_data.get("status", "Unknown")
+                  
+                  checked_str = _time_ago(lcu, lang)
+                  update_str = _time_ago(luu, lang) if luu else T(lang, "Never (or before tracking)", "從未 (或追蹤前)")
+                  
+                  st.info(f"**{T(lang, 'Tracker Status', '更新追蹤狀態')}**: {status_msg}  \n"
+                          f"**{T(lang, 'Last checked', '最後檢查')}**: {checked_str}  \n"
+                          f"**{T(lang, 'Last updated', '最後資料變動')}**: {update_str}")
+             except Exception:
+                  pass
+        # ----------------------
+
+        etf_file = DATA_DIR / "etf_00981A_history.json"
+        if not etf_file.exists():
+            st.info(T(lang, "No ETF data fetched yet. The background job runs twice daily.", "尚未抓取 ETF 資料，背景程式會每日定期更新。"))
+        else:
+            try:
+                import json
+                with open(etf_file, "r", encoding="utf-8") as f:
+                    etf_data = json.load(f)
+                
+                dates = sorted(list(etf_data.keys()), reverse=True)
+                if not dates:
+                    st.info(T(lang, "No records in ETF data.", "無歷史資料。"))
+                else:
+                    c_date, c_stat = st.columns([1, 2])
+                    with c_date:
+                        selected_date = st.selectbox(T(lang, "Select Date", "選擇資料日期"), dates)
+                    
+                    day_data = etf_data[selected_date].get("holdings", [])
+                    
+                    if not day_data:
+                        st.info(T(lang, "No holdings data for this date.", "此日期無資料。"))
+                    else:
+                        df_etf = pd.DataFrame(day_data)
+                        
+                        # Compute previous day delta if available
+                        prev_date = None
+                        idx = dates.index(selected_date)
+                        if idx + 1 < len(dates):
+                            prev_date = dates[idx + 1]
+                            
+                        if prev_date:
+                            prev_holdings = etf_data[prev_date].get("holdings", [])
+                            df_prev = pd.DataFrame(prev_holdings)
+                            if not df_prev.empty:
+                                df_etf = df_etf.merge(df_prev[["id", "weight_pct", "shares"]], on="id", how="left", suffixes=("", "_prev"))
+                                df_etf["weight_change"] = df_etf["weight_pct"] - df_etf["weight_pct_prev"].fillna(df_etf["weight_pct"])
+                                df_etf["shares_change"] = df_etf["shares"] - df_etf["shares_prev"].fillna(df_etf["shares"])
+                            else:
+                                df_etf["weight_change"] = 0.0
+                                df_etf["shares_change"] = 0
+                        else:
+                            df_etf["weight_change"] = 0.0
+                            df_etf["shares_change"] = 0
+                            
+                        df_etf = df_etf.sort_values("weight_pct", ascending=False).reset_index(drop=True)
+                        
+                        with c_stat:
+                            st.write("")
+                            st.write(f"**{T(lang, 'Total Stocks', '總檔數')}**: {len(df_etf)}")
+                            
+                        top_n = st.slider(T(lang, "Top N Holdings", "顯示前 N 大持股"), 5, 50, 20)
+                        df_top = df_etf.head(top_n).copy()
+                        df_top["label"] = df_top["id"].astype(str) + " " + df_top["name"]
+                        
+                        fig_etf = px.bar(
+                            df_top,
+                            x="label",
+                            y="weight_pct",
+                            text="weight_pct",
+                            title=f"{T(lang, 'Top', '前')} {top_n} {T(lang, 'Holdings', '大持股')} ({selected_date})",
+                            labels={"label": T(lang, "Stock", "股票"), "weight_pct": T(lang, "Weight (%)", "權重 (%)")},
+                            color_discrete_sequence=[NEUTRAL_PURPLE]
+                        )
+                        fig_etf.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
+                        fig_etf.update_layout(height=450, xaxis_tickangle=-45, margin=dict(t=50, b=120))
+                        st.plotly_chart(fig_etf, use_container_width=True)
+                        
+                        # Prepare table for display
+                        display_cols = {"id": T(lang, "ID", "代碼"), "name": T(lang, "Name", "名稱"), "weight_pct": T(lang, "Weight %", "權重 %")}
+                        format_dict = {T(lang, "Weight %", "權重 %"): "{:.2f}%"}
+                        
+                        if "weight_change" in df_etf.columns:
+                             display_cols["weight_change"] = T(lang, "Weight Change %", "權重增減 %")
+                             format_dict[T(lang, "Weight Change %", "權重增減 %")] = "{:+.2f}%"
+                             
+                        display_cols["shares"] = T(lang, "Shares", "股數")
+                        format_dict[T(lang, "Shares", "股數")] = "{:,.0f}"
+                        
+                        if "shares_change" in df_etf.columns:
+                             display_cols["shares_change"] = T(lang, "Shares Change", "股數增減")
+                             format_dict[T(lang, "Shares Change", "股數增減")] = "{:+,.0f}"
+                             
+                        df_display = df_etf.rename(columns=display_cols)[list(display_cols.values())]
+                        
+                        def style_changes(val):
+                             if isinstance(val, str):
+                                  return ""
+                             if pd.isna(val) or val == 0:
+                                  return "color: #FFFFFF;"
+                             elif val > 0:
+                                  return f"color: {PROFIT_COLOR};"
+                             else:
+                                  return f"color: {LOSS_COLOR};"
+                                  
+                        styler = df_display.style.format(format_dict)
+                        if T(lang, "Weight Change %", "權重增減 %") in df_display.columns:
+                             styler = styler.applymap(style_changes, subset=[T(lang, "Weight Change %", "權重增減 %"), T(lang, "Shares Change", "股數增減")])
+                             
+                        st.dataframe(styler, use_container_width=True, height=600)
+            except Exception as e:
+                st.error(f"Error parsing ETF data: {e}")
+                st.code(traceback.format_exc())
 
 except Exception:
     st.error("App crashed during rendering. Here is the full traceback:")

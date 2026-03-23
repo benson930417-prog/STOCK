@@ -1,0 +1,35 @@
+name: Fetch ETF Holdings (Experimental Tracker)
+
+on:
+  schedule:
+    # Temporarily running every 5 minutes to track update schedule
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allows manual triggering directly from GitHub UI
+
+jobs:
+  fetch_etf_data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas openpyxl
+          
+      - name: Run ETF fetch script
+        run: python scripts/fetch_etf_holdings.py
+        
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-update ETF Tracker log"
+          file_pattern: "data/etf_00981A_history.json data/etf_update_log.json"
