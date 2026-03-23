@@ -193,8 +193,6 @@ def scale_unit(values: pd.Series, lang: str, rate: float = 1.0):
 
     max_abs = float(np.nanmax(np.abs(values.to_numpy()))) if len(values) else 0.0
     if lang == "中文":
-        if max_abs >= 1e6:
-            return values / 1e6, "百萬", 1e6
         if max_abs >= 1e4:
             return values / 1e4, "萬", 1e4
         if max_abs >= 1e3:
