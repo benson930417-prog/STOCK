@@ -1,9 +1,0 @@
-{
-  "site_package_search_strategy": "all",
-  "site_roots": [
-    "C:/Users/benso/AppData/Local/Programs/Python/Python313/Lib/site-packages"
-  ],
-  "source_directories": [
-    "."
-  ]
-}
