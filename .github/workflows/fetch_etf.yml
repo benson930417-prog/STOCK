@@ -2,8 +2,8 @@ name: Fetch ETF Holdings (Experimental Tracker)
 
 on:
   schedule:
-    # Temporarily running every 5 minutes to track update schedule
-    - cron: '*/5 * * * *'
+    # Temporarily running every 1 hour to track update schedule while saving minutes
+    - cron: '0 * * * *'
   workflow_dispatch: # Allows manual triggering directly from GitHub UI
 
 jobs:
