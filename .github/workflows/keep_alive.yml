@@ -7,8 +7,37 @@ on:
   workflow_dispatch: # Allows manual triggering directly from GitHub UI
 
 jobs:
-  ping:
+  simulate-browser:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping App
-        run: curl -sI https://benson.streamlit.app/ > /dev/null || true
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Playwright
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          playwright install chromium
+
+      - name: Open App in Headless Browser
+        shell: python
+        run: |
+          from playwright.sync_api import sync_playwright
+          import time
+          
+          with sync_playwright() as p:
+              print("Starting Headless Browser...")
+              browser = p.chromium.launch(headless=True)
+              page = browser.new_page()
+              
+              print("Navigating to Streamlit app...")
+              page.goto('https://benson.streamlit.app/')
+              
+              # Wait 15 seconds to ensure the WebSocket fully connects and analytics registers a viewer
+              print("Waiting 15 seconds for analytics to register the hit...")
+              page.wait_for_timeout(15000)
+              
+              browser.close()
+              print("Successfully simulated a user visit!")
