@@ -951,7 +951,11 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
         fd_width = target_step / d_val
 
         # Enforce a minimum width to prevent needle-like bars
-        min_w = 0.1 if unit_txt == "萬" else 1.0
+        min_w = 1.0
+        if unit_txt in ["百萬", "M TWD"]:
+            min_w = 0.05
+        elif unit_txt in ["萬", "K TWD"]:
+            min_w = 0.1
         if fd_width < min_w:
             fd_width = min_w
 
@@ -979,8 +983,10 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
                  return f"{int(val/1000)}k"
              return f"{int(val)}"
         else:
-             # Wan: just int
-             return f"{int(val)}"
+             if val == int(val):
+                 return f"{int(val)}"
+             else:
+                 return f"{val:.3f}".rstrip("0").rstrip(".")
 
     for i in range(len(bin_edges) - 1):
         left = bin_edges[i]
