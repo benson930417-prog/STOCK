@@ -358,7 +358,7 @@ def get_tw_stock_options():
             for item in r1.json():
                 code = str(item.get('Code', '')).strip()
                 name = str(item.get('Name', '')).strip()
-                if len(code) == 4 and code.isdigit():
+                if len(code) == 4 and code.isdigit() and not code.startswith('0'):
                     lbl = f"{code} {name}"
                     options[lbl] = f"{code}.TW"
     except Exception:
@@ -371,7 +371,7 @@ def get_tw_stock_options():
             for item in r2.json():
                 code = str(item.get('SecuritiesCompanyCode', '')).strip()
                 name = str(item.get('CompanyName', '')).strip()
-                if len(code) == 4 and code.isdigit():
+                if len(code) == 4 and code.isdigit() and not code.startswith('0'):
                     lbl = f"{code} {name}"
                     options[lbl] = f"{code}.TWO"
     except Exception:
@@ -1552,7 +1552,10 @@ try:
         def fmt_mkt(k):
              return f"{k} {MARKET_ZH.get(k, '')}" if lang == "中文" else k
 
-        stock_keys = ["2330 TSMC", "0050 Yuanta 50", "TSMC ADR", "1306 TPX", "1321 NK225", "VOO"]
+        etf_keys = ["0050 Yuanta 50", "1306 TPX", "1321 NK225", "VOO"]
+        tw_stock_keys = ["2330 TSMC"]
+        int_stock_keys = ["TSMC ADR"]
+        
         stock_symbols = {
              "2330 TSMC": "2330.TW",
              "0050 Yuanta 50": "0050.TW",
@@ -1573,7 +1576,7 @@ try:
         # Mix in dynamic TW stocks
         tw_stocks = get_tw_stock_options()
         for lbl, sym in tw_stocks.items():
-             stock_keys.append(lbl)
+             tw_stock_keys.append(lbl)
              stock_symbols[lbl] = sym
              STOCK_ZH[lbl] = lbl
 
@@ -1584,25 +1587,44 @@ try:
         st.subheader(T(lang, "Equity Curve", "資金曲線"))
         
         with st.container(border=True):
-             c_mkt, c_stk, c_stat = st.columns([2, 2, 1.2])
-             with c_mkt:
+             c_row1_mkt, c_row1_etf, c_row1_stat = st.columns([2, 2, 1.2])
+             with c_row1_mkt:
                   sel_indices = st.multiselect(
-                      T(lang, "Market Comparison", "大盤指數對照"),
+                      T(lang, "Index Comparison", "大盤指數對照"),
                       options=market_keys,
                       default=["TAIEX"],
                       format_func=fmt_mkt
                   )
-             with c_stk:
-                  sel_stocks = st.multiselect(
-                      T(lang, "Stock Comparison", "個股對照"),
-                      options=stock_keys,
+             with c_row1_etf:
+                  sel_etfs = st.multiselect(
+                      T(lang, "ETF Comparison", "ETF 比較"),
+                      options=etf_keys,
                       default=[],
                       format_func=fmt_stk
                   )
-
-             with c_stat:
+             with c_row1_stat:
                   # Placeholder for status UI (filled after data fetch)
                   status_placeholder = st.empty()
+
+             c_row2_tw, c_row2_int, c_row2_pad = st.columns([2, 2, 1.2])
+             with c_row2_tw:
+                  sel_tw_stocks = st.multiselect(
+                      T(lang, "TW Stock Comparison", "台灣個股對照"),
+                      options=tw_stock_keys,
+                      default=[],
+                      format_func=fmt_stk
+                  )
+             with c_row2_int:
+                  sel_int_stocks = st.multiselect(
+                      T(lang, "Intl Stock Comparison", "國際個股對照"),
+                      options=int_stock_keys,
+                      default=[],
+                      format_func=fmt_stk
+                  )
+             
+             # Aggregate all selected stock-like entities for chart processing
+             all_sel_stocks = sel_etfs + sel_tw_stocks + sel_int_stocks
+
 
 
 
@@ -1890,7 +1912,7 @@ try:
                              y_min_pct = min(y_min_pct, m_rel["pct"].min())
 
              # Process Stocks
-             for s_name in sel_stocks:
+             for s_name in all_sel_stocks:
                  symbol = stock_symbols[s_name]
                  # Reuse get_market_data logic for duration
                  days_needed = (pd.Timestamp.now().normalize() - daily_agg["date"].min()).days + 10
