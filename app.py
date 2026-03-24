@@ -2549,22 +2549,23 @@ try:
                         if sid not in curr_map:
                             del_s.append(ph)
                             
-                    # 4 Status Boxes
+                    # 4 Status Boxes - 2x2 Layout
                     st.write("")
-                    b1, b2, b3, b4 = st.columns(4)
+                    row1_col1, row1_col2 = st.columns(2)
+                    row2_col1, row2_col2 = st.columns(2)
                     
                     def box_ui(title, count, color):
                         return f'''
-                        <div style="background-color: {color}20; border-left: 4px solid {color}; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
-                            <div style="color: {color}; font-weight: bold; font-size: 14px; margin-bottom: 5px;">{title}</div>
-                            <div style="color: white; font-size: 16px;">{count}</div>
+                        <div style="background-color: {color}15; border-left: 6px solid {color}; padding: 16px 20px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            <div style="color: {color}; font-weight: 700; font-size: 16px; margin-bottom: 8px; letter-spacing: 0.5px;">{title}</div>
+                            <div style="color: white; font-size: 32px; font-weight: 800; line-height: 1;">{count}</div>
                         </div>
                         '''
                         
-                    with b1: st.markdown(box_ui(T(lang, "New", "新增"), f"{len(new_s)} {T(lang,'Count','檔')}", NEW_COLOR), unsafe_allow_html=True)
-                    with b2: st.markdown(box_ui(T(lang, "Removed", "刪除"), f"{len(del_s)} {T(lang,'Count','檔')}", REMOVED_COLOR), unsafe_allow_html=True)
-                    with b3: st.markdown(box_ui(T(lang, "Increased", "加碼"), f"{len(inc_s)} {T(lang,'Count','檔')}", PROFIT_COLOR), unsafe_allow_html=True)
-                    with b4: st.markdown(box_ui(T(lang, "Decreased", "減碼"), f"{len(dec_s)} {T(lang,'Count','檔')}", LOSS_COLOR), unsafe_allow_html=True)
+                    with row1_col1: st.markdown(box_ui(T(lang, "New", "新增"), f"{len(new_s)} {T(lang,'Count','檔')}", NEW_COLOR), unsafe_allow_html=True)
+                    with row1_col2: st.markdown(box_ui(T(lang, "Removed", "刪除"), f"{len(del_s)} {T(lang,'Count','檔')}", REMOVED_COLOR), unsafe_allow_html=True)
+                    with row2_col1: st.markdown(box_ui(T(lang, "Increased", "加碼"), f"{len(inc_s)} {T(lang,'Count','檔')}", PROFIT_COLOR), unsafe_allow_html=True)
+                    with row2_col2: st.markdown(box_ui(T(lang, "Decreased", "減碼"), f"{len(dec_s)} {T(lang,'Count','檔')}", LOSS_COLOR), unsafe_allow_html=True)
                     
                     st.write(f"{T(lang, 'Total ', '共')} {len(new_s)+len(del_s)+len(inc_s)+len(dec_s)} {T(lang, 'changes detected.', '檔異動')}")
                     
