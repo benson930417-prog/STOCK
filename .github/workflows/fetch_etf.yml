@@ -23,13 +23,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests pandas openpyxl
+          pip install requests pandas openpyxl beautifulsoup4 lxml html5lib
           
-      - name: Run ETF fetch script
-        run: python scripts/fetch_etf_holdings.py
+      - name: Run ETF 00981A fetch script
+        run: python scripts/fetch_etf_00981A.py
+        
+      - name: Run ETF 00991A fetch script
+        run: python scripts/fetch_etf_00991A.py
         
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto-update ETF Tracker log"
-          file_pattern: "data/etf_00981A_history.json data/etf_update_log.json"
+          file_pattern: "data/etf_00981A_history.json data/etf_00991A_history.json data/etf_update_log.json"
