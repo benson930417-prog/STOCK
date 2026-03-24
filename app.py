@@ -2401,15 +2401,8 @@ try:
                   badge_url = "https://github.com/benson930417-prog/STOCK/actions/workflows/fetch_etf.yml/badge.svg"
                   action_url = "https://github.com/benson930417-prog/STOCK/actions/workflows/fetch_etf.yml"
                   st.info(
-                        f"""
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-weight: bold; font-size: 14px;">{T(lang, 'Live Tracker Status:', '雲端自動更新任務狀態：')}</span>
-                            <a href="{action_url}" target="_blank">
-                                <img src="{badge_url}" alt="Updater Status" style="height: 20px; vertical-align: middle;">
-                            </a>
-                        </div>
-                        """, 
-                        icon="🤖"
+                      f"**{T(lang, 'Live Tracker Status:', '雲端自動更新任務狀態：')}** [![Updater Status]({badge_url})]({action_url})",
+                      icon="🤖"
                   )
              except Exception as e:
                   pass
