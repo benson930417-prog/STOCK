@@ -1158,11 +1158,8 @@ try:
                     f"1 EUR ≈ {eur_to_twd:.2f} TWD"
                 )
         
-        st.markdown(f"**{T(lang,'Theme','主題')}**")
-        tw_colors = st.toggle(
-            T(lang, "Taiwan colors (red=profit, green=loss)", "台股顏色（紅=賺、綠=虧）"),
-            value=True,
-        )
+        # Color theme strictly derived from language selection
+        tw_colors = (lang == "中文")
         hr()
 
         sidebar_recent_update(lang)
