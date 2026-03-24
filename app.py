@@ -2397,107 +2397,190 @@ try:
         # ----------------------
 
         etf_file = DATA_DIR / "etf_00981A_history.json"
-        if not etf_file.exists():
-            st.info(T(lang, "No ETF data fetched yet. The background job runs twice daily.", "尚未抓取 ETF 資料，背景程式會每日定期更新。"))
-        else:
-            try:
-                import json
-                with open(etf_file, "r", encoding="utf-8") as f:
-                    etf_data = json.load(f)
-                
-                dates = sorted(list(etf_data.keys()), reverse=True)
-                if not dates:
-                    st.info(T(lang, "No records in ETF data.", "無歷史資料。"))
+
+        history_data = {}
+        if etf_file.exists():
+             try:
+                  import json
+                  with open(etf_file, "r", encoding="utf-8") as fl:
+                       history_data = json.loads(fl.read())
+             except Exception:
+                  pass
+                  
+        dates = sorted(list(history_data.keys()), reverse=True)
+        if not dates:
+             st.warning(T(lang, "No ETF history data available currently.", "目前無 ETF 歷史資料。"))
+             # return # Removed return to allow the subtabs to show empty state
+             
+        col_d1, col_d2 = st.columns([1, 3])
+        with col_d1:
+             selected_date = st.selectbox(T(lang, "Select Data Date", "選擇資料日期"), dates) if dates else None
+             
+        # Add Sub-tabs for Holdings and Daily Report
+        etf_tab_overview, etf_tab_daily = st.tabs([
+             T(lang, "Holdings Overview", "總覽 / 持股"),
+             T(lang, "Operation Daily Report", "操作日報")
+        ])
+        
+        with etf_tab_overview:
+             if selected_date and selected_date in history_data:
+                 curr_day_data = history_data[selected_date]
+                 holdings = curr_day_data.get("holdings", [])
+                 
+                 st.markdown(f"**{T(lang, 'Total Stocks', '總檔數')}**: {len(holdings)}")
+                 
+                 if holdings:
+                      df_h = pd.DataFrame(holdings)
+                      # Sort by weight
+                      df_h = df_h.sort_values(by="weight_pct", ascending=False).reset_index(drop=True)
+                      df_h["stock_label"] = df_h["id"].astype(str) + " " + df_h["name"]
+                      
+                      top_n = st.slider(T(lang, "Show Top N Holdings", "顯示前 N 大持股"), min_value=5, max_value=len(df_h), value=min(20, len(df_h)), step=5)
+                      
+                      df_top = df_h.head(top_n)
+                      
+                      fig = px.bar(
+                           df_top,
+                           x="stock_label",
+                           y="weight_pct",
+                           text="weight_pct",
+                           color_discrete_sequence=[NEUTRAL_PURPLE],
+                           title=f"{T(lang, f'Top {top_n} Holdings', f'前 {top_n} 大持股')} ({selected_date})",
+                           labels={"stock_label": T(lang, "Stock", "股票"), "weight_pct": T(lang, "Weight (%)", "權重 (%)")}
+                      )
+                      fig.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
+                      fig.update_layout(xaxis_title="", yaxis_title=T(lang, "Weight (%)", "權重 (%)"), height=500, margin=dict(b=100))
+                      st.plotly_chart(fig, use_container_width=True)
+                      
+                      # Rename columns for display
+                      df_show = df_h[["id", "name", "weight_pct", "shares"]].copy()
+                      df_show.columns = [
+                           T(lang, "Stock ID", "代號"),
+                           T(lang, "Stock Name", "名稱"),
+                           T(lang, "Weight (%)", "權重 (%)"),
+                           T(lang, "Shares", "股數")
+                      ]
+                      st.dataframe(df_show, width="stretch")
+                 else:
+                      st.info(T(lang, "No holdings data for this date.", "此日期無持股資料。"))
+             else:
+                 st.info(T(lang, "Please select a date with available ETF data.", "請選擇有 ETF 資料的日期。"))
+
+        with etf_tab_daily:
+            if selected_date and selected_date in history_data:
+                st.markdown(f"### {selected_date} {T(lang, 'Operation Daily Report', '操作日報')}")
+                curr_idx = dates.index(selected_date)
+                if curr_idx == len(dates) - 1:
+                    st.warning(T(lang, "No previous day data available to compare.", "無前一日資料可供比較。"))
                 else:
-                    c_date, c_stat = st.columns([1, 2])
-                    with c_date:
-                        selected_date = st.selectbox(T(lang, "Select Date", "選擇資料日期"), dates)
+                    prev_date = dates[curr_idx + 1]
+                    st.caption(f"{T(lang, 'Compared to', '較前日')} {prev_date}")
                     
-                    day_data = etf_data[selected_date].get("holdings", [])
+                    curr_data = history_data[selected_date]
+                    prev_data = history_data[prev_date]
+                    curr_meta = curr_data.get("meta", {})
                     
-                    if not day_data:
-                        st.info(T(lang, "No holdings data for this date.", "此日期無資料。"))
-                    else:
-                        df_etf = pd.DataFrame(day_data)
-                        
-                        # Compute previous day delta if available
-                        prev_date = None
-                        idx = dates.index(selected_date)
-                        if idx + 1 < len(dates):
-                            prev_date = dates[idx + 1]
-                            
-                        if prev_date:
-                            prev_holdings = etf_data[prev_date].get("holdings", [])
-                            df_prev = pd.DataFrame(prev_holdings)
-                            if not df_prev.empty:
-                                df_etf = df_etf.merge(df_prev[["id", "weight_pct", "shares"]], on="id", how="left", suffixes=("", "_prev"))
-                                df_etf["weight_change"] = df_etf["weight_pct"] - df_etf["weight_pct_prev"].fillna(df_etf["weight_pct"])
-                                df_etf["shares_change"] = df_etf["shares"] - df_etf["shares_prev"].fillna(df_etf["shares"])
-                            else:
-                                df_etf["weight_change"] = 0.0
-                                df_etf["shares_change"] = 0
-                        else:
-                            df_etf["weight_change"] = 0.0
-                            df_etf["shares_change"] = 0
-                            
-                        df_etf = df_etf.sort_values("weight_pct", ascending=False).reset_index(drop=True)
-                        
-                        with c_stat:
-                            st.write("")
-                            st.write(f"**{T(lang, 'Total Stocks', '總檔數')}**: {len(df_etf)}")
-                            
-                        top_n = st.slider(T(lang, "Top N Holdings", "顯示前 N 大持股"), 5, 50, 20)
-                        df_top = df_etf.head(top_n).copy()
-                        df_top["label"] = df_top["id"].astype(str) + " " + df_top["name"]
-                        
-                        fig_etf = px.bar(
-                            df_top,
-                            x="label",
-                            y="weight_pct",
-                            text="weight_pct",
-                            title=f"{T(lang, 'Top', '前')} {top_n} {T(lang, 'Holdings', '大持股')} ({selected_date})",
-                            labels={"label": T(lang, "Stock", "股票"), "weight_pct": T(lang, "Weight (%)", "權重 (%)")},
-                            color_discrete_sequence=[NEUTRAL_PURPLE]
-                        )
-                        fig_etf.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
-                        fig_etf.update_layout(height=450, xaxis_tickangle=-45, margin=dict(t=50, b=120))
-                        st.plotly_chart(fig_etf, use_container_width=True)
-                        
-                        # Prepare table for display
-                        display_cols = {"id": T(lang, "ID", "代碼"), "name": T(lang, "Name", "名稱"), "weight_pct": T(lang, "Weight %", "權重 %")}
-                        format_dict = {T(lang, "Weight %", "權重 %"): "{:.2f}%"}
-                        
-                        if "weight_change" in df_etf.columns:
-                             display_cols["weight_change"] = T(lang, "Weight Change %", "權重增減 %")
-                             format_dict[T(lang, "Weight Change %", "權重增減 %")] = "{:+.2f}%"
-                             
-                        display_cols["shares"] = T(lang, "Shares", "股數")
-                        format_dict[T(lang, "Shares", "股數")] = "{:,.0f}"
-                        
-                        if "shares_change" in df_etf.columns:
-                             display_cols["shares_change"] = T(lang, "Shares Change", "股數增減")
-                             format_dict[T(lang, "Shares Change", "股數增減")] = "{:+,.0f}"
-                             
-                        df_display = df_etf.rename(columns=display_cols)[list(display_cols.values())]
-                        
-                        def style_changes(val):
-                             if isinstance(val, str):
-                                  return ""
-                             if pd.isna(val) or val == 0:
-                                  return "color: #FFFFFF;"
-                             elif val > 0:
-                                  return f"color: {PROFIT_COLOR};"
-                             else:
-                                  return f"color: {LOSS_COLOR};"
+                    fund_size = curr_meta.get("fund_size", 0)
+                    nav = curr_meta.get("nav", 0)
+                    
+                    # Fetch live market price from Yahoo
+                    market_price = nav
+                    try:
+                        import requests
+                        res = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/00981A.TW", headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
+                        if res.status_code == 200:
+                            market_price = res.json()['chart']['result'][0]['meta']['regularMarketPrice']
+                    except Exception:
+                        pass
+                    
+                    premium_pct = 0.0
+                    if nav and nav > 0:
+                        premium_pct = ((market_price - nav) / nav) * 100
+                    
+                    # Top Metadata Cards
+                    m1, m2 = st.columns(2)
+                    with m1:
+                        f_size_disp = f"{int(fund_size / 100000000)} 億" if fund_size else "N/A"
+                        st.metric(T(lang, "Fund Size (NTD)", "基金規模"), f_size_disp)
+                    with m2:
+                        st.metric(T(lang, "Premium/Discount", "折溢價"), f"{premium_pct:+.2f}%", 
+                                  help=f"{T(lang, 'Market Price:', '股價:')} {market_price:.2f} | {T(lang, 'NAV:', '淨值:')} {nav:.2f}" if nav else "")
                                   
-                        styler = df_display.style.format(format_dict)
-                        if T(lang, "Weight Change %", "權重增減 %") in df_display.columns:
-                             styler = styler.applymap(style_changes, subset=[T(lang, "Weight Change %", "權重增減 %"), T(lang, "Shares Change", "股數增減")])
+                    # Calculate Differences
+                    prev_map = { h['id']: h for h in prev_data.get('holdings', []) }
+                    curr_map = { h['id']: h for h in curr_data.get('holdings', []) }
+                    
+                    new_s, del_s, inc_s, dec_s = [], [], [], []
+                    for sid, ch in curr_map.items():
+                        if sid not in prev_map:
+                            new_s.append(ch)
+                        else:
+                            ph = prev_map[sid]
+                            diff_sh = ch['shares'] - ph['shares']
+                            if diff_sh > 0: inc_s.append((ch, ph))
+                            elif diff_sh < 0: dec_s.append((ch, ph))
+                            
+                    for sid, ph in prev_map.items():
+                        if sid not in curr_map:
+                            del_s.append(ph)
+                            
+                    # 4 Status Boxes
+                    st.write("")
+                    b1, b2, b3, b4 = st.columns(4)
+                    with b1: st.info(f"**{T(lang, 'New', '新增')}**\n\n{len(new_s)} {T(lang,'Count','檔')}")
+                    with b2: st.error(f"**{T(lang, 'Removed', '刪除')}**\n\n{len(del_s)} {T(lang,'Count','檔')}")
+                    with b3: st.success(f"**{T(lang, 'Increased', '加碼')}**\n\n{len(inc_s)} {T(lang,'Count','檔')}")
+                    with b4: st.warning(f"**{T(lang, 'Decreased', '減碼')}**\n\n{len(dec_s)} {T(lang,'Count','檔')}")
+                    
+                    st.write(f"{T(lang, 'Total ', '共')} {len(new_s)+len(del_s)+len(inc_s)+len(dec_s)} {T(lang, 'changes detected.', '檔異動')}")
+                    
+                    # Build unified operations DataFrame
+                    rows = []
+                    for h in new_s:
+                        rows.append({"ID": h['id'], "Name": h['name'], "Status": T(lang, "New", "新增"), "ShareDiff": h['shares'], "MagPct": 100.0, "CurrWeight": h['weight_pct'], "WeightDiff": h['weight_pct']})
+                    for h in del_s:
+                        rows.append({"ID": h['id'], "Name": h['name'], "Status": T(lang, "Removed", "刪除"), "ShareDiff": -h['shares'], "MagPct": -100.0, "CurrWeight": 0.0, "WeightDiff": -h['weight_pct']})
+                    for ch, ph in inc_s:
+                        diff_sh = ch['shares'] - ph['shares']
+                        mag = (diff_sh / ph['shares'] * 100.0) if ph['shares'] else 0.0
+                        rows.append({"ID": ch['id'], "Name": ch['name'], "Status": T(lang, "Increased", "加碼"), "ShareDiff": diff_sh, "MagPct": mag, "CurrWeight": ch['weight_pct'], "WeightDiff": ch['weight_pct'] - ph['weight_pct']})
+                    for ch, ph in dec_s:
+                        diff_sh = ch['shares'] - ph['shares']
+                        mag = (diff_sh / ph['shares'] * 100.0) if ph['shares'] else 0.0
+                        rows.append({"ID": ch['id'], "Name": ch['name'], "Status": T(lang, "Decreased", "減碼"), "ShareDiff": diff_sh, "MagPct": mag, "CurrWeight": ch['weight_pct'], "WeightDiff": ch['weight_pct'] - ph['weight_pct']})
+                        
+                    if rows:
+                        df_ops = pd.DataFrame(rows)
+                        # Sort by MagPct abs value or Status
+                        df_ops = df_ops.sort_values(by="MagPct", ascending=False).reset_index(drop=True)
+                        
+                        df_ops["Target"] = df_ops["Name"] + " (" + df_ops["ID"].astype(str) + ")"
+                        df_ops["ShareDiffStr"] = df_ops["ShareDiff"].apply(lambda x: f"+{x:,.0f}" if x>0 else f"{x:,.0f}")
+                        df_ops["MagPctStr"] = df_ops["MagPct"].apply(lambda x: f"{x:+.2f}%")
+                        df_ops["CurrWeightStr"] = df_ops["CurrWeight"].apply(lambda x: f"{x:.2f}%")
+                        df_ops["WeightDiffStr"] = df_ops["WeightDiff"].apply(lambda x: f"{x:+.2f}%")
+                        
+                        df_ops_show = df_ops[["Target", "Status", "ShareDiffStr", "MagPctStr", "CurrWeightStr", "WeightDiffStr"]].copy()
+                        df_ops_show.columns = [
+                            T(lang, "Target", "標的"),
+                            T(lang, "Status", "狀態"),
+                            T(lang, "Share Chg", "持股變動"),
+                            T(lang, "Magn (%)", "變動幅度"),
+                            T(lang, "Weight (%)", "目前權重"),
+                            T(lang, "Wgt Chg (%)", "變動%")
+                        ]
+                        
+                        def style_status(val):
+                             if val in [T(lang, "New", "新增"), T(lang, "Increased", "加碼")]:
+                                  return f"color: {PROFIT_COLOR}; font-weight: bold;"
+                             elif val in [T(lang, "Removed", "刪除"), T(lang, "Decreased", "減碼")]:
+                                  return f"color: {LOSS_COLOR}; font-weight: bold;"
+                             return ""
                              
-                        st.dataframe(styler, use_container_width=True, height=600)
-            except Exception as e:
-                st.error(f"Error parsing ETF data: {e}")
-                st.code(traceback.format_exc())
+                        styler = df_ops_show.style.applymap(style_status, subset=[T(lang, "Status", "狀態")])
+                        st.dataframe(styler, width="stretch", height=600)
+                    else:
+                        st.info(T(lang, "No portfolio changes detected from previous day.", "相較前日無任何持股變動。"))
 
 except Exception:
     st.error("App crashed during rendering. Here is the full traceback:")

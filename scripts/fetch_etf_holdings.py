@@ -57,8 +57,14 @@ def fetch_and_update_holdings():
         records = df.to_dict('records')
         
         file_date_str = datetime.now().strftime("%Y-%m-%d")
+        fund_size = None
+        nav = None
+        
         for i in range(header_row):
-            row_vals = " ".join([str(x) for x in df_raw.iloc[i].values if pd.notna(x)])
+            row_list = df_raw.iloc[i].values
+            row_strs = [str(x) for x in row_list if pd.notna(x)]
+            row_vals = " ".join(row_strs)
+            
             if "日期" in row_vals or "Date" in row_vals:
                 import re
                 m = re.search(r'(\d{3,4})[-/](\d{1,2})[-/](\d{1,2})', row_vals)
@@ -67,6 +73,22 @@ def fetch_and_update_holdings():
                     if year < 1000:
                         year += 1911
                     file_date_str = f"{year}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+                    
+            elif "淨資產" in row_vals or "規模" in row_vals:
+                for val in row_list:
+                    if pd.notna(val) and ("NTD" in str(val) or any(c.isdigit() for c in str(val))):
+                        try:
+                            v_str = str(val).replace("NTD", "").replace(",", "").strip()
+                            fund_size = float(v_str)
+                        except: pass
+                        
+            elif "淨值" in row_vals or "NAV" in row_vals:
+                for val in row_list:
+                    if pd.notna(val) and ("NTD" in str(val) or any(c.isdigit() for c in str(val))):
+                        try:
+                            v_str = str(val).replace("NTD", "").replace(",", "").strip()
+                            nav = float(v_str)
+                        except: pass
         
         clean_records = []
         for r in records:
@@ -100,6 +122,10 @@ def fetch_and_update_holdings():
              
         day_data = {
              "date": file_date_str,
+             "meta": {
+                 "fund_size": fund_size,
+                 "nav": nav
+             },
              "holdings": clean_records
         }
         
@@ -116,9 +142,9 @@ def fetch_and_update_holdings():
         existing_day_data = history.get(file_date_str)
         
         if existing_day_data:
-             # Deep compare the holdings list
-             current_json = json.dumps(day_data["holdings"], sort_keys=True)
-             previous_json = json.dumps(existing_day_data.get("holdings", []), sort_keys=True)
+             # Deep compare the whole day_data (including meta and holdings)
+             current_json = json.dumps(day_data, sort_keys=True)
+             previous_json = json.dumps(existing_day_data, sort_keys=True)
              if current_json == previous_json:
                   is_changed = False
                   
