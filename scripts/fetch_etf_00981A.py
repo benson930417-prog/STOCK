@@ -151,10 +151,14 @@ def fetch_and_update_holdings():
         existing_day_data = history.get(file_date_str)
         
         if existing_day_data:
-             # Deep compare the whole day_data (including meta and holdings)
-             current_json = json.dumps(day_data, sort_keys=True)
-             previous_json = json.dumps(existing_day_data, sort_keys=True)
-             if current_json == previous_json:
+             # Deep compare the whole day_data EXCEPT closing_price which constantly floats during market open hours
+             import copy
+             curr_cmp = copy.deepcopy(day_data)
+             prev_cmp = copy.deepcopy(existing_day_data)
+             curr_cmp["meta"].pop("closing_price", None)
+             prev_cmp["meta"].pop("closing_price", None)
+             
+             if json.dumps(curr_cmp, sort_keys=True) == json.dumps(prev_cmp, sort_keys=True):
                   is_changed = False
                   
         history[file_date_str] = day_data
