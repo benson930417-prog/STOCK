@@ -25,13 +25,16 @@ jobs:
           pip install requests pandas openpyxl beautifulsoup4 lxml html5lib
           
       - name: Run ETF 00981A fetch script
+        continue-on-error: true
         run: python scripts/fetch_etf_00981A.py
         
       - name: Run ETF 00991A fetch script
+        continue-on-error: true
         run: python scripts/fetch_etf_00991A.py
         
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v5
+        if: always()
         with:
           commit_message: "Auto-update ETF Tracker log"
           file_pattern: "data/*.json"
