@@ -2370,7 +2370,13 @@ try:
                        if not dt_str:
                             return T(lang, "Unknown", "未知")
                        dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
-                       dt_local_str = dt.astimezone().strftime('%m-%d %H:%M')
+                       import zoneinfo
+                       try:
+                           belgium_tz = zoneinfo.ZoneInfo("Europe/Brussels")
+                       except Exception:
+                           from datetime import timezone, timedelta
+                           belgium_tz = timezone(timedelta(hours=1)) # Fallback
+                       dt_local_str = dt.astimezone(belgium_tz).strftime('%m-%d %H:%M')
                        now = datetime.now(timezone.utc)
                        diff = (now - dt).total_seconds()
                        mins = int(diff / 60)
