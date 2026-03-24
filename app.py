@@ -2402,13 +2402,10 @@ try:
                   checked_str = _time_ago(lcu, lang)
                   update_str = _time_ago(luu, lang) if luu else T(lang, "Never (or before tracking)", "從未 (或追蹤前)")
                   
-                  action_url = "https://github.com/benson930417-prog/STOCK/actions/workflows/fetch_etf.yml"
-                  
                   st.info(
                       f"**{T(lang, 'Backend Tracker', '雲端更新狀態')}**: {status_msg}  \n"
                       f"**{T(lang, 'Last checked', '最後檢查時間')}**: {checked_str}  \n"
-                      f"**{T(lang, 'Last updated', '最後資料變動')}**: {update_str}  \n\n"
-                      f"👉 **[{T(lang, 'View GitHub Auto-Update Logs', '點此查看 GitHub 自動更新紀錄')}]({action_url})**",
+                      f"**{T(lang, 'Last updated', '最後資料變動')}**: {update_str}",
                       icon="🤖"
                   )
              except Exception as e:
