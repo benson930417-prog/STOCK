@@ -61,9 +61,12 @@ def fetch_and_update_holdings():
             row_vals = " ".join([str(x) for x in df_raw.iloc[i].values if pd.notna(x)])
             if "日期" in row_vals or "Date" in row_vals:
                 import re
-                m = re.search(r'(\d{4}[-/]\d{1,2}[-/]\d{1,2})', row_vals)
+                m = re.search(r'(\d{3,4})[-/](\d{1,2})[-/](\d{1,2})', row_vals)
                 if m:
-                    file_date_str = m.group(1).replace("/", "-")
+                    year = int(m.group(1))
+                    if year < 1000:
+                        year += 1911
+                    file_date_str = f"{year}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
         
         clean_records = []
         for r in records:
