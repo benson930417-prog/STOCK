@@ -2500,15 +2500,19 @@ try:
                     fund_size = curr_meta.get("fund_size", 0)
                     nav = curr_meta.get("nav", 0)
                     
-                    # Fetch live market price from Yahoo
-                    market_price = nav
-                    try:
-                        import requests
-                        res = requests.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{etf_ticker}.TW", headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
-                        if res.status_code == 200:
-                            market_price = res.json()['chart']['result'][0]['meta']['regularMarketPrice']
-                    except Exception:
-                        pass
+                    # Use EXACT daily closing price for accurate comparison
+                    market_price = curr_meta.get("closing_price")
+                    
+                    if not market_price:
+                        # Fallback for live operations
+                        market_price = nav
+                        try:
+                            import requests
+                            res = requests.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{etf_ticker}.TW", headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
+                            if res.status_code == 200:
+                                market_price = res.json()['chart']['result'][0]['meta']['regularMarketPrice']
+                        except Exception:
+                            pass
                     
                     premium_pct = 0.0
                     if nav and nav > 0:

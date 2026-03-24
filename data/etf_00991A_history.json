@@ -3,7 +3,8 @@
     "date": "2026-03-23",
     "meta": {
       "fund_size": 28113172885.0,
-      "nav": 12.58
+      "nav": 12.58,
+      "closing_price": 12.6
     },
     "holdings": [
       {
@@ -312,7 +313,8 @@
     "date": "2026-03-20",
     "meta": {
       "fund_size": 29012276347.0,
-      "nav": 13.08
+      "nav": 13.08,
+      "closing_price": 13.12
     },
     "holdings": [
       {
@@ -621,7 +623,8 @@
     "date": "2026-03-19",
     "meta": {
       "fund_size": 29262590968.0,
-      "nav": 13.27
+      "nav": 13.27,
+      "closing_price": 13.3
     },
     "holdings": [
       {
@@ -930,7 +933,8 @@
     "date": "2026-03-18",
     "meta": {
       "fund_size": 29255704839.0,
-      "nav": 13.31
+      "nav": 13.31,
+      "closing_price": 13.36
     },
     "holdings": [
       {
@@ -1239,7 +1243,8 @@
     "date": "2026-03-17",
     "meta": {
       "fund_size": 28249505483.0,
-      "nav": 12.88
+      "nav": 12.88,
+      "closing_price": 12.88
     },
     "holdings": [
       {
@@ -1548,7 +1553,8 @@
     "date": "2026-03-16",
     "meta": {
       "fund_size": 27715856952.0,
-      "nav": 12.58
+      "nav": 12.58,
+      "closing_price": 12.57
     },
     "holdings": [
       {
@@ -1857,7 +1863,8 @@
     "date": "2026-03-13",
     "meta": {
       "fund_size": 27195120505.0,
-      "nav": 12.35
+      "nav": 12.35,
+      "closing_price": 12.3
     },
     "holdings": [
       {
@@ -2166,7 +2173,8 @@
     "date": "2026-03-12",
     "meta": {
       "fund_size": 27216568037.0,
-      "nav": 12.34
+      "nav": 12.34,
+      "closing_price": 12.3
     },
     "holdings": [
       {
@@ -2475,7 +2483,8 @@
     "date": "2026-03-11",
     "meta": {
       "fund_size": 27511530760.0,
-      "nav": 12.45
+      "nav": 12.45,
+      "closing_price": 12.41
     },
     "holdings": [
       {

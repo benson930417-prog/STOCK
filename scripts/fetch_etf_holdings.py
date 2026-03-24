@@ -120,11 +120,20 @@ def fetch_and_update_holdings():
              save_log(log_data)
              return
              
+        closing_price = nav
+        try:
+            import requests as req
+            rp = req.get("https://query1.finance.yahoo.com/v8/finance/chart/00981A.TW", headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+            if rp.status_code == 200:
+                closing_price = rp.json()['chart']['result'][0]['meta']['regularMarketPrice']
+        except: pass
+
         day_data = {
              "date": file_date_str,
              "meta": {
                  "fund_size": fund_size,
-                 "nav": nav
+                 "nav": nav,
+                 "closing_price": float(closing_price)
              },
              "holdings": clean_records
         }

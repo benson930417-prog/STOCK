@@ -81,12 +81,20 @@ def fetch_and_update_00991A():
                     # Could be cash balances or other accounting lines
                     pass
                     
+            closing_price = nav
+            try:
+                rp = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/00991A.TW", headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+                if rp.status_code == 200:
+                    closing_price = rp.json()['chart']['result'][0]['meta']['regularMarketPrice']
+            except: pass
+
             if holdings:
                 history[formatted_date] = {
                     "date": formatted_date,
                     "meta": {
                         "fund_size": fund_size,
-                        "nav": nav
+                        "nav": nav,
+                        "closing_price": float(closing_price)
                     },
                     "holdings": holdings
                 }
