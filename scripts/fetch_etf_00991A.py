@@ -35,6 +35,7 @@ def fetch_and_update_00991A():
     dates_to_fetch = [(today - timedelta(days=i)).strftime("%Y%m%d") for i in range(14)]
     
     updated = False
+    last_error = "No Change"
     for date_str in dates_to_fetch:
         formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
         
@@ -47,10 +48,12 @@ def fetch_and_update_00991A():
             res = requests.get(f'https://www.fhtrust.com.tw/api/assetsExcel/ETF23/{date_str}', headers={'User-Agent': 'Mozilla/5.0'}, verify=False, timeout=10)
         except Exception as e:
             print(f"  -> Request failed: {e}")
+            last_error = f"Conn Err {formatted_date}: {e}"
             continue
             
         if res.status_code != 200:
             print(f"  -> Failed (HTTP {res.status_code})")
+            last_error = f"HTTP {res.status_code} on {formatted_date}"
             continue
             
         try:
@@ -122,8 +125,11 @@ def fetch_and_update_00991A():
                 print(f"  -> Success. Extracted {len(holdings)} holding records.")
             else:
                 print(f"  -> No usable holding records found.")
+                if last_error == "No Change":
+                    last_error = f"No holding records found for {formatted_date}"
         except Exception as e:
             print(f"  -> Parse Error: {e}")
+            last_error = f"Parse Error {formatted_date}: {e}"
             
     if updated:
         os.makedirs(DATA_DIR, exist_ok=True)
@@ -132,7 +138,7 @@ def fetch_and_update_00991A():
         log_data["last_updated_utc"] = now_utc
         log_data["status"] = "NEW DATA FOUND"
     else:
-        log_data["status"] = "No Change"
+        log_data["status"] = last_error
         
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(LOG_FILE, "w", encoding="utf-8") as f:
