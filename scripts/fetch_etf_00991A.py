@@ -45,7 +45,12 @@ def fetch_and_update_00991A():
             
         print(f"Fetching {formatted_date} from Fuh Hwa...")
         try:
-            res = requests.get(f'https://www.fhtrust.com.tw/api/assetsExcel/ETF23/{date_str}', headers={'User-Agent': 'Mozilla/5.0'}, verify=False, timeout=10)
+            req_headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7'
+            }
+            res = requests.get(f'https://www.fhtrust.com.tw/api/assetsExcel/ETF23/{date_str}', headers=req_headers, verify=False, timeout=10)
         except Exception as e:
             print(f"  -> Request failed: {e}")
             last_error = f"Conn Err {formatted_date}: {e}"
@@ -128,8 +133,9 @@ def fetch_and_update_00991A():
                 if last_error == "No Change":
                     last_error = f"No holding records found for {formatted_date}"
         except Exception as e:
-            print(f"  -> Parse Error: {e}")
-            last_error = f"Parse Error {formatted_date}: {e}"
+            content_preview = str(res.content[:15]) if 'res' in locals() else "None"
+            print(f"  -> Parse Error: {e}. Content: {content_preview}")
+            last_error = f"Parse Error {formatted_date}: {content_preview}"
             
     if updated:
         os.makedirs(DATA_DIR, exist_ok=True)
