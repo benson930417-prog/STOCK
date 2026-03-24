@@ -2525,8 +2525,20 @@ try:
                     # Top Metadata Cards
                     m1, m2 = st.columns(2)
                     with m1:
-                        f_size_disp = f"{int(fund_size / 100000000)} 億" if fund_size else "N/A"
-                        st.metric(T(lang, "Fund Size (NTD)", "基金規模"), f_size_disp)
+                        if fund_size:
+                            c_val = fund_size * CURRENCY_RATE
+                            if CURRENCY_RATE != 1.0:
+                                f_size_disp = f"€ {c_val / 1_000_000:,.1f}M"
+                                st.metric(T(lang, "Fund Size (EUR)", "基金規模 (歐元)"), f_size_disp)
+                            else:
+                                if lang == "中文":
+                                    f_size_disp = f"{int(c_val / 100000000)} 億"
+                                    st.metric("基金規模 (TWD)", f_size_disp)
+                                else:
+                                    f_size_disp = f"{c_val / 1_000_000:,.1f}M"
+                                    st.metric("Fund Size (TWD)", f_size_disp)
+                        else:
+                            st.metric(T(lang, "Fund Size", "基金規模"), "N/A")
                     with m2:
                         st.metric(T(lang, "Premium/Discount", "折溢價"), f"{premium_pct:+.2f}%", 
                                   help=f"{T(lang, 'Market Price:', '股價:')} {market_price:.2f} | {T(lang, 'NAV:', '淨值:')} {nav:.2f}" if nav else "")
