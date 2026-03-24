@@ -328,16 +328,22 @@
     },
     "holdings": [
       {
+        "id": "2330",
+        "name": "台積電",
+        "weight_pct": 8.61,
+        "shares": 4485000
+      },
+      {
         "id": "2383",
         "name": "台光電",
         "weight_pct": 7.4,
-        "shares": 2496500
+        "shares": 2497000
       },
       {
         "id": "2308",
         "name": "台達電",
-        "weight_pct": 6.49,
-        "shares": 4339500
+        "weight_pct": 6.99,
+        "shares": 4989000
       },
       {
         "id": "3017",
@@ -414,8 +420,8 @@
       {
         "id": "6510",
         "name": "精測",
-        "weight_pct": 2.14,
-        "shares": 591000
+        "weight_pct": 1.8900000000000001,
+        "shares": 271000
       },
       {
         "id": "3661",
@@ -628,16 +634,10 @@
         "shares": 5000
       },
       {
-        "id": "3583",
-        "name": "辛耘",
-        "weight_pct": 0.0,
-        "shares": 6000
-      },
-      {
-        "id": "9999",
-        "name": "FAKE_DEL",
-        "shares": 1000,
-        "weight_pct": 1.0
+        "id": "2881",
+        "name": "富邦金",
+        "shares": 1250000,
+        "weight_pct": 0.85
       }
     ],
     "is_mocked": true
