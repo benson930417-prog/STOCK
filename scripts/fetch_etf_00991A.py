@@ -3,12 +3,22 @@ import pandas as pd
 import json
 import os
 import io
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 DATA_DIR = "data"
 HISTORY_FILE = os.path.join(DATA_DIR, "etf_00991A_history.json")
+LOG_FILE = os.path.join(DATA_DIR, "etf_00991A_log.json")
 
 def fetch_and_update_00991A():
+    now_utc = datetime.now(timezone.utc).isoformat()
+    log_data = {"last_checked_utc": None, "last_updated_utc": None, "status": "Initializing"}
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, "r", encoding="utf-8") as f:
+                log_data = json.load(f)
+        except Exception: pass
+    log_data["last_checked_utc"] = now_utc
+
     history = {}
     if os.path.exists(HISTORY_FILE):
         try:
@@ -109,6 +119,14 @@ def fetch_and_update_00991A():
         os.makedirs(DATA_DIR, exist_ok=True)
         with open(HISTORY_FILE, "w", encoding="utf-8") as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
+        log_data["last_updated_utc"] = now_utc
+        log_data["status"] = "NEW DATA FOUND"
+    else:
+        log_data["status"] = "No Change"
+        
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(LOG_FILE, "w", encoding="utf-8") as f:
+        json.dump(log_data, f, ensure_ascii=False, indent=2)
             
 if __name__ == "__main__":
     fetch_and_update_00991A()

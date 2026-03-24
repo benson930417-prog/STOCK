@@ -10,7 +10,7 @@ requests.packages.urllib3.disable_warnings()
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 HISTORY_FILE = os.path.join(DATA_DIR, "etf_00981A_history.json")
-LOG_FILE = os.path.join(DATA_DIR, "etf_update_log.json")
+LOG_FILE = os.path.join(DATA_DIR, "etf_00981A_log.json")
 
 def fetch_and_update_holdings():
     now_utc = datetime.now(timezone.utc).isoformat()

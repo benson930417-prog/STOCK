@@ -2369,8 +2369,8 @@ try:
         )
         
         # --- NEW TRACKER UI ---
-        log_file = DATA_DIR / "etf_update_log.json"
-        if etf_ticker == "00981A" and log_file.exists():
+        log_file = DATA_DIR / f"etf_{etf_ticker}_log.json"
+        if log_file.exists():
              try:
                   with open(log_file, "r", encoding="utf-8") as fl:
                        log_data = json.loads(fl.read())
