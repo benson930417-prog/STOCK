@@ -2578,16 +2578,24 @@ try:
                     with m1:
                         if fund_size:
                             c_val = fund_size * CURRENCY_RATE
+                            
+                            prev_meta = prev_data.get("meta", {}) if prev_data else {}
+                            prev_fund_size = prev_meta.get("fund_size", 0)
+                            delta_str = None
+                            if prev_fund_size and prev_fund_size > 0:
+                                diff_pct = ((fund_size - prev_fund_size) / prev_fund_size) * 100.0
+                                delta_str = f"{diff_pct:+.2f}%"
+                                
                             if CURRENCY_RATE != 1.0:
                                 f_size_disp = f"€ {c_val / 1_000_000:,.1f}M"
-                                st.metric(T(lang, "Fund Size (EUR)", "基金規模 (歐元)"), f_size_disp)
+                                st.metric(T(lang, "Fund Size (EUR)", "基金規模 (歐元)"), f_size_disp, delta=delta_str)
                             else:
                                 if lang == "中文":
                                     f_size_disp = f"{int(c_val / 100000000)} 億"
-                                    st.metric("基金規模 (TWD)", f_size_disp)
+                                    st.metric("基金規模 (TWD)", f_size_disp, delta=delta_str)
                                 else:
                                     f_size_disp = f"{c_val / 1_000_000:,.1f}M"
-                                    st.metric("Fund Size (TWD)", f_size_disp)
+                                    st.metric("Fund Size (TWD)", f_size_disp, delta=delta_str)
                         else:
                             st.metric(T(lang, "Fund Size", "基金規模"), "N/A")
                     with m2:
