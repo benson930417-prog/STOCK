@@ -2454,11 +2454,12 @@ try:
                       
                       # Rename columns for display
                       df_show = df_h[["id", "name", "weight_pct", "shares"]].copy()
+                      df_show["shares"] = df_show["shares"] / 1000
                       df_show.columns = [
                            T(lang, "Stock ID", "代號"),
                            T(lang, "Stock Name", "名稱"),
                            T(lang, "Weight (%)", "權重 (%)"),
-                           T(lang, "Shares", "股數")
+                           T(lang, "Holdings (Lots)", "張數")
                       ]
                       st.dataframe(df_show, width="stretch")
                  else:
@@ -2559,7 +2560,7 @@ try:
                         df_ops = df_ops.sort_values(by="MagPct", ascending=False).reset_index(drop=True)
                         
                         df_ops["Target"] = df_ops["Name"] + " (" + df_ops["ID"].astype(str) + ")"
-                        df_ops["ShareDiffStr"] = df_ops["ShareDiff"].apply(lambda x: f"+{x:,.0f}" if x>0 else f"{x:,.0f}")
+                        df_ops["ShareDiffStr"] = (df_ops["ShareDiff"] / 1000).apply(lambda x: f"+{x:,.0f}" if x>0 else f"{x:,.0f}")
                         df_ops["MagPctStr"] = df_ops["MagPct"].apply(lambda x: f"{x:+.2f}%")
                         df_ops["CurrWeightStr"] = df_ops["CurrWeight"].apply(lambda x: f"{x:.2f}%")
                         df_ops["WeightDiffStr"] = df_ops["WeightDiff"].apply(lambda x: f"{x:+.2f}%")
@@ -2568,7 +2569,7 @@ try:
                         df_ops_show.columns = [
                             T(lang, "Target", "標的"),
                             T(lang, "Status", "狀態"),
-                            T(lang, "Share Chg", "持股變動"),
+                            T(lang, "Share Chg (Lots)", "持股變動 (張)"),
                             T(lang, "Magn (%)", "變動幅度"),
                             T(lang, "Weight (%)", "目前權重"),
                             T(lang, "Wgt Chg (%)", "變動%")
