@@ -2398,18 +2398,21 @@ try:
                             rel = f"{mins//1440} days ago" if lang != "中文" else f"{mins//1440} 天前"
                        return f"{rel} ({dt_local_str})"
                        
-                  lcu = log_data.get("last_checked_utc")
-                  luu = log_data.get("last_updated_utc")
-                  status_msg = log_data.get("status", "Unknown")
-                  
-                  checked_str = _time_ago(lcu, lang)
-                  update_str = _time_ago(luu, lang) if luu else T(lang, "Never (or before tracking)", "從未 (或追蹤前)")
-                  
-                  st.info(f"**{T(lang, 'Tracker Status', '更新追蹤狀態')}**: {status_msg}  \n"
-                          f"**{T(lang, 'Last checked', '最後檢查')}**: {checked_str}  \n"
-                          f"**{T(lang, 'Last updated', '最後資料變動')}**: {update_str}")
-             except Exception as e:
-                  st.error(f"Tracker UI Error: {e}")
+                  badge_url = "https://github.com/benson930417-prog/STOCK/actions/workflows/fetch_etf.yml/badge.svg"
+                  action_url = "https://github.com/benson930417-prog/STOCK/actions/workflows/fetch_etf.yml"
+                  st.info(
+                        f"""
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: bold; font-size: 14px;">{T(lang, 'Live Tracker Status:', '雲端自動更新任務狀態：')}</span>
+                            <a href="{action_url}" target="_blank">
+                                <img src="{badge_url}" alt="Updater Status" style="height: 20px; vertical-align: middle;">
+                            </a>
+                        </div>
+                        """, 
+                        icon="🤖"
+                  )
+              except Exception as e:
+                  pass
         # ----------------------
 
         etf_file = DATA_DIR / f"etf_{etf_ticker}_history.json"
@@ -2496,21 +2499,7 @@ try:
                     curr_data = history_data[selected_date]
                     prev_data = history_data[prev_date]
                     
-                    # Live Status Tracking Badge
-                    badge_url = "https://github.com/benson930417-prog/STOCK/actions/workflows/fetch_etf.yml/badge.svg"
-                    action_url = "https://github.com/benson930417-prog/STOCK/actions/workflows/fetch_etf.yml"
-                    st.markdown(
-                        f"""
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-                            <span style="color: grey; font-size: 14px;">{T(lang, 'Backend Runner Status:', '自動更新狀態：')}</span>
-                            <a href="{action_url}" target="_blank">
-                                <img src="{badge_url}" alt="Updater Status" style="height: 20px; vertical-align: middle;">
-                            </a>
-                        </div>
-                        """, 
-                        unsafe_allow_html=True
-                    )
-                    
+
                     curr_meta = curr_data.get("meta", {})
                     
                     fund_size = curr_meta.get("fund_size", 0)
