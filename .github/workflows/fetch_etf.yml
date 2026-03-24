@@ -22,8 +22,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests pandas openpyxl beautifulsoup4 lxml html5lib playwright
-          playwright install chromium
+          pip install requests pandas openpyxl beautifulsoup4 lxml html5lib
           
       - name: Run ETF 00981A fetch script
         continue-on-error: true
