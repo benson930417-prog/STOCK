@@ -2594,8 +2594,21 @@ try:
                         
                         chart_df = df_ops.sort_values(by="WeightDiff", ascending=True).copy()
                         
+                        chart_df["PrevWeight"] = chart_df["CurrWeight"] - chart_df["WeightDiff"]
+                        
+                        def format_label(row):
+                            diff = row["WeightDiffStr"].strip()
+                            prev = f"{row['PrevWeight']:.2f}%"
+                            curr = row["CurrWeightStr"]
+                            return f"{diff}  ( {prev} ➜ {curr} )"
+                            
                         colors = chart_df["WeightDiff"].apply(lambda x: PROFIT_COLOR if x >= 0 else LOSS_COLOR)
-                        texts = chart_df["WeightDiffStr"]
+                        texts = chart_df.apply(format_label, axis=1)
+                        
+                        hover_texts = chart_df.apply(
+                            lambda row: f"<b>{row['Name']}</b><br>Before: {row['PrevWeight']:.2f}%<br>Action: {row['WeightDiffStr'].strip()}<br>Result: {row['CurrWeightStr']}", 
+                            axis=1
+                        )
                         
                         fig = go.Figure(go.Bar(
                             x=chart_df["WeightDiff"],
@@ -2604,11 +2617,13 @@ try:
                             marker_color=colors,
                             text=texts,
                             textposition="outside",
-                            textfont=dict(color="white")
+                            textfont=dict(color="white"),
+                            hovertemplate="%{customdata}<extra></extra>",
+                            customdata=hover_texts
                         ))
                         
                         fig.update_layout(
-                            margin=dict(l=0, r=40, t=30, b=0),
+                            margin=dict(l=0, r=80, t=30, b=0),
                             height=max(300, min(650, len(chart_df) * 30)),
                             xaxis_title=T(lang, "Weight Change (%)", "權重變動 (%)"),
                             yaxis_title="",
