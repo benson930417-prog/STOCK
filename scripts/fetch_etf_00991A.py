@@ -59,9 +59,8 @@ def fetch_and_update_00991A():
             continue
             
         if res.status_code != 200 or not res.content.startswith(b'PK'):
-            content_preview = str(res.content[:15]) if 'res' in locals() else ""
-            print(f"  -> Failed: NOT EXCEL. Likely weekend dummy. Preview: {content_preview}")
-            last_error = f"Invalid format {formatted_date}: {content_preview}"
+            print(f"  -> Failed (HTTP {res.status_code} or not Excel)")
+            last_error = f"HTTP {res.status_code} on {formatted_date}"
             continue
             
         try:
@@ -138,7 +137,7 @@ def fetch_and_update_00991A():
         except Exception as e:
             import traceback
             traceback.print_exc()
-            content_preview = str(excel_content[:15]) if 'excel_content' in locals() else "None"
+            content_preview = str(res.content[:15]) if 'res' in locals() else "None"
             print(f"  -> Parse Error: {e}. Content: {content_preview}")
             last_error = f"Parse Error {formatted_date}: {content_preview}"
             
