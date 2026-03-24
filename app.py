@@ -343,6 +343,42 @@ def get_market_data(symbol, days=365):
         return pd.DataFrame()
 
 
+@st.cache_data(ttl=86400)
+def get_tw_stock_options():
+    import requests
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
+    options = {}
+    
+    # 1. TWSE
+    try:
+        r1 = requests.get('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL', verify=False, timeout=5)
+        if r1.status_code == 200:
+            for item in r1.json():
+                code = str(item.get('Code', '')).strip()
+                name = str(item.get('Name', '')).strip()
+                if len(code) == 4 and code.isdigit():
+                    lbl = f"{code} {name}"
+                    options[lbl] = f"{code}.TW"
+    except Exception:
+        pass
+
+    # 2. TPEX
+    try:
+        r2 = requests.get('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes', verify=False, timeout=5)
+        if r2.status_code == 200:
+            for item in r2.json():
+                code = str(item.get('SecuritiesCompanyCode', '')).strip()
+                name = str(item.get('CompanyName', '')).strip()
+                if len(code) == 4 and code.isdigit():
+                    lbl = f"{code} {name}"
+                    options[lbl] = f"{code}.TWO"
+    except Exception:
+        pass
+
+    return options
+
 # -------------------- GitHub push helpers --------------------
 def github_api_headers():
     return {
@@ -1533,6 +1569,14 @@ try:
              "1321 NK225": "1321 日經 225 ETF",
              "VOO": "VOO 標普500 ETF"
         }
+        
+        # Mix in dynamic TW stocks
+        tw_stocks = get_tw_stock_options()
+        for lbl, sym in tw_stocks.items():
+             stock_keys.append(lbl)
+             stock_symbols[lbl] = sym
+             STOCK_ZH[lbl] = lbl
+
         def fmt_stk(k):
              return STOCK_ZH.get(k, k) if lang == "中文" else k
 
