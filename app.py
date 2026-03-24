@@ -358,7 +358,7 @@ def get_tw_stock_options():
             for item in r1.json():
                 code = str(item.get('Code', '')).strip()
                 name = str(item.get('Name', '')).strip()
-                if len(code) == 4 and code.isdigit() and not code.startswith('0'):
+                if (len(code) == 4 and code.isdigit()) or code.startswith('00'):
                     lbl = f"{code} {name}"
                     options[lbl] = f"{code}.TW"
     except Exception:
@@ -1552,28 +1552,23 @@ try:
         def fmt_mkt(k):
              return f"{k} {MARKET_ZH.get(k, '')}" if lang == "中文" else k
 
-        etf_keys = ["0050 Yuanta 50", "1306 TPX", "1321 NK225", "VOO"]
-        tw_stock_keys = ["2330 TSMC"]
-        int_stock_keys = ["TSMC ADR"]
+        tw_stock_keys = []
+        int_stock_keys = ["TSMC ADR", "1306 TPX", "1321 NK225", "VOO"]
         
         stock_symbols = {
-             "2330 TSMC": "2330.TW",
-             "0050 Yuanta 50": "0050.TW",
              "TSMC ADR": "TSM",
              "1306 TPX": "1306.T",
              "1321 NK225": "1321.T",
              "VOO": "VOO"
         }
         STOCK_ZH = {
-             "2330 TSMC": "2330 台積電",
-             "0050 Yuanta 50": "0050 元大台灣50",
              "TSMC ADR": "台積電 ADR",
              "1306 TPX": "1306 東証 TOPIX ETF",
              "1321 NK225": "1321 日經 225 ETF",
              "VOO": "VOO 標普500 ETF"
         }
         
-        # Mix in dynamic TW stocks
+        # Mix in dynamic TW stocks (both standard and ETFs)
         tw_stocks = get_tw_stock_options()
         for lbl, sym in tw_stocks.items():
              tw_stock_keys.append(lbl)
@@ -1587,7 +1582,7 @@ try:
         st.subheader(T(lang, "Equity Curve", "資金曲線"))
         
         with st.container(border=True):
-             c_row1_mkt, c_row1_etf, c_row1_stat = st.columns([2, 2, 1.2])
+             c_row1_mkt, c_row1_tw, c_row1_int = st.columns([1, 1, 1])
              with c_row1_mkt:
                   sel_indices = st.multiselect(
                       T(lang, "Index Comparison", "大盤指數對照"),
@@ -1595,35 +1590,27 @@ try:
                       default=["TAIEX"],
                       format_func=fmt_mkt
                   )
-             with c_row1_etf:
-                  sel_etfs = st.multiselect(
-                      T(lang, "ETF Comparison", "ETF 比較"),
-                      options=etf_keys,
-                      default=[],
-                      format_func=fmt_stk
-                  )
-             with c_row1_stat:
-                  # Placeholder for status UI (filled after data fetch)
-                  status_placeholder = st.empty()
-
-             c_row2_tw, c_row2_int, c_row2_pad = st.columns([2, 2, 1.2])
-             with c_row2_tw:
+             with c_row1_tw:
                   sel_tw_stocks = st.multiselect(
-                      T(lang, "TW Stock Comparison", "台灣個股對照"),
+                      T(lang, "TW Stock & ETF", "台灣個股與ETF"),
                       options=tw_stock_keys,
                       default=[],
                       format_func=fmt_stk
                   )
-             with c_row2_int:
+             with c_row1_int:
                   sel_int_stocks = st.multiselect(
-                      T(lang, "Intl Stock Comparison", "國際個股對照"),
+                      T(lang, "Intl Stock & ETF", "國際個股與ETF"),
                       options=int_stock_keys,
                       default=[],
                       format_func=fmt_stk
                   )
+                  # Placeholder for status UI (filled after data fetch)
+                  status_placeholder = st.empty()
+
+
              
              # Aggregate all selected stock-like entities for chart processing
-             all_sel_stocks = sel_etfs + sel_tw_stocks + sel_int_stocks
+             all_sel_stocks = sel_tw_stocks + sel_int_stocks
 
 
 
