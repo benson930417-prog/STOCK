@@ -5,6 +5,9 @@ import os
 import io
 from datetime import datetime, timedelta, timezone
 
+# Disable SSL warnings because Fuh Hwa certificate can sometimes fail depending on the env
+requests.packages.urllib3.disable_warnings()
+
 DATA_DIR = "data"
 HISTORY_FILE = os.path.join(DATA_DIR, "etf_00991A_history.json")
 LOG_FILE = os.path.join(DATA_DIR, "etf_00991A_log.json")
@@ -41,7 +44,7 @@ def fetch_and_update_00991A():
             
         print(f"Fetching {formatted_date} from Fuh Hwa...")
         try:
-            res = requests.get(f'https://www.fhtrust.com.tw/api/assetsExcel/ETF23/{date_str}', headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+            res = requests.get(f'https://www.fhtrust.com.tw/api/assetsExcel/ETF23/{date_str}', headers={'User-Agent': 'Mozilla/5.0'}, verify=False, timeout=10)
         except Exception as e:
             print(f"  -> Request failed: {e}")
             continue
