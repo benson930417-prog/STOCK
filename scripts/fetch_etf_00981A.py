@@ -2,7 +2,7 @@ import os
 import json
 import requests
 import pandas as pd
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from io import BytesIO
 
 # Disable SSL warnings since ezmoney certificate can sometimes fail depending on the env
@@ -128,7 +128,6 @@ def fetch_and_update_holdings():
                 res = rp.json()['chart']['result'][0]
                 ts_list = res.get('timestamp', [])
                 close_list = res.get('indicators', {}).get('quote', [{}])[0].get('close', [])
-                from datetime import datetime, timezone, timedelta
                 for idx in range(len(ts_list)-1, -1, -1):
                     dt_str = datetime.fromtimestamp(ts_list[idx], timezone(timedelta(hours=8))).strftime('%Y-%m-%d')
                     if dt_str == file_date_str and close_list[idx] is not None:
