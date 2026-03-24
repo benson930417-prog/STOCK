@@ -93,9 +93,16 @@ def fetch_and_update_00991A():
                     
             closing_price = nav
             try:
-                rp = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/00991A.TW", headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+                rp = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/00991A.TW?range=14d&interval=1d", headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
                 if rp.status_code == 200:
-                    closing_price = rp.json()['chart']['result'][0]['meta']['regularMarketPrice']
+                    res = rp.json()['chart']['result'][0]
+                    ts_list = res.get('timestamp', [])
+                    close_list = res.get('indicators', {}).get('quote', [{}])[0].get('close', [])
+                    for idx in range(len(ts_list)-1, -1, -1):
+                        dt_str = datetime.fromtimestamp(ts_list[idx], timezone(timedelta(hours=8))).strftime('%Y-%m-%d')
+                        if dt_str == formatted_date and close_list[idx] is not None:
+                            closing_price = float(close_list[idx])
+                            break
             except: pass
 
             if holdings:
