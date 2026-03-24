@@ -1,6 +1,8 @@
-name: Fetch ETF Holdings (Experimental Tracker)
+name: Fetch Daily ETF Data
 
 on:
+  schedule:
+    - cron: '30 10 * * *' # 10:30 UTC (18:30 Taiwan, 11:30 Belgium winter time)
   workflow_dispatch: # Allows manual triggering directly from GitHub UI
 
 jobs:

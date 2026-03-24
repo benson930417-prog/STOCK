@@ -2496,9 +2496,21 @@ try:
                     curr_data = history_data[selected_date]
                     prev_data = history_data[prev_date]
                     
-                    if curr_data.get("is_mocked", False) or prev_data.get("is_mocked", False):
-                         st.error(T(lang, "⚠️ WARNING: You are viewing DEMONSTRATION FAKE DATA. This data was manufactured to show the UI functionality.", "⚠️ 警告：您目前檢視的是「展示用假資料」。此資料為測試介面功能而生成，並非真實持股。"), icon="🚨")
-                         
+                    # Live Status Tracking Badge
+                    badge_url = "https://github.com/benson930417-prog/STOCK/actions/workflows/fetch_etf.yml/badge.svg"
+                    action_url = "https://github.com/benson930417-prog/STOCK/actions/workflows/fetch_etf.yml"
+                    st.markdown(
+                        f"""
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                            <span style="color: grey; font-size: 14px;">{T(lang, 'Backend Runner Status:', '自動更新狀態：')}</span>
+                            <a href="{action_url}" target="_blank">
+                                <img src="{badge_url}" alt="Updater Status" style="height: 20px; vertical-align: middle;">
+                            </a>
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
+                    )
+                    
                     curr_meta = curr_data.get("meta", {})
                     
                     fund_size = curr_meta.get("fund_size", 0)
