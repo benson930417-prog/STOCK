@@ -2548,10 +2548,19 @@ try:
                     # 4 Status Boxes
                     st.write("")
                     b1, b2, b3, b4 = st.columns(4)
-                    with b1: st.info(f"**{T(lang, 'New', '新增')}**\n\n{len(new_s)} {T(lang,'Count','檔')}")
-                    with b2: st.error(f"**{T(lang, 'Removed', '刪除')}**\n\n{len(del_s)} {T(lang,'Count','檔')}")
-                    with b3: st.success(f"**{T(lang, 'Increased', '加碼')}**\n\n{len(inc_s)} {T(lang,'Count','檔')}")
-                    with b4: st.warning(f"**{T(lang, 'Decreased', '減碼')}**\n\n{len(dec_s)} {T(lang,'Count','檔')}")
+                    
+                    def box_ui(title, count, color):
+                        return f'''
+                        <div style="background-color: {color}20; border-left: 4px solid {color}; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                            <div style="color: {color}; font-weight: bold; font-size: 14px; margin-bottom: 5px;">{title}</div>
+                            <div style="color: white; font-size: 16px;">{count}</div>
+                        </div>
+                        '''
+                        
+                    with b1: st.markdown(box_ui(T(lang, "New", "新增"), f"{len(new_s)} {T(lang,'Count','檔')}", PROFIT_COLOR), unsafe_allow_html=True)
+                    with b2: st.markdown(box_ui(T(lang, "Removed", "刪除"), f"{len(del_s)} {T(lang,'Count','檔')}", LOSS_COLOR), unsafe_allow_html=True)
+                    with b3: st.markdown(box_ui(T(lang, "Increased", "加碼"), f"{len(inc_s)} {T(lang,'Count','檔')}", PROFIT_COLOR), unsafe_allow_html=True)
+                    with b4: st.markdown(box_ui(T(lang, "Decreased", "減碼"), f"{len(dec_s)} {T(lang,'Count','檔')}", LOSS_COLOR), unsafe_allow_html=True)
                     
                     st.write(f"{T(lang, 'Total ', '共')} {len(new_s)+len(del_s)+len(inc_s)+len(dec_s)} {T(lang, 'changes detected.', '檔異動')}")
                     
@@ -2600,7 +2609,7 @@ try:
                         
                         fig.update_layout(
                             margin=dict(l=0, r=40, t=30, b=0),
-                            height=max(300, len(chart_df) * 35),
+                            height=max(300, min(650, len(chart_df) * 30)),
                             xaxis_title=T(lang, "Weight Change (%)", "權重變動 (%)"),
                             yaxis_title="",
                             plot_bgcolor="rgba(0,0,0,0)",
