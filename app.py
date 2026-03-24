@@ -2600,7 +2600,7 @@ try:
                             diff = row["WeightDiffStr"].strip()
                             prev = f"{row['PrevWeight']:.2f}%"
                             curr = row["CurrWeightStr"]
-                            return f"{diff}  ( {prev} ➜ {curr} )"
+                            return f"<b>{diff}</b> <span style='font-size:12px; color:#aaaaaa'>({prev} ➜ {curr})</span>"
                             
                         colors = chart_df["WeightDiff"].apply(lambda x: PROFIT_COLOR if x >= 0 else LOSS_COLOR)
                         texts = chart_df.apply(format_label, axis=1)
@@ -2623,7 +2623,7 @@ try:
                         ))
                         
                         fig.update_layout(
-                            margin=dict(l=0, r=80, t=30, b=0),
+                            margin=dict(l=0, r=40, t=30, b=0),
                             height=max(300, min(650, len(chart_df) * 30)),
                             xaxis_title=T(lang, "Weight Change (%)", "權重變動 (%)"),
                             yaxis_title="",
@@ -2632,7 +2632,17 @@ try:
                             font=dict(color="white"),
                             showlegend=False
                         )
-                        fig.update_xaxes(showgrid=True, gridcolor='rgba(255,255,255,0.1)', zeroline=True, zerolinecolor='rgba(255,255,255,0.3)')
+                        
+                        x_min = chart_df["WeightDiff"].min()
+                        x_max = chart_df["WeightDiff"].max()
+                        x_pad = (x_max - x_min) * 0.15 + 0.05
+                        fig.update_xaxes(
+                            range=[x_min - x_pad, x_max + x_pad],
+                            showgrid=True, 
+                            gridcolor='rgba(255,255,255,0.1)', 
+                            zeroline=True, 
+                            zerolinecolor='rgba(255,255,255,0.3)'
+                        )
                         
                         st.markdown(f"#### {T(lang, 'Portfolio Weight Adjustments', '投資組合權重變動圖')}")
                         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
