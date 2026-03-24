@@ -8,9 +8,46 @@ from datetime import datetime, timedelta, timezone
 # Disable SSL warnings because Fuh Hwa certificate can sometimes fail depending on the env
 requests.packages.urllib3.disable_warnings()
 
+import random
+
 DATA_DIR = "data"
 HISTORY_FILE = os.path.join(DATA_DIR, "etf_00991A_history.json")
 LOG_FILE = os.path.join(DATA_DIR, "etf_00991A_log.json")
+
+def fetch_excel_with_proxy_rotation(date_str, req_headers):
+    url = f'https://www.fhtrust.com.tw/api/assetsExcel/ETF23/{date_str}'
+    
+    # 1. Try Direct Connection First
+    try:
+        res = requests.get(url, headers=req_headers, verify=False, timeout=10)
+        # Fuh hwa Excel files must begin with PK (zip format signature for xlsx)
+        if res.status_code == 200 and res.content.startswith(b'PK'):
+            return res
+    except Exception:
+        pass
+        
+    print(f"  -> Direct fetch returned dummy data or blocked. Attempting proxy rotation...")
+    
+    # 2. Try Proxy Rotation
+    try:
+        proxies_req = requests.get('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt', timeout=10)
+        proxies_list = [p.strip() for p in proxies_req.text.split('\\n') if p.strip()]
+        random.shuffle(proxies_list)
+        
+        # Test up to 50 random proxies
+        for p in proxies_list[:50]:
+            proxy = {'http': f'http://{p}', 'https': f'http://{p}'}
+            try:
+                res = requests.get(url, headers=req_headers, proxies=proxy, verify=False, timeout=5)
+                if res.status_code == 200 and res.content.startswith(b'PK'):
+                    print(f"  -> Success using proxy {p}")
+                    return res
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"  -> Failed to fetch proxy list: {e}")
+        
+    return None
 
 def fetch_and_update_00991A():
     now_utc = datetime.now(timezone.utc).isoformat()
@@ -44,21 +81,16 @@ def fetch_and_update_00991A():
             continue
             
         print(f"Fetching {formatted_date} from Fuh Hwa...")
-        try:
-            req_headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-                'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7'
-            }
-            res = requests.get(f'https://www.fhtrust.com.tw/api/assetsExcel/ETF23/{date_str}', headers=req_headers, verify=False, timeout=10)
-        except Exception as e:
-            print(f"  -> Request failed: {e}")
-            last_error = f"Conn Err {formatted_date}: {e}"
-            continue
-            
-        if res.status_code != 200:
-            print(f"  -> Failed (HTTP {res.status_code})")
-            last_error = f"HTTP {res.status_code} on {formatted_date}"
+        req_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7'
+        }
+        res = fetch_excel_with_proxy_rotation(date_str, req_headers)
+        
+        if not res:
+            print(f"  -> Failed to fetch valid Excel via direct and proxy.")
+            last_error = f"Blocked: Direct and 50 Proxies failed on {formatted_date}"
             continue
             
         try:
