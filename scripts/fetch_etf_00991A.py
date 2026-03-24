@@ -14,34 +14,72 @@ DATA_DIR = "data"
 HISTORY_FILE = os.path.join(DATA_DIR, "etf_00991A_history.json")
 LOG_FILE = os.path.join(DATA_DIR, "etf_00991A_log.json")
 
-def fetch_excel_with_proxy_rotation(date_str, req_headers):
+def fetch_excel_with_playwright_fallback(date_str, req_headers):
     url = f'https://www.fhtrust.com.tw/api/assetsExcel/ETF23/{date_str}'
     
-    # 1. Try Direct Connection First
+    # 1. Try Direct Connection First (Very fast, works perfectly on Local Home IPs)
     try:
         res = requests.get(url, headers=req_headers, verify=False, timeout=10)
         # Fuh hwa Excel files must begin with PK (zip format signature for xlsx)
         if res.status_code == 200 and res.content.startswith(b'PK'):
-            return res
+            return res.content
     except Exception:
         pass
         
-    print(f"  -> Direct fetch returned dummy data or blocked. Attempting proxy rotation...")
+    print(f"  -> Direct fetch returned dummy HTML or blocked. Attempting Headless Browser simulation...")
     
-    # 2. Try Proxy Rotation
+    # 2. Try Headless Browser (Slower, but bypasses WAF JS challenges on Github Actions)
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent=req_headers['User-Agent'],
+                accept_downloads=True
+            )
+            page = context.new_page()
+            
+            try:
+                # Intercept the forced download event that Fuh Hwa triggers
+                with page.expect_download(timeout=20000) as download_info:
+                    page.goto(url)
+                
+                download = download_info.value
+                path = download.path()
+                with open(path, "rb") as f:
+                    content = f.read()
+                    if content.startswith(b'PK'):
+                        print(f"  -> Headless Browser successfully bypassed WAF & downloaded {len(content)} bytes!")
+                        browser.close()
+                        return content
+                    else:
+                        print(f"  -> Headless Browser failed to get Excel. Got: {content[:15]}")
+            except Exception as e:
+                print(f"  -> Headless Browser interaction failed: {e}")
+                try: print(f"WAF Page Dump: {page.content()[:100]}")
+                except: pass
+            
+            browser.close()
+    except ImportError:
+        print("  -> Playwright not installed. Skipping browser simulation.")
+    except Exception as e:
+        print(f"  -> Playwright critical error: {e}")
+
+    print(f"  -> Headless browser failed. Attempting proxy rotation as final fallback...")
+    
+    # 3. Try Proxy Rotation (Legacy Fallback)
     try:
         proxies_req = requests.get('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt', timeout=10)
         proxies_list = [p.strip() for p in proxies_req.text.split('\\n') if p.strip()]
         random.shuffle(proxies_list)
         
-        # Test up to 50 random proxies
         for p in proxies_list[:50]:
             proxy = {'http': f'http://{p}', 'https': f'http://{p}'}
             try:
                 res = requests.get(url, headers=req_headers, proxies=proxy, verify=False, timeout=5)
                 if res.status_code == 200 and res.content.startswith(b'PK'):
                     print(f"  -> Success using proxy {p}")
-                    return res
+                    return res.content
             except Exception:
                 pass
     except Exception as e:
@@ -86,16 +124,16 @@ def fetch_and_update_00991A():
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
             'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7'
         }
-        res = fetch_excel_with_proxy_rotation(date_str, req_headers)
+        excel_content = fetch_excel_with_playwright_fallback(date_str, req_headers)
         
-        if not res:
-            print(f"  -> Failed to fetch valid Excel via direct and proxy.")
-            last_error = f"Blocked: Direct and 50 Proxies failed on {formatted_date}"
+        if not excel_content:
+            print(f"  -> Failed to fetch valid Excel via direct, browser, and proxy.")
+            last_error = f"Blocked: Direct, Browser, and Proxies failed on {formatted_date}"
             continue
             
         try:
             # Parse actual Excel format
-            df = pd.read_excel(io.BytesIO(res.content))
+            df = pd.read_excel(io.BytesIO(excel_content))
             
             # Row 3 is Fund Size (Column 0)
             fund_size_str = str(df.iloc[3, 0]).replace(',', '')
