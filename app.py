@@ -2355,13 +2355,18 @@ try:
             mime="text/csv",
         )
 
-    # -------------------- ETF (00981A) --------------------
+    # -------------------- Active ETFs --------------------
     with tab_etf:
-        st.subheader(T(lang, "00981A ETF Holdings", "00981A 基金投資組合"))
+        st.subheader(T(lang, "Active ETF Holdings", "主動型 ETF 投資組合"))
+        
+        etf_ticker = st.selectbox(
+            T(lang, "Select ETF", "選擇 ETF"),
+            ["00981A", "00991A"]
+        )
         
         # --- NEW TRACKER UI ---
         log_file = DATA_DIR / "etf_update_log.json"
-        if log_file.exists():
+        if etf_ticker == "00981A" and log_file.exists():
              try:
                   with open(log_file, "r", encoding="utf-8") as fl:
                        log_data = json.loads(fl.read())
@@ -2401,11 +2406,9 @@ try:
                           f"**{T(lang, 'Last updated', '最後資料變動')}**: {update_str}")
              except Exception as e:
                   st.error(f"Tracker UI Error: {e}")
-        else:
-             st.write("DEBUG: log_file does not exist. Checked path:", log_file.absolute())
         # ----------------------
 
-        etf_file = DATA_DIR / "etf_00981A_history.json"
+        etf_file = DATA_DIR / f"etf_{etf_ticker}_history.json"
 
         history_data = {}
         if etf_file.exists():
@@ -2501,7 +2504,7 @@ try:
                     market_price = nav
                     try:
                         import requests
-                        res = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/00981A.TW", headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
+                        res = requests.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{etf_ticker}.TW", headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
                         if res.status_code == 200:
                             market_price = res.json()['chart']['result'][0]['meta']['regularMarketPrice']
                     except Exception:
