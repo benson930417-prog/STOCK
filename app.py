@@ -1221,10 +1221,14 @@ try:
         # Taiwan: Red = Profit, Green = Loss
         PROFIT_COLOR = "#E74C3C" 
         LOSS_COLOR = "#2ECC71"
+        NEW_COLOR = "#ff80ab"
+        REMOVED_COLOR = "#81c784"
     else:
         # Western: Green = Profit, Red = Loss
         PROFIT_COLOR = "#2ECC71"
         LOSS_COLOR = "#E74C3C"
+        NEW_COLOR = "#81c784"
+        REMOVED_COLOR = "#ff80ab"
         
     NEUTRAL_BLUE = "#4C78A8"
     NEUTRAL_PURPLE = "#6F42C1"
@@ -2557,8 +2561,8 @@ try:
                         </div>
                         '''
                         
-                    with b1: st.markdown(box_ui(T(lang, "New", "新增"), f"{len(new_s)} {T(lang,'Count','檔')}", PROFIT_COLOR), unsafe_allow_html=True)
-                    with b2: st.markdown(box_ui(T(lang, "Removed", "刪除"), f"{len(del_s)} {T(lang,'Count','檔')}", LOSS_COLOR), unsafe_allow_html=True)
+                    with b1: st.markdown(box_ui(T(lang, "New", "新增"), f"{len(new_s)} {T(lang,'Count','檔')}", NEW_COLOR), unsafe_allow_html=True)
+                    with b2: st.markdown(box_ui(T(lang, "Removed", "刪除"), f"{len(del_s)} {T(lang,'Count','檔')}", REMOVED_COLOR), unsafe_allow_html=True)
                     with b3: st.markdown(box_ui(T(lang, "Increased", "加碼"), f"{len(inc_s)} {T(lang,'Count','檔')}", PROFIT_COLOR), unsafe_allow_html=True)
                     with b4: st.markdown(box_ui(T(lang, "Decreased", "減碼"), f"{len(dec_s)} {T(lang,'Count','檔')}", LOSS_COLOR), unsafe_allow_html=True)
                     
@@ -2602,7 +2606,14 @@ try:
                             curr = row["CurrWeightStr"]
                             return f"<b>{diff}</b> <span style='font-size:12px; color:#aaaaaa'>({prev} ➜ {curr})</span>"
                             
-                        colors = chart_df["WeightDiff"].apply(lambda x: PROFIT_COLOR if x >= 0 else LOSS_COLOR)
+                        def get_bar_color(status):
+                            if status == T(lang, "New", "新增"): return NEW_COLOR
+                            if status == T(lang, "Removed", "刪除"): return REMOVED_COLOR
+                            if status == T(lang, "Increased", "加碼"): return PROFIT_COLOR
+                            if status == T(lang, "Decreased", "減碼"): return LOSS_COLOR
+                            return "gray"
+                            
+                        colors = chart_df["Status"].apply(get_bar_color)
                         texts = chart_df.apply(format_label, axis=1)
                         
                         hover_texts = chart_df.apply(
@@ -2657,9 +2668,13 @@ try:
                         ]
                         
                         def style_status(val):
-                             if val in [T(lang, "New", "新增"), T(lang, "Increased", "加碼")]:
+                             if val == T(lang, "New", "新增"):
+                                  return f"color: {NEW_COLOR}; font-weight: bold;"
+                             elif val == T(lang, "Removed", "刪除"):
+                                  return f"color: {REMOVED_COLOR}; font-weight: bold;"
+                             elif val == T(lang, "Increased", "加碼"):
                                   return f"color: {PROFIT_COLOR}; font-weight: bold;"
-                             elif val in [T(lang, "Removed", "刪除"), T(lang, "Decreased", "減碼")]:
+                             elif val == T(lang, "Decreased", "減碼"):
                                   return f"color: {LOSS_COLOR}; font-weight: bold;"
                              return ""
                              
