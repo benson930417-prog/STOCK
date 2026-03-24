@@ -1222,12 +1222,12 @@ try:
         PROFIT_COLOR = "#E74C3C" 
         LOSS_COLOR = "#2ECC71"
         NEW_COLOR = "#ff80ab"
-        REMOVED_COLOR = "#FFD700"
+        REMOVED_COLOR = "#ccff00"
     else:
         # Western: Green = Profit, Red = Loss
         PROFIT_COLOR = "#2ECC71"
         LOSS_COLOR = "#E74C3C"
-        NEW_COLOR = "#FFD700"
+        NEW_COLOR = "#ccff00"
         REMOVED_COLOR = "#ff80ab"
         
     NEUTRAL_BLUE = "#4C78A8"

@@ -8,6 +8,12 @@
     },
     "holdings": [
       {
+        "id": "2317",
+        "name": "鴻海",
+        "weight_pct": 2.50,
+        "shares": 1500000
+      },
+      {
         "id": "2330",
         "name": "台積電",
         "weight_pct": 8.61,
