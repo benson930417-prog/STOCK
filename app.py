@@ -2478,6 +2478,10 @@ try:
                     
                     curr_data = history_data[selected_date]
                     prev_data = history_data[prev_date]
+                    
+                    if curr_data.get("is_mocked", False) or prev_data.get("is_mocked", False):
+                         st.error(T(lang, "⚠️ WARNING: You are viewing DEMONSTRATION FAKE DATA. This data was manufactured to show the UI functionality.", "⚠️ 警告：您目前檢視的是「展示用假資料」。此資料為測試介面功能而生成，並非真實持股。"), icon="🚨")
+                         
                     curr_meta = curr_data.get("meta", {})
                     
                     fund_size = curr_meta.get("fund_size", 0)
