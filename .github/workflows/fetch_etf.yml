@@ -34,4 +34,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto-update ETF Tracker log"
-          file_pattern: "data/etf_00981A_history.json data/etf_00991A_history.json data/etf_update_log.json"
+          file_pattern: "data/*.json"
