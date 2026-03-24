@@ -128,8 +128,8 @@ def fetch_and_update_00991A():
             holdings = []
             for idx in range(10, len(df)):
                 row = df.iloc[idx]
-                vid = str(row[0]).replace('.0', '').strip()
-                vname = str(row[1]).strip()
+                vid = str(row.iloc[0]).replace('.0', '').strip()
+                vname = str(row.iloc[1]).strip()
                 
                 if "nan" in vid.lower() or "nan" in vname.lower() or not vid:
                     continue
@@ -137,8 +137,8 @@ def fetch_and_update_00991A():
                     continue
                     
                 try:
-                    shares = int(str(row[2]).replace(',', ''))
-                    weight_str = str(row[4]).replace('%', '').strip()
+                    shares = int(str(row.iloc[2]).replace(',', ''))
+                    weight_str = str(row.iloc[4]).replace('%', '').strip()
                     weight = float(weight_str)
                     holdings.append({
                         "id": vid,
