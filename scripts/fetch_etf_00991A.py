@@ -60,31 +60,9 @@ def fetch_excel_with_playwright_fallback(date_str, req_headers):
                 except: pass
             
             browser.close()
-    except ImportError:
-        print("  -> Playwright not installed. Skipping browser simulation.")
     except Exception as e:
         print(f"  -> Playwright critical error: {e}")
 
-    print(f"  -> Headless browser failed. Attempting proxy rotation as final fallback...")
-    
-    # 3. Try Proxy Rotation (Legacy Fallback)
-    try:
-        proxies_req = requests.get('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt', timeout=10)
-        proxies_list = [p.strip() for p in proxies_req.text.split('\\n') if p.strip()]
-        random.shuffle(proxies_list)
-        
-        for p in proxies_list[:50]:
-            proxy = {'http': f'http://{p}', 'https': f'http://{p}'}
-            try:
-                res = requests.get(url, headers=req_headers, proxies=proxy, verify=False, timeout=5)
-                if res.status_code == 200 and res.content.startswith(b'PK'):
-                    print(f"  -> Success using proxy {p}")
-                    return res.content
-            except Exception:
-                pass
-    except Exception as e:
-        print(f"  -> Failed to fetch proxy list: {e}")
-        
     return None
 
 def fetch_and_update_00991A():
