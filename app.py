@@ -2374,8 +2374,9 @@ try:
                        try:
                            belgium_tz = zoneinfo.ZoneInfo("Europe/Brussels")
                        except Exception:
-                           from datetime import timezone, timedelta
-                           belgium_tz = timezone(timedelta(hours=1)) # Fallback
+                           # Fallback to hardcoded UTC+1 (Note: misses daylight saving changes)
+                           import datetime as dt_mod
+                           belgium_tz = dt_mod.timezone(dt_mod.timedelta(hours=1))
                        dt_local_str = dt.astimezone(belgium_tz).strftime('%m-%d %H:%M')
                        now = datetime.now(timezone.utc)
                        diff = (now - dt).total_seconds()
