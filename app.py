@@ -2370,15 +2370,17 @@ try:
                        if not dt_str:
                             return T(lang, "Unknown", "未知")
                        dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+                       dt_local_str = dt.astimezone().strftime('%m-%d %H:%M')
                        now = datetime.now(timezone.utc)
                        diff = (now - dt).total_seconds()
                        mins = int(diff / 60)
                        if mins < 60:
-                            return f"{mins} mins ago" if lang != "中文" else f"{mins} 分鐘前"
+                            rel = f"{mins} mins ago" if lang != "中文" else f"{mins} 分鐘前"
                        elif mins < 1440:
-                            return f"{mins//60} hrs ago" if lang != "中文" else f"{mins//60} 小時前"
+                            rel = f"{mins//60} hrs ago" if lang != "中文" else f"{mins//60} 小時前"
                        else:
-                            return f"{mins//1440} days ago" if lang != "中文" else f"{mins//1440} 天前"
+                            rel = f"{mins//1440} days ago" if lang != "中文" else f"{mins//1440} 天前"
+                       return f"{rel} ({dt_local_str})"
                        
                   lcu = log_data.get("last_checked_utc")
                   luu = log_data.get("last_updated_utc")
