@@ -1489,7 +1489,7 @@ try:
             T(lang, "Leaderboard", "排行"),
             T(lang, "Monthly report", "月報"),
             T(lang, "Trades", "交易"),
-            T(lang, "ETF (00981A)", "00981A 持股"),
+            T(lang, "Active ETFs", "主動型 ETF"),
         ]
     )
 
@@ -2577,16 +2577,47 @@ try:
                         
                         df_ops["Target"] = df_ops["Name"] + " (" + df_ops["ID"].astype(str) + ")"
                         df_ops["ShareDiffStr"] = (df_ops["ShareDiff"] / 1000).apply(lambda x: f"+{x:,.0f}" if x>0 else f"{x:,.0f}")
-                        df_ops["MagPctStr"] = df_ops["MagPct"].apply(lambda x: f"{x:+.2f}%")
                         df_ops["CurrWeightStr"] = df_ops["CurrWeight"].apply(lambda x: f"{x:.2f}%")
-                        df_ops["WeightDiffStr"] = df_ops["WeightDiff"].apply(lambda x: f"{x:+.2f}%")
+                        df_ops["WeightDiffStr"] = df_ops["WeightDiff"].apply(lambda x: f" {x:+.2f}%")
                         
-                        df_ops_show = df_ops[["Target", "Status", "ShareDiffStr", "MagPctStr", "CurrWeightStr", "WeightDiffStr"]].copy()
+                        import plotly.graph_objects as go
+                        import plotly.express as px
+                        
+                        chart_df = df_ops.sort_values(by="WeightDiff", ascending=True).copy()
+                        
+                        colors = chart_df["WeightDiff"].apply(lambda x: PROFIT_COLOR if x >= 0 else LOSS_COLOR)
+                        texts = chart_df["WeightDiffStr"]
+                        
+                        fig = go.Figure(go.Bar(
+                            x=chart_df["WeightDiff"],
+                            y=chart_df["Name"],
+                            orientation='h',
+                            marker_color=colors,
+                            text=texts,
+                            textposition="outside",
+                            textfont=dict(color="white")
+                        ))
+                        
+                        fig.update_layout(
+                            margin=dict(l=0, r=40, t=30, b=0),
+                            height=max(300, len(chart_df) * 35),
+                            xaxis_title=T(lang, "Weight Change (%)", "權重變動 (%)"),
+                            yaxis_title="",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            font=dict(color="white"),
+                            showlegend=False
+                        )
+                        fig.update_xaxes(showgrid=True, gridcolor='rgba(255,255,255,0.1)', zeroline=True, zerolinecolor='rgba(255,255,255,0.3)')
+                        
+                        st.markdown(f"#### {T(lang, 'Portfolio Weight Adjustments', '投資組合權重變動圖')}")
+                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                        
+                        df_ops_show = df_ops[["Target", "Status", "ShareDiffStr", "CurrWeightStr", "WeightDiffStr"]].copy()
                         df_ops_show.columns = [
                             T(lang, "Target", "標的"),
                             T(lang, "Status", "狀態"),
                             T(lang, "Share Chg (Lots)", "持股變動 (張)"),
-                            T(lang, "Magn (%)", "變動幅度"),
                             T(lang, "Weight (%)", "目前權重"),
                             T(lang, "Wgt Chg (%)", "變動%")
                         ]
