@@ -1879,7 +1879,11 @@ try:
                          if base_price > 0:
                              m_rel["pct"] = (m_rel["close"] - base_price) / base_price * 100.0
                              
-                             c_line = color_map.get(m_name, "rgba(150,150,150,0.5)")
+                             c_line = color_map.get(m_name)
+                             if not c_line:
+                                 palette = px.colors.qualitative.Pastel + px.colors.qualitative.Set2
+                                 idx = sum(ord(c) for c in m_name) % len(palette)
+                                 c_line = hex_to_rgba(palette[idx], 0.7)
                              
                              disp_name = fmt_mkt(m_name)
                              
@@ -1888,7 +1892,7 @@ try:
                                      x=m_rel["date"],
                                      y=m_rel["pct"],
                                      mode="lines+markers",
-                                     marker=dict(size=6),
+                                     marker=dict(size=4),
                                      name=disp_name,
                                      line=dict(color=c_line, width=1.5, dash='dash'),
                                      hovertemplate=f"{disp_name}: %{{y:.2f}}%<extra></extra>"
@@ -1928,7 +1932,11 @@ try:
                          if base_price > 0:
                              s_rel["pct"] = (s_rel["close"] - base_price) / base_price * 100.0
                              
-                             c_line = stock_colors.get(s_name, "rgba(200,200,200,0.5)")
+                             c_line = stock_colors.get(s_name)
+                             if not c_line:
+                                 palette = px.colors.qualitative.Plotly + px.colors.qualitative.Vivid
+                                 idx = sum(ord(c) for c in s_name) % len(palette)
+                                 c_line = hex_to_rgba(palette[idx], 0.85) # High opacity for stocks
                              
                              disp_name = fmt_stk(s_name)
                              
@@ -1937,9 +1945,9 @@ try:
                                      x=s_rel["date"],
                                      y=s_rel["pct"],
                                      mode="lines+markers",
-                                     marker=dict(size=6),
+                                     marker=dict(size=4),
                                      name=disp_name,
-                                     line=dict(color=c_line, width=1.5, dash='dot'), 
+                                     line=dict(color=c_line, width=1.5, dash='dashdot'), 
                                      hovertemplate=f"{disp_name}: %{{y:.2f}}%<extra></extra>"
                                  )
                              )
