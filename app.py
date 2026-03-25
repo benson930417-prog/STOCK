@@ -2729,37 +2729,38 @@ try:
                         df_ops["ActiveWeightStr"] = df_ops["ActiveWeight"].apply(lambda x: f" {x:+.2f}%")
                         
                         f_sz = fund_size if fund_size else 0.0
-                        def fmt_mny(a_pct):
-                            m = (a_pct / 100.0) * f_sz
+                        df_ops["ActiveMoney"] = (df_ops["ActiveWeight"] / 100.0) * f_sz
+                        
+                        def fmt_mny_only(m):
                             if abs(m) < 1.0: return ""
                             sign = "+" if m > 0 else "-"
                             am = abs(m)
                             if lang == "中文":
-                                if am >= 100000000: return f"({sign}{am/100000000:.2f} 億)"
-                                elif am >= 10000: return f"({sign}{am/10000:.0f} 萬)"
-                                else: return f"({sign}{am:,.0f})"
+                                if am >= 100000000: return f"{sign}{am/100000000:.2f} 億"
+                                elif am >= 10000: return f"{sign}{am/10000:.0f} 萬"
+                                else: return f"{sign}{am:,.0f}"
                             else:
-                                if am >= 1000000000: return f"({sign}{am/1000000000:.2f}B)"
-                                elif am >= 1000000: return f"({sign}{am/1000000:.1f}M)"
-                                elif am >= 1000: return f"({sign}{am/1000:.0f}K)"
-                                else: return f"({sign}{am:,.0f})"
+                                if am >= 1000000000: return f"{sign}{am/1000000000:.2f}B"
+                                elif am >= 1000000: return f"{sign}{am/1000000:.1f}M"
+                                elif am >= 1000: return f"{sign}{am/1000:.0f}K"
+                                else: return f"{sign}{am:,.0f}"
                                 
-                        df_ops["ActiveMoneyStr"] = df_ops["ActiveWeight"].apply(fmt_mny)
+                        df_ops["ActiveMoneyStr"] = df_ops["ActiveMoney"].apply(lambda x: f"({fmt_mny_only(x)})" if fmt_mny_only(x) else "")
                         
                         import plotly.graph_objects as go
                         import plotly.express as px
                         
-                        chart_df = df_ops.sort_values(by="ActiveWeight", ascending=True).copy()
+                        chart_df = df_ops.sort_values(by="ActiveMoney", ascending=True).copy()
                         
                         chart_df["PrevWeight"] = chart_df["CurrWeight"] - chart_df["WeightDiff"]
                         
                         def format_label(row):
-                            active = row["ActiveWeightStr"].strip()
-                            money = row["ActiveMoneyStr"]
+                            money_val = fmt_mny_only(row["ActiveMoney"])
+                            if not money_val: money_val = "0"
+                            share_str = f" <span style='font-size:12px; color:#cccccc'>({row['ShareDiffStr']} {T(lang, 'Lots', '張')})</span>"
                             prev = f"{row['PrevWeight']:.2f}%"
                             curr = row["CurrWeightStr"]
-                            money_html = f" <span style='font-size:12px; color:#cccccc'>{money}</span>" if money else ""
-                            return f"<b>{active}</b>{money_html} <span style='font-size:12px; color:#aaaaaa'>({prev} ➜ {curr})</span>"
+                            return f"<b>{money_val}</b>{share_str} <span style='font-size:12px; color:#aaaaaa'>({prev} ➜ {curr})</span>"
                             
                         def get_bar_color(status):
                             if status == T(lang, "New", "新增"): return NEW_COLOR
@@ -2772,12 +2773,12 @@ try:
                         texts = chart_df.apply(format_label, axis=1)
                         
                         hover_texts = chart_df.apply(
-                            lambda row: f"<b>{row['Name']}</b><br>Before: {row['PrevWeight']:.2f}%<br>Allocated: {row['ActiveWeightStr'].strip()} {row['ActiveMoneyStr']}<br>Result: {row['CurrWeightStr']}", 
+                            lambda row: f"<b>{row['Name']}</b><br>Before: {row['PrevWeight']:.2f}%<br>Allocated: {fmt_mny_only(row['ActiveMoney'])} ({row['ActiveWeightStr'].strip()})<br>Result: {row['CurrWeightStr']}", 
                             axis=1
                         )
                         
                         fig = go.Figure(go.Bar(
-                            x=chart_df["ActiveWeight"],
+                            x=chart_df["ActiveMoney"],
                             y=chart_df["Name"],
                             orientation='h',
                             marker_color=colors,
@@ -2790,9 +2791,9 @@ try:
                         ))
                         
                         fig.update_layout(
-                            margin=dict(l=0, r=80, t=30, b=0),
+                            margin=dict(l=0, r=100, t=30, b=0),
                             height=max(300, min(650, len(chart_df) * 30)),
-                            xaxis_title=T(lang, "Active Capital Allocation (%)", "資金分配變動 (%)"),
+                            xaxis_title=T(lang, "Capital Allocation Amount (Estimated)", "資金分配變動額 (估值)"),
                             yaxis_title="",
                             plot_bgcolor="rgba(0,0,0,0)",
                             paper_bgcolor="rgba(0,0,0,0)",
@@ -2800,12 +2801,12 @@ try:
                             showlegend=False
                         )
                         
-                        x_min = min(0.0, chart_df["ActiveWeight"].min())
-                        x_max = max(0.0, chart_df["ActiveWeight"].max())
+                        x_min = min(0.0, chart_df["ActiveMoney"].min())
+                        x_max = max(0.0, chart_df["ActiveMoney"].max())
                         x_range = x_max - x_min if (x_max - x_min) > 0 else 1.0
                         
-                        x_pad_l = x_range * 0.40 + 0.50
-                        x_pad_r = x_range * 0.40 + 0.50
+                        x_pad_l = x_range * 0.40
+                        x_pad_r = x_range * 0.40
                         fig.update_xaxes(
                             range=[x_min - x_pad_l, x_max + x_pad_r],
                             showgrid=True, 
