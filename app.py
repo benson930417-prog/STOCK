@@ -1525,37 +1525,18 @@ try:
 
     hr()
 
-    tabs_dict = {
-        "overview": T(lang, "Overview", "總覽"),
-        "leader": T(lang, "Leaderboard", "排行"),
-        "monthly": T(lang, "Monthly report", "月報"),
-        "trades": T(lang, "Trades", "交易"),
-        "etf": T(lang, "Active ETFs", "主動型 ETF")
-    }
-    
-    if hasattr(st, "segmented_control"):
-        active_tab = st.segmented_control(
-            "MainTabs",
-            options=list(tabs_dict.keys()),
-            format_func=lambda x: tabs_dict[x],
-            default="overview",
-            key="main_tab",
-            label_visibility="collapsed"
-        )
-    else:
-        active_tab = st.radio(
-            "MainTabs",
-            options=list(tabs_dict.keys()),
-            format_func=lambda x: tabs_dict[x],
-            index=0,
-            horizontal=True,
-            key="main_tab",
-            label_visibility="collapsed"
-        )
-    if not active_tab: active_tab = "overview"
+    tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf = st.tabs(
+        [
+            T(lang, "Overview", "總覽"),
+            T(lang, "Leaderboard", "排行"),
+            T(lang, "Monthly report", "月報"),
+            T(lang, "Trades", "交易"),
+            T(lang, "Active ETFs", "主動型 ETF"),
+        ]
+    )
 
     # -------------------- Overview --------------------
-    if active_tab == "overview":
+    with tab_overview:
         
         # --- Definitions ---
         market_keys = ["TAIEX", "Dow Jones", "S&P 500", "PHLX Semi", "NASDAQ"]
@@ -2242,7 +2223,7 @@ try:
         st.plotly_chart(fig_bar, width="stretch")
 
     # -------------------- Leaderboard --------------------
-    if active_tab == "leader":
+    with tab_leader:
         st.subheader(T(lang, "Win / Loss Leaderboard", "勝負排行"))
 
         lb = f_view.copy()
@@ -2312,14 +2293,14 @@ try:
                         T(lang, "Trades", "筆數"): "{:.0f}",
                         T(lang, "Win rate %", "勝率%"): "{:.1f}",
                     }
-                 ),
+                ),
                 width="stretch",
                 height=420,
             )
 
     # -------------------- Monthly report --------------------
-    if active_tab == "monthly":
-        st.subheader(T(lang, "Monthly Performance (month-end)", "月度績效（月末快照）"))
+    with tab_monthly:
+        st.subheader(T(lang, "Monthly Snapshot (month-end)", "月報（月末快照）"))
 
         m = f_view.copy()
         m["month"] = pd.to_datetime(m["date"]).dt.to_period("M").dt.to_timestamp()
@@ -2419,8 +2400,8 @@ try:
         st.plotly_chart(fig_m, width="stretch")
 
     # -------------------- Trades --------------------
-    if active_tab == "trades":
-        st.subheader(T(lang, "Realized Trades", "已實現交易紀錄"))
+    with tab_trades:
+        st.subheader(T(lang, "Trade History", "交易紀錄"))
 
         view = f_view.sort_values(["date", "stock", "type_display"], ascending=[False, True, True]).copy()
         
@@ -2489,7 +2470,7 @@ try:
         )
 
     # -------------------- Active ETFs --------------------
-    if active_tab == "etf":
+    with tab_etf:
         st.subheader(T(lang, "Active ETF Holdings", "主動型 ETF 投資組合"))
         
         etf_ticker = st.selectbox(
@@ -2565,31 +2546,12 @@ try:
              selected_date = st.selectbox(T(lang, "Select Data Date", "選擇資料日期"), dates) if dates else None
              
         # Add Sub-tabs for Holdings and Daily Report
-        etf_tabs_dict = {
-            "etf_overview": T(lang, "Holdings Overview", "總覽 / 持股"),
-            "etf_daily": T(lang, "Operation Daily Report", "操作日報")
-        }
-        if hasattr(st, "segmented_control"):
-            active_etf_tab = st.segmented_control(
-                "ETF Navigation", 
-                options=list(etf_tabs_dict.keys()), 
-                format_func=lambda x: etf_tabs_dict[x],
-                default="etf_overview",
-                key="etf_tab",
-                label_visibility="collapsed"
-            )
-        else:
-            active_etf_tab = st.radio(
-                "ETF Navigation", 
-                options=list(etf_tabs_dict.keys()), 
-                format_func=lambda x: etf_tabs_dict[x],
-                horizontal=True,
-                key="etf_tab",
-                label_visibility="collapsed"
-            )
-        if not active_etf_tab: active_etf_tab = "etf_overview"
-
-        if active_etf_tab == "etf_overview":
+        etf_tab_overview, etf_tab_daily = st.tabs([
+             T(lang, "Holdings Overview", "總覽 / 持股"),
+             T(lang, "Operation Daily Report", "操作日報")
+        ])
+        
+        with etf_tab_overview:
              if selected_date and selected_date in history_data:
                  curr_day_data = history_data[selected_date]
                  holdings = curr_day_data.get("holdings", [])
@@ -2634,7 +2596,7 @@ try:
              else:
                  st.info(T(lang, "Please select a date with available ETF data.", "請選擇有 ETF 資料的日期。"))
 
-        if active_etf_tab == "etf_daily":
+        with etf_tab_daily:
             if selected_date and selected_date in history_data:
                 st.markdown(f"### {selected_date} {T(lang, 'Operation Daily Report', '操作日報')}")
                 curr_idx = dates.index(selected_date)
