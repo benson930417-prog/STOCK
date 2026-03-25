@@ -1712,9 +1712,10 @@ try:
              go.Scatter(
                  x=daily_agg["date"],
                  y=scaled_cum,
-                 mode="lines",
+                 mode="lines+markers",
                  name=T(lang, "Cumulative P/L", "累計損益"),
                  line=dict(width=2, color="rgba(255, 255, 255, 0.8)"),
+                 marker=dict(size=6, color="rgba(255, 255, 255, 0.9)"),
                  hovertemplate="%{text}<extra></extra>",
                  text=hover_texts_cum,
                  showlegend=True,
