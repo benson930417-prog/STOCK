@@ -2714,7 +2714,7 @@ try:
                     for ch, ph in dec_s:
                         diff_sh = ch['shares'] - ph['shares']
                         mag = (diff_sh / ph['shares'] * 100.0) if ph['shares'] else 0.0
-                        active_w = diff_sh * (ch['weight_pct'] / ch['shares']) if ch['shares'] else 0.0
+                        active_w = diff_sh * (ph['weight_pct'] / ph['shares']) if ph['shares'] else 0.0
                         rows.append({"ID": ch['id'], "Name": ch['name'], "Status": T(lang, "Decreased", "減碼"), "ShareDiff": diff_sh, "MagPct": mag, "CurrWeight": ch['weight_pct'], "WeightDiff": ch['weight_pct'] - ph['weight_pct'], "ActiveWeight": active_w})
                         
                     if rows:
