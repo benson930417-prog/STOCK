@@ -264,8 +264,13 @@ def humanize_ago_from_utc_epoch(epoch_utc: float, lang: str) -> str:
     return T(lang, f"{d} days ago", f"{d} 天前")
 
 
-def hex_to_rgba(hex_color: str, alpha: float = 0.2) -> str:
-    hex_color = hex_color.lstrip("#")
+def hex_to_rgba(color_str: str, alpha: float = 0.2) -> str:
+    if color_str.startswith("rgb"):
+        import re
+        nums = re.findall(r'\d+', color_str)
+        if len(nums) >= 3:
+            return f"rgba({nums[0]}, {nums[1]}, {nums[2]}, {alpha})"
+    hex_color = color_str.lstrip("#")
     if len(hex_color) == 3:
         hex_color = "".join([c * 2 for c in hex_color])
     return f"rgba({int(hex_color[:2], 16)}, {int(hex_color[2:4], 16)}, {int(hex_color[4:], 16)}, {alpha})"
