@@ -2728,7 +2728,7 @@ try:
                         df_ops["WeightDiffStr"] = df_ops["WeightDiff"].apply(lambda x: f" {x:+.2f}%")
                         df_ops["ActiveWeightStr"] = df_ops["ActiveWeight"].apply(lambda x: f" {x:+.2f}%")
                         
-                        f_sz = fund_size if fund_size else 0.0
+                        f_sz = (fund_size * CURRENCY_RATE) if fund_size else 0.0
                         df_ops["ActiveMoney"] = (df_ops["ActiveWeight"] / 100.0) * f_sz
                         
                         def fmt_mny_only(m):
@@ -2753,30 +2753,33 @@ try:
                         chart_df = df_ops.sort_values(by="ActiveMoney", ascending=True).copy()
                         
                         max_abs_val = chart_df["ActiveMoney"].abs().max() if not chart_df.empty else 0
+                        currency_str = "歐元" if CURRENCY_RATE != 1.0 else "TWD"
+                        currency_eng_str = "EUR" if CURRENCY_RATE != 1.0 else "TWD"
+                        
                         if lang == "中文":
                             if max_abs_val >= 100000000:
                                 scale_div = 100000000.0
-                                axis_unit = "億"
+                                axis_unit = f"億 {currency_str}"
                             elif max_abs_val >= 10000:
                                 scale_div = 10000.0
-                                axis_unit = "萬"
+                                axis_unit = f"萬 {currency_str}"
                             else:
                                 scale_div = 1.0
-                                axis_unit = "元"
+                                axis_unit = currency_str
                             axis_title = f"資金分配變動額 (估值, {axis_unit})"
                         else:
                             if max_abs_val >= 1000000000:
                                 scale_div = 1000000000.0
-                                axis_unit = "B"
+                                axis_unit = f"B {currency_eng_str}"
                             elif max_abs_val >= 1000000:
                                 scale_div = 1000000.0
-                                axis_unit = "M"
+                                axis_unit = f"M {currency_eng_str}"
                             elif max_abs_val >= 1000:
                                 scale_div = 1000.0
-                                axis_unit = "K"
+                                axis_unit = f"K {currency_eng_str}"
                             else:
                                 scale_div = 1.0
-                                axis_unit = "TWD"
+                                axis_unit = currency_eng_str
                             axis_title = f"Capital Allocation Amount (Est, {axis_unit})"
                             
                         chart_df["PlotValue"] = chart_df["ActiveMoney"] / scale_div
