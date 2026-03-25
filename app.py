@@ -1811,13 +1811,24 @@ try:
              min_d = daily_agg["date"].min().date()
              max_d = pd.Timestamp.now().normalize().date()
              
-             col1, col2 = st.columns([1, 3])
+             if "baseline_date_picker" not in st.session_state:
+                 st.session_state["baseline_date_picker"] = min_d
+                 
+             def reset_baseline():
+                 st.session_state["baseline_date_picker"] = min_d
+                 
+             col1, col2, col3 = st.columns([2, 1, 4])
              with col1:
-                 baseline_date = st.date_input(
-                     T(lang, "Baseline Date (0%)", "基準日期 (0%)"), 
-                     value=min_d, min_value=min_d, max_value=max_d
+                 st.date_input(
+                     T(lang, "Baseline Date (0%)", "基準日期 (0%)"),
+                     min_value=min_d, max_value=max_d,
+                     key="baseline_date_picker"
                  )
-             baseline_date = pd.to_datetime(baseline_date)
+             with col2:
+                 st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+                 st.button(T(lang, "Reset", "重設"), on_click=reset_baseline, use_container_width=True)
+                 
+             baseline_date = pd.to_datetime(st.session_state["baseline_date_picker"])
 
         fig_pct = go.Figure()
         
