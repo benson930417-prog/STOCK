@@ -2703,17 +2703,19 @@ try:
                     # Build unified operations DataFrame
                     rows = []
                     for h in new_s:
-                        rows.append({"ID": h['id'], "Name": h['name'], "Status": T(lang, "New", "新增"), "ShareDiff": h['shares'], "MagPct": 100.0, "CurrWeight": h['weight_pct'], "WeightDiff": h['weight_pct']})
+                        rows.append({"ID": h['id'], "Name": h['name'], "Status": T(lang, "New", "新增"), "ShareDiff": h['shares'], "MagPct": 100.0, "CurrWeight": h['weight_pct'], "WeightDiff": h['weight_pct'], "ActiveWeight": h['weight_pct']})
                     for h in del_s:
-                        rows.append({"ID": h['id'], "Name": h['name'], "Status": T(lang, "Removed", "刪除"), "ShareDiff": -h['shares'], "MagPct": -100.0, "CurrWeight": 0.0, "WeightDiff": -h['weight_pct']})
+                        rows.append({"ID": h['id'], "Name": h['name'], "Status": T(lang, "Removed", "刪除"), "ShareDiff": -h['shares'], "MagPct": -100.0, "CurrWeight": 0.0, "WeightDiff": -h['weight_pct'], "ActiveWeight": -h['weight_pct']})
                     for ch, ph in inc_s:
                         diff_sh = ch['shares'] - ph['shares']
                         mag = (diff_sh / ph['shares'] * 100.0) if ph['shares'] else 0.0
-                        rows.append({"ID": ch['id'], "Name": ch['name'], "Status": T(lang, "Increased", "加碼"), "ShareDiff": diff_sh, "MagPct": mag, "CurrWeight": ch['weight_pct'], "WeightDiff": ch['weight_pct'] - ph['weight_pct']})
+                        active_w = diff_sh * (ch['weight_pct'] / ch['shares']) if ch['shares'] else 0.0
+                        rows.append({"ID": ch['id'], "Name": ch['name'], "Status": T(lang, "Increased", "加碼"), "ShareDiff": diff_sh, "MagPct": mag, "CurrWeight": ch['weight_pct'], "WeightDiff": ch['weight_pct'] - ph['weight_pct'], "ActiveWeight": active_w})
                     for ch, ph in dec_s:
                         diff_sh = ch['shares'] - ph['shares']
                         mag = (diff_sh / ph['shares'] * 100.0) if ph['shares'] else 0.0
-                        rows.append({"ID": ch['id'], "Name": ch['name'], "Status": T(lang, "Decreased", "減碼"), "ShareDiff": diff_sh, "MagPct": mag, "CurrWeight": ch['weight_pct'], "WeightDiff": ch['weight_pct'] - ph['weight_pct']})
+                        active_w = diff_sh * (ch['weight_pct'] / ch['shares']) if ch['shares'] else 0.0
+                        rows.append({"ID": ch['id'], "Name": ch['name'], "Status": T(lang, "Decreased", "減碼"), "ShareDiff": diff_sh, "MagPct": mag, "CurrWeight": ch['weight_pct'], "WeightDiff": ch['weight_pct'] - ph['weight_pct'], "ActiveWeight": active_w})
                         
                     if rows:
                         df_ops = pd.DataFrame(rows)
@@ -2724,19 +2726,20 @@ try:
                         df_ops["ShareDiffStr"] = (df_ops["ShareDiff"] / 1000).apply(lambda x: f"+{x:,.0f}" if x>0 else f"{x:,.0f}")
                         df_ops["CurrWeightStr"] = df_ops["CurrWeight"].apply(lambda x: f"{x:.2f}%")
                         df_ops["WeightDiffStr"] = df_ops["WeightDiff"].apply(lambda x: f" {x:+.2f}%")
+                        df_ops["ActiveWeightStr"] = df_ops["ActiveWeight"].apply(lambda x: f" {x:+.2f}%")
                         
                         import plotly.graph_objects as go
                         import plotly.express as px
                         
-                        chart_df = df_ops.sort_values(by="WeightDiff", ascending=True).copy()
+                        chart_df = df_ops.sort_values(by="ActiveWeight", ascending=True).copy()
                         
                         chart_df["PrevWeight"] = chart_df["CurrWeight"] - chart_df["WeightDiff"]
                         
                         def format_label(row):
-                            diff = row["WeightDiffStr"].strip()
+                            active = row["ActiveWeightStr"].strip()
                             prev = f"{row['PrevWeight']:.2f}%"
                             curr = row["CurrWeightStr"]
-                            return f"<b>{diff}</b> <span style='font-size:12px; color:#aaaaaa'>({prev} ➜ {curr})</span>"
+                            return f"<b>{active}</b> <span style='font-size:12px; color:#aaaaaa'>({prev} ➜ {curr})</span>"
                             
                         def get_bar_color(status):
                             if status == T(lang, "New", "新增"): return NEW_COLOR
@@ -2749,12 +2752,12 @@ try:
                         texts = chart_df.apply(format_label, axis=1)
                         
                         hover_texts = chart_df.apply(
-                            lambda row: f"<b>{row['Name']}</b><br>Before: {row['PrevWeight']:.2f}%<br>Action: {row['WeightDiffStr'].strip()}<br>Result: {row['CurrWeightStr']}", 
+                            lambda row: f"<b>{row['Name']}</b><br>Before: {row['PrevWeight']:.2f}%<br>Allocated: {row['ActiveWeightStr'].strip()}<br>Result: {row['CurrWeightStr']}", 
                             axis=1
                         )
                         
                         fig = go.Figure(go.Bar(
-                            x=chart_df["WeightDiff"],
+                            x=chart_df["ActiveWeight"],
                             y=chart_df["Name"],
                             orientation='h',
                             marker_color=colors,
@@ -2768,7 +2771,7 @@ try:
                         fig.update_layout(
                             margin=dict(l=0, r=40, t=30, b=0),
                             height=max(300, min(650, len(chart_df) * 30)),
-                            xaxis_title=T(lang, "Weight Change (%)", "權重變動 (%)"),
+                            xaxis_title=T(lang, "Active Capital Allocation (%)", "資金分配變動 (%)"),
                             yaxis_title="",
                             plot_bgcolor="rgba(0,0,0,0)",
                             paper_bgcolor="rgba(0,0,0,0)",
@@ -2776,8 +2779,8 @@ try:
                             showlegend=False
                         )
                         
-                        x_min = chart_df["WeightDiff"].min()
-                        x_max = chart_df["WeightDiff"].max()
+                        x_min = chart_df["ActiveWeight"].min()
+                        x_max = chart_df["ActiveWeight"].max()
                         x_pad = (x_max - x_min) * 0.15 + 0.05
                         fig.update_xaxes(
                             range=[x_min - x_pad, x_max + x_pad],
@@ -2787,16 +2790,16 @@ try:
                             zerolinecolor='rgba(255,255,255,0.3)'
                         )
                         
-                        st.markdown(f"#### {T(lang, 'Portfolio Weight Adjustments', '投資組合權重變動圖')}")
+                        st.markdown(f"#### {T(lang, 'Portfolio Capital Adjustments', '投資組合資金分配變動圖')}")
                         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
                         
-                        df_ops_show = df_ops[["Target", "Status", "ShareDiffStr", "CurrWeightStr", "WeightDiffStr"]].copy()
+                        df_ops_show = df_ops[["Target", "Status", "ShareDiffStr", "CurrWeightStr", "ActiveWeightStr"]].copy()
                         df_ops_show.columns = [
                             T(lang, "Target", "標的"),
                             T(lang, "Status", "狀態"),
                             T(lang, "Share Chg (Lots)", "持股變動 (張)"),
                             T(lang, "Weight (%)", "目前權重"),
-                            T(lang, "Wgt Chg (%)", "變動%")
+                            T(lang, "Alloc Chg (%)", "資金分配變動%")
                         ]
                         
                         def style_status(val):
