@@ -2728,6 +2728,24 @@ try:
                         df_ops["WeightDiffStr"] = df_ops["WeightDiff"].apply(lambda x: f" {x:+.2f}%")
                         df_ops["ActiveWeightStr"] = df_ops["ActiveWeight"].apply(lambda x: f" {x:+.2f}%")
                         
+                        f_sz = fund_size if fund_size else 0.0
+                        def fmt_mny(a_pct):
+                            m = (a_pct / 100.0) * f_sz
+                            if abs(m) < 1.0: return ""
+                            sign = "+" if m > 0 else "-"
+                            am = abs(m)
+                            if lang == "中文":
+                                if am >= 100000000: return f"({sign}{am/100000000:.2f} 億)"
+                                elif am >= 10000: return f"({sign}{am/10000:.0f} 萬)"
+                                else: return f"({sign}{am:,.0f})"
+                            else:
+                                if am >= 1000000000: return f"({sign}{am/1000000000:.2f}B)"
+                                elif am >= 1000000: return f"({sign}{am/1000000:.1f}M)"
+                                elif am >= 1000: return f"({sign}{am/1000:.0f}K)"
+                                else: return f"({sign}{am:,.0f})"
+                                
+                        df_ops["ActiveMoneyStr"] = df_ops["ActiveWeight"].apply(fmt_mny)
+                        
                         import plotly.graph_objects as go
                         import plotly.express as px
                         
@@ -2737,9 +2755,11 @@ try:
                         
                         def format_label(row):
                             active = row["ActiveWeightStr"].strip()
+                            money = row["ActiveMoneyStr"]
                             prev = f"{row['PrevWeight']:.2f}%"
                             curr = row["CurrWeightStr"]
-                            return f"<b>{active}</b> <span style='font-size:12px; color:#aaaaaa'>({prev} ➜ {curr})</span>"
+                            money_html = f" <span style='font-size:12px; color:#cccccc'>{money}</span>" if money else ""
+                            return f"<b>{active}</b>{money_html} <span style='font-size:12px; color:#aaaaaa'>({prev} ➜ {curr})</span>"
                             
                         def get_bar_color(status):
                             if status == T(lang, "New", "新增"): return NEW_COLOR
@@ -2752,7 +2772,7 @@ try:
                         texts = chart_df.apply(format_label, axis=1)
                         
                         hover_texts = chart_df.apply(
-                            lambda row: f"<b>{row['Name']}</b><br>Before: {row['PrevWeight']:.2f}%<br>Allocated: {row['ActiveWeightStr'].strip()}<br>Result: {row['CurrWeightStr']}", 
+                            lambda row: f"<b>{row['Name']}</b><br>Before: {row['PrevWeight']:.2f}%<br>Allocated: {row['ActiveWeightStr'].strip()} {row['ActiveMoneyStr']}<br>Result: {row['CurrWeightStr']}", 
                             axis=1
                         )
                         
