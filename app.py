@@ -1755,10 +1755,24 @@ try:
              # Scale invested capital using the same scale function
              scaled_invested, unit_lbl_inv, inv_div = scale_unit(daily_agg["dynamic_base"], lang, CURRENCY_RATE)
              
+             # Align the Total Equity (Capital + Cumulative P/L) to the same y-axis scale
+             scaled_equity_for_inv = ((daily_agg["dynamic_base"] + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
+             
+             # Extend traces to today for step-plot visuals
+             plot_dates = daily_agg["date"].tolist()
+             plot_inv = scaled_invested.tolist()
+             plot_eq = scaled_equity_for_inv.tolist()
+             
+             today_norm = pd.Timestamp.now().normalize()
+             if plot_dates and plot_dates[-1] < today_norm:
+                 plot_dates.append(today_norm)
+                 plot_inv.append(plot_inv[-1])
+                 plot_eq.append(plot_eq[-1])
+                 
              fig_base.add_trace(
                  go.Scatter(
-                     x=daily_agg["date"],
-                     y=scaled_invested,
+                     x=plot_dates,
+                     y=plot_inv,
                      mode="lines",
                      name=T(lang, "Money Invested", "投入本金"),
                      line=dict(width=2, color="#4FC3F7", shape="hv"), # Light Blue line
@@ -1768,19 +1782,16 @@ try:
                      showlegend=True,
                  )
              )
-
-             # Align the Total Equity (Capital + Cumulative P/L) to the same y-axis scale
-             scaled_equity_for_inv = ((daily_agg["dynamic_base"] + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
              
              hover_texts_equity_inv = []
-             for val in scaled_equity_for_inv:
+             for val in plot_eq:
                   txt = f"{val:,.2f} {unit_lbl_inv}"
                   hover_texts_equity_inv.append(txt)
 
              fig_base.add_trace(
                  go.Scatter(
-                     x=daily_agg["date"],
-                     y=scaled_equity_for_inv,
+                     x=plot_dates,
+                     y=plot_eq,
                      mode="lines",
                      name=T(lang, "Total Equity", "總權益 (本金+損益)"),
                      line=dict(width=2, color="#F5A623", dash="dash", shape="hv"), # Orange/Gold dashed line
@@ -1792,13 +1803,39 @@ try:
                  )
              )
         
-        # We'll create a second figure for Percentage Return later.
-        # But first let's calculate the pct_vals which we need for the second chart and its bounds.
+        # ========== CHART 1: Percentage Return Comparison ==========
+        st.subheader(T(lang, "Percentage Return Comparison", "報酬率對照"))
+        
+        baseline_date = None
+        if not daily_agg.empty:
+             min_d = daily_agg["date"].min().date()
+             max_d = pd.Timestamp.now().normalize().date()
+             
+             col1, col2 = st.columns([1, 3])
+             with col1:
+                 baseline_date = st.date_input(
+                     T(lang, "Baseline Date (0%)", "基準日期 (0%)"), 
+                     value=min_d, min_value=min_d, max_value=max_d
+                 )
+             baseline_date = pd.to_datetime(baseline_date)
+
         fig_pct = go.Figure()
         
         if not daily_agg.empty:
-             # Use TWR instead of Simple Return to prevent dilution artifacts
-             pct_vals = daily_agg["twr_pct"]
+             # Calculate rebasing offset for TWR
+             if baseline_date is not None:
+                 past_twr = daily_agg[daily_agg["date"] <= baseline_date]
+                 twr_base = past_twr["twr_pct"].iloc[-1] if not past_twr.empty else 0.0
+             else:
+                 twr_base = 0.0
+                 
+             # Rebase TWR (Time-Weighted Return)
+             rebased_twr = ((1 + daily_agg["twr_pct"] / 100.0) / (1 + twr_base / 100.0) - 1) * 100.0
+             
+             # Filter daily_agg for plotting
+             plot_mask = daily_agg["date"] >= baseline_date if baseline_date is not None else daily_agg["date"] == daily_agg["date"]
+             plot_daily_agg = daily_agg[plot_mask]
+             pct_vals = rebased_twr[plot_mask]
              
              # Calculate Simple Return for comparison (optional secondary line could be added)
              simple_vals = (daily_agg["cum_pnl"] / daily_agg["dynamic_base"]) * 100.0
@@ -1806,7 +1843,7 @@ try:
              # Plot personal Time-Weighted Return (TWR)
              fig_pct.add_trace(
                  go.Scatter(
-                     x=daily_agg["date"], 
+                     x=plot_daily_agg["date"], 
                      y=pct_vals,
                      mode="lines+markers",
                      marker=dict(size=8, color=PROFIT_COLOR, symbol="circle"),
@@ -1865,7 +1902,7 @@ try:
 
                  
                  if not m_df.empty:
-                     start_date_m = daily_agg["date"].min()
+                     start_date_m = daily_agg["date"].min() if baseline_date is None else baseline_date
                      # Decouple: End date is open (up to today/future)
                      mask = (m_df["date"] >= start_date_m)
                      m_rel = m_df[mask].copy()
@@ -1918,7 +1955,7 @@ try:
 
                  
                  if not s_df.empty:
-                     start_date_s = daily_agg["date"].min()
+                     start_date_s = daily_agg["date"].min() if baseline_date is None else baseline_date
                      # Decouple: End date is open
                      mask = (s_df["date"] >= start_date_s)
                      s_rel = s_df[mask].copy()
@@ -1998,16 +2035,13 @@ try:
         
         # Calculate range boundary
         if not daily_agg.empty:
-            min_date = daily_agg["date"].min()
+            min_date = baseline_date if baseline_date is not None else daily_agg["date"].min()
             max_date = daily_agg["date"].max()
             end_x = max(max_date, pd.Timestamp.now().normalize())
             range_x = [min_date, end_x]
         else:
             range_x = None
             final_max_inv = 100
-
-        # ========== CHART 1: Percentage Return Comparison ==========
-        st.subheader(T(lang, "Percentage Return Comparison", "報酬率對照"))
         
         fig_pct.update_layout(
              xaxis=dict(
