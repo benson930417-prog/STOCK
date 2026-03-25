@@ -1807,7 +1807,8 @@ try:
                  go.Scatter(
                      x=daily_agg["date"], 
                      y=pct_vals,
-                     mode="lines",
+                     mode="lines+markers",
+                     marker=dict(size=8, color=PROFIT_COLOR, symbol="circle"),
                      name=T(lang, "Personal Return %", "個人報酬率 %"),
                      line=dict(width=3, color=PROFIT_COLOR),
                      hovertemplate="%{y:.2f}%<extra></extra>",
