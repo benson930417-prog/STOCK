@@ -2752,6 +2752,35 @@ try:
                         
                         chart_df = df_ops.sort_values(by="ActiveMoney", ascending=True).copy()
                         
+                        max_abs_val = chart_df["ActiveMoney"].abs().max() if not chart_df.empty else 0
+                        if lang == "中文":
+                            if max_abs_val >= 100000000:
+                                scale_div = 100000000.0
+                                axis_unit = "億"
+                            elif max_abs_val >= 10000:
+                                scale_div = 10000.0
+                                axis_unit = "萬"
+                            else:
+                                scale_div = 1.0
+                                axis_unit = "元"
+                            axis_title = f"資金分配變動額 (估值, {axis_unit})"
+                        else:
+                            if max_abs_val >= 1000000000:
+                                scale_div = 1000000000.0
+                                axis_unit = "B"
+                            elif max_abs_val >= 1000000:
+                                scale_div = 1000000.0
+                                axis_unit = "M"
+                            elif max_abs_val >= 1000:
+                                scale_div = 1000.0
+                                axis_unit = "K"
+                            else:
+                                scale_div = 1.0
+                                axis_unit = "TWD"
+                            axis_title = f"Capital Allocation Amount (Est, {axis_unit})"
+                            
+                        chart_df["PlotValue"] = chart_df["ActiveMoney"] / scale_div
+                        
                         chart_df["PrevWeight"] = chart_df["CurrWeight"] - chart_df["WeightDiff"]
                         
                         def format_label(row):
@@ -2778,7 +2807,7 @@ try:
                         )
                         
                         fig = go.Figure(go.Bar(
-                            x=chart_df["ActiveMoney"],
+                            x=chart_df["PlotValue"],
                             y=chart_df["Name"],
                             orientation='h',
                             marker_color=colors,
@@ -2793,7 +2822,7 @@ try:
                         fig.update_layout(
                             margin=dict(l=0, r=100, t=30, b=0),
                             height=max(300, min(650, len(chart_df) * 30)),
-                            xaxis_title=T(lang, "Capital Allocation Amount (Estimated)", "資金分配變動額 (估值)"),
+                            xaxis_title=axis_title,
                             yaxis_title="",
                             plot_bgcolor="rgba(0,0,0,0)",
                             paper_bgcolor="rgba(0,0,0,0)",
@@ -2801,8 +2830,8 @@ try:
                             showlegend=False
                         )
                         
-                        x_min = min(0.0, chart_df["ActiveMoney"].min())
-                        x_max = max(0.0, chart_df["ActiveMoney"].max())
+                        x_min = min(0.0, chart_df["PlotValue"].min())
+                        x_max = max(0.0, chart_df["PlotValue"].max())
                         x_range = x_max - x_min if (x_max - x_min) > 0 else 1.0
                         
                         x_pad_l = x_range * 0.40
