@@ -105,7 +105,7 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=reply_msg)
         )
-    elif user_msg == "債卷":
+    elif user_msg in ["債卷", "債券"]:
         reply_msg = get_10yf_price()
         line_bot_api.reply_message(
             event.reply_token,
@@ -120,14 +120,14 @@ def handle_message(event):
     else:
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="抱歉，我目前只聽得懂「油價」、「匯率」與「債卷」！請輸入這些關鍵字來獲取最新報價。")
+            TextSendMessage(text="抱歉，我目前只聽得懂「油價」、「匯率」與「債券」！請輸入這些關鍵字來獲取最新報價。")
         )
 
 @line_handler.add(FollowEvent)
 def handle_follow(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="歡迎加入！🤖\n請在對話框輸入「油價」、「匯率」或「債卷」來隨時查詢最新報價。")
+        TextSendMessage(text="歡迎加入！🤖\n請在對話框輸入「油價」、「匯率」或「債券」來隨時查詢最新報價。")
     )
 
 # Vercel entrypoint for python uses the `app` variable directly.
