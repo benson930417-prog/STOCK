@@ -32,6 +32,13 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
     prem_pct = ((price_c - nav_c)/nav_c*100) if nav_c else 0.0
     fs_str = f"{fs_c/100000000:.0f}&nbsp;億" # Use &nbsp; to prevent wrapping
     
+    if abs(fs_diff_pct) < 0.005:
+        fs_diff_str = "0.00%"
+        fs_color_class = "text-gray-900"
+    else:
+        fs_diff_str = f"{fs_diff_pct:+.2f}%"
+        fs_color_class = "text-[#CC2400]" if fs_diff_pct > 0 else "text-[#258C18]"
+        
     if abs(prem_pct) < 0.005:
         prem_str = "0.00%"
         prem_color_class = "text-gray-900"
@@ -89,18 +96,19 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
                 </h1>
                 <p class="text-lg font-bold text-gray-500 tracking-wide">{date_curr} 操作日報</p>
             </div>
-            <div class="flex space-x-12 shrink-0">
+            <div class="flex space-x-10 shrink-0">
                 <div class="text-right">
                     <p class="text-sm font-bold text-gray-400 mb-1">基金規模 (TWD)</p>
-                    <div class="flex items-center justify-end space-x-2">
-                        <span class="text-[40px] leading-none font-black whitespace-nowrap">{fs_str}</span>
-                        <span class="px-2 py-1 rounded font-bold text-sm bg-gray-100 text-gray-800">{fs_diff_pct:+.2f}%</span>
+                    <div class="flex items-baseline justify-end space-x-2">
+                        <span class="text-[40px] leading-none font-black text-[#111111] whitespace-nowrap">{fs_str}</span>
+                        <span class="text-[20px] font-bold {fs_color_class} whitespace-nowrap">{fs_diff_str}</span>
                     </div>
                 </div>
                 <div class="text-right">
-                    <p class="text-sm font-bold text-gray-400 mb-1">折溢價</p>
-                    <div class="flex items-center justify-end">
-                        <span class="text-[40px] leading-none font-black whitespace-nowrap {prem_color_class}">{prem_str}</span>
+                    <p class="text-sm font-bold text-gray-400 mb-1">股價 / 淨值</p>
+                    <div class="flex items-baseline justify-end space-x-2">
+                        <span class="text-[40px] leading-none font-black text-[#111111] whitespace-nowrap">{price_c:.2f} <span class="text-gray-400 text-[32px]">/</span> {nav_c:.2f}</span>
+                        <span class="text-[20px] font-bold {prem_color_class} whitespace-nowrap">{prem_str}</span>
                     </div>
                 </div>
             </div>
