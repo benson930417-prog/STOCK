@@ -1808,8 +1808,8 @@ try:
              with st.container(border=True):
                  st.markdown(f"**{T(lang, 'Comparison Settings', '對照設定')}**")
                  
-                 # Row 1: Multiselect Assests
-                 c_row1_mkt, c_row1_tw, c_row1_int, c_status = st.columns([1, 1, 1, 1])
+                 # Row 1: Multiselect Assests (Full Width)
+                 c_row1_mkt, c_row1_tw, c_row1_int = st.columns([1, 1, 1])
                  with c_row1_mkt:
                       sel_indices = st.multiselect(
                           T(lang, "Index Comparison", "大盤指數對照"),
@@ -1831,31 +1831,40 @@ try:
                           default=[],
                           format_func=fmt_stk
                       )
-                 with c_status:
-                      status_placeholder = st.empty()
                       
                  all_sel_stocks = sel_tw_stocks + sel_int_stocks
                  
                  st.markdown("---")
                  
-                 # Row 2: Baseline Filters
-                 st.markdown(f"**{T(lang, 'Baseline Settings', '起始點設定')}**")
-                 c_btn1, c_btn2, c_btn3, c_btn4, c_btn5, c_date, c_reset = st.columns([1,1,1,1,1, 3, 2])
-                 with c_btn1: st.button("1D", on_click=set_1d, use_container_width=True)
-                 with c_btn2: st.button("3D", on_click=set_3d, use_container_width=True)
-                 with c_btn3: st.button("5D", on_click=set_5d, use_container_width=True)
-                 with c_btn4: st.button("2W", on_click=set_2w, use_container_width=True)
-                 with c_btn5: st.button("1M", on_click=set_1m, use_container_width=True)
+                 # Row 2: Baseline Settings & Data Sync
+                 c_base, c_div, c_update = st.columns([5, 1, 3])
                  
-                 with c_date:
-                     st.date_input(
-                         " ", 
-                         min_value=min_d, max_value=max_d,
-                         key="baseline_date_picker",
-                         label_visibility="collapsed"
-                     )
-                 with c_reset:
-                     st.button(f"{T(lang, 'Reset', '重設')}", on_click=reset_baseline, use_container_width=True, type="primary")
+                 with c_base:
+                     st.markdown(f"**{T(lang, 'Baseline Settings', '起始點設定')}**")
+                     
+                     c_date, c_fast = st.columns([2, 3])
+                     with c_date:
+                         st.date_input(
+                             " ", 
+                             min_value=min_d, max_value=max_d,
+                             key="baseline_date_picker",
+                             label_visibility="collapsed"
+                         )
+                         st.button(f"{T(lang, 'Reset', '重設')}", on_click=reset_baseline, use_container_width=True, type="primary")
+                         
+                     with c_fast:
+                         cb1, cb2, cb3 = st.columns(3)
+                         with cb1: st.button("1D", on_click=set_1d, use_container_width=True)
+                         with cb2: st.button("3D", on_click=set_3d, use_container_width=True)
+                         with cb3: st.button("5D", on_click=set_5d, use_container_width=True)
+                         
+                         cb4, cb5, cb6 = st.columns(3)
+                         with cb4: st.button("2W", on_click=set_2w, use_container_width=True)
+                         with cb5: st.button("1M", on_click=set_1m, use_container_width=True)
+                         
+                 with c_update:
+                     st.markdown(f"**{T(lang, 'Market Data Sync', '大盤報價同步')}**")
+                     status_placeholder = st.empty()
                      
              baseline_date = pd.to_datetime(st.session_state["baseline_date_picker"])
 
@@ -2193,14 +2202,14 @@ try:
         
         with status_placeholder.container():
              # Status text
+             st.markdown("<div style='margin-bottom: 27px;'></div>", unsafe_allow_html=True)
              if status_parts:
-                 full_status = f"**{T(lang, 'Data Status', '資料狀態')}**: " + " | ".join(status_parts)
-                 st.caption(full_status)
+                 st.caption(" | ".join(status_parts))
              else:
-                 st.caption(f"**{T(lang, 'Data Status', '資料狀態')}**")
+                 st.caption("No quotes loaded.")
 
              # Refresh Button
-             if st.button(T(lang, "Refresh Data", "更新資料"), key="btn_refresh_market", use_container_width=True):
+             if st.button(T(lang, "Force Update", "強制更新"), key="btn_refresh_market", use_container_width=True):
                   keys_to_del = [k for k in st.session_state.keys() if k.startswith("market_data_")]
                   for k in keys_to_del:
                       del st.session_state[k]
