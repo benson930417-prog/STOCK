@@ -44,19 +44,19 @@ def get_oil_price():
                 emoji = "🔴" if change > 0 else "🟢"
                 if change == 0: emoji = "⚪"
                 
-                return f" {label}: {emoji} {sign}{change:.2f} ({sign}{change_pct:.2f}%)"
+                return f"{label} {emoji}{sign}{change:.2f} ({sign}{change_pct:.1f}%)"
 
             lines = [
-                f"🛢️ WTI 輕原油 (CL=F)",
-                f"──────────────",
-                f"🕒 最新報價: {price:.2f} {currency}",
+                f"🛢️ WTI 輕原油",
+                f"──────────",
+                f"🕒 最新: {price:.2f} {currency}",
                 f"",
                 f"📊 歷史漲跌幅:",
-                get_change_str(1, "1天前 (1D)"),
-                get_change_str(3, "3天前 (3D)"),
-                get_change_str(5, "5天前 (5D)"),
-                get_change_str(21, "1個月 (1M)"),
-                get_change_str(len(valid_data)-1, "6個月 (6M)")
+                get_change_str(1, "1天:"),
+                get_change_str(3, "3天:"),
+                get_change_str(5, "5天:"),
+                get_change_str(21, "1月:"),
+                get_change_str(len(valid_data)-1, "6月:")
             ]
             
             return "\n".join(lines)
@@ -83,9 +83,10 @@ def webhook():
 
 @line_handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    user_msg = event.message.text.strip()
+    user_msg_raw = event.message.text.strip()
+    user_msg = user_msg_raw.lower()
     
-    if user_msg in ["油價", "oil", "CL=F"]:
+    if user_msg in ["油價", "oil", "cl=f", "wti"]:
         oil_price_msg = get_oil_price()
         line_bot_api.reply_message(
             event.reply_token,
