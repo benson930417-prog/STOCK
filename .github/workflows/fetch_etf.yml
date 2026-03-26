@@ -51,9 +51,17 @@ jobs:
           LINE_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_UID: ${{ secrets.LINE_USER_ID }}
         run: |
-          IMG_981="https://raw.githubusercontent.com/${{ github.repository }}/main/data/etf_00981A_summary.jpg?t=$(date +%s)"
-          IMG_991="https://raw.githubusercontent.com/${{ github.repository }}/main/data/etf_00991A_summary.jpg?t=$(date +%s)"
-          DATE_STR=$(TZ='Asia/Taipei' date +'%Y-%m-%d')
+          IMG_981_FILE=$(ls -t data/etf_00981A_summary_*.jpg | head -1)
+          IMG_991_FILE=$(ls -t data/etf_00991A_summary_*.jpg | head -1)
+          
+          IMG_981_BASE=$(basename "$IMG_981_FILE")
+          IMG_991_BASE=$(basename "$IMG_991_FILE")
+          
+          IMG_981="https://raw.githubusercontent.com/${{ github.repository }}/main/data/$IMG_981_BASE?t=$(date +%s)"
+          IMG_991="https://raw.githubusercontent.com/${{ github.repository }}/main/data/$IMG_991_BASE?t=$(date +%s)"
+          
+          DATE_STR_981=$(echo "$IMG_981_BASE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
+          DATE_STR_991=$(echo "$IMG_991_BASE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
           
           curl -v -X POST https://api.line.me/v2/bot/message/push \
           -H "Content-Type: application/json" \
@@ -63,7 +71,7 @@ jobs:
             "messages": [
               {
                 "type": "text",
-                "text": "📅 '"$DATE_STR"' 主動統一台股增長 (00981A) 操作日報"
+                "text": "📅 '"$DATE_STR_981"' 主動統一台股增長 (00981A) 操作日報"
               },
               {
                 "type": "image",
@@ -72,7 +80,7 @@ jobs:
               },
               {
                 "type": "text",
-                "text": "📅 '"$DATE_STR"' 主動復華台灣科技優息 (00991A) 操作日報"
+                "text": "📅 '"$DATE_STR_991"' 主動復華台灣科技優息 (00991A) 操作日報"
               },
               {
                 "type": "image",

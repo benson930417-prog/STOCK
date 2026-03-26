@@ -213,7 +213,7 @@ def generate():
             # wait for network idle to ensure fonts load
             page.wait_for_load_state("networkidle")
             element = page.locator("body")
-            element.screenshot(path="data/etf_00981A_summary.jpg", type="jpeg", quality=95)
+            element.screenshot(path=f"data/etf_00981A_summary_{d981_c}.jpg", type="jpeg", quality=95)
             print("Saved 981A Image")
             
         # 00991A
@@ -223,7 +223,7 @@ def generate():
             # wait for network idle to ensure fonts load
             page.wait_for_load_state("networkidle")
             element = page.locator("body")
-            element.screenshot(path="data/etf_00991A_summary.jpg", type="jpeg", quality=95)
+            element.screenshot(path=f"data/etf_00991A_summary_{d991_c}.jpg", type="jpeg", quality=95)
             print("Saved 991A Image")
             
         browser.close()
