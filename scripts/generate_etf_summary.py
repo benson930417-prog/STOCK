@@ -138,7 +138,7 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
             </div>
         </div>
 
-        <h2 class="text-xl font-bold mb-6 text-gray-800 border-b border-gray-100 pb-2">資金分配變動 <span class="text-sm font-normal text-gray-400 ml-2">(估值, 億 TWD)</span></h2>
+        <h2 class="text-[26px] font-bold mb-6 text-gray-800 border-b border-gray-100 pb-3 tracking-tight">資金分配變動 <span class="text-[16px] font-normal text-gray-400 ml-2 tracking-wide">(估值, 億 TWD)</span></h2>
         
         <div class="space-y-6">
     """
@@ -153,11 +153,11 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
             sign = "+" if r['sd'] > 0 else ""
             
             html += f"""
-            <div class="flex items-center text-[15px]">
+            <div class="flex items-center">
                 <!-- Label -->
-                <div class="w-32 text-right pr-4 font-bold text-gray-800 whitespace-nowrap truncate">{r['name']}</div>
+                <div class="w-36 text-right pr-4 text-[18px] font-bold text-gray-800 whitespace-nowrap truncate">{r['name']}</div>
                 <!-- Track -->
-                <div class="flex-1 flex items-center relative h-10 rounded bg-gray-50 overflow-visible">
+                <div class="flex-1 flex items-center relative h-11 rounded bg-gray-50 overflow-visible">
                     <!-- 0 Line marker -->
                     <div class="absolute left-1/2 top-[-4px] bottom-[-4px] w-[2px] bg-gray-300 z-0"></div>
             """
@@ -166,23 +166,23 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
             if r['am'] < 0:
                 html += f"""
                     <div class="w-1/2 flex justify-end z-10">
-                        <div class="h-8 {color_class} shadow-sm rounded-l-sm" style="width: {w_pct}%"></div>
+                        <div class="h-9 {color_class} shadow-sm rounded-l-sm" style="width: {w_pct}%"></div>
                     </div>
                     <div class="w-1/2 z-10 pl-3 flex items-center">
-                        <span class="font-extrabold text-[17px] text-[#258C18] whitespace-nowrap">{fmt_money(r['am'])}</span>
-                        <span class="text-gray-500 text-sm font-medium ml-2 whitespace-nowrap">({sign}{r['sd']//1000:,} 張)</span>
-                        <span class="text-gray-400 text-sm ml-2 hidden sm:inline whitespace-nowrap">({r['pw']:.2f}% &rarr; {r['cw']:.2f}%)</span>
+                        <span class="font-black text-[19px] text-[#258C18] whitespace-nowrap tracking-wide">{fmt_money(r['am'])}</span>
+                        <span class="text-gray-500 text-[15px] font-medium ml-3 whitespace-nowrap">({sign}{r['sd']//1000:,} 張)</span>
+                        <span class="text-gray-400 text-[15px] ml-2 hidden sm:inline whitespace-nowrap">({r['pw']:.2f}% &rarr; {r['cw']:.2f}%)</span>
                     </div>
                 """
             else:
                 html += f"""
                     <div class="w-1/2 z-10 pr-3 flex items-center justify-end">
-                        <span class="text-gray-400 text-sm mr-2 hidden sm:inline whitespace-nowrap">({r['pw']:.2f}% &rarr; {r['cw']:.2f}%)</span>
-                        <span class="text-gray-500 text-sm font-medium mr-2 whitespace-nowrap">({sign}{r['sd']//1000:,} 張)</span>
-                        <span class="font-extrabold text-[17px] text-[#CC2400] whitespace-nowrap">{fmt_money(r['am'])}</span>
+                        <span class="text-gray-400 text-[15px] mr-2 hidden sm:inline whitespace-nowrap">({r['pw']:.2f}% &rarr; {r['cw']:.2f}%)</span>
+                        <span class="text-gray-500 text-[15px] font-medium mr-3 whitespace-nowrap">({sign}{r['sd']//1000:,} 張)</span>
+                        <span class="font-black text-[19px] text-[#CC2400] whitespace-nowrap tracking-wide">{fmt_money(r['am'])}</span>
                     </div>
                     <div class="w-1/2 flex justify-start z-10">
-                        <div class="h-8 {color_class} shadow-sm rounded-r-sm" style="width: {w_pct}%"></div>
+                        <div class="h-9 {color_class} shadow-sm rounded-r-sm" style="width: {w_pct}%"></div>
                     </div>
                 """
                 
