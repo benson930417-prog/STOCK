@@ -59,6 +59,9 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
     
     max_am = max([abs(r['am']) for r in rows]) if rows else 1
     
+    name_part = title.split(' (')[0]
+    ticker_part = f"({title.split(' (')[1]}" if ' (' in title else ""
+    
     html = f"""
     <!DOCTYPE html>
     <html lang="zh-TW">
@@ -75,8 +78,9 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
         <!-- Header -->
         <div class="flex flex-row justify-between items-center border-b border-gray-200 pb-5 mb-8">
             <div class="w-1/2">
-                <h1 class="text-[32px] font-black text-[#111111] tracking-tight leading-tight mb-1">
-                    {title}
+                <h1 class="text-[32px] font-black text-[#111111] tracking-tight leading-tight mb-2">
+                    {name_part}<br>
+                    {ticker_part}
                 </h1>
                 <p class="text-lg font-bold text-gray-500 tracking-wide">{date_curr} 操作日報</p>
             </div>
