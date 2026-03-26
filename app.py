@@ -1787,15 +1787,21 @@ try:
              if "baseline_date_picker" not in st.session_state:
                  st.session_state["baseline_date_picker"] = min_d
                  
-             def set_baseline_offset(calendar_days_ago):
-                 target_date = max_d - pd.Timedelta(days=calendar_days_ago)
+             def set_bday_offset(bdays_ago):
+                 target_date = (pd.Timestamp(max_d) - pd.offsets.BDay(bdays_ago)).date()
+                 st.session_state["baseline_date_picker"] = max(min_d, target_date)
+                 
+             def set_date_offset(months=0, years=0):
+                 target_date = (pd.Timestamp(max_d) - pd.DateOffset(months=months, years=years)).date()
                  st.session_state["baseline_date_picker"] = max(min_d, target_date)
 
-             def set_1d(): set_baseline_offset(1)
-             def set_3d(): set_baseline_offset(3)
-             def set_5d(): set_baseline_offset(5)
-             def set_2w(): set_baseline_offset(14)
-             def set_1m(): set_baseline_offset(30)
+             def set_1d(): set_bday_offset(1)
+             def set_5d(): set_bday_offset(5)
+             def set_1m(): set_date_offset(months=1)
+             def set_6m(): set_date_offset(months=6)
+             def set_ytd(): 
+                 st.session_state["baseline_date_picker"] = max(min_d, pd.Timestamp(year=max_d.year, month=1, day=1).date())
+             def set_1y(): set_date_offset(years=1)
 
              def reset_baseline():
                  st.session_state["baseline_date_picker"] = min_d
@@ -1850,12 +1856,13 @@ try:
                      with c_fast:
                          cb1, cb2, cb3 = st.columns(3)
                          with cb1: st.button("1D", on_click=set_1d, use_container_width=True)
-                         with cb2: st.button("3D", on_click=set_3d, use_container_width=True)
-                         with cb3: st.button("5D", on_click=set_5d, use_container_width=True)
+                         with cb2: st.button("5D", on_click=set_5d, use_container_width=True)
+                         with cb3: st.button("1M", on_click=set_1m, use_container_width=True)
                          
                          cb4, cb5, cb6 = st.columns(3)
-                         with cb4: st.button("2W", on_click=set_2w, use_container_width=True)
-                         with cb5: st.button("1M", on_click=set_1m, use_container_width=True)
+                         with cb4: st.button("6M", on_click=set_6m, use_container_width=True)
+                         with cb5: st.button("YTD", on_click=set_ytd, use_container_width=True)
+                         with cb6: st.button("1Y", on_click=set_1y, use_container_width=True)
                          
                  with c_update:
                      st.markdown(f"**{T(lang, 'Market Data Sync', '大盤報價同步')}**")
