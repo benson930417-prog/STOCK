@@ -18,7 +18,7 @@ def fmt_money(am):
     elif am >= 10000: return f"{sign}{am/10000:.0f} 萬"
     else: return f"{sign}{am:,.0f}"
 
-def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
+def render_html(title, data_curr, date_curr, data_prev, date_prev):
     if not data_curr or not data_prev: return False
     
     meta_c = data_curr.get('meta', {})
@@ -196,40 +196,34 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
     </body>
     </html>
     """
-    
-    with open(out_html, 'w', encoding='utf-8') as f:
-        f.write(html)
-    return True
+    return html
 
 def generate():
     d981_c, d981_datc, d981_p, d981_datp = load_data('data/etf_00981A_history.json')
     d991_c, d991_datc, d991_p, d991_datp = load_data('data/etf_00991A_history.json')
-    
-    html1 = 'data/d981.html'
-    # Removed html1 = 'data/d981.html' and html2 = 'data/d991.html'
     
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(device_scale_factor=2)
         
         # 00981A
-        html_981 = render_html("主動統一台股增長 (00981A)", d981_datc, d981_c, d981_datp, d981_p) # Call render_html without out_html
+        html_981 = render_html("主動統一台股增長 (00981A)", d981_datc, d981_c, d981_datp, d981_p)
         if html_981:
             page.set_content(html_981)
             # wait for network idle to ensure fonts load
             page.wait_for_load_state("networkidle")
             element = page.locator("body")
-            element.screenshot(path="data/etf_00981A_summary.jpg", type="jpeg", quality=95) # Changed quality to 95 to match original
+            element.screenshot(path="data/etf_00981A_summary.jpg", type="jpeg", quality=95)
             print("Saved 981A Image")
             
         # 00991A
-        html_991 = render_html("主動復華台灣科技優息 (00991A)", d991_datc, d991_c, d991_datp, d991_p) # Call render_html without out_html
+        html_991 = render_html("主動復華台灣科技優息 (00991A)", d991_datc, d991_c, d991_datp, d991_p)
         if html_991:
             page.set_content(html_991)
             # wait for network idle to ensure fonts load
             page.wait_for_load_state("networkidle")
             element = page.locator("body")
-            element.screenshot(path="data/etf_00991A_summary.jpg", type="jpeg", quality=95) # Changed quality to 95 to match original
+            element.screenshot(path="data/etf_00991A_summary.jpg", type="jpeg", quality=95)
             print("Saved 991A Image")
             
         browser.close()
