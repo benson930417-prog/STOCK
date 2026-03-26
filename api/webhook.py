@@ -70,7 +70,7 @@ def get_oil_price():
     return get_yahoo_data_text('CL=F', 'WTI 輕原油', '🛢️', precision=2)
 
 def get_10yf_price():
-    return get_yahoo_data_text('10Y=F', '10-Year Yield Futures', '📈', precision=3)
+    return get_yahoo_data_text('^TNX', '10-Year Yield Futures', '📈', precision=3)
 
 def get_exchange_rates():
     parts = []
