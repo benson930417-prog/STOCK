@@ -41,10 +41,10 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
         
     if abs(prem_pct) < 0.005:
         prem_str = "0.00%"
-        prem_color_class = "text-gray-900"
+        prem_color_class = "text-gray-700 bg-gray-100"
     else:
         prem_str = f"{prem_pct:+.2f}%"
-        prem_color_class = "text-[#CC2400]" if prem_pct > 0 else "text-[#258C18]"
+        prem_color_class = "text-[#CC2400] bg-red-50" if prem_pct > 0 else "text-[#258C18] bg-green-50"
         
     ph_map = {h['id']: h for h in data_prev.get('holdings', [])}
     ch_map = {h['id']: h for h in data_curr.get('holdings', [])}
@@ -95,28 +95,20 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
                     {name_part}<br>
                     {ticker_part}
                 </h1>
-                <p class="text-lg font-bold text-gray-500 tracking-wide">{date_curr} 操作日報</p>
+                <div class="flex items-center space-x-3 mt-1">
+                    <p class="text-lg font-bold text-gray-500 tracking-wide">{date_curr} 操作日報</p>
+                    <span class="px-3 py-1 border border-gray-100 text-[13px] tracking-wide font-bold rounded-full {prem_color_class}">折溢價 {prem_str}</span>
+                </div>
             </div>
             
             <!-- Right: Metrics -->
-            <div class="flex items-end space-x-6 shrink-0">
+            <div class="flex items-end shrink-0">
                 <!-- Metric 1: Fund Size -->
                 <div class="text-right">
                     <p class="text-sm font-bold text-gray-400 mb-1">基金規模 (TWD)</p>
                     <div class="flex items-baseline justify-end space-x-2">
-                        <span class="text-[40px] leading-none font-black text-[#111111] whitespace-nowrap">{fs_str}</span>
+                        <span class="text-[44px] leading-none font-black text-[#111111] whitespace-nowrap">{fs_str}</span>
                         <span class="text-[20px] font-bold {fs_color_class} whitespace-nowrap">{fs_diff_str}</span>
-                    </div>
-                </div>
-                
-                <!-- Separator -->
-                <div class="h-14 w-px bg-gray-200 mx-2 mb-1"></div>
-                
-                <!-- Metric 2: Premium -->
-                <div class="text-right pl-4">
-                    <p class="text-sm font-bold text-gray-400 mb-1">折溢價</p>
-                    <div class="flex items-center justify-end">
-                        <span class="text-[40px] leading-none font-black {prem_color_class} whitespace-nowrap">{prem_str}</span>
                     </div>
                 </div>
             </div>
