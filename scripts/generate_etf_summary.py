@@ -85,18 +85,22 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
             body {{ font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: white; }}
         </style>
     </head>
-    <body class="p-10 w-[900px] bg-white text-gray-900 border border-gray-100 rounded-lg shadow-md">
+    <body class="p-10 w-[960px] bg-white text-gray-900 border border-gray-100 rounded-lg shadow-md">
         
         <!-- Header -->
-        <div class="flex flex-row justify-between items-center border-b border-gray-200 pb-5 mb-8">
-            <div class="w-1/2">
-                <h1 class="text-[32px] font-black text-[#111111] tracking-tight leading-tight mb-2">
+        <div class="flex flex-row justify-between items-end border-b border-gray-200 pb-5 mb-8">
+            <!-- Left: Titles -->
+            <div class="flex-1 pr-6">
+                <h1 class="text-[32px] font-black text-[#111111] tracking-tight leading-tight mb-2 whitespace-nowrap">
                     {name_part}<br>
                     {ticker_part}
                 </h1>
                 <p class="text-lg font-bold text-gray-500 tracking-wide">{date_curr} 操作日報</p>
             </div>
-            <div class="flex space-x-10 shrink-0">
+            
+            <!-- Right: Metrics -->
+            <div class="flex items-end space-x-6 shrink-0">
+                <!-- Metric 1: Fund Size -->
                 <div class="text-right">
                     <p class="text-sm font-bold text-gray-400 mb-1">基金規模 (TWD)</p>
                     <div class="flex items-baseline justify-end space-x-2">
@@ -104,11 +108,16 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
                         <span class="text-[20px] font-bold {fs_color_class} whitespace-nowrap">{fs_diff_str}</span>
                     </div>
                 </div>
-                <div class="text-right">
+                
+                <!-- Separator -->
+                <div class="h-14 w-px bg-gray-200 mx-2 mb-1"></div>
+                
+                <!-- Metric 2: Price / NAV -->
+                <div class="text-right pl-2">
                     <p class="text-sm font-bold text-gray-400 mb-1">股價 / 淨值</p>
                     <div class="flex items-baseline justify-end space-x-2">
-                        <span class="text-[40px] leading-none font-black text-[#111111] whitespace-nowrap">{price_c:.2f} <span class="text-gray-400 text-[32px]">/</span> {nav_c:.2f}</span>
-                        <span class="text-[20px] font-bold {prem_color_class} whitespace-nowrap">{prem_str}</span>
+                        <span class="text-[32px] leading-none font-black text-[#111111] whitespace-nowrap">{price_c:.2f} <span class="text-gray-300 font-normal mx-0.5">/</span> {nav_c:.2f}</span>
+                        <span class="text-[18px] font-bold {prem_color_class} whitespace-nowrap">{prem_str}</span>
                     </div>
                 </div>
             </div>
