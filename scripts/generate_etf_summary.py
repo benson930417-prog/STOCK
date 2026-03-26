@@ -32,8 +32,13 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
     prem_pct = ((price_c - nav_c)/nav_c*100) if nav_c else 0.0
     fs_str = f"{fs_c/100000000:.0f}&nbsp;億" # Use &nbsp; to prevent wrapping
     
-    prem_color_class = "text-[#CC2400]" if prem_pct > 0 else "text-[#258C18]" if prem_pct < 0 else "text-gray-900"
-    
+    if abs(prem_pct) < 0.005:
+        prem_str = "0.00%"
+        prem_color_class = "text-gray-900"
+    else:
+        prem_str = f"{prem_pct:+.2f}%"
+        prem_color_class = "text-[#CC2400]" if prem_pct > 0 else "text-[#258C18]"
+        
     ph_map = {h['id']: h for h in data_prev.get('holdings', [])}
     ch_map = {h['id']: h for h in data_curr.get('holdings', [])}
     
@@ -95,7 +100,7 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
                 <div class="text-right">
                     <p class="text-sm font-bold text-gray-400 mb-1">折溢價</p>
                     <div class="flex items-center justify-end">
-                        <span class="text-[40px] leading-none font-black whitespace-nowrap {prem_color_class}">{prem_pct:+.2f}%</span>
+                        <span class="text-[40px] leading-none font-black whitespace-nowrap {prem_color_class}">{prem_str}</span>
                     </div>
                 </div>
             </div>
