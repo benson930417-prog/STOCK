@@ -1778,6 +1778,9 @@ try:
         # ========== CHART 1: Percentage Return Comparison ==========
         st.subheader(T(lang, "Percentage Return Comparison", "報酬率對照"))
         
+        chart_container = st.container()
+        settings_container = st.container()
+        
         baseline_date = None
         
         if not daily_agg.empty:
@@ -1806,7 +1809,7 @@ try:
              def reset_baseline():
                  st.session_state["baseline_date_picker"] = min_d
                  
-             with st.container(border=True):
+             with settings_container.container(border=True):
                  st.markdown(f"**{T(lang, 'Comparison Settings', '對照設定')}**")
                  
                  # Row 1: Multiselect Assests (Full Width)
