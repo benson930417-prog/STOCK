@@ -1,7 +1,7 @@
 from flask import Flask, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent
 import os
 import requests
 
@@ -61,6 +61,18 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=oil_price_msg)
         )
+    else:
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="抱歉，我目前只聽得懂「油價」！請輸入油價來獲取最新報價。")
+        )
+
+@line_handler.add(FollowEvent)
+def handle_follow(event):
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text="歡迎加入！🤖\n請在對話框輸入「油價」來隨時查詢最新的 WTI 原油即時報價。")
+    )
 
 # Vercel entrypoint for python uses the `app` variable directly.
 if __name__ == "__main__":
