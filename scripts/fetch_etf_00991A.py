@@ -148,7 +148,10 @@ def fetch_and_update_00991A():
         log_data["last_updated_utc"] = now_utc
         log_data["status"] = "NEW DATA FOUND"
     else:
-        log_data["status"] = last_error
+        if "HTTP 200" in last_error or last_error == "No Change":
+            log_data["status"] = "No Change"
+        else:
+            log_data["status"] = last_error
         
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(LOG_FILE, "w", encoding="utf-8") as f:
