@@ -105,7 +105,7 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
             <div class="flex items-end shrink-0">
                 <!-- Metric 1: Fund Size -->
                 <div class="text-right">
-                    <p class="text-sm font-bold text-gray-400 mb-1">基金規模 (TWD)</p>
+                    <p class="text-lg font-bold text-gray-500 tracking-wide mb-1">基金規模 (TWD)</p>
                     <div class="flex items-baseline justify-end space-x-2">
                         <span class="text-[44px] leading-none font-black text-[#111111] whitespace-nowrap">{fs_str}</span>
                         <span class="text-[20px] font-bold {fs_color_class} whitespace-nowrap">{fs_diff_str}</span>
