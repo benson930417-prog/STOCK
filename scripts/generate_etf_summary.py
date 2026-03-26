@@ -97,14 +97,12 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
                 </h1>
                 <div class="flex items-center space-x-3 mt-1">
                     <p class="text-lg font-bold text-gray-500 tracking-wide">{date_curr} 操作日報</p>
+                    <span class="px-3 py-1 border border-gray-100 text-[13px] tracking-wide font-bold rounded-full {prem_color_class}">折溢價 {prem_str}</span>
                 </div>
             </div>
             
             <!-- Right: Metrics -->
-            <div class="flex flex-col items-end shrink-0">
-                <div class="mb-3">
-                    <span class="px-3 py-1 border border-gray-100 text-[13px] tracking-wide font-bold rounded-full {prem_color_class}">折溢價 {prem_str}</span>
-                </div>
+            <div class="flex items-end shrink-0">
                 <!-- Metric 1: Fund Size -->
                 <div class="text-right">
                     <p class="text-sm font-bold text-gray-400 mb-1">基金規模 (TWD)</p>
