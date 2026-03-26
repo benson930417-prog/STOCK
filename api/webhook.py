@@ -35,6 +35,11 @@ def get_oil_price():
     except Exception as e:
         return "無法取得目前油價資訊，請稍後再試。"
 
+@app.route('/', methods=['GET'])
+@app.route('/api/webhook', methods=['GET'])
+def home():
+    return "LINE Bot is running securely!", 200
+
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
     signature = request.headers.get('X-Line-Signature', '')
