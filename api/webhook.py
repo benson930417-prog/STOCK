@@ -44,7 +44,7 @@ def get_oil_price():
                 emoji = "🔴" if change > 0 else "🟢"
                 if change == 0: emoji = "⚪"
                 
-                return f"{label} {emoji}{sign}{change:.2f} ({sign}{change_pct:.1f}%)"
+                return f"{label} {emoji}{sign}{change_pct:.2f}%"
 
             lines = [
                 f"🛢️ WTI 輕原油",
