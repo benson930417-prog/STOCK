@@ -208,25 +208,30 @@ def generate():
     d991_c, d991_datc, d991_p, d991_datp = load_data('data/etf_00991A_history.json')
     
     html1 = 'data/d981.html'
-    html2 = 'data/d991.html'
-    
-    v1 = render_html("主動統一台股增長 (00981A)", d981_datc, d981_c, d981_datp, d981_p, html1)
-    v2 = render_html("主動復華台灣科技優息 (00991A)", d991_datc, d991_c, d991_datp, d991_p, html2)
+    # Removed html1 = 'data/d981.html' and html2 = 'data/d991.html'
     
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(device_scale_factor=2)
         
-        if v1:
-            page.goto('file://' + os.path.abspath(html1))
-            page.wait_for_timeout(500)
-            page.locator('body').screenshot(path='data/etf_00981A_summary.jpg', type='jpeg', quality=95)
+        # 00981A
+        html_981 = render_html("主動統一台股增長 (00981A)", d981_datc, d981_c, d981_datp, d981_p) # Call render_html without out_html
+        if html_981:
+            page.set_content(html_981)
+            # wait for network idle to ensure fonts load
+            page.wait_for_load_state("networkidle")
+            element = page.locator("body")
+            element.screenshot(path="data/etf_00981A_summary.jpg", type="jpeg", quality=95) # Changed quality to 95 to match original
             print("Saved 981A Image")
             
-        if v2:
-            page.goto('file://' + os.path.abspath(html2))
-            page.wait_for_timeout(500)
-            page.locator('body').screenshot(path='data/etf_00991A_summary.jpg', type='jpeg', quality=95)
+        # 00991A
+        html_991 = render_html("主動復華台灣科技優息 (00991A)", d991_datc, d991_c, d991_datp, d991_p) # Call render_html without out_html
+        if html_991:
+            page.set_content(html_991)
+            # wait for network idle to ensure fonts load
+            page.wait_for_load_state("networkidle")
+            element = page.locator("body")
+            element.screenshot(path="data/etf_00991A_summary.jpg", type="jpeg", quality=95) # Changed quality to 95 to match original
             print("Saved 991A Image")
             
         browser.close()
