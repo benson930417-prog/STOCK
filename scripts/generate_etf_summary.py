@@ -112,12 +112,11 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
                 <!-- Separator -->
                 <div class="h-14 w-px bg-gray-200 mx-2 mb-1"></div>
                 
-                <!-- Metric 2: Price / NAV -->
-                <div class="text-right pl-2">
-                    <p class="text-sm font-bold text-gray-400 mb-1">股價 / 淨值</p>
-                    <div class="flex items-baseline justify-end space-x-2">
-                        <span class="text-[32px] leading-none font-black text-[#111111] whitespace-nowrap">{price_c:.2f} <span class="text-gray-300 font-normal mx-0.5">/</span> {nav_c:.2f}</span>
-                        <span class="text-[18px] font-bold {prem_color_class} whitespace-nowrap">{prem_str}</span>
+                <!-- Metric 2: Premium -->
+                <div class="text-right pl-4">
+                    <p class="text-sm font-bold text-gray-400 mb-1">折溢價</p>
+                    <div class="flex items-center justify-end">
+                        <span class="text-[40px] leading-none font-black {prem_color_class} whitespace-nowrap">{prem_str}</span>
                     </div>
                 </div>
             </div>
