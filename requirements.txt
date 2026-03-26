@@ -5,4 +5,3 @@ plotly>=5.20
 requests>=2.31
 Flask>=3.0.0
 line-bot-sdk>=3.0.0
-beautifulsoup4>=4.12.0

@@ -4,7 +4,6 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 import os
 import requests
-from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
@@ -12,25 +11,27 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(os.environ.get('LINE_CHANNEL_ACCESS_TOKEN', ''))
 handler = WebhookHandler(os.environ.get('LINE_CHANNEL_SECRET', ''))
 
-def get_gas_price():
+def get_oil_price():
     try:
-        url = "https://gas.goodlife.tw/"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        res = requests.get(url, headers=headers, timeout=5)
-        soup = BeautifulSoup(res.text, 'html.parser')
-        
-        main_info = soup.select_one('#main h2')
-        main_text = main_info.text.strip() if main_info else ""
-        
-        cpc = soup.select('#gas-price li')
-        prices = []
-        for p in cpc:
-            text = p.text.strip().replace('\n', ' ').replace('\t', '')
-            if text:
-                prices.append(text)
-                
-        reply_text = f"⛽ {main_text}\n" + "\n".join(prices)
-        return reply_text
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get('https://query1.finance.yahoo.com/v8/finance/chart/CL=F', headers=headers, timeout=5)
+        if r.status_code == 200:
+            data = r.json()
+            meta = data['chart']['result'][0]['meta']
+            price = meta['regularMarketPrice']
+            currency = meta['currency']
+            
+            prev_close = meta['chartPreviousClose']
+            change = price - prev_close
+            change_pct = (change / prev_close) * 100
+            
+            sign = "+" if change > 0 else ""
+            emoji = "🔴" if change > 0 else "🟢"
+            if change == 0: emoji = "⚪"
+            
+            return f"🛢️ 輕原油 (WTI)\n{price:.2f} {currency}\n{emoji} {sign}{change:.2f} ({sign}{change_pct:.2f}%)"
+        else:
+            return "Yahoo Finance 報價暫時無法使用。"
     except Exception as e:
         return "無法取得目前油價資訊，請稍後再試。"
 
@@ -49,8 +50,8 @@ def webhook():
 def handle_message(event):
     user_msg = event.message.text.strip()
     
-    if user_msg == "油價":
-        oil_price_msg = get_gas_price()
+    if user_msg in ["油價", "oil", "CL=F"]:
+        oil_price_msg = get_oil_price()
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=oil_price_msg)
