@@ -1584,38 +1584,17 @@ try:
              return STOCK_ZH.get(k, k) if lang == "中文" else k
 
         # --- Header & Controls Layout ---
-        st.subheader(T(lang, "Equity Curve", "資金曲線"))
-        
-        with st.container(border=True):
-             c_row1_mkt, c_row1_tw, c_row1_int = st.columns([1, 1, 1])
-             with c_row1_mkt:
-                  sel_indices = st.multiselect(
-                      T(lang, "Index Comparison", "大盤指數對照"),
-                      options=market_keys,
-                      default=["TAIEX"],
-                      format_func=fmt_mkt
-                  )
-             with c_row1_tw:
-                  sel_tw_stocks = st.multiselect(
-                      T(lang, "TW Stock & ETF", "台灣個股與ETF"),
-                      options=tw_stock_keys,
-                      default=[],
-                      format_func=fmt_stk
-                  )
-             with c_row1_int:
-                  sel_int_stocks = st.multiselect(
-                      T(lang, "Intl Stock & ETF", "國際個股與ETF"),
-                      options=int_stock_keys,
-                      default=[],
-                      format_func=fmt_stk
-                  )
-                  # Placeholder for status UI (filled after data fetch)
-                  status_placeholder = st.empty()
-
-
+        c_title, c_status = st.columns([3, 1])
+        with c_title:
+             st.subheader(T(lang, "Equity Curve", "資金曲線"))
+        with c_status:
+             st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+             status_placeholder = st.empty()
              
-             # Aggregate all selected stock-like entities for chart processing
-             all_sel_stocks = sel_tw_stocks + sel_int_stocks
+        sel_indices = []
+        all_sel_stocks = []
+        
+        # Note: Index & ETF comparison settings moved down to Percentage Return section
 
 
 
@@ -1807,6 +1786,7 @@ try:
         st.subheader(T(lang, "Percentage Return Comparison", "報酬率對照"))
         
         baseline_date = None
+        
         if not daily_agg.empty:
              min_d = daily_agg["date"].min().date()
              max_d = pd.Timestamp.now().normalize().date()
@@ -1814,20 +1794,71 @@ try:
              if "baseline_date_picker" not in st.session_state:
                  st.session_state["baseline_date_picker"] = min_d
                  
+             unique_dates = sorted(daily_agg["date"].dt.date.unique())
+             
+             def set_baseline_offset(trading_days_ago):
+                 if len(unique_dates) == 0: return
+                 idx = max(0, len(unique_dates) - 1 - trading_days_ago) # safe bound
+                 st.session_state["baseline_date_picker"] = unique_dates[idx]
+
+             def set_1d(): set_baseline_offset(1)
+             def set_3d(): set_baseline_offset(3)
+             def set_5d(): set_baseline_offset(5)
+             def set_2w(): set_baseline_offset(10)
+             def set_1m(): set_baseline_offset(21)
+
              def reset_baseline():
                  st.session_state["baseline_date_picker"] = min_d
                  
-             col1, col2, col3 = st.columns([2, 1, 4])
-             with col1:
-                 st.date_input(
-                     T(lang, "Baseline Date (0%)", "基準日期 (0%)"),
-                     min_value=min_d, max_value=max_d,
-                     key="baseline_date_picker"
-                 )
-             with col2:
-                 st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
-                 st.button(T(lang, "Reset", "重設"), on_click=reset_baseline, use_container_width=True)
+             with st.container(border=True):
+                 st.markdown(f"**{T(lang, 'Comparison Settings', '對照設定')}**")
                  
+                 # Row 1: Multiselect Assests
+                 c_row1_mkt, c_row1_tw, c_row1_int = st.columns([1, 1, 1])
+                 with c_row1_mkt:
+                      sel_indices = st.multiselect(
+                          T(lang, "Index Comparison", "大盤指數對照"),
+                          options=market_keys,
+                          default=["TAIEX"],
+                          format_func=fmt_mkt
+                      )
+                 with c_row1_tw:
+                      sel_tw_stocks = st.multiselect(
+                          T(lang, "TW Stock & ETF", "台灣個股與ETF"),
+                          options=tw_stock_keys,
+                          default=[],
+                          format_func=fmt_stk
+                      )
+                 with c_row1_int:
+                      sel_int_stocks = st.multiselect(
+                          T(lang, "Intl Stock & ETF", "國際個股與ETF"),
+                          options=int_stock_keys,
+                          default=[],
+                          format_func=fmt_stk
+                      )
+                      
+                 all_sel_stocks = sel_tw_stocks + sel_int_stocks
+                 
+                 st.markdown("---")
+                 
+                 # Row 2: Baseline Filters
+                 c_btn1, c_btn2, c_btn3, c_btn4, c_btn5, c_date, c_reset = st.columns([1,1,1,1,1, 3, 2])
+                 with c_btn1: st.button("1D", on_click=set_1d, use_container_width=True)
+                 with c_btn2: st.button("3D", on_click=set_3d, use_container_width=True)
+                 with c_btn3: st.button("5D", on_click=set_5d, use_container_width=True)
+                 with c_btn4: st.button("2W", on_click=set_2w, use_container_width=True)
+                 with c_btn5: st.button("1M", on_click=set_1m, use_container_width=True)
+                 
+                 with c_date:
+                     st.date_input(
+                         " ", 
+                         min_value=min_d, max_value=max_d,
+                         key="baseline_date_picker",
+                         label_visibility="collapsed"
+                     )
+                 with c_reset:
+                     st.button(f"🔄 {T(lang, 'Reset / Max', '起點 / 重設')}", on_click=reset_baseline, use_container_width=True, type="primary")
+                     
              baseline_date = pd.to_datetime(st.session_state["baseline_date_picker"])
 
         fig_pct = go.Figure()
