@@ -1789,18 +1789,18 @@ try:
                  
              def set_bday_offset(bdays_ago):
                  target_date = (pd.Timestamp(max_d) - pd.offsets.BDay(bdays_ago)).date()
-                 st.session_state["baseline_date_picker"] = max(min_d, target_date)
+                 st.session_state["baseline_date_picker"] = target_date
                  
              def set_date_offset(months=0, years=0):
                  target_date = (pd.Timestamp(max_d) - pd.DateOffset(months=months, years=years)).date()
-                 st.session_state["baseline_date_picker"] = max(min_d, target_date)
+                 st.session_state["baseline_date_picker"] = target_date
 
              def set_1d(): set_bday_offset(1)
              def set_5d(): set_bday_offset(5)
              def set_1m(): set_date_offset(months=1)
              def set_6m(): set_date_offset(months=6)
              def set_ytd(): 
-                 st.session_state["baseline_date_picker"] = max(min_d, pd.Timestamp(year=max_d.year, month=1, day=1).date())
+                 st.session_state["baseline_date_picker"] = pd.Timestamp(year=max_d.year, month=1, day=1).date()
              def set_1y(): set_date_offset(years=1)
 
              def reset_baseline():
@@ -1810,7 +1810,14 @@ try:
                  st.markdown(f"**{T(lang, 'Comparison Settings', '對照設定')}**")
                  
                  # Row 1: Multiselect Assests (Full Width)
-                 c_row1_mkt, c_row1_tw, c_row1_int = st.columns([1, 1, 1])
+                 c_row1_self, c_row1_mkt, c_row1_tw, c_row1_int = st.columns([1, 1, 1, 1])
+                 with c_row1_self:
+                      sel_self = st.multiselect(
+                          T(lang, "Portfolio", "個人投資組合"),
+                          options=["Personal Portfolio"],
+                          default=["Personal Portfolio"],
+                          format_func=lambda x: T(lang, "Personal Return %", "個人報酬率 %")
+                      )
                  with c_row1_mkt:
                       sel_indices = st.multiselect(
                           T(lang, "Index Comparison", "大盤指數對照"),
@@ -1847,7 +1854,7 @@ try:
                      with c_date:
                          st.date_input(
                              " ", 
-                             min_value=min_d, max_value=max_d,
+                             max_value=max_d,
                              key="baseline_date_picker",
                              label_visibility="collapsed"
                          )
@@ -1892,17 +1899,18 @@ try:
              simple_vals = (daily_agg["cum_pnl"] / daily_agg["dynamic_base"]) * 100.0
              
              # Plot personal Time-Weighted Return (TWR)
-             fig_pct.add_trace(
-                 go.Scatter(
-                     x=plot_daily_agg["date"], 
-                     y=pct_vals,
-                     mode="lines+markers",
-                     marker=dict(size=8, color=PROFIT_COLOR, symbol="circle"),
-                     name=T(lang, "Personal Return %", "個人報酬率 %"),
-                     line=dict(width=3, color=PROFIT_COLOR),
-                     hovertemplate="%{y:.2f}%<extra></extra>",
+             if "Personal Portfolio" in sel_self:
+                 fig_pct.add_trace(
+                     go.Scatter(
+                         x=plot_daily_agg["date"], 
+                         y=pct_vals,
+                         mode="lines+markers",
+                         marker=dict(size=8, color=PROFIT_COLOR, symbol="circle"),
+                         name=T(lang, "Personal Return %", "個人報酬率 %"),
+                         line=dict(width=3, color=PROFIT_COLOR),
+                         hovertemplate="%{y:.2f}%<extra></extra>",
+                     )
                  )
-             )
              
              # No need for invisible trace on secondary axis since we have a dedicated chart
              
