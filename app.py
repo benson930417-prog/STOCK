@@ -1789,18 +1789,15 @@ try:
              if "baseline_date_picker" not in st.session_state:
                  st.session_state["baseline_date_picker"] = min_d
                  
-             unique_dates = sorted(daily_agg["date"].dt.date.unique())
-             
-             def set_baseline_offset(trading_days_ago):
-                 if len(unique_dates) == 0: return
-                 idx = max(0, len(unique_dates) - 1 - trading_days_ago) # safe bound
-                 st.session_state["baseline_date_picker"] = unique_dates[idx]
+             def set_baseline_offset(calendar_days_ago):
+                 target_date = max_d - pd.Timedelta(days=calendar_days_ago)
+                 st.session_state["baseline_date_picker"] = max(min_d, target_date)
 
              def set_1d(): set_baseline_offset(1)
              def set_3d(): set_baseline_offset(3)
              def set_5d(): set_baseline_offset(5)
-             def set_2w(): set_baseline_offset(10)
-             def set_1m(): set_baseline_offset(21)
+             def set_2w(): set_baseline_offset(14)
+             def set_1m(): set_baseline_offset(30)
 
              def reset_baseline():
                  st.session_state["baseline_date_picker"] = min_d
