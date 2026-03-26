@@ -22,7 +22,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests pandas openpyxl beautifulsoup4 lxml html5lib
+          pip install requests pandas openpyxl beautifulsoup4 lxml html5lib playwright
+          playwright install chromium
           
       - name: Run ETF 00981A fetch script
         continue-on-error: true
@@ -32,9 +33,46 @@ jobs:
         continue-on-error: true
         run: python scripts/fetch_etf_00991A.py
         
+      - name: Generate ETF Summary Image
+        continue-on-error: true
+        run: python scripts/generate_etf_summary.py
+        
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v5
+        id: auto-commit-action
         if: always()
         with:
-          commit_message: "Auto-update ETF Tracker log"
-          file_pattern: "data/*.json"
+          commit_message: "Auto-update ETF Tracker log and image"
+          file_pattern: "data/*.json data/*.jpg"
+
+      - name: Send LINE Notification
+        if: always()
+        env:
+          LINE_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_UID: ${{ secrets.LINE_USER_ID }}
+        run: |
+          IMG_981="https://raw.githubusercontent.com/${{ github.repository }}/main/data/etf_00981A_summary.jpg?t=$(date +%s)"
+          IMG_991="https://raw.githubusercontent.com/${{ github.repository }}/main/data/etf_00991A_summary.jpg?t=$(date +%s)"
+          
+          curl -v -X POST https://api.line.me/v2/bot/message/push \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $LINE_TOKEN" \
+          -d '{
+            "to": "'"$LINE_UID"'",
+            "messages": [
+              {
+                "type": "text",
+                "text": "Daily ETF Update Completed! Check the summary images below:"
+              },
+              {
+                "type": "image",
+                "originalContentUrl": "'"$IMG_981"'",
+                "previewImageUrl": "'"$IMG_981"'"
+              },
+              {
+                "type": "image",
+                "originalContentUrl": "'"$IMG_991"'",
+                "previewImageUrl": "'"$IMG_991"'"
+              }
+            ]
+          }'

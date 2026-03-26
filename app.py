@@ -2604,7 +2604,7 @@ try:
                     st.warning(T(lang, "No previous day data available to compare.", "無前一日資料可供比較。"))
                 else:
                     prev_date = dates[curr_idx + 1]
-                    st.caption(f"{T(lang, 'Compared to', '較前日')} {prev_date}")
+                    # st.caption(f"{T(lang, 'Compared to', '較前日')} {prev_date}")
                     
                     curr_data = history_data[selected_date]
                     prev_data = history_data[prev_date]
