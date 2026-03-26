@@ -4,7 +4,6 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent
 import os
 import requests
-import time
 
 app = Flask(__name__)
 
@@ -23,7 +22,6 @@ def get_oil_price():
             
             price = meta['regularMarketPrice']
             currency = meta['currency']
-            market_time = meta['regularMarketTime']
             
             timestamps = result['timestamp']
             closes = result['indicators']['quote'][0]['close']
@@ -34,19 +32,6 @@ def get_oil_price():
             if not valid_data:
                 return "無有效報價資料。"
                 
-            def get_time_ago(timestamp):
-                diff = int(time.time()) - timestamp
-                if diff < 0:
-                    return "剛剛"
-                if diff < 60:
-                    return f"剛剛" 
-                elif diff < 3600:
-                    return f"{diff // 60} 分鐘前"
-                elif diff < 86400:
-                    return f"{diff // 3600} 小時前"
-                else:
-                    return f"{diff // 86400} 天前"
-                    
             def get_change_str(days_ago, label):
                 if len(valid_data) <= days_ago:
                     return f" {label}: 無資料"
@@ -61,12 +46,10 @@ def get_oil_price():
                 
                 return f"{label} {emoji}{sign}{change_pct:.2f}%"
 
-            time_str = get_time_ago(market_time)
-
             lines = [
                 f"🛢️ WTI 輕原油",
                 f"──────────",
-                f"🕒 {time_str}: {price:.2f} {currency}",
+                f"🕒 最新: {price:.2f} {currency}",
                 f"",
                 f"📊 歷史漲跌幅:",
                 get_change_str(1, "1天:"),
