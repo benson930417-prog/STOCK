@@ -1584,8 +1584,6 @@ try:
              return STOCK_ZH.get(k, k) if lang == "中文" else k
 
         # --- Header & Controls Layout ---
-        st.subheader(T(lang, "Equity Curve", "資金曲線"))
-             
         sel_indices = []
         all_sel_stocks = []
         
