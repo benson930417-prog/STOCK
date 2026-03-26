@@ -162,7 +162,7 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
                     </div>
                     <div class="w-1/2 z-10 pl-3 flex items-center">
                         <span class="font-extrabold text-[17px] text-[#258C18] whitespace-nowrap">{fmt_money(r['am'])}</span>
-                        <span class="text-gray-500 text-sm font-medium ml-2 whitespace-nowrap">({sign}{r['sd']:,} 張)</span>
+                        <span class="text-gray-500 text-sm font-medium ml-2 whitespace-nowrap">({sign}{r['sd']//1000:,} 張)</span>
                         <span class="text-gray-400 text-sm ml-2 hidden sm:inline whitespace-nowrap">({r['pw']:.2f}% &rarr; {r['cw']:.2f}%)</span>
                     </div>
                 """
@@ -170,7 +170,7 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev, out_html):
                 html += f"""
                     <div class="w-1/2 z-10 pr-3 flex items-center justify-end">
                         <span class="text-gray-400 text-sm mr-2 hidden sm:inline whitespace-nowrap">({r['pw']:.2f}% &rarr; {r['cw']:.2f}%)</span>
-                        <span class="text-gray-500 text-sm font-medium mr-2 whitespace-nowrap">({sign}{r['sd']:,} 張)</span>
+                        <span class="text-gray-500 text-sm font-medium mr-2 whitespace-nowrap">({sign}{r['sd']//1000:,} 張)</span>
                         <span class="font-extrabold text-[17px] text-[#CC2400] whitespace-nowrap">{fmt_money(r['am'])}</span>
                     </div>
                     <div class="w-1/2 flex justify-start z-10">
