@@ -1584,12 +1584,7 @@ try:
              return STOCK_ZH.get(k, k) if lang == "中文" else k
 
         # --- Header & Controls Layout ---
-        c_title, c_status = st.columns([3, 1])
-        with c_title:
-             st.subheader(T(lang, "Equity Curve", "資金曲線"))
-        with c_status:
-             st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-             status_placeholder = st.empty()
+        st.subheader(T(lang, "Equity Curve", "資金曲線"))
              
         sel_indices = []
         all_sel_stocks = []
@@ -1814,7 +1809,7 @@ try:
                  st.markdown(f"**{T(lang, 'Comparison Settings', '對照設定')}**")
                  
                  # Row 1: Multiselect Assests
-                 c_row1_mkt, c_row1_tw, c_row1_int = st.columns([1, 1, 1])
+                 c_row1_mkt, c_row1_tw, c_row1_int, c_status = st.columns([1, 1, 1, 1])
                  with c_row1_mkt:
                       sel_indices = st.multiselect(
                           T(lang, "Index Comparison", "大盤指數對照"),
@@ -1836,12 +1831,15 @@ try:
                           default=[],
                           format_func=fmt_stk
                       )
+                 with c_status:
+                      status_placeholder = st.empty()
                       
                  all_sel_stocks = sel_tw_stocks + sel_int_stocks
                  
                  st.markdown("---")
                  
                  # Row 2: Baseline Filters
+                 st.markdown(f"**{T(lang, 'Baseline Settings', '起始點設定')}**")
                  c_btn1, c_btn2, c_btn3, c_btn4, c_btn5, c_date, c_reset = st.columns([1,1,1,1,1, 3, 2])
                  with c_btn1: st.button("1D", on_click=set_1d, use_container_width=True)
                  with c_btn2: st.button("3D", on_click=set_3d, use_container_width=True)
@@ -1857,7 +1855,7 @@ try:
                          label_visibility="collapsed"
                      )
                  with c_reset:
-                     st.button(f"🔄 {T(lang, 'Reset / Max', '起點 / 重設')}", on_click=reset_baseline, use_container_width=True, type="primary")
+                     st.button(f"{T(lang, 'Reset', '重設')}", on_click=reset_baseline, use_container_width=True, type="primary")
                      
              baseline_date = pd.to_datetime(st.session_state["baseline_date_picker"])
 
