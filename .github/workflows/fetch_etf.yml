@@ -53,6 +53,7 @@ jobs:
         run: |
           IMG_981="https://raw.githubusercontent.com/${{ github.repository }}/main/data/etf_00981A_summary.jpg?t=$(date +%s)"
           IMG_991="https://raw.githubusercontent.com/${{ github.repository }}/main/data/etf_00991A_summary.jpg?t=$(date +%s)"
+          DATE_STR=$(TZ='Asia/Taipei' date +'%Y-%m-%d')
           
           curl -v -X POST https://api.line.me/v2/bot/message/push \
           -H "Content-Type: application/json" \
@@ -62,12 +63,16 @@ jobs:
             "messages": [
               {
                 "type": "text",
-                "text": "Daily ETF Update Completed! Check the summary images below:"
+                "text": "📅 '"$DATE_STR"' 主動統一台股增長 (00981A) 操作日報"
               },
               {
                 "type": "image",
                 "originalContentUrl": "'"$IMG_981"'",
                 "previewImageUrl": "'"$IMG_981"'"
+              },
+              {
+                "type": "text",
+                "text": "📅 '"$DATE_STR"' 主動復華台灣科技優息 (00991A) 操作日報"
               },
               {
                 "type": "image",
