@@ -69,12 +69,15 @@ def get_yahoo_data_text(symbol, title, emoji, precision=2):
 def get_oil_price():
     return get_yahoo_data_text('CL=F', 'WTI 輕原油', '🛢️', precision=2)
 
+def get_10yf_price():
+    return get_yahoo_data_text('10Y=F', '10-Year Yield Futures', '📈', precision=3)
+
 def get_exchange_rates():
     parts = []
     parts.append(get_yahoo_data_text('TWD=X', '美元兌台幣', '💵', precision=3))
     parts.append(get_yahoo_data_text('CHF=X', '美元兌瑞朗', '💷', precision=4))
     parts.append(get_yahoo_data_text('JPY=X', '美元兌日幣', '💴', precision=2))
-    return "\n\n══════════\n\n".join(parts)
+    return "\n\n".join(parts)
 
 @app.route('/', methods=['GET'])
 @app.route('/api/webhook', methods=['GET'])
@@ -102,6 +105,12 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=reply_msg)
         )
+    elif user_msg == "債卷":
+        reply_msg = get_10yf_price()
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=reply_msg)
+        )
     elif user_msg == "匯率":
         reply_msg = get_exchange_rates()
         line_bot_api.reply_message(
@@ -111,14 +120,14 @@ def handle_message(event):
     else:
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="抱歉，我目前只聽得懂「油價」與「匯率」！請輸入這些關鍵字來獲取最新報價。")
+            TextSendMessage(text="抱歉，我目前只聽得懂「油價」、「匯率」與「債卷」！請輸入這些關鍵字來獲取最新報價。")
         )
 
 @line_handler.add(FollowEvent)
 def handle_follow(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="歡迎加入！🤖\n請在對話框輸入「油價」或「匯率」來隨時查詢最新報價。")
+        TextSendMessage(text="歡迎加入！🤖\n請在對話框輸入「油價」、「匯率」或「債卷」來隨時查詢最新報價。")
     )
 
 # Vercel entrypoint for python uses the `app` variable directly.
