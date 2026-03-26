@@ -63,11 +63,10 @@ jobs:
           DATE_STR_981=$(echo "$IMG_981_BASE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
           DATE_STR_991=$(echo "$IMG_991_BASE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
           
-          curl -v -X POST https://api.line.me/v2/bot/message/push \
+          curl -v -X POST https://api.line.me/v2/bot/message/broadcast \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $LINE_TOKEN" \
           -d '{
-            "to": "'"$LINE_UID"'",
             "messages": [
               {
                 "type": "text",
