@@ -72,6 +72,38 @@ def get_oil_price():
 def get_10yf_price():
     return get_yahoo_data_text('^TNX', '10-Year Yield Futures', '📈', precision=3)
 
+def get_wcdf_price():
+    try:
+        import re
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get('https://tw.stock.yahoo.com/quote/WCDF%26', headers=headers, timeout=5)
+        if r.status_code == 200:
+            m = re.search(r'"price":"([0-9\.,]+)","change":"([0-9\.\-+]+)","changePercent":"([0-9\.\-+%]+)"', r.text)
+            if m:
+                price = m.group(1)
+                change_pct = m.group(3)
+                
+                change_pct_clean = change_pct.lstrip('+')
+                sign = "+" if not change_pct_clean.startswith("-") and change_pct_clean.replace("%", "") != "0.00" else ""
+                direction_emoji = "🔴" if sign == "+" else "🟢" if change_pct_clean.startswith("-") else "⚪"
+                
+                lines = [
+                    f"🌙 台積電期貨近一 (WCDF&)",
+                    f"──────────",
+                    f"🕒 最新: {price} 元",
+                    f"",
+                    f"📊 歷史漲跌幅:",
+                    f" 1天: {direction_emoji}{sign}{change_pct_clean}",
+                    f" 3天: 無資料",
+                    f" 5天: 無資料",
+                    f" 1月: 無資料",
+                    f" 6月: 無資料"
+                ]
+                return "\n".join(lines)
+        return "🌙 台積電期貨近一 (WCDF&)\n──────────\n報價暫時無法使用。"
+    except Exception as e:
+        return "🌙 台積電期貨近一 (WCDF&)\n──────────\n無法取得目前報價資訊，請稍後再試。"
+
 def get_exchange_rates():
     parts = []
     parts.append(get_yahoo_data_text('TWD=X', '美元兌台幣', '💵', precision=3))
@@ -111,6 +143,12 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=reply_msg)
         )
+    elif user_msg in ["台積電期貨晚盤", "tsm", "wcdf&", "台積電"]:
+        reply_msg = get_wcdf_price()
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=reply_msg)
+        )
     elif user_msg == "匯率":
         reply_msg = get_exchange_rates()
         line_bot_api.reply_message(
@@ -125,14 +163,14 @@ def handle_message(event):
     else:
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="抱歉，我目前只聽得懂「油價」、「匯率」與「債券」！請輸入這些關鍵字來獲取最新報價。")
+            TextSendMessage(text="抱歉，我目前只聽得懂「油價」、「匯率」、「債券」與「台積電期貨晚盤」！請輸入這些關鍵字來獲取最新報價。")
         )
 
 @line_handler.add(FollowEvent)
 def handle_follow(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="歡迎加入！🤖\n請在對話框輸入「油價」、「匯率」或「債券」來隨時查詢最新報價。")
+        TextSendMessage(text="歡迎加入！🤖\n請在對話框輸入「油價」、「匯率」、「債券」或「台積電期貨晚盤」來隨時查詢最新報價。")
     )
 
 # Vercel entrypoint for python uses the `app` variable directly.
