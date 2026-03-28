@@ -117,6 +117,11 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=reply_msg)
         )
+    elif user_msg == "欸嘿":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="欸嘿")
+        )
     else:
         line_bot_api.reply_message(
             event.reply_token,
