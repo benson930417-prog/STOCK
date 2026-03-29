@@ -33,7 +33,17 @@ jobs:
         continue-on-error: true
         run: python scripts/fetch_etf_00991A.py
         
+      - name: Check for new ETF data
+        id: check_data
+        run: |
+          if grep -q "NEW DATA FOUND" data/etf_00981A_log.json 2>/dev/null || grep -q "NEW DATA FOUND" data/etf_00991A_log.json 2>/dev/null; then
+            echo "has_new_data=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_new_data=false" >> "$GITHUB_OUTPUT"
+          fi
+          
       - name: Generate ETF Summary Image
+        if: steps.check_data.outputs.has_new_data == 'true'
         continue-on-error: true
         run: python scripts/generate_etf_summary.py
         
@@ -46,7 +56,7 @@ jobs:
           file_pattern: "data/*.json data/*.jpg"
 
       - name: Send LINE Notification
-        if: always()
+        if: steps.check_data.outputs.has_new_data == 'true'
         env:
           LINE_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_UID: ${{ secrets.LINE_USER_ID }}
