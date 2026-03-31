@@ -5,6 +5,9 @@
 cd /home/ubuntu/STOCK || exit
 source venv/bin/activate
 
+# Keep the OCI server in sync with UI updates and code changes from GitHub
+git pull origin main --rebase --autostash
+
 # 2. Add your LINE credentials here (Replace the empty strings with your actual tokens)
 LINE_TOKEN="YOUR_LINE_CHANNEL_ACCESS_TOKEN_HERE"
 LINE_UID="YOUR_LINE_USER_ID_HERE"
