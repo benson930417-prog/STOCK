@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  streamlit-app:
+    build: .
+    container_name: stock-dashboard
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data   # Ensure your cached ETF/Stock data persists across container restarts
+    environment:
+      - TZ=Asia/Taipei
