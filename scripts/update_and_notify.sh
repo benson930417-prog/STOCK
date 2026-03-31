@@ -32,8 +32,8 @@ if grep -q "NEW DATA FOUND" data/etf_00981A_log.json 2>/dev/null || grep -q "NEW
     git push origin main
     
     echo "Sending LINE notification..."
-    IMG_981_FILE=$(ls -t data/etf_00981A_summary_*.jpg | head -1)
-    IMG_991_FILE=$(ls -t data/etf_00991A_summary_*.jpg | head -1)
+    IMG_981_FILE=$(ls -1r data/etf_00981A_summary_*.jpg | head -1)
+    IMG_991_FILE=$(ls -1r data/etf_00991A_summary_*.jpg | head -1)
     
     IMG_981_BASE=$(basename "$IMG_981_FILE")
     IMG_991_BASE=$(basename "$IMG_991_FILE")
