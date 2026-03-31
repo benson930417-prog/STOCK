@@ -67,7 +67,6 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
 
     for r in rows: r['am'] = (r['aw'] / 100.0) * fs_c
     rows.sort(key=lambda x: x['am'], reverse=True)
-    if len(rows) > 12: rows = rows[:6] + rows[-6:]
     
     max_am = max([abs(r['am']) for r in rows]) if rows else 1
     
