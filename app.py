@@ -2875,7 +2875,7 @@ try:
                         
                         fig.update_layout(
                             margin=dict(l=0, r=100, t=30, b=0),
-                            height=max(300, min(650, len(chart_df) * 30)),
+                            height=max(400, len(chart_df) * 30),
                             xaxis_title=axis_title,
                             yaxis_title="",
                             plot_bgcolor="rgba(0,0,0,0)",
@@ -2883,6 +2883,7 @@ try:
                             font=dict(color="white"),
                             showlegend=False
                         )
+                        fig.update_yaxes(tickmode='linear')
                         
                         x_min = min(0.0, chart_df["PlotValue"].min())
                         x_max = max(0.0, chart_df["PlotValue"].max())
