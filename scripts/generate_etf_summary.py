@@ -11,7 +11,7 @@ def load_data(json_path):
     return dates[0], history[dates[0]], dates[1], history[dates[1]]
 
 def fmt_money(am):
-    if abs(am) < 1.0: return "<100 萬"
+    if abs(am) < 1.0: return "<1 萬"
     sign = "+" if am > 0 else "-"
     am = abs(am)
     if am >= 100000000: return f"{sign}{am/100000000:.2f} 億"
