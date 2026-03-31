@@ -2783,7 +2783,7 @@ try:
                         df_ops["ActiveMoney"] = (df_ops["ActiveWeight"] / 100.0) * f_sz
                         
                         def fmt_mny_only(m):
-                            if abs(m) < 1.0: return ""
+                            if abs(m) < 1.0: return "<100 萬" if lang == "中文" else "<1M"
                             sign = "+" if m > 0 else "-"
                             am = abs(m)
                             if lang == "中文":
