@@ -1,7 +1,7 @@
 from flask import Flask, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent, JoinEvent
 import os
 import requests
 
@@ -117,6 +117,17 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=reply_msg)
         )
+    elif user_msg.lower() == "id":
+        reply_parts = [f"User ID: {event.source.user_id}"]
+        if event.source.type == "group":
+            reply_parts.append(f"Group ID: {event.source.group_id}")
+        elif event.source.type == "room":
+            reply_parts.append(f"Room ID: {event.source.room_id}")
+            
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="\n".join(reply_parts))
+        )
     elif user_msg == "欸嘿":
         line_bot_api.reply_message(
             event.reply_token,
@@ -125,14 +136,21 @@ def handle_message(event):
     else:
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="抱歉，我目前只聽得懂「油價」、「匯率」與「債券」！請輸入這些關鍵字來獲取最新報價。")
+            TextSendMessage(text="抱歉，我目前只聽得懂「油價」、「匯率」、「債券」與「id」！請輸入這些關鍵字來進行查詢。")
         )
 
 @line_handler.add(FollowEvent)
 def handle_follow(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="歡迎加入！🤖\n請在對話框輸入「油價」、「匯率」或「債券」來隨時查詢最新報價。")
+        TextSendMessage(text="歡迎加入！🤖\n請在對話框輸入「油價」、「匯率」或「債券」來隨時查詢最新報價，或輸入「id」來取得您的 LINE User ID 與群組 ID。")
+    )
+
+@line_handler.add(JoinEvent)
+def handle_join(event):
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text="大家好！🤖\n我已經加入這個群組了。輸入「油價」、「匯率」或「債券」來隨時查詢最新報價，輸入「id」來取得目前的使用者與群組 ID。")
     )
 
 # Vercel entrypoint for python uses the `app` variable directly.
