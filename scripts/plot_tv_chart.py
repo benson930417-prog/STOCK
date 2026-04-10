@@ -140,7 +140,7 @@ def generate_tv_chart(symbols_data, output_path):
         
         # Header/Title separation
         ax.plot([0, 1], [1.0, 1.0], color='gray', alpha=0.1, linewidth=0.5, transform=ax.transAxes, clip_on=False)
-        ax.set_title(f'{title}  {fmt.format(last_val)} ({sign}{pct_diff:.2f}%)', color=theme_color, loc='left', fontsize=12, fontweight='bold', pad=10)
+        ax.set_title(f'{title}  {fmt.format(last_val)} ({sign}{pct_diff:.2f}%)', color=theme_color, loc='left', fontsize=24, fontweight='bold', pad=12)
 
     active_tz = "UTC+8"
     for i, (df, prev, tz, title, prec) in enumerate(data_list):

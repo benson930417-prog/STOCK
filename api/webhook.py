@@ -99,7 +99,7 @@ def get_oil_price():
     return "\n\n".join(parts)
 
 def get_10yf_price():
-    return get_yahoo_data_text('^TNX', '10-Year Yield Futures', '📈', precision=3)
+    return get_yahoo_data_text('^TNX', '10年期公債殖利率', '📈', precision=3)
 
 def get_exchange_rates():
     parts = []
