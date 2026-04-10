@@ -7,9 +7,28 @@ import requests
 
 app = Flask(__name__)
 
-# Initialize LineBot APIs using environment variables
-line_bot_api = LineBotApi(os.environ.get('LINE_CHANNEL_ACCESS_TOKEN', ''))
-line_handler = WebhookHandler(os.environ.get('LINE_CHANNEL_SECRET', ''))
+def get_secret(key):
+    val = os.environ.get(key)
+    if val: return val
+    try:
+        with open('/home/ubuntu/.stock_secrets', 'r') as f:
+            for line in f:
+                if "=" in line:
+                    k, v = line.strip().split('=', 1)
+                    v = v.strip('"\'')
+                    if key == 'LINE_CHANNEL_ACCESS_TOKEN' and k == 'LINE_TOKEN': return v
+                    if key == 'LINE_CHANNEL_SECRET' and k == 'LINE_CHANNEL_SECRET': return v
+                    if k == key: return v
+    except Exception:
+        pass
+    try:
+        import streamlit as st
+        return st.secrets.get(key, '')
+    except Exception:
+        return ''
+
+line_bot_api = LineBotApi(get_secret('LINE_CHANNEL_ACCESS_TOKEN'))
+line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
 
 def get_yahoo_data_text(symbol, title, emoji, precision=2):
     try:
