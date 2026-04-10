@@ -9,10 +9,16 @@ source venv/bin/activate
 git pull origin main --rebase --autostash
 pip install -r requirements.txt -q
 
-# 2. Add your LINE credentials here (Replace the empty strings with your actual tokens)
-LINE_TOKEN="YOUR_LINE_CHANNEL_ACCESS_TOKEN_HERE"
-LINE_UID="YOUR_LINE_USER_ID_HERE"
-GITHUB_REPO="your-github-username/your-repo-name" # e.g. "benson930417-prog/STOCK"
+# 2. Load your secrets from outside the git directory to keep them safe
+SECRETS_FILE="/home/ubuntu/.stock_secrets"
+if [ -f "$SECRETS_FILE" ]; then
+    source "$SECRETS_FILE"
+else
+    echo "Warning: Secrets file $SECRETS_FILE not found! LINE notification will fail."
+fi
+
+# Fallback repo if not set in secrets
+GITHUB_REPO="${GITHUB_REPO:-benson930417-prog/STOCK}"
 
 echo "Running daily ETF fetch..."
 
