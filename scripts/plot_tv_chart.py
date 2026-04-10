@@ -1,8 +1,10 @@
 import os
+import urllib.request
 import requests
 import datetime
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
 import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
@@ -10,8 +12,25 @@ import pandas as pd
 # Use non-interactive backend for server environments
 matplotlib.use('Agg')
 
-# Configure font for Traditional Chinese support
-plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'HarmonyOS Sans SC', 'Noto Sans CJK TC', 'Heiti TC', 'Arial Unicode MS', 'sans-serif']
+# Auto-download and inject Chinese fonts for the Oracle Server
+font_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'fonts')
+font_path = os.path.join(font_dir, 'NotoSansTC-Regular.otf')
+
+if not os.path.exists(font_path):
+    os.makedirs(font_dir, exist_ok=True)
+    try:
+        url = 'https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/TraditionalChinese/NotoSansCJKtc-Regular.otf'
+        urllib.request.urlretrieve(url, font_path)
+    except Exception as e:
+        print(f"Failed to auto-download CJK font: {e}")
+
+if os.path.exists(font_path):
+    font_manager.fontManager.addfont(font_path)
+    prop = font_manager.FontProperties(fname=font_path)
+    plt.rcParams['font.sans-serif'] = [prop.get_name(), 'sans-serif']
+else:
+    plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'Noto Sans CJK TC', 'sans-serif']
+
 plt.rcParams['axes.unicode_minus'] = False # Fix minus sign display issues
 
 plt.style.use('dark_background')

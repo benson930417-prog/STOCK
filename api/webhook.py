@@ -145,8 +145,8 @@ def handle_message(event):
             line_bot_api.reply_message(
                 event.reply_token,
                 [
-                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
-                    TextSendMessage(text=reply_msg)
+                    TextSendMessage(text=reply_msg),
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
                 ]
             )
         except Exception as e:
@@ -167,8 +167,8 @@ def handle_message(event):
             line_bot_api.reply_message(
                 event.reply_token,
                 [
-                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
-                    TextSendMessage(text=reply_msg)
+                    TextSendMessage(text=reply_msg),
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
                 ]
             )
         except Exception as e:
@@ -189,8 +189,8 @@ def handle_message(event):
             line_bot_api.reply_message(
                 event.reply_token,
                 [
-                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
-                    TextSendMessage(text=reply_msg)
+                    TextSendMessage(text=reply_msg),
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
                 ]
             )
         except Exception as e:
