@@ -1766,7 +1766,7 @@ try:
                      y=plot_eq,
                      mode="lines",
                      name=T(lang, "Total Equity", "總權益 (本金+損益)"),
-                     line=dict(width=2, color="#F5A623", dash="dash", shape="hv"), # Orange/Gold dashed line
+                     line=dict(width=2, color="#F5A623", shape="hv"), # Orange/Gold solid line
                      fill="tonexty", # Fill the gap between invested and equity
                      fillcolor="rgba(245, 166, 35, 0.1)",
                      hovertemplate="%{text}<extra></extra>",
@@ -2082,7 +2082,7 @@ try:
         if not scaled_invested.empty:
             scaled_equity_for_inv = ((daily_agg["dynamic_base"] + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
             inv_max = max(scaled_invested.max(), scaled_equity_for_inv.max())
-            inv_min = min(0, scaled_equity_for_inv.min())
+            inv_min = min(scaled_invested.min(), scaled_equity_for_inv.min())
             inv_pad = (inv_max - inv_min) * 0.1 if (inv_max - inv_min) > 0 else 10
             final_max_inv = inv_max + inv_pad
             final_min_inv = inv_min - inv_pad
