@@ -7,6 +7,7 @@ source venv/bin/activate
 
 # Keep the OCI server in sync with UI updates and code changes from GitHub
 git pull origin main --rebase --autostash
+pip install -r requirements.txt -q
 
 # 2. Add your LINE credentials here (Replace the empty strings with your actual tokens)
 LINE_TOKEN="YOUR_LINE_CHANNEL_ACCESS_TOKEN_HERE"

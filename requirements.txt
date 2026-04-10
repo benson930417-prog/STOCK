@@ -5,3 +5,4 @@ plotly>=5.20
 requests>=2.31
 Flask>=3.0.0
 line-bot-sdk>=3.0.0
+openpyxl>=3.0.0
