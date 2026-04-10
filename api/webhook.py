@@ -4,7 +4,13 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent, JoinEvent, ImageSendMessage
 import time
 import os
+import sys
 import requests
+
+# Ensure the root STOCK directory is in sys.path so 'scripts' can be imported dynamically
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
 
 app = Flask(__name__)
 
