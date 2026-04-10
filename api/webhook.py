@@ -156,6 +156,6 @@ def handle_join(event):
         TextSendMessage(text="大家好！🤖\n我已經加入這個群組了。輸入「油價」、「匯率」或「債券」來隨時查詢最新報價，輸入「id」來取得目前的使用者與群組 ID。")
     )
 
-# Vercel entrypoint for python uses the `app` variable directly.
+# Local deployment entrypoint
 if __name__ == "__main__":
-    app.run(port=8080)
+    app.run(host="0.0.0.0", port=8080)

@@ -11,3 +11,17 @@ services:
       - ./data:/app/data   # Ensure your cached ETF/Stock data persists across container restarts
     environment:
       - TZ=Asia/Taipei
+
+  webhook-app:
+    build: .
+    container_name: stock-webhook
+    command: python api/webhook.py
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+    environment:
+      - TZ=Asia/Taipei
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN}
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET}
