@@ -67,7 +67,10 @@ def get_yahoo_data_text(symbol, title, emoji, precision=2):
         return f"{emoji} {title}\n──────────\n無法取得目前報價資訊，請稍後再試。"
 
 def get_oil_price():
-    return get_yahoo_data_text('BZ=F', '布蘭特原油', '🛢️', precision=2)
+    parts = []
+    parts.append(get_yahoo_data_text('CL=F', 'WTI 輕原油', '🛢️', precision=2))
+    parts.append(get_yahoo_data_text('BZ=F', '布蘭特原油', '🛢️', precision=2))
+    return "\n\n".join(parts)
 
 def get_10yf_price():
     return get_yahoo_data_text('^TNX', '10-Year Yield Futures', '📈', precision=3)
