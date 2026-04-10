@@ -92,8 +92,8 @@ def verify_auth_token(token: str) -> bool:
     try:
         ts_str, sig = token.split("-", 1)
         ts = int(ts_str)
-        # Check if the token is older than 1 hour (3600 seconds)
-        if time.time() - ts > 3600:
+        # Check if the token is older than 7 days (7 * 24 * 3600 seconds)
+        if time.time() - ts > 7 * 24 * 3600:
             return False
             
         # Verify the signature hasn't been tampered with
