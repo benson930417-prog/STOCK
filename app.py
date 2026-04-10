@@ -75,21 +75,34 @@ GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
 
 
 # -------------------- auth --------------------
+import hashlib
+
+def get_auth_token():
+    # Create a secure hash of the password so the plaintext is never exposed
+    if not VIEW_PASSWORD:
+        return ""
+    return hashlib.sha256((VIEW_PASSWORD + "stock_dashboard_salt").encode()).hexdigest()
+
 def require_view_password_centered(lang: str):
     if not VIEW_PASSWORD:
         return
 
-    # Auto-login if password is in the browser URL
-    if st.query_params.get("pwd") == VIEW_PASSWORD:
+    expected_token = get_auth_token()
+
+    # Auto-login if valid secure token is in the browser URL
+    if st.query_params.get("session") == expected_token:
         st.session_state.authed_view = True
 
     if "authed_view" not in st.session_state:
         st.session_state.authed_view = False
 
     if st.session_state.authed_view:
-        # Memorize the password in the URL so returning to this tab restores the session
-        if st.query_params.get("pwd") != VIEW_PASSWORD:
-            st.query_params["pwd"] = VIEW_PASSWORD
+        # Memorize the secure token in the URL so returning to this tab restores the session
+        if st.query_params.get("session") != expected_token:
+            st.query_params["session"] = expected_token
+        # Clean up the old pwd param if it exists
+        if "pwd" in st.query_params:
+            del st.query_params["pwd"]
         return
 
     left, mid, right = st.columns([1, 2, 1])
@@ -99,7 +112,9 @@ def require_view_password_centered(lang: str):
         if typed:
             if typed == VIEW_PASSWORD:
                 st.session_state.authed_view = True
-                st.query_params["pwd"] = VIEW_PASSWORD
+                st.query_params["session"] = expected_token
+                if "pwd" in st.query_params:
+                    del st.query_params["pwd"]
                 st.rerun()
             else:
                 st.error(T(lang, "Wrong password", "密碼錯誤"))
