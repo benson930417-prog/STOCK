@@ -79,10 +79,17 @@ def require_view_password_centered(lang: str):
     if not VIEW_PASSWORD:
         return
 
+    # Auto-login if password is in the browser URL
+    if st.query_params.get("pwd") == VIEW_PASSWORD:
+        st.session_state.authed_view = True
+
     if "authed_view" not in st.session_state:
         st.session_state.authed_view = False
 
     if st.session_state.authed_view:
+        # Memorize the password in the URL so returning to this tab restores the session
+        if st.query_params.get("pwd") != VIEW_PASSWORD:
+            st.query_params["pwd"] = VIEW_PASSWORD
         return
 
     left, mid, right = st.columns([1, 2, 1])
@@ -92,6 +99,7 @@ def require_view_password_centered(lang: str):
         if typed:
             if typed == VIEW_PASSWORD:
                 st.session_state.authed_view = True
+                st.query_params["pwd"] = VIEW_PASSWORD
                 st.rerun()
             else:
                 st.error(T(lang, "Wrong password", "密碼錯誤"))
