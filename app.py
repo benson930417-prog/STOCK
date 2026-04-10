@@ -76,30 +76,49 @@ GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
 
 # -------------------- auth --------------------
 import hashlib
+import time
 
 def get_auth_token():
-    # Create a secure hash of the password so the plaintext is never exposed
+    # Create a time-stamped secure hash of the password
     if not VIEW_PASSWORD:
         return ""
-    return hashlib.sha256((VIEW_PASSWORD + "stock_dashboard_salt").encode()).hexdigest()
+    ts = int(time.time())
+    sig = hashlib.sha256(f"{VIEW_PASSWORD}_stock_{ts}".encode()).hexdigest()[:16]
+    return f"{ts}-{sig}"
+
+def verify_auth_token(token: str) -> bool:
+    if not token or "-" not in token:
+        return False
+    try:
+        ts_str, sig = token.split("-", 1)
+        ts = int(ts_str)
+        # Check if the token is older than 1 hour (3600 seconds)
+        if time.time() - ts > 3600:
+            return False
+            
+        # Verify the signature hasn't been tampered with
+        expected_sig = hashlib.sha256(f"{VIEW_PASSWORD}_stock_{ts}".encode()).hexdigest()[:16]
+        return sig == expected_sig
+    except Exception:
+        return False
 
 def require_view_password_centered(lang: str):
     if not VIEW_PASSWORD:
         return
 
-    expected_token = get_auth_token()
+    url_token = st.query_params.get("session", "")
 
     # Auto-login if valid secure token is in the browser URL
-    if st.query_params.get("session") == expected_token:
+    if verify_auth_token(url_token):
         st.session_state.authed_view = True
 
     if "authed_view" not in st.session_state:
         st.session_state.authed_view = False
 
     if st.session_state.authed_view:
-        # Memorize the secure token in the URL so returning to this tab restores the session
-        if st.query_params.get("session") != expected_token:
-            st.query_params["session"] = expected_token
+        # If they don't have a valid token in the URL right now, generate a fresh one for them to use
+        if not verify_auth_token(url_token):
+            st.query_params["session"] = get_auth_token()
         # Clean up the old pwd param if it exists
         if "pwd" in st.query_params:
             del st.query_params["pwd"]
@@ -112,7 +131,7 @@ def require_view_password_centered(lang: str):
         if typed:
             if typed == VIEW_PASSWORD:
                 st.session_state.authed_view = True
-                st.query_params["session"] = expected_token
+                st.query_params["session"] = get_auth_token()
                 if "pwd" in st.query_params:
                     del st.query_params["pwd"]
                 st.rerun()
