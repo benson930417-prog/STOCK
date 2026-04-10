@@ -1,7 +1,8 @@
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent, JoinEvent
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent, JoinEvent, ImageSendMessage
+import time
 import os
 import requests
 
@@ -106,6 +107,10 @@ def get_exchange_rates():
 def home():
     return "LINE Bot is running securely!", 200
 
+@app.route('/api/webhook/images/<filename>', methods=['GET'])
+def serve_image(filename):
+    return send_from_directory('/home/ubuntu/STOCK/data/images', filename)
+
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
     signature = request.headers.get('X-Line-Signature', '')
@@ -123,22 +128,71 @@ def handle_message(event):
     
     if user_msg == "油價":
         reply_msg = get_oil_price()
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=reply_msg)
-        )
+        try:
+            from scripts.plot_tv_chart import generate_tv_chart
+            img_path = '/home/ubuntu/STOCK/data/images/oil_chart.png'
+            generate_tv_chart([('CL=F', 'WTI 輕原油', 2), ('BZ=F', '布蘭特原油', 2)], img_path)
+            
+            # The static domain you locked in for duckdns
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/oil_chart.png?t={int(time.time())}"
+            
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
+                    TextSendMessage(text=reply_msg)
+                ]
+            )
+        except Exception as e:
+            print("Chart generation failed:", e)
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=reply_msg)
+            )
     elif user_msg in ["債卷", "債券"]:
         reply_msg = get_10yf_price()
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=reply_msg)
-        )
+        try:
+            from scripts.plot_tv_chart import generate_tv_chart
+            img_path = '/home/ubuntu/STOCK/data/images/bond_chart.png'
+            generate_tv_chart([('^TNX', '10-Year Yield (10年期公債殖利率)', 3)], img_path)
+            
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/bond_chart.png?t={int(time.time())}"
+            
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
+                    TextSendMessage(text=reply_msg)
+                ]
+            )
+        except Exception as e:
+            print("Bond Chart generation failed:", e)
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=reply_msg)
+            )
     elif user_msg == "匯率":
         reply_msg = get_exchange_rates()
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=reply_msg)
-        )
+        try:
+            from scripts.plot_tv_chart import generate_tv_chart
+            img_path = '/home/ubuntu/STOCK/data/images/forex_chart.png'
+            generate_tv_chart([('TWD=X', '美元 / 台幣', 4), ('CHF=X', '美元 / 瑞郎', 4), ('JPY=X', '美元 / 日幣', 2)], img_path)
+            
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/forex_chart.png?t={int(time.time())}"
+            
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
+                    TextSendMessage(text=reply_msg)
+                ]
+            )
+        except Exception as e:
+            print("Forex Chart generation failed:", e)
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=reply_msg)
+            )
     elif user_msg.lower() == "id":
         reply_parts = [f"User ID: {event.source.user_id}"]
         if event.source.type == "group":
