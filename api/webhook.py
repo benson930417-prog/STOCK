@@ -147,7 +147,7 @@ def handle_message(event):
             print("Chart generation failed:", e)
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text=reply_msg)
+                TextSendMessage(text=reply_msg + f"\n\n[系統錯誤] 繪圖失敗: {type(e).__name__} - {str(e)}")
             )
     elif user_msg in ["債卷", "債券"]:
         reply_msg = get_10yf_price()
@@ -169,7 +169,7 @@ def handle_message(event):
             print("Bond Chart generation failed:", e)
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text=reply_msg)
+                TextSendMessage(text=reply_msg + f"\n\n[系統錯誤] 繪圖失敗: {type(e).__name__} - {str(e)}")
             )
     elif user_msg == "匯率":
         reply_msg = get_exchange_rates()
@@ -191,7 +191,7 @@ def handle_message(event):
             print("Forex Chart generation failed:", e)
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text=reply_msg)
+                TextSendMessage(text=reply_msg + f"\n\n[系統錯誤] 繪圖失敗: {type(e).__name__} - {str(e)}")
             )
     elif user_msg.lower() == "id":
         reply_parts = [f"User ID: {event.source.user_id}"]
