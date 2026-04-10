@@ -73,7 +73,7 @@ def generate_tv_chart(symbols_data, output_path):
     if num_plots == 1: axes = [axes]
     
     fig.patch.set_facecolor('#0a0e17')
-    fig.subplots_adjust(hspace=0.2, right=0.88)
+    fig.subplots_adjust(hspace=0.4, right=0.88)
 
     def format_ax(ax, df, prev_val, title, prec):
         ax.set_facecolor('#0a0e17')
@@ -140,7 +140,7 @@ def generate_tv_chart(symbols_data, output_path):
         
         # Header/Title separation
         ax.plot([0, 1], [1.0, 1.0], color='gray', alpha=0.1, linewidth=0.5, transform=ax.transAxes, clip_on=False)
-        ax.set_title(f'{title}  {fmt.format(last_val)} ({sign}{pct_diff:.2f}%)', color=theme_color, loc='left', fontsize=24, fontweight='bold', pad=12)
+        ax.set_title(f'{title}  {fmt.format(last_val)} ({sign}{pct_diff:.2f}%)', color=theme_color, loc='left', fontsize=16, fontweight='bold', pad=15)
 
     active_tz = "UTC+8"
     for i, (df, prev, tz, title, prec) in enumerate(data_list):
