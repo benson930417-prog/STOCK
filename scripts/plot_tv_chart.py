@@ -46,7 +46,8 @@ def generate_tv_chart(symbols_data, output_path):
             print(f"Failed fetching {sym}: {e}")
             continue
 
-    if not data_list: return
+    if not data_list:
+        raise RuntimeError(f"Chart generation aborted: All symbols failed to fetch data from Yahoo API.")
 
     num_plots = len(data_list)
     fig, axes = plt.subplots(num_plots, 1, figsize=(10, 4 * num_plots), dpi=150, sharex=True)
