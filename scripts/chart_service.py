@@ -129,26 +129,35 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
-        print(f"  - Preparing perfect capture for {req.key}...")
+        print(f"  - Preparing perfect surgical capture for {req.key}...")
         
-        # Inject JS to wrap header + chart into a perfect container
+        # Inject JS to wrap header + inner chart into a perfect container
         await page.evaluate("""() => {
             const header = document.querySelector('div[class*="symbol-header-container"]') || 
                            document.querySelector('div[id*="symbol-header"]') ||
                            document.querySelector('h1')?.parentElement;
             
-            const chart = document.querySelector('div[data-container-name="performance-chart-id"]');
+            const mainWidget = document.querySelector('div[data-container-name="performance-chart-id"]');
             
-            if (!header || !chart) {
-                console.error("Perfect Capture Error: Header or Chart not found", {header, chart});
+            if (!header || !mainWidget) {
+                console.error("Perfect Capture Error: Header or Main Widget not found", {header, mainWidget});
+                return;
+            }
+
+            // Target the 'chart' part (canvas+dates) and exclude the 'footer' (range buttons)
+            // The chart part is typically the first child with a 'chart-' class
+            const chartPart = mainWidget.querySelector('div[class*="chart-"]') || mainWidget.firstElementChild;
+            
+            if (!chartPart) {
+                console.error("Perfect Capture Error: Chart Part not found inside widget");
                 return;
             }
             
             // Remove vertical gaps between them
             header.style.setProperty('margin-bottom', '0', 'important');
             header.style.setProperty('padding-bottom', '5px', 'important');
-            chart.style.setProperty('margin-top', '0', 'important');
-            chart.style.setProperty('padding-top', '0', 'important');
+            chartPart.style.setProperty('margin-top', '0', 'important');
+            chartPart.style.setProperty('padding-top', '0', 'important');
             
             // Create wrapper if not already exists
             let wrapper = document.getElementById('perfect-capture-wrapper');
@@ -163,16 +172,19 @@ async def take_snapshot(req: SnapshotRequest):
                 
                 header.parentNode.insertBefore(wrapper, header);
                 wrapper.appendChild(header);
-                wrapper.appendChild(chart);
+                wrapper.appendChild(chartPart);
             }
             
             // Force dark text on white background (to avoid ghost labels in light mode)
             header.querySelectorAll('*').forEach(el => {
                 const style = window.getComputedStyle(el);
-                if (style.color === 'rgb(255, 255, 255)' || style.color === 'white') {
+                if (style.color === 'rgb(255, 255, 255)' || style.color === 'white' || style.color.includes('255, 255, 255')) {
                     el.style.setProperty('color', '#131722', 'important');
                 }
             });
+
+            // Hide the original widget leftovers (like the range footer)
+            mainWidget.style.setProperty('display', 'none', 'important');
         }""")
         
         # Target the specifically created wrapper
