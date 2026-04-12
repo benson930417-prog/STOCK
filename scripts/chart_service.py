@@ -99,6 +99,9 @@ async def shutdown_event():
 class SnapshotRequest(BaseModel):
     key: str
     title: str
+    price: str = "N/A"
+    change: str = ""
+    color: str = "#131722"
 
 @app.post("/snapshot")
 async def take_snapshot(req: SnapshotRequest):
@@ -112,30 +115,41 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
-        # 1. SCRAPE LIVE DATA from the browser page for perfect consistency
-        # Find selectors for price and change info
-        price_val = await page.locator('[class*="last-"]').first.text_content()
-        # Change can be a combination of value and percent. We try to get both.
-        change_info = await page.locator('[class*="change-"]').first.text_content()
+        # 1. ATTEMPT SCRAPE with a strict timeout to avoid hanging the bot
+        price_val = req.price
+        change_info = req.change
+        color = req.color
         
-        # Determine color (Red for up, Green for down as per user's Light Mode preference or standard)
-        # Actually, let's keep it simple: if there's a '+' or 'up' class, it's red/green.
-        # TradingView uses 'negative' or 'positive' classes or color directly.
-        style = await page.locator('[class*="change-"]').first.get_attribute('class')
-        color = "#EF4444" if "positive" in style.lower() or "+" in change_info else "#10B981"
-        
+        try:
+            # We use a 3s timeout. If it fails, we use the fallback 'req.price'
+            price_elem = page.locator('[class*="last-"]').first
+            change_elem = page.locator('[class*="change-"]').first
+            
+            p_text = await price_elem.text_content(timeout=3000)
+            c_text = await change_elem.text_content(timeout=3000)
+            
+            if p_text: price_val = p_text.strip()
+            if c_text: change_info = c_text.strip()
+            
+            # Update color based on live state if possible
+            style = await change_elem.get_attribute('class', timeout=1000)
+            if "positive" in style.lower() or "+" in change_info:
+                color = "#EF4444" 
+            elif "negative" in style.lower() or "-" in change_info:
+                color = "#10B981"
+        except Exception as se:
+            print(f"    - Scraping fallback used for {req.key}: {se}")
+
         # 2. Snapshot the chart element
         selector = 'div[data-container-name="performance-chart-id"]'
         chart_element = page.locator(selector)
         await chart_element.scroll_into_view_if_needed()
-        await chart_element.screenshot(path=filepath)
+        await chart_element.screenshot(path=filepath, timeout=5000)
         
-        # 3. POST-PROCESS: Add Header Bar with Scraped Data
+        # 3. POST-PROCESS: Add Header Bar
         with Image.open(filepath) as chart_img:
             cw, ch = chart_img.size
             header_h = 100
-            
-            # Light Gray Header: #f0f3fa
             final_img = Image.new('RGB', (cw, ch + header_h), color='#f0f3fa')
             final_img.paste(chart_img, (0, header_h))
             
@@ -152,7 +166,6 @@ async def take_snapshot(req: SnapshotRequest):
                 title_font = ImageFont.load_default()
                 price_font = ImageFont.load_default()
             
-            # Draw Scraped Info in the Header (Title text is dark gray #131722)
             draw.text((25, 15), req.title, font=title_font, fill='#131722')
             draw.text((25, 58), f"{price_val}  ", font=price_font, fill='#131722')
             
@@ -164,10 +177,13 @@ async def take_snapshot(req: SnapshotRequest):
         return {
             "status": "success", 
             "url": filename, 
-            "price": price_val.strip(), 
-            "change": change_info.strip(),
+            "price": price_val, 
+            "change": change_info,
             "color": color
         }
+    except Exception as e:
+        print(f"❌ Critical error during snapshot for {req.key}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         print(f"❌ Error during snapshot/scraping for {req.key}: {e}")
         await init_browser()
