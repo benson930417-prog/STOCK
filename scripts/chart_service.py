@@ -39,8 +39,14 @@ async def clean_page(page):
             /* Hide Sidebars */
             aside, .tv-side-toolbar { display: none !important; }
 
-            /* Hide breadcrumbs navigation (Markets > Russia > Futures > ...) */
+            /* Hide the sticky top ticker bar (duplicate of main ticker) */
+            div[class*="pageHead-"] { display: none !important; }
+
+            /* Hide breadcrumbs navigation */
             nav[aria-label="Breadcrumbs"] { display: none !important; }
+
+            /* Hide the exchange/contract selector row (Continuous contract, BR1!, Russian Exchange, etc.) */
+            div[class*="buttonsRow-"], div[class*="quotesRow-"] { display: none !important; }
 
             /* Hide Tab Bar (Overview, News, Community, Technicals, etc.) */
             div[class*="tabsRow-"], div[class*="tabs-"] { display: none !important; }
@@ -55,11 +61,15 @@ async def clean_page(page):
             /* Hide the "Chart >" section header above the chart */
             div[class*="sectionTitle-"] { display: none !important; }
 
-            /* Hide the TradingView Watermark Logo */
-            a[class*="label__link-"], div[class*="branding"] { display: none !important; }
+            /* Hide the TradingView Watermark Logo (aggressive) */
+            a[class*="label__link-"], div[class*="branding"],
+            span[class*="brand"], a[href*="tradingview.com"][class*="label"] { display: none !important; }
 
             /* Hide quotes subtitle line (e.g. "As of today at ...") */
             div[class*="quotesSubLine-"] { display: none !important; }
+
+            /* Hide EVERYTHING below the chart (Contract highlights, etc.) */
+            div[data-container-name="performance-chart-id"] ~ * { display: none !important; }
 
             /* Trim chart container margins */
             div[data-container-name="performance-chart-id"] { 
@@ -78,7 +88,7 @@ async def init_browser():
     p = await async_playwright().start()
     browser_instance = await p.chromium.launch(headless=True)
     browser_context = await browser_instance.new_context(
-        viewport={'width': 1200, 'height': 800},
+        viewport={'width': 1200, 'height': 550},
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         timezone_id="Asia/Taipei"
     )
@@ -119,17 +129,13 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
-        # Reload to get fresh data, then re-apply the CSS cleanup
-        await page.reload(wait_until="networkidle", timeout=60000)
-        await clean_page(page)
-        
-        # Scroll the chart into view so the screenshot captures it
+        # Pages are pre-loaded at startup and TradingView updates live via WebSocket.
+        # No reload needed — just scroll and screenshot instantly.
         chart_selector = 'div[data-container-name="performance-chart-id"]'
         chart_el = page.locator(chart_selector)
         await chart_el.scroll_into_view_if_needed()
         
-        # Take a viewport screenshot — includes the ticker header + chart,
-        # with all the junk hidden by CSS. Instant, no post-processing.
+        # Viewport screenshot — ticker header + chart, junk hidden by CSS.
         await page.screenshot(path=filepath, full_page=False)
         
         print(f"  ✅ Snapshot saved: {filename}")
