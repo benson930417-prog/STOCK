@@ -75,16 +75,19 @@ def generate_tv_chart(symbols_data, output_path):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     data_list = []
+    fetch_errors = []
     for sym, title, prec in symbols_data:
         try:
             df, week_open = get_weekly_data(sym)
             data_list.append((df, week_open, title, prec))
         except Exception as e:
-            print(f"Failed fetching {sym}: {e}")
+            msg = f"{sym}: {type(e).__name__} - {e}"
+            print(f"Failed fetching {msg}")
+            fetch_errors.append(msg)
             continue
 
     if not data_list:
-        raise RuntimeError("Chart generation aborted: All symbols failed to fetch data from Yahoo API.")
+        raise RuntimeError("All symbols failed:\n" + "\n".join(fetch_errors))
 
     num_plots = len(data_list)
     fig, axes = plt.subplots(num_plots, 1, figsize=(10, 4 * num_plots), dpi=150, sharex=True)
