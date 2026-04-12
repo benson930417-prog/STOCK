@@ -1,10 +1,8 @@
 import os
 import asyncio
-from io import BytesIO
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from playwright.async_api import async_playwright
-from PIL import Image, ImageDraw, ImageFont
 
 app = FastAPI()
 
@@ -27,6 +25,16 @@ browser_instance = None
 pages = {}
 
 HIDE_CSS = """
+    header, aside, nav, div[class*="layout__header"], div[class*="pageHead-"],
+    div[class*="cookies-banner"], div[class*="cookie-banner"],
+    div[class*="breadcrumb"], div[role="tablist"], div[class*="tabsRow-"],
+    div[class*="buttonsRow-"], div[class*="quotesRow-"], div[class*="quotesSubLine-"],
+    div[class*="sectionTitle-"], div[class*="fixed-banners"],
+    a[aria-label="Full chart"], button[aria-label="Take a snapshot"], a[aria-label="Get widget"],
+    div:has(> button[class*="rangeButton-"]),
+    div[data-container-name="performance-chart-id"] ~ * {
+        display: none !important;
+    }
     body { overflow: hidden !important; }
 """
 
@@ -66,29 +74,6 @@ async def shutdown_event():
 class SnapshotRequest(BaseModel):
     key: str
 
-def add_title(img: Image.Image, title: str) -> Image.Image:
-    """Add a title bar above the chart image."""
-    title_height = 50
-    padding = 12
-    
-    # Create new image with space for title
-    new_img = Image.new('RGB', (img.width, img.height + title_height), 'white')
-    new_img.paste(img, (0, title_height))
-    
-    draw = ImageDraw.Draw(new_img)
-    
-    # Try to use a nice font, fall back to default
-    try:
-        font = ImageFont.truetype("arial.ttf", 20)
-    except OSError:
-        try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
-        except OSError:
-            font = ImageFont.load_default()
-    
-    draw.text((padding, padding), title, fill='#131722', font=font)
-    return new_img
-
 @app.post("/snapshot")
 async def take_snapshot(req: SnapshotRequest):
     if req.key not in pages:
@@ -101,66 +86,54 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
-        # JS: get canvas bounds + title text
-        info = await page.evaluate("""() => {
-            // 1. Find chart container and its canvases
-            const chartContainer = document.querySelector('div[data-container-name="performance-chart-id"]');
-            if (!chartContainer) return null;
+        # Use JS to find the exact pixel bounds of title + chart (no watermark)
+        clip = await page.evaluate("""() => {
+            // 1. Find the symbol title header (e.g. "BR1! 99.47 USD/BLL +4.47 +4.71%")
+            const header = document.querySelector('div[class*="symbolHeader-"]') ||
+                           document.querySelector('div[class*="symbol-header"]') ||
+                           document.querySelector('h1')?.parentElement;
             
+            // 2. Find the chart container
+            const chartContainer = document.querySelector('div[data-container-name="performance-chart-id"]');
+            
+            if (!header || !chartContainer) return null;
+            
+            // 3. Find the actual chart canvas(es) inside the container
+            //    The bottom of the lowest canvas = bottom of the graph (before watermark)
             const canvases = chartContainer.querySelectorAll('canvas');
-            let canvasTop = Infinity, canvasBottom = 0;
+            let canvasBottom = 0;
             canvases.forEach(c => {
                 const r = c.getBoundingClientRect();
-                if (r.top < canvasTop) canvasTop = r.top;
                 if (r.bottom > canvasBottom) canvasBottom = r.bottom;
             });
             
-            if (canvasTop === Infinity) return null;
-            
-            // 2. Extract title text from symbol header
-            const h1 = document.querySelector('h1');
-            let title = '';
-            if (h1) {
-                // Get symbol name from h1
-                const symbolName = h1.textContent.trim();
-                
-                // Find the price/change info near the header
-                const headerContainer = h1.closest('div[class*="symbolHeader"]') || 
-                                        h1.closest('div[class*="symbol-header"]') ||
-                                        h1.parentElement?.parentElement;
-                if (headerContainer) {
-                    title = headerContainer.textContent.trim().replace(/\\s+/g, ' ');
-                } else {
-                    title = symbolName;
-                }
+            // Fallback: if no canvas found, use the container but trim 50px
+            if (canvasBottom === 0) {
+                canvasBottom = chartContainer.getBoundingClientRect().bottom - 50;
             }
             
+            const hRect = header.getBoundingClientRect();
+            
+            // Add small padding
+            const pad = 10;
+            const top = Math.max(0, hRect.top - pad);
+            const bottom = canvasBottom + pad;
+            
             return {
-                clip: {
-                    x: 0,
-                    y: canvasTop,
-                    width: 600,
-                    height: canvasBottom - canvasTop
-                },
-                title: title
+                x: 0,
+                y: top,
+                width: 600,
+                height: bottom - top
             };
         }""")
         
-        if info and info['clip']:
-            # Screenshot just the canvas area
-            raw_bytes = await page.screenshot(clip=info['clip'])
-            img = Image.open(BytesIO(raw_bytes))
-            
-            # Overlay title on top
-            title = info.get('title', req.key.upper())
-            if title:
-                img = add_title(img, title)
-            
-            img.save(filepath)
-            print(f"  ✅ Snapshot saved: {filename} ({img.size[0]}x{img.size[1]}) title='{title[:50]}'")
+        if clip:
+            await page.screenshot(path=filepath, clip=clip)
+            print(f"  ✅ Snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
         else:
+            # Fallback: just screenshot viewport
             await page.screenshot(path=filepath)
-            print(f"  ⚠️ Fallback screenshot: {filename}")
+            print(f"  ⚠️ Fallback screenshot saved: {filename}")
         
         return {"status": "success", "url": filename, "path": filepath}
     except Exception as e:
