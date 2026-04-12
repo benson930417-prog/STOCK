@@ -98,7 +98,7 @@ def get_oil_price():
     return "\n\n".join(parts)
 
 def get_10yf_price():
-    return get_yahoo_data_text('^TNX', '10年期公債殖利率', '📈', precision=3)
+    return get_yahoo_data_text('^TNX', 'CBOE 10年期公債殖利率', '📈', precision=3)
 
 def get_exchange_rates():
     parts = []
@@ -159,7 +159,7 @@ def handle_message(event):
         try:
             from scripts.plot_tv_chart import generate_tv_chart
             img_path = '/home/ubuntu/STOCK/data/images/bond_chart.png'
-            generate_tv_chart([('^TNX', '10-Year Yield (10年期公債殖利率)', 3)], img_path)
+            generate_tv_chart([('^TNX', 'CBOE Interest Rate 10 Year T No (^TNX)', 3)], img_path)
             
             img_url = f"https://linechatbot.duckdns.org/api/webhook/images/bond_chart.png?t={int(time.time())}"
             
