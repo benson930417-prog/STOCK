@@ -60,7 +60,9 @@ HIDE_CSS = """
     a[aria-label="Full chart"], button[aria-label="Take a snapshot"], a[aria-label="Get widget"],
     div:has(> button[class*="rangeButton-"]),
     div[data-container-name="performance-chart-id"] ~ *,
-    div[class*="symbolHeader-"], div[class*="symbol-header"] {
+    div[class*="symbolHeader-"], div[class*="symbol-header"],
+    a[href*="tradingview.com"], a[aria-label*="TradingView"],
+    div[class*="watermark"], a[class*="tv-logo"], a[class*="logo"] {
         display: none !important;
     }
     body { overflow: hidden !important; }
