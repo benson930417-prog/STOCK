@@ -27,44 +27,36 @@ browser_instance = None
 pages = {}
 
 async def clean_page(page):
-    """Hide distracting UI elements from the TradingView main site."""
-    print("  - Cleaning up page elements...")
+    """Hide distracting UI elements and force DARK MODE."""
+    print("  - Applying Pro-Aesthetics (Dark Mode & Layout)...")
     try:
-        # 1. Dismiss/Hide Cookie Banners
+        # 1. Force DARK MODE via JS
+        await page.evaluate("document.documentElement.classList.add('theme-dark')")
+        
+        # 2. Add Styles for a clean, tight look
         await page.add_style_tag(content="""
-            div[class*="cookies-banner"], 
-            div[class*="cookie-banner"], 
-            div[id*="cookies-banner"] { display: none !important; }
+            /* Hide Cookie & Upgrade Banners */
+            div[class*="cookies-banner"], div[class*="cookie-banner"], div[id*="cookies-banner"],
+            div[class*="upgrade-button"], div[class*="fixed-banners"], div[class*="toast-notif"] { display: none !important; }
             
-            /* Hide the main site headers and sidebars */
-            header, 
-            #header-container, 
-            .tv-header, 
-            div[class*="layout__header"],
-            aside,
-            .tv-side-toolbar { display: none !important; }
+            /* Hide Website Headers/Sidebars */
+            header, #header-container, .tv-header, div[class*="layout__header"], aside, .tv-side-toolbar { display: none !important; }
 
-            /* Hide 'Upgrade' and 'Pricing' banners */
-            div[class*="upgrade-button"], 
-            div[class*="fixed-banners"],
-            div[class*="toast-notif"] { display: none !important; }
+            /* Hide extra chart UI elements (Buttons, Embeds, Titles) */
+            a[aria-label="Full chart"], button[aria-label="Take a snapshot"], a[aria-label="Get widget"],
+            a[class*="containerLink-"], div:has(> button[class*="rangeButton-"]) { display: none !important; }
 
-            /* Hide extra chart UI elements requested by user */
-            a[aria-label="Full chart"],
-            button[aria-label="Take a snapshot"],
-            a[aria-label="Get widget"],
-            a[class*="containerLink-"],
-            a[aria-label*="TradingView"][class*="label__link"],
-            div:has(> button[class*="rangeButton-"]) { display: none !important; }
+            /* CRITICAL: Hide the TradingView Watermark Logo */
+            a[class*="label__link-"], div[class*="branding"] { display: none !important; }
 
-            /* Hide bottom 'Ads' or disclaimer area if possible */
-            div[class*="disclaimer"] { display: none !important; }
-            
-            /* Ensure the chart area is visible */
-            div[data-container-name="performance-chart-id"] { border: none !important; }
+            /* ELIMINATE BOTTOM WHITE SPACE: Trim the container margins */
+            div[data-container-name="performance-chart-id"] { 
+                padding-bottom: 0 !important; 
+                margin-bottom: 0 !important; 
+                border: none !important;
+            }
         """)
-        # Wait a moment for stable layout
-        await asyncio.sleep(1)
+        await asyncio.sleep(2) # Allow theme to settle
     except Exception as e:
         print(f"    - Page cleaning warning: {e}")
 
@@ -82,12 +74,11 @@ async def init_browser():
         print(f"  - Loading tab: {key}")
         page = await browser_context.new_page()
         try:
-            await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-            await asyncio.sleep(5) # Allow heavy JS to settle
+            await page.goto(url, wait_until="networkidle", timeout=60000)
             await clean_page(page)
             pages[key] = page
         except Exception as e:
-            print(f"❌ Failed to load {url}: {e}")
+            print(f"❌ Failed to load {key}: {e}")
 
     print("✅ All site tabs pre-loaded and ready.")
 
@@ -110,7 +101,6 @@ class SnapshotRequest(BaseModel):
 @app.post("/snapshot")
 async def take_snapshot(req: SnapshotRequest):
     if req.key not in pages:
-        # Fallback: attempt to reload
         await init_browser()
         if req.key not in pages:
             raise HTTPException(status_code=404, detail="Tab key not found")
@@ -120,43 +110,52 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
-        # Focus the element identified by the user
         selector = 'div[data-container-name="performance-chart-id"]'
         chart_element = page.locator(selector)
-        
-        # Ensure it's in view
         await chart_element.scroll_into_view_if_needed()
         
-        # Snapshot just the element
+        # Snapshot the element
         await chart_element.screenshot(path=filepath)
         
-        # Post-process with Pillow (Overlay text)
-        with Image.open(filepath) as img:
-            draw = ImageDraw.Draw(img)
+        # POST-PROCESS: Add a dedicated Header Section using Pillow
+        with Image.open(filepath) as chart_img:
+            cw, ch = chart_img.size
+            header_h = 100
+            
+            # Create a new canvas with room for the header
+            # Theme dark background: #131722
+            final_img = Image.new('RGB', (cw, ch + header_h), color='#131722')
+            final_img.paste(chart_img, (0, header_h))
+            
+            draw = ImageDraw.Draw(final_img)
+            # Add a subtle separator line
+            draw.line([(0, header_h), (cw, header_h)], fill="#2a2e39", width=1)
+            
             try:
-                # Path for Ubuntu default fonts or local fonts
                 font_path = "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc"
                 if not os.path.exists(font_path):
                     font_path = os.path.join(os.getcwd(), 'data', 'fonts', 'NotoSansTC-Regular.otf')
                 
-                title_font = ImageFont.truetype(font_path, 32)
-                sub_font = ImageFont.truetype(font_path, 20)
+                title_font = ImageFont.truetype(font_path, 34)
+                price_font = ImageFont.truetype(font_path, 24)
             except:
                 title_font = ImageFont.load_default()
-                sub_font = ImageFont.load_default()
+                price_font = ImageFont.load_default()
             
-            # Header overlay
-            draw.text((20, 20), req.title, font=title_font, fill=req.color)
-            draw.text((20, 65), f"{req.price} ({req.change})", font=sub_font, fill="white")
+            # Draw Title and Price in the Header area
+            draw.text((25, 15), req.title, font=title_font, fill='white')
+            draw.text((25, 58), f"{req.price}  ", font=price_font, fill='white')
             
-            img.save(filepath)
+            # Draw Change (color coded)
+            p_width = draw.textlength(f"{req.price}  ", font=price_font)
+            draw.text((25 + p_width, 58), req.change, font=price_font, fill=req.color)
+            
+            final_img.save(filepath)
             
         return {"status": "success", "url": filename, "path": filepath}
     except Exception as e:
         print(f"❌ Error during snapshot for {req.key}: {e}")
-        # Soft restart browser if things are clearly broken
-        if "page.screenshot" in str(e):
-            await init_browser()
+        await init_browser()
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
