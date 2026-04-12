@@ -6,7 +6,7 @@ After=network.target
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK
 # Ensure dependencies are installed in the environment
-ExecStart=/usr/bin/python3 /home/ubuntu/STOCK/scripts/chart_service.py
+ExecStart=/home/ubuntu/STOCK/venv/bin/python3 /home/ubuntu/STOCK/scripts/chart_service.py
 Restart=always
 RestartSec=5
 # Give playwright time to start
