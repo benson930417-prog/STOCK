@@ -6,7 +6,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
 import matplotlib.dates as mdates
-import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 
@@ -38,10 +37,10 @@ plt.style.use('dark_background')
 
 
 def get_weekly_data(symbol):
-    """Fetch the last 5 trading days (1 week) of daily closing data."""
+    """Fetch 1 week (5 days) of 60-minute intraday data."""
     headers = {'User-Agent': 'Mozilla/5.0'}
-    # 5d range with 1d interval gives the last 5 trading days – no timezone juggling needed
-    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=5d&interval=1d'
+    # Use 60m interval for detailed weekly view (approx 35-40 points)
+    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=5d&interval=60m'
     r = requests.get(url, headers=headers, timeout=10)
 
     payload = r.json()
@@ -52,25 +51,30 @@ def get_weekly_data(symbol):
 
     result = chart.get('result')
     if not result:
-        raise RuntimeError(f"Yahoo API returned no result for {symbol}. HTTP {r.status_code}. Body: {r.text[:300]}")
+        raise RuntimeError(f"Yahoo API returned no result for {symbol}. HTTP {r.status_code}")
 
     data = result[0]
     timestamps = pd.to_datetime(data['timestamp'], unit='s')
     closes = pd.Series(data['indicators']['quote'][0]['close'])
-    week_open = data['meta'].get('chartPreviousClose', closes.dropna().iloc[0])
+    
+    # week_open is the first valid price of this 5-day window
+    valid_closes = closes.dropna()
+    if valid_closes.empty:
+        raise RuntimeError(f"No valid price data for {symbol}")
+        
+    week_open = data['meta'].get('chartPreviousClose', valid_closes.iloc[0])
 
     df = pd.DataFrame({'time': timestamps, 'close': closes}).dropna()
-    # Normalise to date only – daily bars don't need intraday timestamps
-    df['time'] = df['time'].dt.normalize()
+    
+    # Convert to Taiwan Time (UTC+8) for consistent date separation
+    df['time'] = df['time'].dt.tz_localize('UTC').dt.tz_convert('Asia/Taipei').dt.tz_localize(None)
+    
     return df, week_open
 
 
 def generate_tv_chart(symbols_data, output_path):
     """
-    Generate a 1-week daily chart for each symbol.
-
-    symbols_data: list of tuples (symbol, title, precision)
-    Example: [('CL=F', 'WTI 輕原油', 2), ('BZ=F', '布蘭特原油', 2)]
+    Generate a 1-week intraday chart for each symbol.
     """
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -90,12 +94,12 @@ def generate_tv_chart(symbols_data, output_path):
         raise RuntimeError("All symbols failed:\n" + "\n".join(fetch_errors))
 
     num_plots = len(data_list)
-    fig, axes = plt.subplots(num_plots, 1, figsize=(10, 4 * num_plots), dpi=150, sharex=True)
+    fig, axes = plt.subplots(num_plots, 1, figsize=(10, 5 * num_plots), dpi=150, sharex=True)
     if num_plots == 1:
         axes = [axes]
 
     fig.patch.set_facecolor('#0a0e17')
-    fig.subplots_adjust(hspace=0.5, right=0.88)
+    fig.subplots_adjust(hspace=0.4, right=0.88)
 
     def format_ax(ax, df, week_open, title, prec):
         ax.set_facecolor('#0a0e17')
@@ -109,12 +113,11 @@ def generate_tv_chart(symbols_data, output_path):
 
         # --- Plot line & area fill ---
         ax.plot(df['time'], df['close'], color=theme_color, linewidth=2, zorder=3)
-        for alpha in np.linspace(0, 0.4, 20):
-            ax.fill_between(
-                df['time'], df['close'],
-                y2=df['close'].min() * 0.995,
-                color=theme_color, alpha=0.015, zorder=1
-            )
+        ax.fill_between(
+            df['time'], df['close'],
+            y2=df['close'].min() * 0.99,
+            color=theme_color, alpha=0.1, zorder=1
+        )
 
         # Dot on last value
         ax.plot(last_time, last_val, marker='o', markersize=5, color=theme_color, zorder=5)
@@ -123,17 +126,15 @@ def generate_tv_chart(symbols_data, output_path):
         ax.axhline(last_val, color=theme_color, linestyle=':', linewidth=0.8, alpha=0.9, zorder=0)
 
         # --- Week-open reference line ---
-        ax.axhline(week_open, color='#787b86', linestyle='--', linewidth=0.8, alpha=0.6, zorder=0)
-
-        # X limits: a bit of padding on both sides
-        ax.set_xlim(
-            df['time'].min() - pd.Timedelta(hours=12),
-            df['time'].max() + pd.Timedelta(hours=18)
-        )
+        ax.axhline(week_open, color='#787b86', linestyle='--', linewidth=1.0, alpha=0.6, zorder=0)
 
         # --- Date separator vertical lines ---
-        for date in df['time']:
-            ax.axvline(date, color='gray', linestyle='-', linewidth=0.4, alpha=0.25, zorder=0)
+        # Draw a line at the start of each unique date in the dataset
+        unique_dates = pd.Series(df['time'].dt.date.unique())
+        for d in unique_dates:
+            # Find the first timestamp of that day
+            day_start = df[df['time'].dt.date == d]['time'].iloc[0]
+            ax.axvline(day_start, color='white', linestyle='-', linewidth=0.8, alpha=0.15, zorder=0)
 
         # --- Right-hand price labels ---
         trans = ax.get_yaxis_transform()
@@ -142,7 +143,7 @@ def generate_tv_chart(symbols_data, output_path):
         y_span = max(y_max - y_min, 0.001)
 
         va_price, va_open = 'center', 'center'
-        if abs(last_val - week_open) < y_span * 0.15:
+        if abs(last_val - week_open) < y_span * 0.12:
             if last_val >= week_open:
                 va_price, va_open = 'bottom', 'top'
             else:
@@ -179,10 +180,7 @@ def generate_tv_chart(symbols_data, output_path):
             ax.spines[spine].set_visible(False)
         ax.grid(axis='y', color='gray', alpha=0.1, linestyle='--')
 
-        # Horizontal separator beneath title
-        ax.plot([0, 1], [1.0, 1.0], color='gray', alpha=0.1, linewidth=0.5,
-                transform=ax.transAxes, clip_on=False)
-
+        # Header title
         ax.set_title(
             f'{title}  {fmt.format(last_val)} ({sign}{pct_diff:.2f}%)',
             color=theme_color, loc='left', fontsize=16, fontweight='bold', pad=15
@@ -191,14 +189,13 @@ def generate_tv_chart(symbols_data, output_path):
     for i, (df, week_open, title, prec) in enumerate(data_list):
         format_ax(axes[i], df, week_open, title, prec)
 
-    # --- Shared X-axis: one tick per trading day with MM/DD label ---
-    all_dates = data_list[0][0]['time']  # same dates for all symbols
+    # --- Shared X-axis: Dates at daily intervals ---
     axes[-1].xaxis.set_major_locator(mdates.DayLocator())
     axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-    plt.setp(axes[-1].xaxis.get_majorticklabels(), rotation=0, ha='center')
+    plt.setp(axes[-1].xaxis.get_majorticklabels(), rotation=0, ha='center', color='gray')
 
-    # Week label on x-axis
-    axes[-1].set_xlabel('近一週走勢（每格代表一個交易日）', color='gray', fontsize=9, alpha=0.7, labelpad=10)
+    # Watermark
+    axes[-1].set_xlabel('近一週走勢 (Intraday) • 每格線代表日期分隔', color='gray', fontsize=9, alpha=0.7, labelpad=10)
 
     plt.savefig(output_path, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
     plt.close(fig)
