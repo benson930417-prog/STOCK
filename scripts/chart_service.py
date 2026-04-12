@@ -8,16 +8,16 @@ from PIL import Image, ImageDraw, ImageFont
 
 app = FastAPI()
 
-# Configuration
+# Configuration - Using the full URLs provided by the user
 CHART_TABS = {
-    "oil": "TVC:USOIL",
-    "brent": "RUS:BR1!",
-    "bond": "TVC:US10Y",
-    "usdtwd": "FX_IDC:USDTWD",
-    "usdjpy": "OANDA:USDJPY",
-    "usdchf": "OANDA:USDCHF"
+    "oil": "https://www.tradingview.com/symbols/USOIL/?exchange=TVC&timeframe=5D",
+    "brent": "https://www.tradingview.com/symbols/RUS-BR1!/?timeframe=5D",
+    "bond": "https://www.tradingview.com/symbols/TVC-US10Y/?timeframe=5D",
+    "usdtwd": "https://www.tradingview.com/symbols/USDTWD/?exchange=FX_IDC&timeframe=5D",
+    "usdjpy": "https://www.tradingview.com/symbols/USDJPY/?exchange=OANDA&timeframe=5D",
+    "usdchf": "https://www.tradingview.com/symbols/USDCHF/?exchange=OANDA&timeframe=5D"
 }
-TEMPLATE_PATH = f"file://{os.path.join(os.getcwd(), 'scripts', 'chart_template.html')}"
+
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -26,23 +26,62 @@ browser_context = None
 browser_instance = None
 pages = {}
 
+async def clean_page(page):
+    """Hide distracting UI elements from the TradingView main site."""
+    print("  - Cleaning up page elements...")
+    try:
+        # 1. Dismiss/Hide Cookie Banners
+        await page.add_style_tag(content="""
+            div[class*="cookies-banner"], 
+            div[class*="cookie-banner"], 
+            div[id*="cookies-banner"] { display: none !important; }
+            
+            /* Hide the main site headers and sidebars */
+            header, 
+            #header-container, 
+            .tv-header, 
+            div[class*="layout__header"],
+            aside,
+            .tv-side-toolbar { display: none !important; }
+
+            /* Hide 'Upgrade' and 'Pricing' banners */
+            div[class*="upgrade-button"], 
+            div[class*="fixed-banners"],
+            div[class*="toast-notif"] { display: none !important; }
+
+            /* Hide bottom 'Ads' or disclaimer area if possible */
+            div[class*="disclaimer"] { display: none !important; }
+            
+            /* Ensure the chart area is visible */
+            div[data-container-name="performance-chart-id"] { border: none !important; }
+        """)
+        # Wait a moment for stable layout
+        await asyncio.sleep(1)
+    except Exception as e:
+        print(f"    - Page cleaning warning: {e}")
+
 async def init_browser():
     global browser_instance, browser_context, pages
-    print("🚀 Initializing persistent browser instance...")
+    print("🚀 Initializing Main Site Automation (Always-Open)...")
     p = await async_playwright().start()
     browser_instance = await p.chromium.launch(headless=True)
-    browser_context = await browser_instance.new_context(viewport={'width': 1000, 'height': 600})
+    browser_context = await browser_instance.new_context(
+        viewport={'width': 1200, 'height': 800},
+        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    )
     
-    # Pre-load tabs
-    for key, symbol in CHART_TABS.items():
+    for key, url in CHART_TABS.items():
+        print(f"  - Loading tab: {key}")
         page = await browser_context.new_page()
-        url = f"{TEMPLATE_PATH}?symbol={symbol}"
-        print(f"  - Loading tab: {key} ({symbol})")
-        await page.goto(url)
-        # Wait for the widget to initialize (approx 3s)
-        await asyncio.sleep(3)
-        pages[key] = page
-    print("✅ All tabs pre-loaded and ready.")
+        try:
+            await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            await asyncio.sleep(5) # Allow heavy JS to settle
+            await clean_page(page)
+            pages[key] = page
+        except Exception as e:
+            print(f"❌ Failed to load {url}: {e}")
+
+    print("✅ All site tabs pre-loaded and ready.")
 
 @app.on_event("startup")
 async def startup_event():
@@ -58,27 +97,36 @@ class SnapshotRequest(BaseModel):
     title: str
     price: str
     change: str
-    color: str # hex color for the theme
+    color: str
 
 @app.post("/snapshot")
 async def take_snapshot(req: SnapshotRequest):
     if req.key not in pages:
-        raise HTTPException(status_code=404, detail="Tab key not found")
+        # Fallback: attempt to reload
+        await init_browser()
+        if req.key not in pages:
+            raise HTTPException(status_code=404, detail="Tab key not found")
     
     page = pages[req.key]
     filename = f"{req.key}_chart.png"
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
-        # 1. Take raw screenshot of the chart container
-        await page.screenshot(path=filepath)
+        # Focus the element identified by the user
+        selector = 'div[data-container-name="performance-chart-id"]'
+        chart_element = page.locator(selector)
         
-        # 2. Post-process with Pillow (Overlay text)
+        # Ensure it's in view
+        await chart_element.scroll_into_view_if_needed()
+        
+        # Snapshot just the element
+        await chart_element.screenshot(path=filepath)
+        
+        # Post-process with Pillow (Overlay text)
         with Image.open(filepath) as img:
             draw = ImageDraw.Draw(img)
-            # Use a bold font if available, fallback to default
             try:
-                # Path for Ubuntu default fonts
+                # Path for Ubuntu default fonts or local fonts
                 font_path = "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc"
                 if not os.path.exists(font_path):
                     font_path = os.path.join(os.getcwd(), 'data', 'fonts', 'NotoSansTC-Regular.otf')
@@ -89,7 +137,7 @@ async def take_snapshot(req: SnapshotRequest):
                 title_font = ImageFont.load_default()
                 sub_font = ImageFont.load_default()
             
-            # Simple header overlay
+            # Header overlay
             draw.text((20, 20), req.title, font=title_font, fill=req.color)
             draw.text((20, 65), f"{req.price} ({req.change})", font=sub_font, fill="white")
             
@@ -98,8 +146,9 @@ async def take_snapshot(req: SnapshotRequest):
         return {"status": "success", "url": filename, "path": filepath}
     except Exception as e:
         print(f"❌ Error during snapshot for {req.key}: {e}")
-        # Attempt to recovery: re-init if the page is dead
-        await init_browser()
+        # Soft restart browser if things are clearly broken
+        if "page.screenshot" in str(e):
+            await init_browser()
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
