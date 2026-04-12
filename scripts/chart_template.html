@@ -29,13 +29,12 @@
             return urlParams.get(name);
         }
 
-        const symbol = getParam('symbol') || 'FX_IDC:USDTWD';
-        const interval = getParam('interval') || '15'; // 15 min for detailed 5-day view
+        const symbol = getParam('symbol') || 'TVC:USDTWD';
 
         new TradingView.widget({
             "autosize": true,
             "symbol": symbol,
-            "interval": interval,
+            "range": "5D",
             "timezone": "Asia/Taipei",
             "theme": "dark",
             "style": "3", // Area Chart

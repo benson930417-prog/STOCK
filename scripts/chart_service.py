@@ -10,9 +10,11 @@ app = FastAPI()
 
 # Configuration
 CHART_TABS = {
-    "oil": "FX:WTI",
+    "oil": "TVC:USOIL",
     "bond": "TVC:US10Y",
-    "forex": "FX_IDC:USDTWD"
+    "usdtwd": "TVC:USDTWD",
+    "usdjpy": "FX:USDJPY",
+    "usdchf": "FX:USDCHF"
 }
 TEMPLATE_PATH = f"file://{os.path.join(os.getcwd(), 'scripts', 'chart_template.html')}"
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')

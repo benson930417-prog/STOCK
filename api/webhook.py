@@ -219,28 +219,26 @@ def handle_message(event):
     elif user_msg == "匯率":
         reply_msg = get_exchange_rates()
         try:
-            d = get_yahoo_data_dict('TWD=X', precision=3)
-            color = "#EF4444" if d['raw_change'] >= 0 else "#10B981"
-            
             snapshot_url = "http://127.0.0.1:5005/snapshot"
-            payload = {
-                "key": "forex",
-                "title": "USD / TWD (美元兌台幣)",
-                "price": f"${d['price']}",
-                "change": d['change'],
-                "color": color
-            }
-            res = requests.post(snapshot_url, json=payload, timeout=5).json()
+            messages = [TextSendMessage(text=reply_msg)]
             
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
+            # 3 Quick snapshots for the 3 main pairs
+            pairs = [
+                ("usdtwd", "USD / TWD (美元兌台幣)", "TWD=X", 3),
+                ("usdjpy", "USD / JPY (美元兌日幣)", "JPY=X", 2),
+                ("usdchf", "USD / CHF (美元兌瑞郎)", "CHF=X", 4)
+            ]
             
-            line_bot_api.reply_message(
-                event.reply_token,
-                [
-                    TextSendMessage(text=reply_msg),
-                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
-                ]
-            )
+            for key, title, sym, prec in pairs:
+                d = get_yahoo_data_dict(sym, precision=prec)
+                color = "#EF4444" if d['raw_change'] >= 0 else "#10B981"
+                
+                payload = {"key": key, "title": title, "price": f"${d['price']}", "change": d['change'], "color": color}
+                res = requests.post(snapshot_url, json=payload, timeout=5).json()
+                img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
+                messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
+            
+            line_bot_api.reply_message(event.reply_token, messages)
         except Exception as e:
             print("Forex Chart generation failed:", e)
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_msg))
