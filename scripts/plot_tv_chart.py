@@ -43,8 +43,18 @@ def get_weekly_data(symbol):
     # 5d range with 1d interval gives the last 5 trading days – no timezone juggling needed
     url = f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=5d&interval=1d'
     r = requests.get(url, headers=headers, timeout=10)
-    data = r.json()['chart']['result'][0]
 
+    payload = r.json()
+    chart = payload.get('chart', {})
+    error = chart.get('error')
+    if error:
+        raise RuntimeError(f"Yahoo API error for {symbol}: {error}")
+
+    result = chart.get('result')
+    if not result:
+        raise RuntimeError(f"Yahoo API returned no result for {symbol}. HTTP {r.status_code}. Body: {r.text[:300]}")
+
+    data = result[0]
     timestamps = pd.to_datetime(data['timestamp'], unit='s')
     closes = pd.Series(data['indicators']['quote'][0]['close'])
     week_open = data['meta'].get('chartPreviousClose', closes.dropna().iloc[0])
