@@ -9,3 +9,4 @@ openpyxl>=3.0.0
 matplotlib>=3.8.0
 yfinance>=0.2.30
 kaleido>=0.1.2
+Pillow>=10.0.0
