@@ -78,10 +78,9 @@ def get_yahoo_data_text(symbol, title, emoji, precision=2):
                 f"──────────",
                 f"🕒 最新: {price_str} {currency}",
                 f"",
-                f"📊 歷史漲跌幅:",
-                get_change_str(1, "1天:"),
-                get_change_str(3, "3天:"),
-                get_change_str(5, "5天:"),
+                f"📊 近期漲跌幅:",
+                get_change_str(1, "1日:"),
+                get_change_str(5, "1週:"),
                 get_change_str(21, "1月:"),
                 get_change_str(len(valid_data)-1, "6月:")
             ]
