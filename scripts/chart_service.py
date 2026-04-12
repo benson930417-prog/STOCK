@@ -145,6 +145,23 @@ async def take_snapshot(req: SnapshotRequest):
         
         # Inject JS to wrap header + chart into a perfect container
         await page.evaluate("""() => {
+            // --- 1. Nuke stray elements from the ENTIRE page first ---
+            // Remove all TradingView logo/watermark elements
+            document.querySelectorAll([
+                'a[class*="logo"]', 'div[class*="logo"]', 'img[alt*="TradingView"]',
+                'div[class*="branding"]', 'a[class*="label__link"]',
+                'div[class*="watermark"]', 'span[class*="watermark"]',
+                'div[class*="tv-logo"]'
+            ].join(',')).forEach(el => el.remove());
+            
+            // Remove notification / action icons
+            document.querySelectorAll([
+                'button[class*="notification"]', 'div[class*="notification"]',
+                'button[class*="iconButton"]', 'a[class*="iconButton"]',
+                'div[class*="rightGroup"]', 'div[class*="actionIcons"]'
+            ].join(',')).forEach(el => el.remove());
+            
+            // --- 2. Find header and chart ---
             const header = document.querySelector('div[class*="symbol-header-container"]') || 
                            document.querySelector('div[id*="symbol-header"]') ||
                            document.querySelector('h1')?.parentElement;
@@ -156,13 +173,43 @@ async def take_snapshot(req: SnapshotRequest):
                 return;
             }
             
-            // Remove vertical gaps between them
+            // --- 3. Clean the header: remove any stray SVGs/links that aren't part of the symbol info ---
+            // Find all siblings of the header inside its parent and remove non-header junk
+            const headerParent = header.parentElement;
+            if (headerParent) {
+                Array.from(headerParent.children).forEach(child => {
+                    if (child !== header && child !== chart && !child.querySelector('h1') && 
+                        !child.textContent.includes('USD') && !child.textContent.includes('%')) {
+                        child.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Remove stray SVGs inside the header that are bigger logos (not small indicator icons)
+            header.querySelectorAll('svg').forEach(svg => {
+                const rect = svg.getBoundingClientRect();
+                if (rect.width > 30 || rect.height > 30) {
+                    svg.remove();
+                }
+            });
+            
+            // Remove any <a> tags that link to tradingview.com (logo links)
+            header.querySelectorAll('a[href*="tradingview.com"]').forEach(el => el.remove());
+            
+            // --- 4. Remove watermark from inside the chart canvas area ---
+            chart.querySelectorAll([
+                'a[class*="label__link"]', 'div[class*="branding"]',
+                'span[class*="brand"]', 'a[href*="tradingview.com"]',
+                'div[class*="watermark"]'
+            ].join(',')).forEach(el => el.remove());
+            
+            // --- 5. Set up spacing ---
             header.style.setProperty('margin-bottom', '0', 'important');
             header.style.setProperty('padding-bottom', '5px', 'important');
             chart.style.setProperty('margin-top', '0', 'important');
             chart.style.setProperty('padding-top', '0', 'important');
             
-            // Create wrapper if not already exists
+            // --- 6. Create wrapper if not already exists ---
             let wrapper = document.getElementById('perfect-capture-wrapper');
             if (!wrapper) {
                 wrapper = document.createElement('div');
@@ -172,13 +219,14 @@ async def take_snapshot(req: SnapshotRequest):
                 wrapper.style.display = 'inline-block';
                 wrapper.style.width = '100%';
                 wrapper.style.boxSizing = 'border-box';
+                wrapper.style.overflow = 'hidden';
                 
                 header.parentNode.insertBefore(wrapper, header);
                 wrapper.appendChild(header);
                 wrapper.appendChild(chart);
             }
             
-            // Force dark text on white background (to avoid ghost labels in light mode)
+            // --- 7. Force dark text on white background ---
             header.querySelectorAll('*').forEach(el => {
                 const style = window.getComputedStyle(el);
                 if (style.color === 'rgb(255, 255, 255)' || style.color === 'white') {
