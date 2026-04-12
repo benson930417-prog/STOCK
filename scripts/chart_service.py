@@ -1,10 +1,8 @@
 import os
 import asyncio
-from io import BytesIO
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from playwright.async_api import async_playwright
-from PIL import Image
 
 app = FastAPI()
 
@@ -17,12 +15,6 @@ CHART_TABS = {
     "usdjpy": "https://www.tradingview.com/symbols/USDJPY/?exchange=OANDA&timeframe=5D",
     "usdchf": "https://www.tradingview.com/symbols/USDCHF/?exchange=OANDA&timeframe=5D"
 }
-
-# Crop settings (pixels to trim from each edge)
-CROP_TOP = 0
-CROP_BOTTOM = 40   # remove TradingView watermark
-CROP_LEFT = 0
-CROP_RIGHT = 0
 
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -52,7 +44,7 @@ async def init_browser():
     p = await async_playwright().start()
     browser_instance = await p.chromium.launch(headless=True)
     browser_context = await browser_instance.new_context(
-        viewport={'width': 600, 'height': 700},
+        viewport={'width': 600, 'height': 800},
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         timezone_id="Asia/Taipei"
     )
@@ -94,22 +86,55 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
-        # Find the chart element and screenshot it directly
-        chart = page.locator('div[data-container-name="performance-chart-id"]')
-        raw_bytes = await chart.screenshot()
+        # Use JS to find the exact pixel bounds of title + chart (no watermark)
+        clip = await page.evaluate("""() => {
+            // 1. Find the symbol title header (e.g. "BR1! 99.47 USD/BLL +4.47 +4.71%")
+            const header = document.querySelector('div[class*="symbolHeader-"]') ||
+                           document.querySelector('div[class*="symbol-header"]') ||
+                           document.querySelector('h1')?.parentElement;
+            
+            // 2. Find the chart container
+            const chartContainer = document.querySelector('div[data-container-name="performance-chart-id"]');
+            
+            if (!header || !chartContainer) return null;
+            
+            // 3. Find the actual chart canvas(es) inside the container
+            //    The bottom of the lowest canvas = bottom of the graph (before watermark)
+            const canvases = chartContainer.querySelectorAll('canvas');
+            let canvasBottom = 0;
+            canvases.forEach(c => {
+                const r = c.getBoundingClientRect();
+                if (r.bottom > canvasBottom) canvasBottom = r.bottom;
+            });
+            
+            // Fallback: if no canvas found, use the container but trim 50px
+            if (canvasBottom === 0) {
+                canvasBottom = chartContainer.getBoundingClientRect().bottom - 50;
+            }
+            
+            const hRect = header.getBoundingClientRect();
+            
+            // Add small padding
+            const pad = 10;
+            const top = Math.max(0, hRect.top - pad);
+            const bottom = canvasBottom + pad;
+            
+            return {
+                x: 0,
+                y: top,
+                width: 600,
+                height: bottom - top
+            };
+        }""")
         
-        # Crop with Pillow to remove watermark / edges
-        img = Image.open(BytesIO(raw_bytes))
-        w, h = img.size
-        cropped = img.crop((
-            CROP_LEFT,
-            CROP_TOP,
-            w - CROP_RIGHT,
-            h - CROP_BOTTOM
-        ))
-        cropped.save(filepath)
+        if clip:
+            await page.screenshot(path=filepath, clip=clip)
+            print(f"  ✅ Snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
+        else:
+            # Fallback: just screenshot viewport
+            await page.screenshot(path=filepath)
+            print(f"  ⚠️ Fallback screenshot saved: {filename}")
         
-        print(f"  ✅ Snapshot saved: {filename} ({cropped.size[0]}x{cropped.size[1]})")
         return {"status": "success", "url": filename, "path": filepath}
     except Exception as e:
         print(f"❌ Error during snapshot for {req.key}: {e}")
