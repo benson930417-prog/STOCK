@@ -91,6 +91,31 @@ def get_yahoo_data_text(symbol, title, emoji, precision=2):
     except Exception as e:
         return f"{emoji} {title}\n──────────\n無法取得目前報價資訊，請稍後再試。"
 
+def get_yahoo_data_dict(symbol, precision=2):
+    """Helper to get raw data for the screenshot overlay."""
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=5d&interval=1d', headers=headers, timeout=5)
+        if r.status_code == 200:
+            data = r.json()
+            result = data['chart']['result'][0]
+            meta = result['meta']
+            price = meta['regularMarketPrice']
+            
+            timestamps = result['timestamp']
+            closes = result['indicators']['quote'][0]['close']
+            valid_data = [(ts, c) for ts, c in zip(timestamps, closes) if c is not None]
+            
+            old_price = valid_data[-2][1] if len(valid_data) >= 2 else price
+            change = price - old_price
+            change_pct = (change / old_price) * 100
+            
+            sign = "+" if change >= 0 else ""
+            return {"price": f"{price:.{precision}f}", "change": f"{sign}{change_pct:.2f}%", "raw_change": change}
+    except:
+        pass
+    return {"price": "0.00", "change": "0.00%", "raw_change": 0}
+
 def get_oil_price():
     parts = []
     parts.append(get_yahoo_data_text('CL=F', 'WTI 輕原油', '🛢️', precision=2))
@@ -134,12 +159,22 @@ def handle_message(event):
     if user_msg == "油價":
         reply_msg = get_oil_price()
         try:
-            from scripts.plot_tv_chart import generate_tv_chart
-            img_path = '/home/ubuntu/STOCK/data/images/oil_chart.png'
-            generate_tv_chart([('CL=F', 'WTI 輕原油', 2), ('BZ=F', '布蘭特原油', 2)], img_path)
+            # 1. Fetch latest data for overlay
+            d = get_yahoo_data_dict('CL=F', precision=2)
+            color = "#10B981" if d['raw_change'] < 0 else "#EF4444" # Oil down is green convention sometimes, but here we use price-up=red
             
-            # The static domain you locked in for duckdns
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/oil_chart.png?t={int(time.time())}"
+            # 2. Call local chart service for instant snapshot
+            snapshot_url = "http://127.0.0.1:5005/snapshot"
+            payload = {
+                "key": "oil",
+                "title": "WTI Crude Oil (WTI 輕原油)",
+                "price": f"${d['price']}",
+                "change": d['change'],
+                "color": color
+            }
+            res = requests.post(snapshot_url, json=payload, timeout=5).json()
+            
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
             
             line_bot_api.reply_message(
                 event.reply_token,
@@ -150,18 +185,25 @@ def handle_message(event):
             )
         except Exception as e:
             print("Chart generation failed:", e)
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=reply_msg + f"\n\n[系統錯誤] 繪圖失敗: {type(e).__name__} - {str(e)}")
-            )
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_msg))
+
     elif user_msg in ["債卷", "債券"]:
         reply_msg = get_10yf_price()
         try:
-            from scripts.plot_tv_chart import generate_tv_chart
-            img_path = '/home/ubuntu/STOCK/data/images/bond_chart.png'
-            generate_tv_chart([('^TNX', '10-Year Yield (10年期公債殖利率)', 3)], img_path)
+            d = get_yahoo_data_dict('^TNX', precision=3)
+            color = "#EF4444" if d['raw_change'] >= 0 else "#10B981"
             
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/bond_chart.png?t={int(time.time())}"
+            snapshot_url = "http://127.0.0.1:5005/snapshot"
+            payload = {
+                "key": "bond",
+                "title": "US 10Y Yield (10年期公債殖利率)",
+                "price": f"{d['price']}%",
+                "change": d['change'],
+                "color": color
+            }
+            res = requests.post(snapshot_url, json=payload, timeout=5).json()
+            
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
             
             line_bot_api.reply_message(
                 event.reply_token,
@@ -172,18 +214,25 @@ def handle_message(event):
             )
         except Exception as e:
             print("Bond Chart generation failed:", e)
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=reply_msg + f"\n\n[系統錯誤] 繪圖失敗: {type(e).__name__} - {str(e)}")
-            )
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_msg))
+
     elif user_msg == "匯率":
         reply_msg = get_exchange_rates()
         try:
-            from scripts.plot_tv_chart import generate_tv_chart
-            img_path = '/home/ubuntu/STOCK/data/images/forex_chart.png'
-            generate_tv_chart([('TWD=X', '美元 / 台幣', 4), ('CHF=X', '美元 / 瑞郎', 4), ('JPY=X', '美元 / 日幣', 2)], img_path)
+            d = get_yahoo_data_dict('TWD=X', precision=3)
+            color = "#EF4444" if d['raw_change'] >= 0 else "#10B981"
             
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/forex_chart.png?t={int(time.time())}"
+            snapshot_url = "http://127.0.0.1:5005/snapshot"
+            payload = {
+                "key": "forex",
+                "title": "USD / TWD (美元兌台幣)",
+                "price": f"${d['price']}",
+                "change": d['change'],
+                "color": color
+            }
+            res = requests.post(snapshot_url, json=payload, timeout=5).json()
+            
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
             
             line_bot_api.reply_message(
                 event.reply_token,
@@ -194,10 +243,7 @@ def handle_message(event):
             )
         except Exception as e:
             print("Forex Chart generation failed:", e)
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=reply_msg + f"\n\n[系統錯誤] 繪圖失敗: {type(e).__name__} - {str(e)}")
-            )
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_msg))
     elif user_msg.lower() == "id":
         reply_parts = [f"User ID: {event.source.user_id}"]
         if event.source.type == "group":

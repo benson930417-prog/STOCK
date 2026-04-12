@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingView Snapshot Template</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0a0e17;
+        }
+        #chart-container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="chart-container"></div>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script type="text/javascript">
+        // Helper to get URL parameters
+        function getParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        const symbol = getParam('symbol') || 'FX_IDC:USDTWD';
+        const interval = getParam('interval') || '15'; // 15 min for detailed 5-day view
+
+        new TradingView.widget({
+            "autosize": true,
+            "symbol": symbol,
+            "interval": interval,
+            "timezone": "Asia/Taipei",
+            "theme": "dark",
+            "style": "3", // Area Chart
+            "locale": "zh_TW",
+            "toolbar_bg": "#0a0e17",
+            "enable_publishing": false,
+            "hide_top_toolbar": true,
+            "hide_legend": true,
+            "save_image": false,
+            "container_id": "chart-container",
+            "disabled_features": [
+                "header_widget",
+                "left_toolbar",
+                "footer_widget",
+                "timeframes_toolbar",
+                "volume_force_overlay",
+                "context_menus",
+                "control_bar"
+            ],
+            "overrides": {
+                "paneProperties.background": "#0a0e17",
+                "paneProperties.vertGridProperties.color": "rgba(42, 46, 57, 0.1)",
+                "paneProperties.horzGridProperties.color": "rgba(42, 46, 57, 0.1)",
+                "mainSeriesProperties.areaStyle.color1": "rgba(33, 150, 243, 0.28)",
+                "mainSeriesProperties.areaStyle.color2": "rgba(33, 150, 243, 0.05)",
+                "mainSeriesProperties.areaStyle.linecolor": "#2196f3",
+                "mainSeriesProperties.areaStyle.linewidth": 2
+            }
+        });
+    </script>
+</body>
+</html>
