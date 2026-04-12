@@ -39,39 +39,39 @@ async def clean_page(page):
             /* Hide Sidebars */
             aside, .tv-side-toolbar { display: none !important; }
 
-            /* Hide the sticky top ticker bar (duplicate of main ticker) */
+            /* Hide the sticky top ticker bar */
             div[class*="pageHead-"] { display: none !important; }
 
-            /* Hide breadcrumbs navigation */
-            nav[aria-label="Breadcrumbs"] { display: none !important; }
+            /* Hide Breadcrumbs */
+            nav[aria-label="Breadcrumbs"], div[class*="breadcrumb"] { display: none !important; }
 
-            /* Hide the exchange/contract selector row (Continuous contract, BR1!, Russian Exchange, etc.) */
+            /* Hide the exchange/contract selector row */
             div[class*="buttonsRow-"], div[class*="quotesRow-"] { display: none !important; }
 
-            /* Hide Tab Bar (Overview, News, Community, Technicals, etc.) */
-            div[class*="tabsRow-"], div[class*="tabs-"] { display: none !important; }
+            /* Hide Tab Bar (Overview, News, etc.) */
+            div[class*="tabsRow-"], div[class*="tabs-"], div[role="tablist"] { display: none !important; }
 
-            /* Hide chart action buttons (Full chart, Snapshot, Get widget, Embed) */
+            /* Hide chart action buttons */
             a[aria-label="Full chart"], button[aria-label="Take a snapshot"], a[aria-label="Get widget"],
             a[class*="containerLink-"] { display: none !important; }
 
-            /* Hide range selector buttons (1D, 5D, 1M, etc.) */
+            /* Hide range selector buttons (1D, 5D, etc.) */
             div:has(> button[class*="rangeButton-"]) { display: none !important; }
 
-            /* Hide the "Chart >" section header above the chart */
+            /* Hide "Chart >" section header */
             div[class*="sectionTitle-"] { display: none !important; }
 
-            /* Hide the TradingView Watermark Logo (aggressive) */
+            /* Hide TradingView Watermark Logo */
             a[class*="label__link-"], div[class*="branding"],
             span[class*="brand"], a[href*="tradingview.com"][class*="label"] { display: none !important; }
 
-            /* Hide quotes subtitle line (e.g. "As of today at ...") */
+            /* Hide quotes subtitle line */
             div[class*="quotesSubLine-"] { display: none !important; }
 
-            /* Hide EVERYTHING below the chart (Contract highlights, etc.) */
+            /* Hide EVERYTHING below the chart */
             div[data-container-name="performance-chart-id"] ~ * { display: none !important; }
 
-            /* Trim chart container margins */
+            /* Remove chart container internal margins */
             div[data-container-name="performance-chart-id"] { 
                 padding-bottom: 0 !important; 
                 margin-bottom: 0 !important; 
@@ -88,7 +88,7 @@ async def init_browser():
     p = await async_playwright().start()
     browser_instance = await p.chromium.launch(headless=True)
     browser_context = await browser_instance.new_context(
-        viewport={'width': 1200, 'height': 800},
+        viewport={'width': 1200, 'height': 550},
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         timezone_id="Asia/Taipei"
     )
@@ -129,32 +129,60 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
-        # Scroll to top so the title (h1) is in the visible layout for measurement
-        await page.evaluate("window.scrollTo(0, 0)")
-        await asyncio.sleep(0.3)
+        print(f"  - Preparing perfect capture for {req.key}...")
         
-        # Measure exact positions of the title and chart
-        title_el = page.locator('h1').first
-        chart_el = page.locator('div[data-container-name="performance-chart-id"]')
+        # Inject JS to wrap header + chart into a perfect container
+        await page.evaluate("""() => {
+            const header = document.querySelector('div[class*="symbol-header-container"]') || 
+                           document.querySelector('div[id*="symbol-header"]') ||
+                           document.querySelector('h1')?.parentElement;
+            
+            const chart = document.querySelector('div[data-container-name="performance-chart-id"]');
+            
+            if (!header || !chart) {
+                console.error("Perfect Capture Error: Header or Chart not found", {header, chart});
+                return;
+            }
+            
+            // Remove vertical gaps between them
+            header.style.setProperty('margin-bottom', '0', 'important');
+            header.style.setProperty('padding-bottom', '5px', 'important');
+            chart.style.setProperty('margin-top', '0', 'important');
+            chart.style.setProperty('padding-top', '0', 'important');
+            
+            // Create wrapper if not already exists
+            let wrapper = document.getElementById('perfect-capture-wrapper');
+            if (!wrapper) {
+                wrapper = document.createElement('div');
+                wrapper.id = 'perfect-capture-wrapper';
+                wrapper.style.padding = '15px';
+                wrapper.style.backgroundColor = 'white';
+                wrapper.style.display = 'inline-block';
+                wrapper.style.width = '100%';
+                wrapper.style.boxSizing = 'border-box';
+                
+                header.parentNode.insertBefore(wrapper, header);
+                wrapper.appendChild(header);
+                wrapper.appendChild(chart);
+            }
+            
+            // Force dark text on white background (to avoid ghost labels in light mode)
+            header.querySelectorAll('*').forEach(el => {
+                const style = window.getComputedStyle(el);
+                if (style.color === 'rgb(255, 255, 255)' || style.color === 'white') {
+                    el.style.setProperty('color', '#131722', 'important');
+                }
+            });
+        }""")
         
-        title_box = await title_el.bounding_box()
-        chart_box = await chart_el.bounding_box()
+        # Target the specifically created wrapper
+        target_selector = '#perfect-capture-wrapper'
+        target_el = page.locator(target_selector)
         
-        if not title_box or not chart_box:
-            raise RuntimeError("Could not locate title or chart elements on page")
+        # Take the screenshot of just that element
+        await target_el.screenshot(path=filepath)
         
-        # Clip precisely from top of title to bottom of chart, with small padding
-        pad = 10
-        clip = {
-            "x": 0,
-            "y": max(0, title_box["y"] - pad),
-            "width": 1200,
-            "height": (chart_box["y"] + chart_box["height"] + pad) - max(0, title_box["y"] - pad)
-        }
-        
-        await page.screenshot(path=filepath, clip=clip)
-        
-        print(f"  ✅ Snapshot saved: {filename} (clip: {clip})")
+        print(f"  ✅ Perfect Snapshot saved: {filename}")
         return {"status": "success", "url": filename, "path": filepath}
     except Exception as e:
         print(f"❌ Error during snapshot for {req.key}: {e}")
