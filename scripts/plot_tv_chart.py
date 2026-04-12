@@ -39,8 +39,8 @@ plt.style.use('dark_background')
 def get_weekly_data(symbol):
     """Fetch 1 week (5 days) of 60-minute intraday data."""
     headers = {'User-Agent': 'Mozilla/5.0'}
-    # Use 60m interval for detailed weekly view (approx 35-40 points)
-    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=5d&interval=60m'
+    # Use 7d range to ensure we capture Monday even on weekends
+    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=7d&interval=60m'
     r = requests.get(url, headers=headers, timeout=10)
 
     payload = r.json()
