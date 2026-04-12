@@ -39,8 +39,8 @@ plt.style.use('dark_background')
 def get_weekly_data(symbol):
     """Fetch enough data (10d) and normalize to Taipei time."""
     headers = {'User-Agent': 'Mozilla/5.0'}
-    # Fetch 10 days at 15m interval for high-resolution weekly detail
-    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=10d&interval=15m'
+    # Fetch 10 days to ensure we have at least 5 trading days
+    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=10d&interval=60m'
     r = requests.get(url, headers=headers, timeout=10)
 
     payload = r.json()
