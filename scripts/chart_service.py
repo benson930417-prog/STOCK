@@ -49,6 +49,14 @@ async def clean_page(page):
             div[class*="fixed-banners"],
             div[class*="toast-notif"] { display: none !important; }
 
+            /* Hide extra chart UI elements requested by user */
+            a[aria-label="Full chart"],
+            button[aria-label="Take a snapshot"],
+            a[aria-label="Get widget"],
+            a[class*="containerLink-"],
+            a[aria-label*="TradingView"][class*="label__link"],
+            div:has(> button[class*="rangeButton-"]) { display: none !important; }
+
             /* Hide bottom 'Ads' or disclaimer area if possible */
             div[class*="disclaimer"] { display: none !important; }
             
