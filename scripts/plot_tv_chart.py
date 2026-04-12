@@ -192,10 +192,7 @@ def generate_tv_chart(symbols_data, output_path):
     # --- Shared X-axis: Dates at daily intervals ---
     axes[-1].xaxis.set_major_locator(mdates.DayLocator())
     axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-    plt.setp(axes[-1].xaxis.get_majorticklabels(), rotation=0, ha='center', color='gray', fontsize=14, fontweight='bold')
-
-    # Watermark
-    axes[-1].set_xlabel('近一週走勢 (Intraday) • 每格線代表日期分隔', color='gray', fontsize=12, alpha=0.7, labelpad=15)
+    plt.setp(axes[-1].xaxis.get_majorticklabels(), rotation=0, ha='center', color='white', fontsize=14, fontweight='bold')
 
     plt.savefig(output_path, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
     plt.close(fig)
