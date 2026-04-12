@@ -108,6 +108,10 @@ def _overlay_title(image_path, title):
     img = Image.open(image_path).convert("RGB")
     w, h = img.size
 
+    # Erase the TradingView logo drawn on the canvas at the bottom-left corner
+    draw_img = ImageDraw.Draw(img)
+    draw_img.rectangle([(0, h - 45), (160, h)], fill="#FFFFFF")
+
     # Title bar dimensions
     bar_height = 70
     padding_x = 16
