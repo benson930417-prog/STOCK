@@ -17,3 +17,7 @@ streamlit_boot.log
 # OS
 .DS_Store
 Thumbs.db
+
+# Generated Assets
+data/images/
+data/fonts/
