@@ -61,9 +61,21 @@ async def clean_page(page):
             /* Hide "Chart >" section header */
             div[class*="sectionTitle-"] { display: none !important; }
 
-            /* Hide TradingView Watermark Logo */
+            /* Hide TradingView Watermark Logo (desktop + mobile) */
             a[class*="label__link-"], div[class*="branding"],
-            span[class*="brand"], a[href*="tradingview.com"][class*="label"] { display: none !important; }
+            span[class*="brand"], a[href*="tradingview.com"][class*="label"],
+            div[class*="tradingview-widget"], div[class*="tv-logo"],
+            a[class*="logo"], img[alt*="TradingView"],
+            div[class*="watermark"], span[class*="watermark"] { display: none !important; }
+
+            /* Hide notification / settings icons that appear at narrow widths */
+            button[class*="notification"], div[class*="notification"],
+            button[aria-label*="notification"], button[aria-label*="Notification"],
+            div[class*="rightGroup-"], div[class*="actionIcons-"],
+            button[class*="iconButton-"], a[class*="iconButton-"] { display: none !important; }
+
+            /* Nuclear: hide any stray SVG logos / icons in the header area */
+            #perfect-capture-wrapper svg { max-height: 20px; }
 
             /* Hide quotes subtitle line */
             div[class*="quotesSubLine-"] { display: none !important; }
@@ -88,7 +100,7 @@ async def init_browser():
     p = await async_playwright().start()
     browser_instance = await p.chromium.launch(headless=True)
     browser_context = await browser_instance.new_context(
-        viewport={'width': 480, 'height': 550},
+        viewport={'width': 600, 'height': 550},
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         timezone_id="Asia/Taipei"
     )
