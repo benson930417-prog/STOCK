@@ -174,9 +174,16 @@ def handle_message(event):
                 
                 payload = {"key": key, "title": title, "price": f"${d['price']}", "change": d['change'], "color": color}
                 res = requests.post(snapshot_url, json=payload, timeout=5).json()
+                
+                # Sync price from browser to text message
+                if 'price' in res and key == "oil":
+                    reply_msg = re.sub(r'🕒 最新: .*', f"🕒 最新: {res['price']} (TradingView)", reply_msg)
+                
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             
+            # Update text message with synced data
+            messages[0] = TextSendMessage(text=reply_msg)
             line_bot_api.reply_message(event.reply_token, messages)
         except Exception as e:
             print("Oil Chart generation failed:", e)
@@ -197,6 +204,10 @@ def handle_message(event):
                 "color": color
             }
             res = requests.post(snapshot_url, json=payload, timeout=5).json()
+            
+            # Sync price from browser to text message
+            if 'price' in res:
+                reply_msg = re.sub(r'🕒 最新: .*', f"🕒 最新: {res['price']} (TradingView)", reply_msg)
             
             img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
             
@@ -230,9 +241,16 @@ def handle_message(event):
                 
                 payload = {"key": key, "title": title, "price": f"${d['price']}", "change": d['change'], "color": color}
                 res = requests.post(snapshot_url, json=payload, timeout=5).json()
+                
+                # Sync USD/TWD price for text message
+                if 'price' in res and key == "usdtwd":
+                    reply_msg = re.sub(r'💵 美元兌台幣: .*', f"💵 美元兌台幣: {res['price']} (TradingView)", reply_msg)
+                
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             
+            # Update the text message with synced TWD data
+            messages[0] = TextSendMessage(text=reply_msg)
             line_bot_api.reply_message(event.reply_token, messages)
         except Exception as e:
             print("Forex Chart generation failed:", e)
