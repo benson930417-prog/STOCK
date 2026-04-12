@@ -162,18 +162,10 @@ def handle_message(event):
             snapshot_url = "http://127.0.0.1:5005/snapshot"
             messages = [TextSendMessage(text=reply_msg)]
             
-            # WTI and Brent
-            pairs = [
-                ("oil", "WTI Crude Oil (WTI 輕原油)", "CL=F"),
-                ("brent", "Brent Crude Oil (布蘭特原油)", "BZ=F")
-            ]
-            
-            for key, title, sym in pairs:
-                d = get_yahoo_data_dict(sym, precision=2)
-                color = "#EF4444" if d['raw_change'] >= 0 else "#10B981"
-                
-                payload = {"key": key, "title": title, "price": f"${d['price']}", "change": d['change'], "color": color}
-                res = requests.post(snapshot_url, json=payload, timeout=5).json()
+            # WTI and Brent - chart_service scrapes data from TradingView directly
+            for key in ["oil", "brent"]:
+                payload = {"key": key}
+                res = requests.post(snapshot_url, json=payload, timeout=30).json()
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             
@@ -185,18 +177,9 @@ def handle_message(event):
     elif user_msg in ["債卷", "債券"]:
         reply_msg = get_10yf_price()
         try:
-            d = get_yahoo_data_dict('^TNX', precision=3)
-            color = "#EF4444" if d['raw_change'] >= 0 else "#10B981"
-            
             snapshot_url = "http://127.0.0.1:5005/snapshot"
-            payload = {
-                "key": "bond",
-                "title": "US 10Y Yield (10年期公債殖利率)",
-                "price": f"{d['price']}%",
-                "change": d['change'],
-                "color": color
-            }
-            res = requests.post(snapshot_url, json=payload, timeout=5).json()
+            payload = {"key": "bond"}
+            res = requests.post(snapshot_url, json=payload, timeout=30).json()
             
             img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
             
@@ -217,19 +200,10 @@ def handle_message(event):
             snapshot_url = "http://127.0.0.1:5005/snapshot"
             messages = [TextSendMessage(text=reply_msg)]
             
-            # 3 Quick snapshots for the 3 main pairs
-            pairs = [
-                ("usdtwd", "USD / TWD (美元兌台幣)", "TWD=X", 3),
-                ("usdjpy", "USD / JPY (美元兌日幣)", "JPY=X", 2),
-                ("usdchf", "USD / CHF (美元兌瑞郎)", "CHF=X", 4)
-            ]
-            
-            for key, title, sym, prec in pairs:
-                d = get_yahoo_data_dict(sym, precision=prec)
-                color = "#EF4444" if d['raw_change'] >= 0 else "#10B981"
-                
-                payload = {"key": key, "title": title, "price": f"${d['price']}", "change": d['change'], "color": color}
-                res = requests.post(snapshot_url, json=payload, timeout=5).json()
+            # 3 Quick snapshots - chart_service scrapes data from TradingView directly
+            for key in ["usdtwd", "usdjpy", "usdchf"]:
+                payload = {"key": key}
+                res = requests.post(snapshot_url, json=payload, timeout=30).json()
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             

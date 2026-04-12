@@ -89,12 +89,47 @@ async def shutdown_event():
     if browser_instance:
         await browser_instance.close()
 
+async def scrape_ticker_data(page):
+    """Scrape title, price, change, and color directly from TradingView page DOM."""
+    data = {"title": "", "price": "", "change": "", "color": "#333333"}
+    try:
+        # Title from h1
+        h1 = page.locator('h1').first
+        data["title"] = (await h1.text_content()).strip() if await h1.count() else ""
+        
+        # Price from the dedicated data-qa-id element
+        price_el = page.locator('span[data-qa-id="symbol-last-value"]').first
+        data["price"] = (await price_el.text_content()).strip() if await price_el.count() else ""
+        
+        # Change values (absolute + percentage) from js-symbol-change-pt spans
+        change_spans = page.locator('span.js-symbol-change-pt')
+        change_count = await change_spans.count()
+        change_parts = []
+        for i in range(change_count):
+            txt = (await change_spans.nth(i).text_content()).strip()
+            if txt:
+                change_parts.append(txt)
+        data["change"] = "  ".join(change_parts)  # e.g. "+0.034  +0.79%"
+        
+        # Color from change direction container class (up = green, down = red)
+        direction_div = page.locator('div.js-symbol-change-direction').first
+        if await direction_div.count():
+            cls = await direction_div.get_attribute('class') or ""
+            if 'up' in cls.lower().split('-')[0] or any(part.startswith('up') for part in cls.split()):
+                # Check for 'up-' prefix in any class token
+                data["color"] = "#089981"  # TradingView green
+            else:
+                data["color"] = "#F23645"  # TradingView red
+            # More robust: check if any class token starts with 'up'
+            tokens = cls.split()
+            is_up = any(t.startswith('up-') or t == 'up' for t in tokens)
+            data["color"] = "#089981" if is_up else "#F23645"
+    except Exception as e:
+        print(f"    - Ticker scrape warning: {e}")
+    return data
+
 class SnapshotRequest(BaseModel):
     key: str
-    title: str
-    price: str
-    change: str
-    color: str
 
 @app.post("/snapshot")
 async def take_snapshot(req: SnapshotRequest):
@@ -108,6 +143,14 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
+        # Reload the page to get fresh data
+        await page.reload(wait_until="networkidle", timeout=60000)
+        await clean_page(page)
+        
+        # Scrape live ticker data directly from TradingView DOM
+        ticker = await scrape_ticker_data(page)
+        print(f"  - Scraped [{req.key}]: {ticker['title']} | {ticker['price']} | {ticker['change']} | {ticker['color']}")
+        
         selector = 'div[data-container-name="performance-chart-id"]'
         chart_element = page.locator(selector)
         await chart_element.scroll_into_view_if_needed()
@@ -140,13 +183,13 @@ async def take_snapshot(req: SnapshotRequest):
                 title_font = ImageFont.load_default()
                 price_font = ImageFont.load_default()
             
-            # Draw Title and Price in the Header area
-            draw.text((25, 15), req.title, font=title_font, fill='#1a1a1a')
-            draw.text((25, 58), f"{req.price}  ", font=price_font, fill='#333333')
+            # Draw Title and Price in the Header area (from TradingView)
+            draw.text((25, 15), ticker["title"], font=title_font, fill='#1a1a1a')
+            draw.text((25, 58), f"{ticker['price']}  ", font=price_font, fill='#333333')
             
-            # Draw Change (color coded)
-            p_width = draw.textlength(f"{req.price}  ", font=price_font)
-            draw.text((25 + p_width, 58), req.change, font=price_font, fill=req.color)
+            # Draw Change (color coded from TradingView direction)
+            p_width = draw.textlength(f"{ticker['price']}  ", font=price_font)
+            draw.text((25 + p_width, 58), ticker["change"], font=price_font, fill=ticker["color"])
             
             final_img.save(filepath)
             
