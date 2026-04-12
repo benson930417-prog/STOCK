@@ -60,9 +60,7 @@ HIDE_CSS = """
     a[aria-label="Full chart"], button[aria-label="Take a snapshot"], a[aria-label="Get widget"],
     div:has(> button[class*="rangeButton-"]),
     div[data-container-name="performance-chart-id"] ~ *,
-    div[class*="symbolHeader-"], div[class*="symbol-header"],
-    a[href*="tradingview.com"], a[aria-label*="TradingView"],
-    div[class*="watermark"], a[class*="tv-logo"], a[class*="logo"] {
+    div[class*="symbolHeader-"], div[class*="symbol-header"] {
         display: none !important;
     }
     body { overflow: hidden !important; }
@@ -107,10 +105,6 @@ def _overlay_title(image_path, title):
     """Draw a Chinese title bar on top of the chart screenshot."""
     img = Image.open(image_path).convert("RGB")
     w, h = img.size
-
-    # Erase the TradingView logo drawn on the canvas at the bottom-left corner
-    draw_img = ImageDraw.Draw(img)
-    draw_img.rectangle([(0, h - 45), (160, h)], fill="#FFFFFF")
 
     # Title bar dimensions
     bar_height = 70
