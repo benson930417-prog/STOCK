@@ -143,7 +143,7 @@ def generate_tv_chart(symbols_data, output_path):
         y_span = max(y_max - y_min, 0.001)
 
         va_price, va_open = 'center', 'center'
-        if abs(last_val - week_open) < y_span * 0.12:
+        if abs(last_val - week_open) < y_span * 0.15:
             if last_val >= week_open:
                 va_price, va_open = 'bottom', 'top'
             else:
@@ -152,27 +152,27 @@ def generate_tv_chart(symbols_data, output_path):
         fmt = f"{{:.{prec}f}}"
 
         # Current price box
-        bbox_price = dict(boxstyle="round,pad=0.2", fc=theme_color, ec=theme_color, alpha=1.0)
+        bbox_price = dict(boxstyle="round,pad=0.3", fc=theme_color, ec=theme_color, alpha=1.0)
         ax.text(
             1.0, last_val,
             f' {fmt.format(last_val)} \n {sign}{pct_diff:.2f}% ',
             color='white', va=va_price, ha='left',
-            fontsize=9, fontweight='bold',
+            fontsize=12, fontweight='bold',
             bbox=bbox_price, transform=trans, clip_on=False, zorder=10
         )
 
         # Week-open reference box
-        bbox_open = dict(boxstyle="round,pad=0.3", fc="#4a4a5a", ec="#4a4a5a", alpha=1.0)
+        bbox_open = dict(boxstyle="round,pad=0.4", fc="#4a4a5a", ec="#4a4a5a", alpha=1.0)
         ax.text(
             1.0, week_open,
             f' 週初開盤 \n {fmt.format(week_open)} ',
             color='white', va=va_open, ha='left',
-            fontsize=9, fontweight='bold',
+            fontsize=12, fontweight='bold',
             bbox=bbox_open, transform=trans, clip_on=False, zorder=10
         )
 
         # --- Axis styling ---
-        ax.tick_params(labelbottom=True, bottom=True, color='gray', labelsize=8)
+        ax.tick_params(labelbottom=True, bottom=True, color='gray', labelsize=12)
         ax.yaxis.tick_right()
         ax.yaxis.set_label_position('right')
 
@@ -183,7 +183,7 @@ def generate_tv_chart(symbols_data, output_path):
         # Header title
         ax.set_title(
             f'{title}  {fmt.format(last_val)} ({sign}{pct_diff:.2f}%)',
-            color=theme_color, loc='left', fontsize=16, fontweight='bold', pad=15
+            color=theme_color, loc='left', fontsize=22, fontweight='bold', pad=20
         )
 
     for i, (df, week_open, title, prec) in enumerate(data_list):
@@ -192,10 +192,10 @@ def generate_tv_chart(symbols_data, output_path):
     # --- Shared X-axis: Dates at daily intervals ---
     axes[-1].xaxis.set_major_locator(mdates.DayLocator())
     axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-    plt.setp(axes[-1].xaxis.get_majorticklabels(), rotation=0, ha='center', color='gray')
+    plt.setp(axes[-1].xaxis.get_majorticklabels(), rotation=0, ha='center', color='gray', fontsize=14, fontweight='bold')
 
     # Watermark
-    axes[-1].set_xlabel('近一週走勢 (Intraday) • 每格線代表日期分隔', color='gray', fontsize=9, alpha=0.7, labelpad=10)
+    axes[-1].set_xlabel('近一週走勢 (Intraday) • 每格線代表日期分隔', color='gray', fontsize=12, alpha=0.7, labelpad=15)
 
     plt.savefig(output_path, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
     plt.close(fig)
