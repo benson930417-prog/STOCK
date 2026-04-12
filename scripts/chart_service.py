@@ -88,7 +88,7 @@ async def init_browser():
     p = await async_playwright().start()
     browser_instance = await p.chromium.launch(headless=True)
     browser_context = await browser_instance.new_context(
-        viewport={'width': 1200, 'height': 550},
+        viewport={'width': 1200, 'height': 800},
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         timezone_id="Asia/Taipei"
     )
@@ -129,16 +129,32 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
-        # Pages are pre-loaded at startup and TradingView updates live via WebSocket.
-        # No reload needed — just scroll and screenshot instantly.
-        chart_selector = 'div[data-container-name="performance-chart-id"]'
-        chart_el = page.locator(chart_selector)
-        await chart_el.scroll_into_view_if_needed()
+        # Scroll to top so the title (h1) is in the visible layout for measurement
+        await page.evaluate("window.scrollTo(0, 0)")
+        await asyncio.sleep(0.3)
         
-        # Viewport screenshot — ticker header + chart, junk hidden by CSS.
-        await page.screenshot(path=filepath, full_page=False)
+        # Measure exact positions of the title and chart
+        title_el = page.locator('h1').first
+        chart_el = page.locator('div[data-container-name="performance-chart-id"]')
         
-        print(f"  ✅ Snapshot saved: {filename}")
+        title_box = await title_el.bounding_box()
+        chart_box = await chart_el.bounding_box()
+        
+        if not title_box or not chart_box:
+            raise RuntimeError("Could not locate title or chart elements on page")
+        
+        # Clip precisely from top of title to bottom of chart, with small padding
+        pad = 10
+        clip = {
+            "x": 0,
+            "y": max(0, title_box["y"] - pad),
+            "width": 1200,
+            "height": (chart_box["y"] + chart_box["height"] + pad) - max(0, title_box["y"] - pad)
+        }
+        
+        await page.screenshot(path=filepath, clip=clip)
+        
+        print(f"  ✅ Snapshot saved: {filename} (clip: {clip})")
         return {"status": "success", "url": filename, "path": filepath}
     except Exception as e:
         print(f"❌ Error during snapshot for {req.key}: {e}")
