@@ -34,7 +34,7 @@ else:
     plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'Noto Sans CJK TC', 'sans-serif']
 
 plt.rcParams['axes.unicode_minus'] = False  # Fix minus sign display issues
-plt.style.use('dark_background')
+# Light mode — no dark_background style needed
 
 
 def get_weekly_data(symbol):
@@ -108,11 +108,11 @@ def generate_tv_chart(symbols_data, output_path):
     fig, axes = plt.subplots(num_plots, 1, figsize=(10, 5 * num_plots), dpi=150, sharex=True)
     if num_plots == 1: axes = [axes]
 
-    fig.patch.set_facecolor('#0a0e17')
+    fig.patch.set_facecolor('#FFFFFF')
     fig.subplots_adjust(hspace=0.4, right=0.88)
 
     def format_ax(ax, df, week_open, title, prec):
-        ax.set_facecolor('#0a0e17')
+        ax.set_facecolor('#FFFFFF')
         last_val = df.iloc[-1]['close']
         last_idx = len(df) - 1
         pct_diff = ((last_val - week_open) / week_open) * 100
@@ -144,7 +144,7 @@ def generate_tv_chart(symbols_data, output_path):
         date_starts = df.drop_duplicates('date').index
         
         for idx in date_starts:
-            ax.axvline(idx, color='white', linestyle='-', linewidth=1.0, alpha=0.2, zorder=2)
+            ax.axvline(idx, color='#CCCCCC', linestyle='-', linewidth=1.0, alpha=0.5, zorder=2)
 
         # --- Ticks and Scaling ---
         ax.set_xlim(-1, len(df))
@@ -180,13 +180,13 @@ def generate_tv_chart(symbols_data, output_path):
                 color='white', va=va_open, ha='left', fontsize=12, fontweight='bold',
                 bbox=dict(boxstyle="round,pad=0.4", fc="#4a4a5a", ec="#4a4a5a"), transform=trans, clip_on=False)
 
-        ax.tick_params(labelbottom=True, bottom=True, labelsize=12, labelcolor='white')
-        plt.setp(ax.xaxis.get_majorticklabels(), fontweight='bold', fontsize=14)
+        ax.tick_params(labelbottom=True, bottom=True, labelsize=12, labelcolor='#333333')
+        plt.setp(ax.xaxis.get_majorticklabels(), fontweight='bold', fontsize=14, color='#333333')
         
         ax.yaxis.tick_right()
         ax.yaxis.set_label_position('right')
         for spine in ['top', 'right', 'left', 'bottom']: ax.spines[spine].set_visible(False)
-        ax.grid(axis='y', color='gray', alpha=0.1, linestyle='--')
+        ax.grid(axis='y', color='#CCCCCC', alpha=0.3, linestyle='--')
         ax.set_title(f'{title}  {fmt.format(last_val)} ({sign}{pct_diff:.2f}%)', color=theme_color, loc='left', fontsize=22, fontweight='bold', pad=20)
 
     for i, (df, week_open, title, prec) in enumerate(data_list):

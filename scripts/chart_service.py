@@ -27,13 +27,10 @@ browser_instance = None
 pages = {}
 
 async def clean_page(page):
-    """Hide distracting UI elements and force DARK MODE."""
-    print("  - Applying Pro-Aesthetics (Dark Mode & Layout)...")
+    """Hide distracting UI elements for a clean chart screenshot."""
+    print("  - Applying Pro-Aesthetics (Light Mode & Layout)...")
     try:
-        # 1. Force DARK MODE via JS
-        await page.evaluate("document.documentElement.classList.add('theme-dark')")
-        
-        # 2. Add Styles for a clean, tight look
+        # Add Styles for a clean, tight look
         await page.add_style_tag(content="""
             /* Hide Cookie & Upgrade Banners */
             div[class*="cookies-banner"], div[class*="cookie-banner"], div[id*="cookies-banner"],
@@ -56,7 +53,7 @@ async def clean_page(page):
                 border: none !important;
             }
         """)
-        await asyncio.sleep(2) # Allow theme to settle
+        await asyncio.sleep(2) # Allow styles to settle
     except Exception as e:
         print(f"    - Page cleaning warning: {e}")
 
@@ -67,7 +64,8 @@ async def init_browser():
     browser_instance = await p.chromium.launch(headless=True)
     browser_context = await browser_instance.new_context(
         viewport={'width': 1200, 'height': 800},
-        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        timezone_id="Asia/Taipei"
     )
     
     for key, url in CHART_TABS.items():
@@ -123,13 +121,13 @@ async def take_snapshot(req: SnapshotRequest):
             header_h = 100
             
             # Create a new canvas with room for the header
-            # Theme dark background: #131722
-            final_img = Image.new('RGB', (cw, ch + header_h), color='#131722')
+            # Light mode header background
+            final_img = Image.new('RGB', (cw, ch + header_h), color='#F0F0F0')
             final_img.paste(chart_img, (0, header_h))
             
             draw = ImageDraw.Draw(final_img)
             # Add a subtle separator line
-            draw.line([(0, header_h), (cw, header_h)], fill="#2a2e39", width=1)
+            draw.line([(0, header_h), (cw, header_h)], fill="#CCCCCC", width=1)
             
             try:
                 font_path = "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc"
@@ -143,8 +141,8 @@ async def take_snapshot(req: SnapshotRequest):
                 price_font = ImageFont.load_default()
             
             # Draw Title and Price in the Header area
-            draw.text((25, 15), req.title, font=title_font, fill='white')
-            draw.text((25, 58), f"{req.price}  ", font=price_font, fill='white')
+            draw.text((25, 15), req.title, font=title_font, fill='#1a1a1a')
+            draw.text((25, 58), f"{req.price}  ", font=price_font, fill='#333333')
             
             # Draw Change (color coded)
             p_width = draw.textlength(f"{req.price}  ", font=price_font)
