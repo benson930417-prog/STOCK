@@ -67,40 +67,6 @@ HIDE_CSS = """
 """
 
 
-def _fetch_yahoo_price(yahoo_symbol, precision):
-    """Fetch latest price and daily change from Yahoo Finance."""
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        r = http_requests.get(
-            f'https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_symbol}?range=5d&interval=1d',
-            headers=headers, timeout=5
-        )
-        if r.status_code == 200:
-            data = r.json()
-            result = data['chart']['result'][0]
-            meta = result['meta']
-            price = meta['regularMarketPrice']
-
-            timestamps = result['timestamp']
-            closes = result['indicators']['quote'][0]['close']
-            valid = [c for c in closes if c is not None]
-
-            old_price = valid[-2] if len(valid) >= 2 else price
-            change = price - old_price
-            change_pct = (change / old_price) * 100
-
-            fmt = f"{{:.{precision}f}}"
-            sign = "+" if change_pct >= 0 else ""
-            return {
-                "price": fmt.format(price),
-                "change_pct": f"{sign}{change_pct:.2f}%",
-                "is_up": change_pct >= 0,
-            }
-    except Exception as e:
-        print(f"⚠️ Yahoo fetch failed for {yahoo_symbol}: {e}")
-    return None
-
-
 def _overlay_title(image_path, title, price_info):
     """Draw a Chinese title bar on top of the chart screenshot."""
     img = Image.open(image_path).convert("RGB")
@@ -129,7 +95,7 @@ def _overlay_title(image_path, title, price_info):
 
     # Draw price + change on the right side
     if price_info:
-        color = "#EF4444" if price_info["is_up"] else "#10B981"
+        color = "#EF4444" if price_info.get("is_up") else "#10B981"
         price_text = f'{price_info["price"]}  {price_info["change_pct"]}'
         # Measure text width to right-align
         bbox = draw.textbbox((0, 0), price_text, font=font_price)
@@ -191,6 +157,38 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
+        # Extract live price data from the DOM before clipping
+        price_info_raw = await page.evaluate("""() => {
+            const h = document.querySelector('div[class*="symbolHeader-"]') || document.querySelector('div[class*="symbol-header"]') || document.querySelector('div[class*="quotesRow-"]') || document.querySelector('div[class*="priceWrapper"]');
+            if (!h) return null;
+            const parts = h.innerText.split('\\n').map(p => p.trim()).filter(p => p.length > 0);
+            
+            let price = "0.00";
+            let changePct = "0.00%";
+            
+            // Find percentage (contains number and ends with %)
+            for (let i = 0; i < parts.length; i++) {
+                if (/[0-9]/.test(parts[i]) && parts[i].endsWith('%')) {
+                    changePct = parts[i];
+                    break;
+                }
+            }
+            
+            // For price, it's typically the first number-like string that comes after the symbol name
+            for (let i = 1; i < parts.length; i++) {
+                const p = parts[i];
+                // check if it's a valid number (allowing dots and commas)
+                if (/^([0-9]+[.,0-9]*)$/.test(p)) {
+                    price = p;
+                    break;
+                }
+            }
+            
+            const isUp = !changePct.startsWith('-') && !changePct.startsWith('−');
+            
+            return { price, change_pct: changePct, is_up: isUp };
+        }""")
+
         # Clip ONLY the chart canvas area (no header)
         clip = await page.evaluate("""() => {
             const chartContainer = document.querySelector('div[data-container-name="performance-chart-id"]');
@@ -231,8 +229,7 @@ async def take_snapshot(req: SnapshotRequest):
         # --- Overlay Chinese title ---
         meta = CHART_META.get(req.key)
         if meta:
-            price_info = _fetch_yahoo_price(meta["yahoo"], meta["precision"])
-            _overlay_title(filepath, meta["title"], price_info)
+            _overlay_title(filepath, meta["title"], price_info_raw)
         
         return {"status": "success", "url": filename, "path": filepath}
     except Exception as e:
