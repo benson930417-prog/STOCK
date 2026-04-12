@@ -88,7 +88,7 @@ async def init_browser():
     p = await async_playwright().start()
     browser_instance = await p.chromium.launch(headless=True)
     browser_context = await browser_instance.new_context(
-        viewport={'width': 1200, 'height': 550},
+        viewport={'width': 480, 'height': 550},
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         timezone_id="Asia/Taipei"
     )
