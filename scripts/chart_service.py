@@ -22,12 +22,12 @@ CHART_TABS = {
 
 # Chinese titles + Yahoo symbols for each chart key
 CHART_META = {
-    "oil":    {"title": "WTI 轻原油",   "yahoo": "CL=F",  "precision": 2},
-    "brent":  {"title": "布兰特原油",    "yahoo": "BZ=F",  "precision": 2},
-    "bond":   {"title": "10年期公债殖利率", "yahoo": "^TNX", "precision": 3},
-    "usdtwd": {"title": "美元兑台币",    "yahoo": "TWD=X", "precision": 3},
-    "usdjpy": {"title": "美元兑日币",    "yahoo": "JPY=X", "precision": 2},
-    "usdchf": {"title": "美元兑瑞郎",    "yahoo": "CHF=X", "precision": 4},
+    "oil":    {"title": "WTI 輕原油",   "yahoo": "CL=F",  "precision": 2},
+    "brent":  {"title": "布蘭特原油",    "yahoo": "BZ=F",  "precision": 2},
+    "bond":   {"title": "10年期公債殖利率", "yahoo": "^TNX", "precision": 3},
+    "usdtwd": {"title": "美元兌台幣",    "yahoo": "TWD=X", "precision": 3},
+    "usdjpy": {"title": "美元兌日幣",    "yahoo": "JPY=X", "precision": 2},
+    "usdchf": {"title": "美元兌瑞郎",    "yahoo": "CHF=X", "precision": 4},
 }
 
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')
@@ -67,7 +67,41 @@ HIDE_CSS = """
 """
 
 
-def _overlay_title(image_path, title, price_info):
+def _fetch_yahoo_price(yahoo_symbol, precision):
+    """Fetch latest price and daily change from Yahoo Finance."""
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = http_requests.get(
+            f'https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_symbol}?range=5d&interval=1d',
+            headers=headers, timeout=5
+        )
+        if r.status_code == 200:
+            data = r.json()
+            result = data['chart']['result'][0]
+            meta = result['meta']
+            price = meta['regularMarketPrice']
+
+            timestamps = result['timestamp']
+            closes = result['indicators']['quote'][0]['close']
+            valid = [c for c in closes if c is not None]
+
+            old_price = valid[-2] if len(valid) >= 2 else price
+            change = price - old_price
+            change_pct = (change / old_price) * 100
+
+            fmt = f"{{:.{precision}f}}"
+            sign = "+" if change_pct >= 0 else ""
+            return {
+                "price": fmt.format(price),
+                "change_pct": f"{sign}{change_pct:.2f}%",
+                "is_up": change_pct >= 0,
+            }
+    except Exception as e:
+        print(f"⚠️ Yahoo fetch failed for {yahoo_symbol}: {e}")
+    return None
+
+
+def _overlay_title(image_path, title):
     """Draw a Chinese title bar on top of the chart screenshot."""
     img = Image.open(image_path).convert("RGB")
     w, h = img.size
@@ -85,22 +119,11 @@ def _overlay_title(image_path, title, price_info):
     # Load font
     try:
         font_title = ImageFont.truetype(FONT_PATH, 28)
-        font_price = ImageFont.truetype(FONT_PATH, 22)
     except Exception:
         font_title = ImageFont.load_default()
-        font_price = ImageFont.load_default()
 
     # Draw title text
     draw.text((padding_x, padding_top), title, fill="#1A1A2E", font=font_title)
-
-    # Draw price + change on the right side
-    if price_info:
-        color = "#EF4444" if price_info.get("is_up") else "#10B981"
-        price_text = f'{price_info["price"]}  {price_info["change_pct"]}'
-        # Measure text width to right-align
-        bbox = draw.textbbox((0, 0), price_text, font=font_price)
-        text_w = bbox[2] - bbox[0]
-        draw.text((w - text_w - padding_x, padding_top + 4), price_text, fill=color, font=font_price)
 
     # Subtle separator line
     draw.line([(0, bar_height - 1), (w, bar_height - 1)], fill="#E5E5E5", width=1)
@@ -157,38 +180,6 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
-        # Extract live price data from the DOM before clipping
-        price_info_raw = await page.evaluate("""() => {
-            const h = document.querySelector('div[class*="symbolHeader-"]') || document.querySelector('div[class*="symbol-header"]') || document.querySelector('div[class*="quotesRow-"]') || document.querySelector('div[class*="priceWrapper"]');
-            if (!h) return null;
-            const parts = h.innerText.split('\\n').map(p => p.trim()).filter(p => p.length > 0);
-            
-            let price = "0.00";
-            let changePct = "0.00%";
-            
-            // Find percentage (contains number and ends with %)
-            for (let i = 0; i < parts.length; i++) {
-                if (/[0-9]/.test(parts[i]) && parts[i].endsWith('%')) {
-                    changePct = parts[i];
-                    break;
-                }
-            }
-            
-            // For price, it's typically the first number-like string that comes after the symbol name
-            for (let i = 1; i < parts.length; i++) {
-                const p = parts[i];
-                // check if it's a valid number (allowing dots and commas)
-                if (/^([0-9]+[.,0-9]*)$/.test(p)) {
-                    price = p;
-                    break;
-                }
-            }
-            
-            const isUp = !changePct.startsWith('-') && !changePct.startsWith('−');
-            
-            return { price, change_pct: changePct, is_up: isUp };
-        }""")
-
         # Clip ONLY the chart canvas area (no header)
         clip = await page.evaluate("""() => {
             const chartContainer = document.querySelector('div[data-container-name="performance-chart-id"]');
@@ -229,7 +220,7 @@ async def take_snapshot(req: SnapshotRequest):
         # --- Overlay Chinese title ---
         meta = CHART_META.get(req.key)
         if meta:
-            _overlay_title(filepath, meta["title"], price_info_raw)
+            _overlay_title(filepath, meta["title"])
         
         return {"status": "success", "url": filename, "path": filepath}
     except Exception as e:

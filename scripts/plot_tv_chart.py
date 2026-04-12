@@ -172,7 +172,7 @@ def generate_tv_chart(symbols_data, output_path):
             va_price, va_open = ('bottom', 'top') if last_val >= week_open else ('top', 'bottom')
 
         fmt = f"{{:.{prec}f}}"
-        ax.text(1.0, last_val, f' {fmt.format(last_val)} \n {sign}{pct_diff:.2f}%\n(5日) ',
+        ax.text(1.0, last_val, f' {fmt.format(last_val)} ',
                 color='white', va=va_price, ha='left', fontsize=12, fontweight='bold', 
                 bbox=dict(boxstyle="round,pad=0.3", fc=theme_color, ec=theme_color), transform=trans, clip_on=False)
 
@@ -187,7 +187,7 @@ def generate_tv_chart(symbols_data, output_path):
         ax.yaxis.set_label_position('right')
         for spine in ['top', 'right', 'left', 'bottom']: ax.spines[spine].set_visible(False)
         ax.grid(axis='y', color='#CCCCCC', alpha=0.3, linestyle='--')
-        ax.set_title(f'{title}  {fmt.format(last_val)} ({sign}{pct_diff:.2f}%)', color=theme_color, loc='left', fontsize=22, fontweight='bold', pad=20)
+        ax.set_title(title, color=theme_color, loc='left', fontsize=22, fontweight='bold', pad=20)
 
     for i, (df, week_open, title, prec) in enumerate(data_list):
         format_ax(axes[i], df, week_open, title, prec)
