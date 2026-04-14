@@ -1,0 +1,13 @@
+[Unit]
+Description=Run Stock ETF Fetch Daily at 10:45 AM
+
+[Timer]
+# Trigger at 10:45 AM every day
+OnCalendar=*-*-* 10:45:00
+# Ensure persistence if the server was down at the scheduled time
+Persistent=true
+# Random buffer to prevent resource spikes
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target
