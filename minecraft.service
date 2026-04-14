@@ -1,0 +1,20 @@
+[Unit]
+Description=Minecraft Fabric Server (Screen)
+After=network.target
+
+[Service]
+# We use forking because screen runs in the background
+Type=forking
+User=ubuntu
+WorkingDirectory=/home/ubuntu/mc-server
+# Add a small delay to ensure network is fully up
+ExecStartPre=/usr/bin/sleep 10
+ExecStart=/usr/bin/screen -dmS mc /opt/jdk-26/bin/java -Xmx8G -jar /home/ubuntu/mc-server/fabric-server.jar nogui
+# Graceful shutdown: sends 'stop' command to the screen session
+ExecStop=/usr/bin/screen -p 0 -S mc -X stuff "stop\n"
+# Wait for the server to finish saving before killing screen
+TimeoutStopSec=30
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
