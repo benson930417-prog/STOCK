@@ -42,6 +42,47 @@ import streamlit as st
 # -------------------- page --------------------
 st.set_page_config(page_title="Realized P/L Dashboard", layout="wide")
 
+import streamlit.components.v1 as components
+
+def auth_storage_bridge():
+    """
+    JavaScript bridge to sync Streamlit session tokens with Browser LocalStorage.
+    Allows for automatic "Remember Device" functionality.
+    """
+    js_code = """
+    <script>
+    const urlParams = new URLSearchParams(window.parent.location.search);
+    const urlToken = urlParams.get('session');
+    const storageToken = localStorage.getItem('stock_auth_session');
+
+    // 1. If we have a token in the URL, make sure it's saved to storage
+    if (urlToken) {
+        if (urlToken !== storageToken) {
+            localStorage.setItem('stock_auth_session', urlToken);
+        }
+    } 
+    // 2. If we LACK a token in URL but have one in storage, auto-redirect to use it
+    else if (storageToken && storageToken.includes('-')) {
+        urlParams.set('session', storageToken);
+        window.parent.location.search = urlParams.toString();
+    }
+    
+    // 3. Handle explicit logout signal from Streamlit
+    window.addEventListener('message', (event) => {
+        if (event.data.type === 'stock_logout') {
+            localStorage.removeItem('stock_auth_session');
+            const cleanParams = new URLSearchParams(window.parent.location.search);
+            cleanParams.delete('session');
+            window.parent.location.search = cleanParams.toString();
+        }
+    });
+    </script>
+    """
+    components.html(js_code, height=0)
+
+# Run the bridge immediately on every load
+auth_storage_bridge()
+
 DATA_DIR = Path("data")
 MASTER_PATH = DATA_DIR / "master_trades.csv"
 META_PATH = DATA_DIR / "master_meta.json"
@@ -113,9 +154,10 @@ def require_view_password_centered(lang: str):
         st.session_state.authed_view = False
 
     if st.session_state.authed_view:
-        # If they don't have a valid token in the URL right now, generate a fresh one for them to use
-        if not verify_auth_token(url_token):
+        # Generate fresh token if missing to ensure storage is populated
+        if not url_token:
             st.query_params["session"] = get_auth_token()
+        
         # Clean up the old pwd param if it exists
         if "pwd" in st.query_params:
             del st.query_params["pwd"]
@@ -134,6 +176,12 @@ def require_view_password_centered(lang: str):
                 st.rerun()
             else:
                 st.error(T(lang, "Wrong password", "密碼錯誤"))
+
+    # Sidebar Logout / Clear Memory Option
+    if st.sidebar.button(T(lang, "Clear Device Memory / Logout", "清除裝置紀錄 / 登出")):
+        # Send message to bridge to wipe LocalStorage
+        components.html("<script>window.parent.postMessage({type: 'stock_logout'}, '*');</script>", height=0)
+        st.stop()
 
     st.stop()
 
