@@ -22,12 +22,12 @@ CHART_TABS = {
 
 # Chinese titles + Yahoo symbols for each chart key
 CHART_META = {
-    "oil":    {"title": "WTI 輕原油",   "yahoo": "CL=F",  "precision": 2},
-    "brent":  {"title": "布蘭特原油",    "yahoo": "BZ=F",  "precision": 2},
-    "bond":   {"title": "10年期公債殖利率", "yahoo": "^TNX", "precision": 3},
-    "usdtwd": {"title": "美元兌台幣",    "yahoo": "TWD=X", "precision": 3},
-    "usdjpy": {"title": "美元兌日幣",    "yahoo": "JPY=X", "precision": 2},
-    "usdchf": {"title": "美元兌瑞郎",    "yahoo": "CHF=X", "precision": 4},
+    "oil":    {"title": "WTI 輕原油 (5日)",   "yahoo": "CL=F",  "precision": 2},
+    "brent":  {"title": "布蘭特原油 (5日)",    "yahoo": "BZ=F",  "precision": 2},
+    "bond":   {"title": "10年期公債殖利率 (5日)", "yahoo": "^TNX", "precision": 3},
+    "usdtwd": {"title": "美元兌台幣 (5日)",    "yahoo": "TWD=X", "precision": 3},
+    "usdjpy": {"title": "美元兌日幣 (5日)",    "yahoo": "JPY=X", "precision": 2},
+    "usdchf": {"title": "美元兌瑞郎 (5日)",    "yahoo": "CHF=X", "precision": 4},
 }
 
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')
