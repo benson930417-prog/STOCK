@@ -59,7 +59,8 @@ HIDE_CSS = """
     div[class*="sectionTitle-"], div[class*="fixed-banners"],
     a[aria-label="Full chart"], button[aria-label="Take a snapshot"], a[aria-label="Get widget"],
     div:has(> button[class*="rangeButton-"]),
-    div[data-container-name="performance-chart-id"] a[href^="/chart/"],
+    div[data-container-name="performance-chart-id"] > div[class*="header"],
+    h2#performance-chart-id, h2[id="performance-chart-id"],
     div[data-container-name="performance-chart-id"] ~ *,
     div[class*="symbolHeader-"], div[class*="symbol-header"] {
         display: none !important;
