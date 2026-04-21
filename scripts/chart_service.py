@@ -48,7 +48,9 @@ if not os.path.exists(FONT_PATH):
 
 # Global State
 playwright_instance = None
+browser_context = None
 browser_instance = None
+pages = {}
 
 HIDE_CSS = """
     header, aside, nav, div[class*="layout__header"], div[class*="pageHead-"],
@@ -134,11 +136,42 @@ def _overlay_title(image_path, title):
 
 
 async def init_browser():
-    global playwright_instance, browser_instance
+    global playwright_instance, browser_instance, browser_context, pages
+
+    print("🧹 Cleaning up old browser instances...")
+    if browser_instance:
+        try:
+            await browser_instance.close()
+        except Exception as e:
+            print(f"⚠️ Error closing browser_instance: {e}")
+    if playwright_instance:
+        try:
+            await playwright_instance.stop()
+        except Exception as e:
+            print(f"⚠️ Error stopping playwright_instance: {e}")
+    pages.clear()
+
     print("🚀 Initializing Browser...")
     playwright_instance = await async_playwright().start()
     browser_instance = await playwright_instance.chromium.launch(headless=True)
-    print("✅ Browser ready.")
+    browser_context = await browser_instance.new_context(
+        viewport={'width': 600, 'height': 800},
+        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        timezone_id="Asia/Taipei"
+    )
+    
+    for key, url in CHART_TABS.items():
+        print(f"  - Loading tab: {key}")
+        page = await browser_context.new_page()
+        try:
+            await page.goto(url, wait_until="networkidle", timeout=60000)
+            await page.add_style_tag(content=HIDE_CSS)
+            await asyncio.sleep(2)
+            pages[key] = page
+        except Exception as e:
+            print(f"❌ Failed to load {key}: {e}")
+
+    print("✅ All tabs ready.")
 
 @app.on_event("startup")
 async def startup_event():
@@ -146,6 +179,7 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
+    global playwright_instance, browser_instance
     if browser_instance:
         await browser_instance.close()
     if playwright_instance:
@@ -156,27 +190,16 @@ class SnapshotRequest(BaseModel):
 
 @app.post("/snapshot")
 async def take_snapshot(req: SnapshotRequest):
-    if req.key not in CHART_TABS:
-        raise HTTPException(status_code=404, detail="Tab key not found")
-        
-    if not browser_instance:
+    if req.key not in pages:
         await init_browser()
+        if req.key not in pages:
+            raise HTTPException(status_code=404, detail="Tab key not found")
     
-    url = CHART_TABS[req.key]
+    page = pages[req.key]
     filename = f"{req.key}_chart.png"
     filepath = os.path.join(OUTPUT_DIR, filename)
     
-    context = await browser_instance.new_context(
-        viewport={'width': 600, 'height': 800},
-        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        timezone_id="Asia/Taipei"
-    )
-    page = await context.new_page()
-    
     try:
-        await page.goto(url, wait_until="networkidle", timeout=60000)
-        await page.add_style_tag(content=HIDE_CSS)
-        await asyncio.sleep(2)
         # Clip ONLY the chart canvas area (no header)
         clip = await page.evaluate("""() => {
             const chartContainer = document.querySelector('div[data-container-name="performance-chart-id"]');
@@ -222,9 +245,8 @@ async def take_snapshot(req: SnapshotRequest):
         return {"status": "success", "url": filename, "path": filepath}
     except Exception as e:
         print(f"❌ Error during snapshot for {req.key}: {e}")
+        await init_browser()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await context.close()
 
 if __name__ == "__main__":
     import uvicorn
