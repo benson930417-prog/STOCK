@@ -9918,5 +9918,315 @@
         "weight_pct": 0.0
       }
     ]
+  },
+  "2026-04-28": {
+    "date": "2026-04-28",
+    "meta": {
+      "fund_size": 37251262686.0,
+      "nav": 16.6,
+      "closing_price": 16.6200008392334
+    },
+    "holdings": [
+      {
+        "id": "2330",
+        "name": "台灣積體",
+        "shares": 3600000,
+        "weight_pct": 21.406
+      },
+      {
+        "id": "2383",
+        "name": "台光電子",
+        "shares": 765000,
+        "weight_pct": 8.985
+      },
+      {
+        "id": "3037",
+        "name": "欣興電子",
+        "shares": 3200000,
+        "weight_pct": 7.087
+      },
+      {
+        "id": "8299",
+        "name": "群聯電子",
+        "shares": 1300000,
+        "weight_pct": 6.875
+      },
+      {
+        "id": "2308",
+        "name": "台達電子",
+        "shares": 1020000,
+        "weight_pct": 5.819
+      },
+      {
+        "id": "5274",
+        "name": "信驊科技",
+        "shares": 100000,
+        "weight_pct": 4.321
+      },
+      {
+        "id": "2345",
+        "name": "智邦科技",
+        "shares": 700000,
+        "weight_pct": 4.313
+      },
+      {
+        "id": "8046",
+        "name": "南亞電路",
+        "shares": 1650000,
+        "weight_pct": 4.128
+      },
+      {
+        "id": "3017",
+        "name": "奇鋐科技",
+        "shares": 550000,
+        "weight_pct": 4.105
+      },
+      {
+        "id": "2408",
+        "name": "南亞科技",
+        "shares": 6200000,
+        "weight_pct": 3.953
+      },
+      {
+        "id": "2368",
+        "name": "金像電子",
+        "shares": 1000000,
+        "weight_pct": 3.731
+      },
+      {
+        "id": "7769",
+        "name": "鴻勁精密",
+        "shares": 270000,
+        "weight_pct": 3.697
+      },
+      {
+        "id": "2454",
+        "name": "聯發科技",
+        "shares": 500000,
+        "weight_pct": 3.51
+      },
+      {
+        "id": "6223",
+        "name": "旺矽科技",
+        "shares": 260000,
+        "weight_pct": 3.406
+      },
+      {
+        "id": "3189",
+        "name": "景碩科技",
+        "shares": 2000000,
+        "weight_pct": 2.727
+      },
+      {
+        "id": "3653",
+        "name": "健策精密",
+        "shares": 200000,
+        "weight_pct": 2.658
+      },
+      {
+        "id": "3665",
+        "name": "貿聯-KY",
+        "shares": 370000,
+        "weight_pct": 2.612
+      },
+      {
+        "id": "2327",
+        "name": "國巨股份",
+        "shares": 1800000,
+        "weight_pct": 1.578
+      },
+      {
+        "id": "1590",
+        "name": "亞德客-KY",
+        "shares": 235000,
+        "weight_pct": 0.886
+      },
+      {
+        "id": "2404",
+        "name": "漢唐集成",
+        "shares": 330000,
+        "weight_pct": 0.858
+      },
+      {
+        "id": "6515",
+        "name": "穎崴科技",
+        "shares": 1000,
+        "weight_pct": 0.027
+      },
+      {
+        "id": "6669",
+        "name": "緯穎科技",
+        "shares": 1000,
+        "weight_pct": 0.013
+      },
+      {
+        "id": "3711",
+        "name": "日月光投",
+        "shares": 9000,
+        "weight_pct": 0.012
+      },
+      {
+        "id": "2059",
+        "name": "川湖科技",
+        "shares": 1000,
+        "weight_pct": 0.011
+      },
+      {
+        "id": "6510",
+        "name": "中華精測",
+        "shares": 1000,
+        "weight_pct": 0.01
+      },
+      {
+        "id": "2382",
+        "name": "廣達電腦",
+        "shares": 9000,
+        "weight_pct": 0.008
+      },
+      {
+        "id": "2449",
+        "name": "京元電子",
+        "shares": 9000,
+        "weight_pct": 0.007
+      },
+      {
+        "id": "2313",
+        "name": "華通電腦",
+        "shares": 9000,
+        "weight_pct": 0.006
+      },
+      {
+        "id": "2360",
+        "name": "致茂電子",
+        "shares": 1000,
+        "weight_pct": 0.006
+      },
+      {
+        "id": "2317",
+        "name": "鴻海精密",
+        "shares": 9000,
+        "weight_pct": 0.005
+      },
+      {
+        "id": "2603",
+        "name": "長榮海運",
+        "shares": 9000,
+        "weight_pct": 0.005
+      },
+      {
+        "id": "2337",
+        "name": "旺宏電子",
+        "shares": 9000,
+        "weight_pct": 0.004
+      },
+      {
+        "id": "5347",
+        "name": "世界先進",
+        "shares": 9000,
+        "weight_pct": 0.004
+      },
+      {
+        "id": "3231",
+        "name": "緯創資通",
+        "shares": 9000,
+        "weight_pct": 0.003
+      },
+      {
+        "id": "8210",
+        "name": "勤誠興業",
+        "shares": 1000,
+        "weight_pct": 0.003
+      },
+      {
+        "id": "6274",
+        "name": "台燿科技",
+        "shares": 1000,
+        "weight_pct": 0.003
+      },
+      {
+        "id": "2344",
+        "name": "華邦電子",
+        "shares": 9000,
+        "weight_pct": 0.002
+      },
+      {
+        "id": "1519",
+        "name": "華城電機",
+        "shares": 1000,
+        "weight_pct": 0.002
+      },
+      {
+        "id": "2881",
+        "name": "富邦金融",
+        "shares": 9000,
+        "weight_pct": 0.002
+      },
+      {
+        "id": "2882",
+        "name": "國泰金融",
+        "shares": 9000,
+        "weight_pct": 0.002
+      },
+      {
+        "id": "2885",
+        "name": "元大金融",
+        "shares": 9000,
+        "weight_pct": 0.001
+      },
+      {
+        "id": "3044",
+        "name": "健鼎科技",
+        "shares": 1000,
+        "weight_pct": 0.001
+      },
+      {
+        "id": "2891",
+        "name": "中國信託",
+        "shares": 9000,
+        "weight_pct": 0.001
+      },
+      {
+        "id": "2890",
+        "name": "永豐金融",
+        "shares": 9000,
+        "weight_pct": 0.001
+      },
+      {
+        "id": "3036",
+        "name": "文曄科技",
+        "shares": 1000,
+        "weight_pct": 0.001
+      },
+      {
+        "id": "2412",
+        "name": "中華電信",
+        "shares": 1000,
+        "weight_pct": 0.0
+      },
+      {
+        "id": "5871",
+        "name": "中租-KY",
+        "shares": 1000,
+        "weight_pct": 0.0
+      },
+      {
+        "id": "3045",
+        "name": "台灣大哥",
+        "shares": 1000,
+        "weight_pct": 0.0
+      },
+      {
+        "id": "1303",
+        "name": "南亞塑膠",
+        "shares": 1000,
+        "weight_pct": 0.0
+      },
+      {
+        "id": "6505",
+        "name": "台塑石化",
+        "shares": 1000,
+        "weight_pct": 0.0
+      }
+    ]
   }
 }
