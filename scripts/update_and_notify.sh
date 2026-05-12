@@ -25,9 +25,10 @@ echo "Running daily ETF fetch..."
 # 3. Run the python fetchers
 python scripts/fetch_etf_00981A.py
 python scripts/fetch_etf_00991A.py
+python scripts/fetch_etf_00997A.py
 
 # 4. Check if any new Data was found
-if grep -q "NEW DATA FOUND" data/etf_00981A_log.json 2>/dev/null || grep -q "NEW DATA FOUND" data/etf_00991A_log.json 2>/dev/null; then
+if grep -q "NEW DATA FOUND" data/etf_00981A_log.json 2>/dev/null || grep -q "NEW DATA FOUND" data/etf_00991A_log.json 2>/dev/null || grep -q "NEW DATA FOUND" data/etf_00997A_log.json 2>/dev/null; then
     echo "New data detected. Generating images..."
     
     # Generate screenshots
@@ -44,15 +45,19 @@ if grep -q "NEW DATA FOUND" data/etf_00981A_log.json 2>/dev/null || grep -q "NEW
     echo "Sending LINE notification..."
     IMG_981_FILE=$(ls -1r data/etf_00981A_summary_*.jpg | head -1)
     IMG_991_FILE=$(ls -1r data/etf_00991A_summary_*.jpg | head -1)
+    IMG_997_FILE=$(ls -1r data/etf_00997A_summary_*.jpg | head -1)
     
     IMG_981_BASE=$(basename "$IMG_981_FILE")
     IMG_991_BASE=$(basename "$IMG_991_FILE")
+    IMG_997_BASE=$(basename "$IMG_997_FILE")
     
     IMG_981="https://raw.githubusercontent.com/${GITHUB_REPO}/main/data/$IMG_981_BASE?t=$(date +%s)"
     IMG_991="https://raw.githubusercontent.com/${GITHUB_REPO}/main/data/$IMG_991_BASE?t=$(date +%s)"
+    IMG_997="https://raw.githubusercontent.com/${GITHUB_REPO}/main/data/$IMG_997_BASE?t=$(date +%s)"
     
     DATE_STR_981=$(echo "$IMG_981_BASE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
     DATE_STR_991=$(echo "$IMG_991_BASE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
+    DATE_STR_997=$(echo "$IMG_997_BASE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
     
     curl -v -X POST https://api.line.me/v2/bot/message/broadcast \
     -H "Content-Type: application/json" \
@@ -76,6 +81,15 @@ if grep -q "NEW DATA FOUND" data/etf_00981A_log.json 2>/dev/null || grep -q "NEW
           "type": "image",
           "originalContentUrl": "'"$IMG_991"'",
           "previewImageUrl": "'"$IMG_991"'"
+        },
+        {
+          "type": "text",
+          "text": "馃搮 '"$DATE_STR_997"' 主動群益美國增長 (00997A) 鎿嶄綔鏃ュ牨"
+        },
+        {
+          "type": "image",
+          "originalContentUrl": "'"$IMG_997"'",
+          "previewImageUrl": "'"$IMG_997"'"
         }
       ]
     }'

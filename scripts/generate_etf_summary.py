@@ -200,6 +200,7 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
 def generate():
     d981_c, d981_datc, d981_p, d981_datp = load_data('data/etf_00981A_history.json')
     d991_c, d991_datc, d991_p, d991_datp = load_data('data/etf_00991A_history.json')
+    d997_c, d997_datc, d997_p, d997_datp = load_data('data/etf_00997A_history.json')
     
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -224,6 +225,16 @@ def generate():
             element = page.locator("body")
             element.screenshot(path=f"data/etf_00991A_summary_{d991_c}.jpg", type="jpeg", quality=95)
             print("Saved 991A Image")
+
+        # 00997A
+        html_997 = render_html("主動群益美國增長 (00997A)", d997_datc, d997_c, d997_datp or d997_datc, d997_p or d997_c)
+        if html_997:
+            page.set_content(html_997)
+            # wait for network idle to ensure fonts load
+            page.wait_for_load_state("networkidle")
+            element = page.locator("body")
+            element.screenshot(path=f"data/etf_00997A_summary_{d997_c}.jpg", type="jpeg", quality=95)
+            print("Saved 997A Image")
             
         browser.close()
 

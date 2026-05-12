@@ -1,9 +1,9 @@
 [Unit]
-Description=Run Stock ETF Fetch Daily at 9:45 AM
+Description=Run Stock ETF Fetch Daily at 9:00 AM Taiwan time
 
 [Timer]
-# Trigger at 9:45 AM every day
-OnCalendar=*-*-* 09:45:00
+# Trigger at 9:00 AM Taiwan time (01:00 UTC)
+OnCalendar=*-*-* 01:00:00 UTC
 # Ensure persistence if the server was down at the scheduled time
 Persistent=true
 # Random buffer to prevent resource spikes

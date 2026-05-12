@@ -2565,7 +2565,7 @@ try:
         
         etf_ticker = st.selectbox(
             T(lang, "Select ETF", "選擇 ETF"),
-            ["00981A", "00991A"]
+            ["00981A", "00991A", "00997A"]
         )
         
         # --- NEW TRACKER UI ---
