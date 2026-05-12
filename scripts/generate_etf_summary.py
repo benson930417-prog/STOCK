@@ -2,6 +2,13 @@ import json
 import os
 from playwright.sync_api import sync_playwright
 
+SUMMARY_DIR = os.path.join("data", "summaries")
+ETFS = [
+    ("00981A", "主動統一台股增長 (00981A)"),
+    ("00991A", "主動復華台灣科技優息 (00991A)"),
+    ("00997A", "主動群益美國增長 (00997A)"),
+]
+
 def load_data(json_path):
     if not os.path.exists(json_path): return None, None, None, None
     with open(json_path, 'r', encoding='utf-8') as f: history = json.load(f)
@@ -198,44 +205,27 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
     return html
 
 def generate():
-    d981_c, d981_datc, d981_p, d981_datp = load_data('data/etf_00981A_history.json')
-    d991_c, d991_datc, d991_p, d991_datp = load_data('data/etf_00991A_history.json')
-    d997_c, d997_datc, d997_p, d997_datp = load_data('data/etf_00997A_history.json')
-    
+    os.makedirs(SUMMARY_DIR, exist_ok=True)
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(device_scale_factor=2)
-        
-        # 00981A
-        html_981 = render_html("主動統一台股增長 (00981A)", d981_datc, d981_c, d981_datp, d981_p)
-        if html_981:
-            page.set_content(html_981)
-            # wait for network idle to ensure fonts load
-            page.wait_for_load_state("networkidle")
-            element = page.locator("body")
-            element.screenshot(path=f"data/etf_00981A_summary_{d981_c}.jpg", type="jpeg", quality=95)
-            print("Saved 981A Image")
-            
-        # 00991A
-        html_991 = render_html("主動復華台灣科技優息 (00991A)", d991_datc, d991_c, d991_datp, d991_p)
-        if html_991:
-            page.set_content(html_991)
-            # wait for network idle to ensure fonts load
-            page.wait_for_load_state("networkidle")
-            element = page.locator("body")
-            element.screenshot(path=f"data/etf_00991A_summary_{d991_c}.jpg", type="jpeg", quality=95)
-            print("Saved 991A Image")
 
-        # 00997A
-        html_997 = render_html("主動群益美國增長 (00997A)", d997_datc, d997_c, d997_datp or d997_datc, d997_p or d997_c)
-        if html_997:
-            page.set_content(html_997)
-            # wait for network idle to ensure fonts load
-            page.wait_for_load_state("networkidle")
-            element = page.locator("body")
-            element.screenshot(path=f"data/etf_00997A_summary_{d997_c}.jpg", type="jpeg", quality=95)
-            print("Saved 997A Image")
-            
+        for ticker, title in ETFS:
+            date_curr, data_curr, date_prev, data_prev = load_data(f"data/etf_{ticker}_history.json")
+            html = render_html(title, data_curr, date_curr, data_prev or data_curr, date_prev or date_curr)
+            if html:
+                page.set_content(html)
+                # wait for network idle to ensure fonts load
+                page.wait_for_load_state("networkidle")
+                element = page.locator("body")
+                element.screenshot(
+                    path=os.path.join(SUMMARY_DIR, f"etf_{ticker}_summary_latest.jpg"),
+                    type="jpeg",
+                    quality=95,
+                )
+                print(f"Saved {ticker} latest image")
+
         browser.close()
 
 if __name__ == '__main__':

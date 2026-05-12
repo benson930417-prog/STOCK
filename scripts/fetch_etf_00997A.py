@@ -13,25 +13,10 @@ from playwright.sync_api import sync_playwright
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 HISTORY_FILE = os.path.join(DATA_DIR, "etf_00997A_history.json")
 LOG_FILE = os.path.join(DATA_DIR, "etf_00997A_log.json")
-DEBUG_DIR = os.path.join(DATA_DIR, "debug_00997A")
 
 ETF_TICKER = "00997A"
 PRODUCT_ID = "502"
 PORTFOLIO_URL = f"https://www.capitalfund.com.tw/etf/product/detail/{PRODUCT_ID}/portfolio"
-
-
-def _debug_enabled():
-    return os.environ.get("ETF_00997A_DEBUG", "1").strip().lower() not in {"0", "false", "no"}
-
-
-def _write_debug_file(name, content, mode="w"):
-    if not _debug_enabled():
-        return None
-    os.makedirs(DEBUG_DIR, exist_ok=True)
-    path = os.path.join(DEBUG_DIR, name)
-    with open(path, mode, encoding=None if "b" in mode else "utf-8") as f:
-        f.write(content)
-    return path
 
 
 def _save_log(log_data):
@@ -93,28 +78,10 @@ def _download_official_workbook():
             except Exception as exc:
                 title = page.title()
                 current_url = page.url
-                html = page.content()
                 content_len = len(page.content())
-                stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-                html_path = _write_debug_file(f"{stamp}_portfolio.html", html)
-                txt_path = _write_debug_file(
-                    f"{stamp}_portfolio.txt",
-                    (
-                        f"url={current_url}\n"
-                        f"title={title!r}\n"
-                        f"content_len={content_len}\n"
-                        f"body_preview={page.locator('body').inner_text(timeout=3000)[:2000]!r}\n"
-                    ),
-                )
-                png_path = None
-                if _debug_enabled():
-                    os.makedirs(DEBUG_DIR, exist_ok=True)
-                    png_path = os.path.join(DEBUG_DIR, f"{stamp}_portfolio.png")
-                    page.screenshot(path=png_path, full_page=True)
                 raise ValueError(
                     "Official download button not found after page load "
-                    f"(url={current_url}, title={title!r}, content_len={content_len}, "
-                    f"debug_html={html_path}, debug_text={txt_path}, debug_screenshot={png_path})"
+                    f"(url={current_url}, title={title!r}, content_len={content_len})"
                 ) from exc
 
             body_text = page.locator("body").inner_text(timeout=10000)

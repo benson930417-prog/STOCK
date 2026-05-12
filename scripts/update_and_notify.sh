@@ -38,26 +38,22 @@ if grep -q "NEW DATA FOUND" data/etf_00981A_log.json 2>/dev/null || grep -q "NEW
     echo "Committing to GitHub..."
     git config --global user.name "OCI Server Bot"
     git config --global user.email "oci-bot@localhost"
-    git add data/*.json data/*.jpg
+    git add data/*.json data/summaries/*.jpg
     git commit -m "Auto-update ETF Tracker log and image from OCI"
     git push origin main
     
     echo "Sending LINE notification..."
-    IMG_981_FILE=$(ls -1r data/etf_00981A_summary_*.jpg | head -1)
-    IMG_991_FILE=$(ls -1r data/etf_00991A_summary_*.jpg | head -1)
-    IMG_997_FILE=$(ls -1r data/etf_00997A_summary_*.jpg | head -1)
-    
-    IMG_981_BASE=$(basename "$IMG_981_FILE")
-    IMG_991_BASE=$(basename "$IMG_991_FILE")
-    IMG_997_BASE=$(basename "$IMG_997_FILE")
-    
-    IMG_981="https://raw.githubusercontent.com/${GITHUB_REPO}/main/data/$IMG_981_BASE?t=$(date +%s)"
-    IMG_991="https://raw.githubusercontent.com/${GITHUB_REPO}/main/data/$IMG_991_BASE?t=$(date +%s)"
-    IMG_997="https://raw.githubusercontent.com/${GITHUB_REPO}/main/data/$IMG_997_BASE?t=$(date +%s)"
-    
-    DATE_STR_981=$(echo "$IMG_981_BASE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
-    DATE_STR_991=$(echo "$IMG_991_BASE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
-    DATE_STR_997=$(echo "$IMG_997_BASE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
+    IMG_981_BASE="etf_00981A_summary_latest.jpg"
+    IMG_991_BASE="etf_00991A_summary_latest.jpg"
+    IMG_997_BASE="etf_00997A_summary_latest.jpg"
+
+    IMG_981="https://raw.githubusercontent.com/${GITHUB_REPO}/main/data/summaries/$IMG_981_BASE?t=$(date +%s)"
+    IMG_991="https://raw.githubusercontent.com/${GITHUB_REPO}/main/data/summaries/$IMG_991_BASE?t=$(date +%s)"
+    IMG_997="https://raw.githubusercontent.com/${GITHUB_REPO}/main/data/summaries/$IMG_997_BASE?t=$(date +%s)"
+
+    DATE_STR_981=$(python -c "import json; print(max(json.load(open('data/etf_00981A_history.json', encoding='utf-8')).keys()))")
+    DATE_STR_991=$(python -c "import json; print(max(json.load(open('data/etf_00991A_history.json', encoding='utf-8')).keys()))")
+    DATE_STR_997=$(python -c "import json; print(max(json.load(open('data/etf_00997A_history.json', encoding='utf-8')).keys()))")
     
     curl -v -X POST https://api.line.me/v2/bot/message/broadcast \
     -H "Content-Type: application/json" \
