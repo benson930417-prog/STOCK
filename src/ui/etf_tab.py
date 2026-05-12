@@ -296,7 +296,6 @@ def render_etf_tab(
                     df_ops["ActiveMoneyStr"] = df_ops["ActiveMoney"].apply(lambda x: f"({fmt_mny_only(x)})" if fmt_mny_only(x) else "")
                     
                     import plotly.graph_objects as go
-                    import plotly.express as px
                     
                     chart_df = df_ops.sort_values(by="ActiveMoney", ascending=True).copy()
                     
