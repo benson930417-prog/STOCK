@@ -25,8 +25,15 @@ def fmt_money(am):
     elif am >= 10000: return f"{sign}{am/10000:.0f} 萬"
     else: return f"{sign}{am:,.0f}"
 
+def share_change_text(ticker, share_diff):
+    sign = "+" if share_diff > 0 else ""
+    if ticker == "00997A":
+        return f"{sign}{share_diff:,.0f} 股"
+    return f"{sign}{share_diff // 1000:,} 張"
+
 def render_html(title, data_curr, date_curr, data_prev, date_prev):
     if not data_curr or not data_prev: return False
+    ticker = title.split("(")[-1].split(")")[0] if "(" in title and ")" in title else ""
     
     meta_c = data_curr.get('meta', {})
     meta_p = data_prev.get('meta', {})
@@ -176,7 +183,7 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
                     </div>
                     <div class="w-1/2 z-10 pl-3 flex items-center">
                         <span class="font-black text-[19px] text-[#258C18] whitespace-nowrap tracking-wide">{fmt_money(r['am'])}</span>
-                        <span class="text-gray-500 text-[15px] font-medium ml-3 whitespace-nowrap">({sign}{r['sd']//1000:,} 張)</span>
+                        <span class="text-gray-500 text-[15px] font-medium ml-3 whitespace-nowrap">({share_change_text(ticker, r['sd'])})</span>
                         <span class="text-gray-400 text-[15px] ml-2 hidden sm:inline whitespace-nowrap">({r['pw']:.2f}% &rarr; {r['cw']:.2f}%)</span>
                     </div>
                 """
@@ -184,7 +191,7 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
                 html += f"""
                     <div class="w-1/2 z-10 pr-3 flex items-center justify-end">
                         <span class="text-gray-400 text-[15px] mr-2 hidden sm:inline whitespace-nowrap">({r['pw']:.2f}% &rarr; {r['cw']:.2f}%)</span>
-                        <span class="text-gray-500 text-[15px] font-medium mr-3 whitespace-nowrap">({sign}{r['sd']//1000:,} 張)</span>
+                        <span class="text-gray-500 text-[15px] font-medium mr-3 whitespace-nowrap">({share_change_text(ticker, r['sd'])})</span>
                         <span class="font-black text-[19px] text-[#CC2400] whitespace-nowrap tracking-wide">{fmt_money(r['am'])}</span>
                     </div>
                     <div class="w-1/2 flex justify-start z-10">

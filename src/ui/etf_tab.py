@@ -25,6 +25,17 @@ def render_etf_tab(
         T(lang, "Select ETF", "選擇 ETF"),
         ["00981A", "00991A", "00997A"]
     )
+
+    share_unit = T(lang, "Shares", "股") if etf_ticker == "00997A" else T(lang, "Lots", "張")
+
+    def _display_share_quantity(value):
+        if etf_ticker == "00997A":
+            return value
+        return value / 1000
+
+    def _format_share_change(value):
+        display_value = _display_share_quantity(value)
+        return f"+{display_value:,.0f}" if display_value > 0 else f"{display_value:,.0f}"
     
     # --- NEW TRACKER UI ---
     log_file = DATA_DIR / f"etf_{etf_ticker}_log.json"
@@ -131,12 +142,12 @@ def render_etf_tab(
                   
                   # Rename columns for display
                   df_show = df_h[["id", "name", "weight_pct", "shares"]].copy()
-                  df_show["shares"] = df_show["shares"] / 1000
+                  df_show["shares"] = df_show["shares"].apply(_display_share_quantity)
                   df_show.columns = [
                        T(lang, "Stock ID", "代號"),
                        T(lang, "Stock Name", "名稱"),
                        T(lang, "Weight (%)", "權重 (%)"),
-                       T(lang, "Holdings (Lots)", "張數")
+                       T(lang, "Holdings", "持股") + f" ({share_unit})"
                   ]
                   st.dataframe(df_show, width="stretch")
              else:
@@ -271,7 +282,7 @@ def render_etf_tab(
                     df_ops = df_ops.sort_values(by="MagPct", ascending=False).reset_index(drop=True)
                     
                     df_ops["Target"] = df_ops["Name"] + " (" + df_ops["ID"].astype(str) + ")"
-                    df_ops["ShareDiffStr"] = (df_ops["ShareDiff"] / 1000).apply(lambda x: f"+{x:,.0f}" if x>0 else f"{x:,.0f}")
+                    df_ops["ShareDiffStr"] = df_ops["ShareDiff"].apply(_format_share_change)
                     df_ops["CurrWeightStr"] = df_ops["CurrWeight"].apply(lambda x: f"{x:.2f}%")
                     df_ops["WeightDiffStr"] = df_ops["WeightDiff"].apply(lambda x: f" {x:+.2f}%")
                     df_ops["ActiveWeightStr"] = df_ops["ActiveWeight"].apply(lambda x: f" {x:+.2f}%")
@@ -336,7 +347,7 @@ def render_etf_tab(
                     def format_label(row):
                         money_val = fmt_mny_only(row["ActiveMoney"])
                         if not money_val: money_val = "0"
-                        share_str = f" <span style='font-size:12px; color:#cccccc'>({row['ShareDiffStr']} {T(lang, 'Lots', '張')})</span>"
+                        share_str = f" <span style='font-size:12px; color:#cccccc'>({row['ShareDiffStr']} {share_unit})</span>"
                         prev = f"{row['PrevWeight']:.2f}%"
                         curr = row["CurrWeightStr"]
                         return f"<b>{money_val}</b>{share_str} <span style='font-size:12px; color:#aaaaaa'>({prev} ➜ {curr})</span>"
@@ -402,7 +413,7 @@ def render_etf_tab(
                     df_ops_show.columns = [
                         T(lang, "Target", "標的"),
                         T(lang, "Status", "狀態"),
-                        T(lang, "Share Chg (Lots)", "持股變動 (張)"),
+                        T(lang, "Share Chg", "持股變動") + f" ({share_unit})",
                         T(lang, "Weight (%)", "目前權重"),
                         T(lang, "Alloc Chg (%)", "資金分配變動%")
                     ]
