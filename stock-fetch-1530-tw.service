@@ -1,5 +1,5 @@
 [Unit]
-Description=Stock ETF 09:30 Taiwan Fetch and Notify Service
+Description=00997A ETF 15:30 Taiwan Fetch and Notify Service
 After=network-online.target
 Wants=network-online.target
 

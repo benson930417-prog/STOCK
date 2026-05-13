@@ -1,0 +1,12 @@
+[Unit]
+Description=Run 00997A ETF Fetch Daily at 15:30 Taiwan Time
+
+[Timer]
+# 15:30 Taiwan time = 07:30 UTC
+OnCalendar=*-*-* 07:30:00 UTC
+Persistent=true
+RandomizedDelaySec=30
+Unit=stock-fetch-1530-tw.service
+
+[Install]
+WantedBy=timers.target
