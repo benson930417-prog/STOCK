@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -123,26 +124,30 @@ def _session_quote_from_meta(meta, country):
         or meta.get("previousClose")
         or meta.get("chartPreviousClose")
     )
-    candidates = []
     if country == "US":
-        candidates.extend([
-            ("PRE", meta.get("preMarketPrice"), _market_time(meta, "preMarketTime")),
-            ("REG", meta.get("regularMarketPrice"), _market_time(meta, "regularMarketTime")),
-            ("POST", meta.get("postMarketPrice"), _market_time(meta, "postMarketTime")),
-        ])
+        now_et = datetime.now(ZoneInfo("America/New_York"))
+        minutes = now_et.hour * 60 + now_et.minute
+        weekday = now_et.weekday()
+
+        if weekday < 5 and 4 * 60 <= minutes < 9 * 60 + 30:
+            session, price, timestamp = "PRE", meta.get("preMarketPrice"), _market_time(meta, "preMarketTime")
+        elif weekday < 5 and 9 * 60 + 30 <= minutes < 16 * 60:
+            session, price, timestamp = "REG", meta.get("regularMarketPrice"), _market_time(meta, "regularMarketTime")
+        elif weekday < 5 and 16 * 60 <= minutes < 20 * 60:
+            session, price, timestamp = "POST", meta.get("postMarketPrice"), _market_time(meta, "postMarketTime")
+        else:
+            session, price, timestamp = "CLOSE", meta.get("regularMarketPrice"), _market_time(meta, "regularMarketTime")
+
+        if price is not None and timestamp is not None:
+            return price, timestamp, previous, session
+
+        return None, None, previous, session
     else:
-        candidates.append(("REG", meta.get("regularMarketPrice"), _market_time(meta, "regularMarketTime")))
-
-    valid = [
-        (session, price, timestamp)
-        for session, price, timestamp in candidates
-        if price is not None and timestamp is not None
-    ]
-    if not valid:
+        price = meta.get("regularMarketPrice")
+        timestamp = _market_time(meta, "regularMarketTime")
+        if price is not None and timestamp is not None:
+            return price, timestamp, previous, "REG"
         return None, None, previous, None
-
-    session, price, timestamp = max(valid, key=lambda item: item[2])
-    return price, timestamp, previous, session
 
 
 def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
