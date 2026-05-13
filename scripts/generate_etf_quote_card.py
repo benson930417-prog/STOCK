@@ -193,20 +193,23 @@ def _session_label(session):
 
 def _draw_session(draw, x, y, session):
     session = session or "--"
-    _round_rect(draw, (x, y, x + 58, y + 24), 12, _session_fill(session))
-    _text(draw, (x + 29, y + 5), _session_label(session), FONTS["tiny"], _session_text(session), anchor="ma")
+    _round_rect(draw, (x, y, x + 66, y + 28), 14, _session_fill(session))
+    _text(draw, (x + 33, y + 6), _session_label(session), FONTS["tiny"], _session_text(session), anchor="ma")
 
 
 def _draw_col_header(draw, x, y, w, scale):
     _text(draw, (x + 48, y), "持股", FONTS["tiny"], MUTED)
-    _text(draw, (x + 260, y), "市場", FONTS["tiny"], MUTED)
-    _text(draw, (x + 312, y), "權重", FONTS["tiny"], MUTED)
-    _text(draw, (x + 390, y), "狀態", FONTS["tiny"], MUTED)
-    _text(draw, (x + 464, y), "漲跌", FONTS["tiny"], MUTED)
+    _text(draw, (x + 276, y), "市場", FONTS["tiny"], MUTED)
+    _text(draw, (x + 328, y), "權重", FONTS["tiny"], MUTED)
+    _text(draw, (x + 414, y), "狀態", FONTS["tiny"], MUTED)
+    _text(draw, (x + 504, y), "漲跌", FONTS["tiny"], MUTED)
     _text(draw, (x + w - 12, y), "更新", FONTS["tiny"], MUTED, anchor="ra")
-    _text(draw, (x + 262, y + 25), f"-{scale}%", FONTS["tiny"], MUTED)
-    _text(draw, (x + 390, y + 25), "0", FONTS["tiny"], MUTED)
-    _text(draw, (x + 502, y + 25), f"+{scale}%", FONTS["tiny"], MUTED)
+    bar_x = x + 276
+    bar_w = w - 290
+    zero = bar_x + bar_w // 2
+    _text(draw, (bar_x, y + 28), f"-{scale}%", FONTS["tiny"], MUTED)
+    _text(draw, (zero, y + 28), "0", FONTS["tiny"], MUTED, anchor="ma")
+    _text(draw, (bar_x + bar_w, y + 28), f"+{scale}%", FONTS["tiny"], MUTED, anchor="ra")
 
 
 def _draw_row(draw, row, x, y, w, rank, scale):
@@ -222,15 +225,15 @@ def _draw_row(draw, row, x, y, w, rank, scale):
 
     fill = WASH if rank % 2 == 0 else PANEL
     _round_rect(draw, (x, y, x + w, y + 55), 8, fill)
-    _text(draw, (x + 10, y + 9), f"{rank:02d}", FONTS["tiny"], MUTED)
+    _text(draw, (x + 10, y + 13), f"{rank:02d}", FONTS["tiny"], MUTED)
     _text(draw, (x + 48, y + 7), _fit_text(draw, name, FONTS["small_bold"], 185), FONTS["small_bold"], INK)
     _text(draw, (x + 48, y + 31), _fit_text(draw, ticker, FONTS["tiny"], 130), FONTS["tiny"], MUTED)
-    _text(draw, (x + 260, y + 9), country, FONTS["tiny"], MUTED)
-    _text(draw, (x + 312, y + 9), weight_text, FONTS["tiny"], MUTED)
-    _draw_session(draw, x + 382, y + 6, session)
-    _text(draw, (x + 456, y + 7), pct_text, FONTS["small_bold"], _color_for_pct(change))
-    _text(draw, (x + w - 12, y + 10), age, FONTS["tiny"], MUTED, anchor="ra")
-    _bar(draw, x + 260, y + 31, w - 275, 18, change, scale)
+    _text(draw, (x + 276, y + 11), country, FONTS["tiny"], MUTED)
+    _text(draw, (x + 328, y + 11), weight_text, FONTS["tiny"], MUTED)
+    _draw_session(draw, x + 402, y + 7, session)
+    _text(draw, (x + 506, y + 8), pct_text, FONTS["small_bold"], _color_for_pct(change))
+    _text(draw, (x + w - 12, y + 12), age, FONTS["tiny"], MUTED, anchor="ra")
+    _bar(draw, x + 276, y + 39, w - 290, 16, change, scale)
 
 
 def generate_quote_card(ticker="00997A"):
@@ -250,7 +253,7 @@ def generate_quote_card(ticker="00997A"):
     scale = max(5, min(30, int(math.ceil(max_abs / 5.0) * 5)))
 
     width = 1500
-    height = 1980
+    height = 2760
     img = Image.new("RGB", (width, height), (241, 244, 248))
     draw = ImageDraw.Draw(img)
 
@@ -272,7 +275,7 @@ def generate_quote_card(ticker="00997A"):
 
     _draw_stat(draw, 84, 184, 250, "最新報價", _ago(cache.get("newest_quote_utc")), RED)
     _draw_stat(draw, 352, 184, 250, "最舊報價", _ago(cache.get("oldest_quote_utc")), MUTED)
-    _draw_stat(draw, 620, 184, 250, "ETF資料更新", _ago(cache.get("etf_refresh_utc")), MUTED)
+    _draw_stat(draw, 620, 184, 250, "權重更新", _ago(cache.get("etf_refresh_utc")), MUTED)
 
     counts = cache.get("counts", {})
     up = counts.get("up", 0)
@@ -288,9 +291,9 @@ def generate_quote_card(ticker="00997A"):
     left_x = 74
     right_x = 762
     col_w = 664
-    header_y = 365
-    start_y = 415
-    row_h = 59
+    header_y = 375
+    start_y = 440
+    row_h = 88
 
     _draw_col_header(draw, left_x, header_y, col_w, scale)
     _draw_col_header(draw, right_x, header_y, col_w, scale)
