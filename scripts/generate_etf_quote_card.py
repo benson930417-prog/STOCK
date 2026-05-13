@@ -26,6 +26,8 @@ LINE = (220, 226, 232)
 PANEL = (255, 255, 255)
 WASH = (248, 250, 252)
 HOLDING_TEXT_W = 400
+FLAG_W = 92
+FLAG_H = 60
 
 
 def _font(size, weight="regular"):
@@ -116,7 +118,7 @@ def _fmt_pct(value):
 
 def _draw_country_flag(draw, x, y, country):
     country = str(country or "").upper()
-    w, h = 46, 30
+    w, h = FLAG_W, FLAG_H
     _round_rect(draw, (x, y, x + w, y + h), 4, PANEL, (190, 198, 208), 1)
 
     if country == "US":
@@ -124,17 +126,17 @@ def _draw_country_flag(draw, x, y, country):
         for i in range(7):
             color = (191, 10, 48) if i % 2 == 0 else PANEL
             draw.rectangle((x + 1, y + int(i * stripe_h), x + w - 1, y + int((i + 1) * stripe_h)), fill=color)
-        draw.rectangle((x + 1, y + 1, x + 21, y + 16), fill=(0, 40, 104))
+        draw.rectangle((x + 1, y + 1, x + 42, y + 32), fill=(0, 40, 104))
     elif country == "TW":
         draw.rectangle((x + 1, y + 1, x + w - 1, y + h - 1), fill=(254, 0, 0))
-        draw.rectangle((x + 1, y + 1, x + 23, y + 16), fill=(0, 0, 149))
-        draw.ellipse((x + 9, y + 5, x + 15, y + 11), fill=PANEL)
+        draw.rectangle((x + 1, y + 1, x + 46, y + 32), fill=(0, 0, 149))
+        draw.ellipse((x + 18, y + 10, x + 30, y + 22), fill=PANEL)
     elif country == "JP":
         draw.rectangle((x + 1, y + 1, x + w - 1, y + h - 1), fill=PANEL)
-        draw.ellipse((x + 16, y + 7, x + 30, y + 21), fill=(188, 0, 45))
+        draw.ellipse((x + 32, y + 14, x + 60, y + 42), fill=(188, 0, 45))
     elif country == "HK":
         draw.rectangle((x + 1, y + 1, x + w - 1, y + h - 1), fill=(222, 41, 16))
-        draw.ellipse((x + 17, y + 9, x + 29, y + 21), fill=PANEL)
+        draw.ellipse((x + 34, y + 18, x + 58, y + 42), fill=PANEL)
     else:
         _text(draw, (x + w / 2, y + h / 2), country[:2] or "--", FONTS["tiny_bold"], INK, anchor="mm")
 
@@ -249,9 +251,9 @@ def _draw_col_header(draw, x, y, w, scale):
     meta_x = x + 118 + HOLDING_TEXT_W + 56
     _text(draw, (x + 118, y), "持股", FONTS["body_bold"], INK)
     _text(draw, (meta_x + 0, y), "市場", FONTS["body_bold"], INK)
-    _text(draw, (meta_x + 90, y), "權重", FONTS["body_bold"], INK)
-    _text(draw, (meta_x + 220, y), "狀態", FONTS["body_bold"], INK)
-    _text(draw, (meta_x + 500, y), "更新", FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 126, y), "權重", FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 270, y), "狀態", FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 550, y), "更新", FONTS["body_bold"], INK)
     draw.line((x, y + 54, x + w, y + 54), fill=(209, 216, 224), width=3)
 
 
@@ -273,10 +275,10 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
     _text(draw, (holding_x, y + 54), _fit_text(draw, ticker, FONTS["small"], name_max_w), FONTS["small"], INK)
-    _draw_country_flag(draw, meta_x + 0, y + 15, country)
-    _text(draw, (meta_x + 90, y + 21), weight_text, FONTS["small"], INK)
-    _draw_session(draw, meta_x + 205, y + 10, session)
-    _text(draw, (meta_x + 500, y + 21), age, FONTS["small"], INK)
+    _draw_country_flag(draw, meta_x + 0, y + 2, country)
+    _text(draw, (meta_x + 126, y + 21), weight_text, FONTS["small"], INK)
+    _draw_session(draw, meta_x + 255, y + 10, session)
+    _text(draw, (meta_x + 550, y + 21), age, FONTS["small"], INK)
     bar_x = holding_x
     bar_y = y + 90
     bar_w = w - 166
