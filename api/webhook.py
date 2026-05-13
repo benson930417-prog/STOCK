@@ -81,9 +81,10 @@ def _github_repo():
 def _publish_summary_to_github(ticker, image_path):
     rel_image_path = os.path.relpath(image_path, parent_dir).replace(os.sep, "/")
     env = os.environ.copy()
+    git_bin = "/usr/bin/git"
 
     subprocess.run(
-        ["git", "pull", "origin", "main", "--rebase", "--autostash"],
+        [git_bin, "pull", "origin", "main", "--rebase", "--autostash"],
         cwd=parent_dir,
         env=env,
         check=True,
@@ -92,7 +93,7 @@ def _publish_summary_to_github(ticker, image_path):
         timeout=60,
     )
     subprocess.run(
-        ["git", "config", "user.name", "Webhook Bot"],
+        [git_bin, "config", "user.name", "Webhook Bot"],
         cwd=parent_dir,
         env=env,
         check=True,
@@ -101,7 +102,7 @@ def _publish_summary_to_github(ticker, image_path):
         timeout=20,
     )
     subprocess.run(
-        ["git", "config", "user.email", "webhook-bot@localhost"],
+        [git_bin, "config", "user.email", "webhook-bot@localhost"],
         cwd=parent_dir,
         env=env,
         check=True,
@@ -110,7 +111,7 @@ def _publish_summary_to_github(ticker, image_path):
         timeout=20,
     )
     subprocess.run(
-        ["git", "add", rel_image_path],
+        [git_bin, "add", rel_image_path],
         cwd=parent_dir,
         env=env,
         check=True,
@@ -120,7 +121,7 @@ def _publish_summary_to_github(ticker, image_path):
     )
 
     has_staged_change = subprocess.run(
-        ["git", "diff", "--cached", "--quiet", "--", rel_image_path],
+        [git_bin, "diff", "--cached", "--quiet", "--", rel_image_path],
         cwd=parent_dir,
         env=env,
         capture_output=True,
@@ -130,7 +131,7 @@ def _publish_summary_to_github(ticker, image_path):
 
     if has_staged_change:
         subprocess.run(
-            ["git", "commit", "-m", f"Re-render {ticker} operation report"],
+            [git_bin, "commit", "-m", f"Re-render {ticker} operation report"],
             cwd=parent_dir,
             env=env,
             check=True,
@@ -139,7 +140,7 @@ def _publish_summary_to_github(ticker, image_path):
             timeout=60,
         )
         subprocess.run(
-            ["git", "push", "origin", "main"],
+            [git_bin, "push", "origin", "main"],
             cwd=parent_dir,
             env=env,
             check=True,
