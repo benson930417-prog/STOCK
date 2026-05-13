@@ -25,6 +25,7 @@ SOFT = (245, 247, 250)
 LINE = (220, 226, 232)
 PANEL = (255, 255, 255)
 WASH = (248, 250, 252)
+HOLDING_TEXT_W = 400
 
 
 def _font(size, weight="regular"):
@@ -215,7 +216,7 @@ def _draw_session(draw, x, y, session):
 
 
 def _draw_col_header(draw, x, y, w, scale):
-    meta_x = x + w - 850
+    meta_x = x + 118 + HOLDING_TEXT_W + 56
     _text(draw, (x + 118, y), "持股", FONTS["body_bold"], INK)
     _text(draw, (meta_x + 0, y), "市場", FONTS["body_bold"], INK)
     _text(draw, (meta_x + 90, y), "權重", FONTS["body_bold"], INK)
@@ -234,9 +235,9 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     weight_text = f"{weight:.2f}%" if weight is not None else "--"
     ticker = row.get("id") or "--"
     name = row.get("name") or "--"
-    meta_x = x + w - 850
     holding_x = x + 118
-    name_max_w = 200
+    name_max_w = HOLDING_TEXT_W
+    meta_x = holding_x + name_max_w + 56
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
     _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
