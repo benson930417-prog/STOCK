@@ -112,9 +112,7 @@ def _candidate_holding_date(now_tw=None):
 
 
 def _closing_price_date_for_holding_date(holding_date_str):
-    holding_day = datetime.strptime(holding_date_str, "%Y-%m-%d").date()
-    known_dates = _recent_global_trading_dates()
-    return _previous_global_trading_date(holding_day, known_dates).strftime("%Y-%m-%d")
+    return holding_date_str
 
 
 def _download_official_workbook():
