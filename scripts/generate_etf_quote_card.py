@@ -200,8 +200,8 @@ def _session_label(session):
 
 def _draw_session(draw, x, y, session):
     session = session or "--"
-    _round_rect(draw, (x, y, x + 86, y + 36), 18, _session_fill(session))
-    _text(draw, (x + 43, y + 18), _session_label(session), FONTS["tiny_bold"], _session_text(session), anchor="mm")
+    _round_rect(draw, (x, y, x + 112, y + 46), 23, _session_fill(session))
+    _text(draw, (x + 56, y + 23), _session_label(session), FONTS["small_bold"], _session_text(session), anchor="mm")
 
 
 def _draw_col_header(draw, x, y, w, scale):
@@ -209,7 +209,7 @@ def _draw_col_header(draw, x, y, w, scale):
     _text(draw, (x + 410, y), "市場", FONTS["body_bold"], INK)
     _text(draw, (x + 490, y), "權重", FONTS["body_bold"], INK)
     _text(draw, (x + 605, y), "狀態", FONTS["body_bold"], INK)
-    _text(draw, (x + w - 12, y), "更新", FONTS["body_bold"], INK, anchor="ra")
+    _text(draw, (x + 760, y), "更新", FONTS["body_bold"], INK)
     draw.line((x, y + 54, x + w, y + 54), fill=(209, 216, 224), width=3)
 
 
@@ -230,8 +230,8 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     _text(draw, (x + 64, y + 54), _fit_text(draw, ticker, FONTS["small"], 220), FONTS["small"], MUTED)
     _text(draw, (x + 410, y + 21), country, FONTS["small"], MUTED)
     _text(draw, (x + 490, y + 21), weight_text, FONTS["small"], MUTED)
-    _draw_session(draw, x + 592, y + 16, session)
-    _text(draw, (x + w - 12, y + 21), age, FONTS["small"], MUTED, anchor="ra")
+    _draw_session(draw, x + 592, y + 10, session)
+    _text(draw, (x + 760, y + 21), age, FONTS["small"], MUTED)
     bar_x = x + 64
     bar_y = y + 90
     bar_w = w - 112
