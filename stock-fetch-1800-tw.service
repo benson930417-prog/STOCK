@@ -1,0 +1,15 @@
+[Unit]
+Description=Stock ETF 18:00 Taiwan Fetch and Notify Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/STOCK
+ExecStart=/usr/bin/bash /home/ubuntu/STOCK/scripts/update_and_notify.sh 00981A 00991A
+StandardOutput=append:/home/ubuntu/STOCK/daily_fetch_1800_tw.log
+StandardError=append:/home/ubuntu/STOCK/daily_fetch_1800_tw.log
+
+[Install]
+WantedBy=multi-user.target
