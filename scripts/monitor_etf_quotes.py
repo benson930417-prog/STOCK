@@ -109,7 +109,43 @@ def normalize_yahoo_symbol(raw_id):
     return symbol, country or "US"
 
 
-def _fetch_yahoo_chart_quote(symbol, timeout=10):
+def _market_time(meta, key):
+    value = meta.get(key)
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _session_quote_from_meta(meta, country):
+    previous = (
+        meta.get("regularMarketPreviousClose")
+        or meta.get("previousClose")
+        or meta.get("chartPreviousClose")
+    )
+    candidates = []
+    if country == "US":
+        candidates.extend([
+            ("PRE", meta.get("preMarketPrice"), _market_time(meta, "preMarketTime")),
+            ("REG", meta.get("regularMarketPrice"), _market_time(meta, "regularMarketTime")),
+            ("POST", meta.get("postMarketPrice"), _market_time(meta, "postMarketTime")),
+        ])
+    else:
+        candidates.append(("REG", meta.get("regularMarketPrice"), _market_time(meta, "regularMarketTime")))
+
+    valid = [
+        (session, price, timestamp)
+        for session, price, timestamp in candidates
+        if price is not None and timestamp is not None
+    ]
+    if not valid:
+        return None, None, previous, None
+
+    session, price, timestamp = max(valid, key=lambda item: item[2])
+    return price, timestamp, previous, session
+
+
+def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
     try:
         res = requests.get(
             YAHOO_CHART_URL.format(symbol=symbol),
@@ -138,24 +174,14 @@ def _fetch_yahoo_chart_quote(symbol, timeout=10):
             if timestamp is not None and close is not None
         ]
 
-        price = None
-        previous = None
-        quote_time = None
-        if valid_points:
-            quote_time, price = valid_points[-1]
-        if len(valid_points) >= 2:
-            _, previous = valid_points[-2]
+        price, quote_time, previous, session = _session_quote_from_meta(meta, country)
 
-        if price is None:
-            price = meta.get("regularMarketPrice")
-        if quote_time is None:
-            quote_time = meta.get("regularMarketTime")
-        if previous is None:
-            previous = (
-                meta.get("regularMarketPreviousClose")
-                or meta.get("previousClose")
-                or meta.get("chartPreviousClose")
-            )
+        if price is None or quote_time is None:
+            if valid_points:
+                quote_time, price = valid_points[-1]
+                session = "CLOSE"
+        if previous is None and len(valid_points) >= 2:
+            _, previous = valid_points[-2]
 
         change_pct = None
         if price is not None and previous:
@@ -167,22 +193,26 @@ def _fetch_yahoo_chart_quote(symbol, timeout=10):
             "previousClose": previous,
             "regularMarketTime": quote_time,
             "regularMarketChangePercent": change_pct,
+            "marketSession": session or "CLOSE",
             "currency": meta.get("currency"),
         }
     except Exception as exc:
         return {"symbol": symbol, "error": str(exc)}
 
 
-def fetch_yahoo_quotes(symbols, max_workers=12):
+def fetch_yahoo_quotes(symbol_country_pairs, max_workers=12):
     quotes = {}
-    unique_symbols = [s for s in dict.fromkeys(symbols) if s]
-    if not unique_symbols:
+    unique_pairs = {}
+    for symbol, country in symbol_country_pairs:
+        if symbol and symbol not in unique_pairs:
+            unique_pairs[symbol] = country
+    if not unique_pairs:
         return quotes
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_map = {
-            executor.submit(_fetch_yahoo_chart_quote, symbol): symbol
-            for symbol in unique_symbols
+            executor.submit(_fetch_yahoo_chart_quote, symbol, country): symbol
+            for symbol, country in unique_pairs.items()
         }
         for future in as_completed(future_map):
             symbol = future_map[future]
@@ -203,7 +233,7 @@ def build_cache(ticker):
         yahoo_symbol, country = normalize_yahoo_symbol(holding.get("id"))
         normalized.append((holding, yahoo_symbol, country))
 
-    quotes = fetch_yahoo_quotes([item[1] for item in normalized])
+    quotes = fetch_yahoo_quotes([(item[1], item[2]) for item in normalized])
 
     rows = []
     valid_quote_times = []
@@ -252,6 +282,7 @@ def build_cache(ticker):
             "currency": quote.get("currency") if quote else None,
             "day_change_pct": day_change_pct,
             "quote_time_utc": quote_time_utc,
+            "market_session": quote.get("marketSession") if quote else None,
             "status": status,
             "error": quote.get("error") if quote else "missing yahoo symbol",
         })
