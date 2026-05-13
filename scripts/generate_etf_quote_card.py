@@ -13,6 +13,7 @@ IMAGE_DIR = DATA_DIR / "images"
 QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 
 ETF_NAMES = {
+    "00981A": "主動統一台股增長",
     "00997A": "主動群益美國增長",
 }
 
@@ -321,14 +322,14 @@ def generate_quote_card(ticker="00997A"):
         cache.get("holdings", []),
         key=lambda item: item.get("weight_pct") if item.get("weight_pct") is not None else -1,
         reverse=True,
-    )[:50]
+    )
     valid_changes = [abs(row["day_change_pct"]) for row in all_rows if row.get("day_change_pct") is not None]
     max_abs = max(valid_changes) if valid_changes else 5
     scale = max(5, min(30, int(math.ceil(max_abs / 5.0) * 5)))
 
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
     output_paths = []
-    pages = [all_rows[:25], all_rows[25:50]]
+    pages = [all_rows[index:index + 25] for index in range(0, len(all_rows), 25)] or [[]]
     for index, page_rows in enumerate(pages, start=1):
         img = _draw_quote_card_page(ticker, cache, page_rows, scale, index, len(pages))
         output_path = IMAGE_DIR / f"etf_{ticker}_quote_card_{index}.jpg"

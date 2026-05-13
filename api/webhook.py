@@ -41,6 +41,11 @@ def get_secret(key):
 line_bot_api = LineBotApi(get_secret('LINE_CHANNEL_ACCESS_TOKEN'))
 line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
 
+ETF_QUOTE_NAMES = {
+    "00981A": "主動統一台股增長",
+    "00997A": "主動群益美國增長",
+}
+
 def parse_etf_quote_command(text):
     compact = unicodedata.normalize("NFKC", text).lower()
     compact = re.sub(r"[^0-9a-z]", "", compact)
@@ -80,8 +85,9 @@ def build_etf_quote_text(ticker):
     counts = cache.get("counts", {})
     composite = cache.get("composite_move_pct")
     comp_text = "----" if composite is None else f"{composite:+.2f}%"
+    etf_name = ETF_QUOTE_NAMES.get(ticker, "")
     return (
-        f"{ticker} 主動群益美國增長\n"
+        f"{ticker} {etf_name}\n"
         f"持股日期：{cache.get('holdings_date', '----')}\n"
         f"加權漲跌：{comp_text}\n"
         f"上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}\n"
@@ -217,7 +223,7 @@ def handle_message(event):
 
             output_paths = generate_quote_card(etf_quote_ticker)
             messages = [TextSendMessage(text=build_etf_quote_text(etf_quote_ticker))]
-            for output_path in output_paths[:2]:
+            for output_path in output_paths[:4]:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             line_bot_api.reply_message(event.reply_token, messages)
