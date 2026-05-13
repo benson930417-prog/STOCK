@@ -204,12 +204,12 @@ def _draw_session(draw, x, y, session):
 
 
 def _draw_col_header(draw, x, y, w, scale):
-    _text(draw, (x + 64, y), "持股", FONTS["tiny_bold"], INK)
-    _text(draw, (x + 410, y), "市場", FONTS["tiny_bold"], INK)
-    _text(draw, (x + 490, y), "權重", FONTS["tiny_bold"], INK)
-    _text(draw, (x + 605, y), "狀態", FONTS["tiny_bold"], INK)
-    _text(draw, (x + w - 12, y), "更新", FONTS["tiny_bold"], INK, anchor="ra")
-    draw.line((x, y + 38, x + w, y + 38), fill=(209, 216, 224), width=3)
+    _text(draw, (x + 64, y), "持股", FONTS["body_bold"], INK)
+    _text(draw, (x + 410, y), "市場", FONTS["body_bold"], INK)
+    _text(draw, (x + 490, y), "權重", FONTS["body_bold"], INK)
+    _text(draw, (x + 605, y), "狀態", FONTS["body_bold"], INK)
+    _text(draw, (x + w - 12, y), "更新", FONTS["body_bold"], INK, anchor="ra")
+    draw.line((x, y + 54, x + w, y + 54), fill=(209, 216, 224), width=3)
 
 
 def _draw_row(draw, row, x, y, w, rank, scale):
@@ -296,7 +296,7 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     x = 74
     col_w = width - 148
     header_y = 606
-    start_y = 666
+    start_y = 686
     row_h = 132
 
     _draw_col_header(draw, x, header_y, col_w, scale)
