@@ -170,14 +170,6 @@ def _draw_stat(draw, x, y, w, label, value, accent):
     _text(draw, (x + 20, y + 62), _fit_text(draw, value, value_font, w - 40), value_font, accent)
 
 
-def _draw_composite_box(draw, x, y, w, value):
-    accent = _color_for_pct(value)
-    fill = (255, 241, 239) if value and value > 0 else (238, 249, 236) if value and value < 0 else (243, 244, 246)
-    _round_rect(draw, (x, y, x + w, y + 132), 26, fill)
-    _text(draw, (x + 28, y + 26), "加權漲跌", FONTS["small_bold"], MUTED)
-    _text(draw, (x + w - 28, y + 72), _fmt_pct(value), FONTS["title"], accent, anchor="ra")
-
-
 def _session_fill(session):
     return {
         "PRE": (255, 247, 237),
@@ -271,8 +263,6 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     _text(draw, (82, 140), etf_name, FONTS["title_small"], INK)
     _text(draw, (84, 218), f"持股日期：{cache.get('holdings_date', '----')}", FONTS["body_bold"], MUTED)
     _text(draw, (84, 266), f"第 {page_no}/{total_pages} 張", FONTS["body_bold"], MUTED)
-    _draw_composite_box(draw, width - 520, 90, 420, cache.get("composite_move_pct"))
-
     counts = cache.get("counts", {})
     up = counts.get("up", 0)
     down = counts.get("down", 0)
@@ -289,6 +279,15 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     _draw_stat(draw, x0 + (box_w + gap) * 3, y0, box_w, "最新報價", _ago(cache.get("newest_quote_utc")), RED)
     _draw_stat(draw, x0 + (box_w + gap) * 4, y0, box_w, "最舊報價", _ago(cache.get("oldest_quote_utc")), MUTED)
     _draw_stat(draw, x0 + (box_w + gap) * 5, y0, box_w, "權重更新", _ago(cache.get("etf_refresh_utc")), MUTED)
+    _draw_stat(
+        draw,
+        x0 + (box_w + gap) * 6,
+        y0,
+        box_w,
+        "加權漲跌",
+        _fmt_pct(cache.get("composite_move_pct")),
+        _color_for_pct(cache.get("composite_move_pct")),
+    )
 
     draw.line((74, 510, width - 74, 510), fill=LINE, width=2)
     _text(draw, (74, 540), "依ETF持股權重排序", FONTS["small_bold"], INK)
