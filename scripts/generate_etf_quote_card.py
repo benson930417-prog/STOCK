@@ -236,7 +236,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     name = row.get("name") or "--"
     meta_x = x + w - 850
     holding_x = x + 118
-    name_max_w = max(220, meta_x - holding_x - 32)
+    name_max_w = min(500, max(220, meta_x - holding_x - 32))
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
     _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
