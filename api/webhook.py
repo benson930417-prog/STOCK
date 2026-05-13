@@ -42,11 +42,12 @@ line_bot_api = LineBotApi(get_secret('LINE_CHANNEL_ACCESS_TOKEN'))
 line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
 
 def parse_etf_quote_command(text):
-    normalized = unicodedata.normalize("NFKC", text).lower()
-    normalized = re.sub(r"[\s()]", "", normalized)
-    match = re.fullmatch(r"0*997a(?:a)?", normalized)
-    if match:
+    compact = unicodedata.normalize("NFKC", text).lower()
+    compact = re.sub(r"[^0-9a-z]", "", compact)
+    if "997" in compact:
         return "00997A"
+    if "981" in compact:
+        return "00981A"
     return None
 
 def _parse_iso_time(value):
