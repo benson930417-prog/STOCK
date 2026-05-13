@@ -64,15 +64,15 @@ def _font(size, weight="regular"):
 
 
 FONTS = {
-    "title": _font(46, "bold"),
-    "title_small": _font(34, "bold"),
-    "h2": _font(28, "bold"),
-    "body": _font(22),
-    "body_bold": _font(22, "bold"),
-    "small": _font(18),
-    "small_bold": _font(18, "bold"),
-    "tiny": _font(15),
-    "tiny_bold": _font(15, "bold"),
+    "title": _font(64, "bold"),
+    "title_small": _font(48, "bold"),
+    "h2": _font(40, "bold"),
+    "body": _font(30),
+    "body_bold": _font(30, "bold"),
+    "small": _font(24),
+    "small_bold": _font(24, "bold"),
+    "tiny": _font(20),
+    "tiny_bold": _font(20, "bold"),
 }
 
 
@@ -196,18 +196,18 @@ def _session_label(session):
 
 def _draw_session(draw, x, y, session):
     session = session or "--"
-    _round_rect(draw, (x, y, x + 66, y + 28), 14, _session_fill(session))
-    _text(draw, (x + 33, y + 14), _session_label(session), FONTS["tiny"], _session_text(session), anchor="mm")
+    _round_rect(draw, (x, y, x + 86, y + 36), 18, _session_fill(session))
+    _text(draw, (x + 43, y + 18), _session_label(session), FONTS["tiny_bold"], _session_text(session), anchor="mm")
 
 
 def _draw_col_header(draw, x, y, w, scale):
-    _text(draw, (x + 48, y), "持股", FONTS["tiny_bold"], INK)
-    _text(draw, (x + 276, y), "市場", FONTS["tiny_bold"], INK)
-    _text(draw, (x + 328, y), "權重", FONTS["tiny_bold"], INK)
-    _text(draw, (x + 414, y), "狀態", FONTS["tiny_bold"], INK)
-    _text(draw, (x + 504, y), "漲跌", FONTS["tiny_bold"], INK)
+    _text(draw, (x + 64, y), "持股", FONTS["tiny_bold"], INK)
+    _text(draw, (x + 410, y), "市場", FONTS["tiny_bold"], INK)
+    _text(draw, (x + 490, y), "權重", FONTS["tiny_bold"], INK)
+    _text(draw, (x + 605, y), "狀態", FONTS["tiny_bold"], INK)
+    _text(draw, (x + 745, y), "漲跌", FONTS["tiny_bold"], INK)
     _text(draw, (x + w - 12, y), "更新", FONTS["tiny_bold"], INK, anchor="ra")
-    draw.line((x, y + 28, x + w, y + 28), fill=(209, 216, 224), width=2)
+    draw.line((x, y + 38, x + w, y + 38), fill=(209, 216, 224), width=3)
 
 
 def _draw_row(draw, row, x, y, w, rank, scale):
@@ -221,18 +221,18 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     ticker = row.get("id") or "--"
     name = row.get("name") or "--"
 
-    draw.line((x, y + 92, x + w, y + 92), fill=(236, 240, 245), width=1)
-    _text(draw, (x + 10, y + 13), f"{rank:02d}", FONTS["tiny"], MUTED)
-    _text(draw, (x + 48, y + 7), _fit_text(draw, name, FONTS["small_bold"], 185), FONTS["small_bold"], INK)
-    _text(draw, (x + 48, y + 31), _fit_text(draw, ticker, FONTS["tiny"], 130), FONTS["tiny"], MUTED)
-    _text(draw, (x + 276, y + 11), country, FONTS["tiny"], MUTED)
-    _text(draw, (x + 328, y + 11), weight_text, FONTS["tiny"], MUTED)
-    _draw_session(draw, x + 402, y + 7, session)
-    _text(draw, (x + w - 12, y + 12), age, FONTS["tiny"], MUTED, anchor="ra")
-    bar_x = x + 48
-    bar_y = y + 61
+    draw.line((x, y + 112, x + w, y + 112), fill=(232, 237, 243), width=2)
+    _text(draw, (x + 10, y + 19), f"{rank:02d}", FONTS["tiny"], MUTED)
+    _text(draw, (x + 64, y + 10), _fit_text(draw, name, FONTS["body_bold"], 290), FONTS["body_bold"], INK)
+    _text(draw, (x + 64, y + 47), _fit_text(draw, ticker, FONTS["small"], 220), FONTS["small"], MUTED)
+    _text(draw, (x + 410, y + 21), country, FONTS["small"], MUTED)
+    _text(draw, (x + 490, y + 21), weight_text, FONTS["small"], MUTED)
+    _draw_session(draw, x + 592, y + 16, session)
+    _text(draw, (x + w - 12, y + 21), age, FONTS["small"], MUTED, anchor="ra")
+    bar_x = x + 64
+    bar_y = y + 76
     bar_w = w - 60
-    endpoint = _bar(draw, bar_x, bar_y, bar_w, 22, change, scale)
+    endpoint = _bar(draw, bar_x, bar_y, bar_w, 30, change, scale)
     if change is not None:
         pct_color = _color_for_pct(change)
         pct_w, _ = _measure(draw, pct_text, FONTS["small_bold"])
@@ -243,7 +243,63 @@ def _draw_row(draw, row, x, y, w, rank, scale):
         else:
             tx = max(endpoint - 8, bar_x + pct_w)
             anchor = "ra"
-        _text(draw, (tx, bar_y - 2), pct_text, FONTS["small_bold"], pct_color, anchor=anchor)
+        _text(draw, (tx, bar_y - 4), pct_text, FONTS["body_bold"], pct_color, anchor=anchor)
+
+
+def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
+    width = 1500
+    height = 3500
+    img = Image.new("RGB", (width, height), (241, 244, 248))
+    draw = ImageDraw.Draw(img)
+
+    _round_rect(draw, (28, 28, width - 28, height - 28), 28, PANEL, (221, 228, 236), 2)
+    _round_rect(draw, (54, 54, width - 54, 332), 24, (250, 252, 255), (234, 238, 244), 1)
+
+    title = f"{ticker} {ETF_NAMES.get(ticker, '')}".strip()
+    title_font = FONTS["title"] if _measure(draw, title, FONTS["title"])[0] < 1020 else FONTS["title_small"]
+    _text(draw, (82, 78), title, title_font, INK)
+    _text(draw, (84, 158), f"持股日期：{cache.get('holdings_date', '----')}    第 {page_no}/{total_pages} 張", FONTS["body_bold"], MUTED)
+
+    composite = cache.get("composite_move_pct")
+    comp_text = _fmt_pct(composite)
+    comp_color = _color_for_pct(composite)
+    comp_fill = (255, 244, 242) if composite and composite > 0 else (239, 249, 237)
+    _round_rect(draw, (1054, 82, 1418, 174), 24, comp_fill, None)
+    _text(draw, (1086, 104), "加權漲跌", FONTS["small_bold"], MUTED)
+    _text(draw, (1394, 106), comp_text, FONTS["h2"], comp_color, anchor="ra")
+
+    _draw_stat(draw, 84, 226, 250, "最新報價", _ago(cache.get("newest_quote_utc")), RED)
+    _draw_stat(draw, 352, 226, 250, "最舊報價", _ago(cache.get("oldest_quote_utc")), MUTED)
+    _draw_stat(draw, 620, 226, 250, "權重更新", _ago(cache.get("etf_refresh_utc")), MUTED)
+
+    counts = cache.get("counts", {})
+    up = counts.get("up", 0)
+    down = counts.get("down", 0)
+    flat = counts.get("flat", 0)
+    summary = f"上漲 {up} / 下跌 {down} / 持平 {flat}"
+    _draw_stat(draw, 888, 226, 310, "漲跌家數", summary, INK)
+    _draw_stat(draw, 1216, 226, 202, "刻度範圍", f"±{scale}%", MUTED)
+
+    draw.line((74, 365, width - 74, 365), fill=LINE, width=2)
+    _text(draw, (74, 394), "依ETF持股權重排序", FONTS["small_bold"], INK)
+    _text(draw, (314, 394), "紅色代表上漲，綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small"], MUTED)
+
+    x = 74
+    col_w = width - 148
+    header_y = 452
+    start_y = 510
+    row_h = 114
+
+    _draw_col_header(draw, x, header_y, col_w, scale)
+
+    rank_offset = (page_no - 1) * 25
+    for idx, row in enumerate(rows):
+        _draw_row(draw, row, x, start_y + idx * row_h, col_w, rank_offset + idx + 1, scale)
+
+    footer = f"報表產生：{_ago(cache.get('generated_utc'))}"
+    _text(draw, (width // 2, height - 58), footer, FONTS["tiny"], MUTED, anchor="ma")
+
+    return img
 
 
 def generate_quote_card(ticker="00997A"):
@@ -252,75 +308,24 @@ def generate_quote_card(ticker="00997A"):
     with cache_path.open("r", encoding="utf-8") as fh:
         cache = json.load(fh)
 
-    rows = sorted(
+    all_rows = sorted(
         cache.get("holdings", []),
         key=lambda item: item.get("weight_pct") if item.get("weight_pct") is not None else -1,
         reverse=True,
-    )
-    rows = rows[:50]
-    valid_changes = [abs(row["day_change_pct"]) for row in rows if row.get("day_change_pct") is not None]
+    )[:50]
+    valid_changes = [abs(row["day_change_pct"]) for row in all_rows if row.get("day_change_pct") is not None]
     max_abs = max(valid_changes) if valid_changes else 5
     scale = max(5, min(30, int(math.ceil(max_abs / 5.0) * 5)))
 
-    width = 1500
-    height = 3160
-    img = Image.new("RGB", (width, height), (241, 244, 248))
-    draw = ImageDraw.Draw(img)
-
-    _round_rect(draw, (28, 28, width - 28, height - 28), 28, PANEL, (221, 228, 236), 2)
-    _round_rect(draw, (54, 54, width - 54, 274), 24, (250, 252, 255), (234, 238, 244), 1)
-
-    title = f"{ticker} {ETF_NAMES.get(ticker, '')}".strip()
-    title_font = FONTS["title"] if _measure(draw, title, FONTS["title"])[0] < 880 else FONTS["title_small"]
-    _text(draw, (82, 78), title, title_font, INK)
-    _text(draw, (84, 138), f"持股日期：{cache.get('holdings_date', '----')}", FONTS["body_bold"], MUTED)
-
-    composite = cache.get("composite_move_pct")
-    comp_text = _fmt_pct(composite)
-    comp_color = _color_for_pct(composite)
-    comp_fill = (255, 244, 242) if composite and composite > 0 else (239, 249, 237)
-    _round_rect(draw, (1110, 74, 1418, 154), 20, comp_fill, None)
-    _text(draw, (1138, 92), "加權漲跌", FONTS["small_bold"], MUTED)
-    _text(draw, (1398, 98), comp_text, FONTS["h2"], comp_color, anchor="ra")
-
-    _draw_stat(draw, 84, 184, 250, "最新報價", _ago(cache.get("newest_quote_utc")), RED)
-    _draw_stat(draw, 352, 184, 250, "最舊報價", _ago(cache.get("oldest_quote_utc")), MUTED)
-    _draw_stat(draw, 620, 184, 250, "權重更新", _ago(cache.get("etf_refresh_utc")), MUTED)
-
-    counts = cache.get("counts", {})
-    up = counts.get("up", 0)
-    down = counts.get("down", 0)
-    flat = counts.get("flat", 0)
-    summary = f"上漲 {up} / 下跌 {down} / 持平 {flat}"
-    _draw_stat(draw, 888, 184, 310, "漲跌家數", summary, INK)
-    _draw_stat(draw, 1216, 184, 202, "刻度範圍", f"±{scale}%", MUTED)
-
-    draw.line((74, 302, width - 74, 302), fill=LINE, width=2)
-    _text(draw, (74, 326), "依ETF持股權重排序", FONTS["small_bold"], INK)
-    _text(draw, (254, 326), "紅色代表上漲，綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small"], MUTED)
-
-    left_x = 74
-    right_x = 762
-    col_w = 664
-    header_y = 358
-    start_y = 405
-    row_h = 104
-
-    _draw_col_header(draw, left_x, header_y, col_w, scale)
-    _draw_col_header(draw, right_x, header_y, col_w, scale)
-
-    for idx, row in enumerate(rows[:25]):
-        _draw_row(draw, row, left_x, start_y + idx * row_h, col_w, idx + 1, scale)
-    for idx, row in enumerate(rows[25:50]):
-        _draw_row(draw, row, right_x, start_y + idx * row_h, col_w, idx + 26, scale)
-
-    footer = f"報表產生：{_ago(cache.get('generated_utc'))}"
-    _text(draw, (width // 2, height - 58), footer, FONTS["tiny"], MUTED, anchor="ma")
-
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = IMAGE_DIR / f"etf_{ticker}_quote_card.jpg"
-    img.save(output_path, "JPEG", quality=92, optimize=True)
-    return output_path
+    output_paths = []
+    pages = [all_rows[:25], all_rows[25:50]]
+    for index, page_rows in enumerate(pages, start=1):
+        img = _draw_quote_card_page(ticker, cache, page_rows, scale, index, len(pages))
+        output_path = IMAGE_DIR / f"etf_{ticker}_quote_card_{index}.jpg"
+        img.save(output_path, "JPEG", quality=92, optimize=True)
+        output_paths.append(output_path)
+    return output_paths
 
 
 if __name__ == "__main__":
@@ -329,4 +334,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("ticker", nargs="?", default="00997A")
     args = parser.parse_args()
-    print(generate_quote_card(args.ticker))
+    for path in generate_quote_card(args.ticker):
+        print(path)

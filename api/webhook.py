@@ -172,12 +172,12 @@ def handle_message(event):
         try:
             from scripts.generate_etf_quote_card import generate_quote_card
 
-            output_path = generate_quote_card(etf_quote_ticker)
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
-            line_bot_api.reply_message(
-                event.reply_token,
-                ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
-            )
+            output_paths = generate_quote_card(etf_quote_ticker)
+            messages = []
+            for output_path in output_paths[:2]:
+                img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
+                messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
+            line_bot_api.reply_message(event.reply_token, messages)
         except Exception as e:
             print("ETF quote card generation failed:", e)
             line_bot_api.reply_message(
