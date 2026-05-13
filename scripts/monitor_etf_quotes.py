@@ -119,11 +119,6 @@ def _market_time(meta, key):
 
 
 def _session_quote_from_meta(meta, country):
-    previous = (
-        meta.get("regularMarketPreviousClose")
-        or meta.get("previousClose")
-        or meta.get("chartPreviousClose")
-    )
     if country == "US":
         now_et = datetime.now(ZoneInfo("America/New_York"))
         minutes = now_et.hour * 60 + now_et.minute
@@ -139,15 +134,15 @@ def _session_quote_from_meta(meta, country):
             session, price, timestamp = "CLOSE", meta.get("regularMarketPrice"), _market_time(meta, "regularMarketTime")
 
         if price is not None and timestamp is not None:
-            return price, timestamp, previous, session
+            return price, timestamp, session
 
-        return None, None, previous, session
+        return None, None, session
     else:
         price = meta.get("regularMarketPrice")
         timestamp = _market_time(meta, "regularMarketTime")
         if price is not None and timestamp is not None:
-            return price, timestamp, previous, "REG"
-        return None, None, previous, None
+            return price, timestamp, "REG"
+        return None, None, None
 
 
 def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
@@ -179,14 +174,22 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
             if timestamp is not None and close is not None
         ]
 
-        price, quote_time, previous, session = _session_quote_from_meta(meta, country)
+        price, quote_time, session = _session_quote_from_meta(meta, country)
 
         if price is None or quote_time is None:
             if valid_points:
                 quote_time, price = valid_points[-1]
                 session = "CLOSE"
-        if previous is None and len(valid_points) >= 2:
+
+        previous = None
+        if len(valid_points) >= 2:
             _, previous = valid_points[-2]
+        if previous is None:
+            previous = (
+                meta.get("regularMarketPreviousClose")
+                or meta.get("previousClose")
+                or meta.get("chartPreviousClose")
+            )
 
         change_pct = None
         if price is not None and previous:
