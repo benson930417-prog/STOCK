@@ -6,6 +6,7 @@ import time
 import os
 import sys
 import requests
+import re
 
 # Ensure the root STOCK directory is in sys.path so 'scripts' can be imported dynamically
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -36,6 +37,15 @@ def get_secret(key):
 
 line_bot_api = LineBotApi(get_secret('LINE_CHANNEL_ACCESS_TOKEN'))
 line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
+
+def parse_etf_quote_command(text):
+    normalized = re.sub(r"[\s()（）]", "", text.lower())
+    normalized = normalized.replace("００", "00")
+    if normalized.endswith("aa"):
+        normalized = normalized[:-1]
+    if normalized in {"997a", "00997a"}:
+        return "00997A"
+    return None
 
 def get_yahoo_data_text(symbol, title, emoji, precision=2):
     try:
@@ -155,8 +165,26 @@ def webhook():
 @line_handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_msg = event.message.text.strip()
+    etf_quote_ticker = parse_etf_quote_command(user_msg)
     
-    if user_msg == "油價":
+    if etf_quote_ticker:
+        try:
+            from scripts.generate_etf_quote_card import generate_quote_card
+
+            output_path = generate_quote_card(etf_quote_ticker)
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
+            line_bot_api.reply_message(
+                event.reply_token,
+                ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
+            )
+        except Exception as e:
+            print("ETF quote card generation failed:", e)
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=f"{etf_quote_ticker} 報價圖暫時無法產生，請稍後再試。")
+            )
+
+    elif user_msg == "油價":
         reply_msg = get_oil_price()
         try:
             snapshot_url = "http://127.0.0.1:5005/snapshot"
