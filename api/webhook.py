@@ -7,6 +7,7 @@ import os
 import sys
 import requests
 import re
+import unicodedata
 
 # Ensure the root STOCK directory is in sys.path so 'scripts' can be imported dynamically
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -39,11 +40,10 @@ line_bot_api = LineBotApi(get_secret('LINE_CHANNEL_ACCESS_TOKEN'))
 line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
 
 def parse_etf_quote_command(text):
-    normalized = re.sub(r"[\s()（）]", "", text.lower())
-    normalized = normalized.replace("００", "00")
-    if normalized.endswith("aa"):
-        normalized = normalized[:-1]
-    if normalized in {"997a", "00997a"}:
+    normalized = unicodedata.normalize("NFKC", text).lower()
+    normalized = re.sub(r"[\s()]", "", normalized)
+    match = re.fullmatch(r"0*997a(?:a)?", normalized)
+    if match:
         return "00997A"
     return None
 
@@ -166,6 +166,7 @@ def webhook():
 def handle_message(event):
     user_msg = event.message.text.strip()
     etf_quote_ticker = parse_etf_quote_command(user_msg)
+    print(f"LINE text={user_msg!r} parsed_etf={etf_quote_ticker}", flush=True)
     
     if etf_quote_ticker:
         try:
