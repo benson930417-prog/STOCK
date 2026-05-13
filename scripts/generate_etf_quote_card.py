@@ -174,11 +174,20 @@ def _draw_stat(draw, x, y, w, label, value, accent):
 
 def _session_fill(session):
     return {
-        "PRE": (255, 247, 237),
-        "REG": (239, 246, 255),
-        "POST": (245, 243, 255),
-        "CLOSE": (243, 244, 246),
-    }.get(session, (243, 244, 246))
+        "PRE": (255, 237, 213),
+        "REG": (191, 219, 254),
+        "POST": (221, 214, 254),
+        "CLOSE": (229, 231, 235),
+    }.get(session, (229, 231, 235))
+
+
+def _session_outline(session):
+    return {
+        "PRE": (251, 146, 60),
+        "REG": (59, 130, 246),
+        "POST": (139, 92, 246),
+        "CLOSE": (156, 163, 175),
+    }.get(session, (156, 163, 175))
 
 
 def _session_text(session):
@@ -201,7 +210,7 @@ def _session_label(session):
 
 def _draw_session(draw, x, y, session):
     session = session or "--"
-    _round_rect(draw, (x, y, x + 112, y + 46), 23, _session_fill(session))
+    _round_rect(draw, (x, y, x + 112, y + 46), 23, _session_fill(session), _session_outline(session), 2)
     _text(draw, (x + 56, y + 23), _session_label(session), FONTS["small_bold"], _session_text(session), anchor="mm")
 
 
