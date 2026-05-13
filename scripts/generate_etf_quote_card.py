@@ -32,6 +32,7 @@ def _font(size, weight="regular"):
     candidates = []
     if os.name == "nt":
         candidates.extend([
+            r"C:\Windows\Fonts\seguiemj.ttf",
             r"C:\Windows\Fonts\msjh.ttc",
             r"C:\Windows\Fonts\msjhbd.ttc",
             r"C:\Windows\Fonts\NotoSansTC-Regular.otf",
@@ -46,6 +47,7 @@ def _font(size, weight="regular"):
         "/usr/share/fonts/opentype/noto/NotoSansCJKtc-Regular.otf",
         "/usr/share/fonts/opentype/noto/NotoSansCJKtc-Bold.otf",
         "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
         "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
         "/usr/share/fonts/truetype/arphic/uming.ttc",
         "/usr/share/fonts/truetype/arphic/ukai.ttc",
@@ -74,6 +76,7 @@ FONTS = {
     "body_bold": _font(30, "bold"),
     "small": _font(24),
     "small_bold": _font(24, "bold"),
+    "flag": _font(30),
     "tiny": _font(20),
     "tiny_bold": _font(20, "bold"),
 }
@@ -109,6 +112,18 @@ def _fmt_pct(value):
         return "----"
     sign = "+" if value > 0 else ""
     return f"{sign}{value:.2f}%"
+
+
+def _country_display(country):
+    return {
+        "US": "🇺🇸",
+        "TW": "🇹🇼",
+        "JP": "🇯🇵",
+        "HK": "🇭🇰",
+        "CN": "🇨🇳",
+        "KR": "🇰🇷",
+        "SG": "🇸🇬",
+    }.get(str(country or "").upper(), "🏳️")
 
 
 def _color_for_pct(value):
@@ -245,7 +260,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
     _text(draw, (holding_x, y + 54), _fit_text(draw, ticker, FONTS["small"], name_max_w), FONTS["small"], INK)
-    _text(draw, (meta_x + 0, y + 21), country, FONTS["small"], INK)
+    _text(draw, (meta_x + 0, y + 15), _country_display(country), FONTS["flag"], INK)
     _text(draw, (meta_x + 90, y + 21), weight_text, FONTS["small"], INK)
     _draw_session(draw, meta_x + 205, y + 10, session)
     _text(draw, (meta_x + 500, y + 21), age, FONTS["small"], INK)
