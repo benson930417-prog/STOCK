@@ -211,14 +211,17 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
     """
     return html
 
-def generate():
+def generate(selected_tickers=None):
     os.makedirs(SUMMARY_DIR, exist_ok=True)
+    selected_tickers = set(selected_tickers or [])
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(device_scale_factor=2)
 
         for ticker, title in ETFS:
+            if selected_tickers and ticker not in selected_tickers:
+                continue
             date_curr, data_curr, date_prev, data_prev = load_data(f"data/etf_{ticker}_history.json")
             html = render_html(title, data_curr, date_curr, data_prev or data_curr, date_prev or date_curr)
             if html:

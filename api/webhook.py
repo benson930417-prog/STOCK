@@ -9,6 +9,7 @@ import requests
 import re
 import unicodedata
 import json
+import subprocess
 from datetime import datetime, timezone
 
 # Ensure the root STOCK directory is in sys.path so 'scripts' can be imported dynamically
@@ -43,6 +44,7 @@ line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
 
 ETF_QUOTE_NAMES = {
     "00981A": "主動統一台股增長",
+    "00991A": "主動復華台灣科技優息",
     "00997A": "主動群益美國增長",
 }
 
@@ -58,6 +60,96 @@ def parse_etf_quote_command(text):
 def is_operation_report_command(text):
     normalized = unicodedata.normalize("NFKC", text).strip()
     return "操作日報" in normalized
+
+def parse_operation_report_ticker(text):
+    compact = unicodedata.normalize("NFKC", text).lower()
+    compact = re.sub(r"[^0-9a-z]", "", compact)
+    if "997" in compact:
+        return "00997A"
+    if "991" in compact:
+        return "00991A"
+    if "981" in compact:
+        return "00981A"
+    return None
+
+def _line_access_token():
+    return get_secret('LINE_CHANNEL_ACCESS_TOKEN') or get_secret('LINE_TOKEN')
+
+def _github_repo():
+    return get_secret("GITHUB_REPO") or "benson930417-prog/STOCK"
+
+def _publish_summary_to_github(ticker, image_path):
+    rel_image_path = os.path.relpath(image_path, parent_dir).replace(os.sep, "/")
+    env = os.environ.copy()
+
+    subprocess.run(
+        ["git", "pull", "origin", "main", "--rebase", "--autostash"],
+        cwd=parent_dir,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Webhook Bot"],
+        cwd=parent_dir,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "webhook-bot@localhost"],
+        cwd=parent_dir,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    subprocess.run(
+        ["git", "add", rel_image_path],
+        cwd=parent_dir,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+
+    has_staged_change = subprocess.run(
+        ["git", "diff", "--cached", "--quiet", "--", rel_image_path],
+        cwd=parent_dir,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    ).returncode != 0
+
+    if has_staged_change:
+        subprocess.run(
+            ["git", "commit", "-m", f"Re-render {ticker} operation report"],
+            cwd=parent_dir,
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        subprocess.run(
+            ["git", "push", "origin", "main"],
+            cwd=parent_dir,
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=90,
+        )
+        return True
+
+    return False
 
 def _parse_iso_time(value):
     if not value:
@@ -246,26 +338,61 @@ def handle_message(event):
         try:
             from scripts.generate_etf_summary import generate
 
-            ticker = "00997A"
-            generate()
+            ticker = parse_operation_report_ticker(user_msg)
+            if not ticker:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="請在操作日報訊息中指定 981、991 或 997。")
+                )
+                return
+
+            generate([ticker])
             filename = f"etf_{ticker}_summary_latest.jpg"
             image_path = os.path.join(parent_dir, "data", "summaries", filename)
             if not os.path.exists(image_path):
                 raise FileNotFoundError(image_path)
+            pushed = _publish_summary_to_github(ticker, image_path)
 
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/summaries/{filename}?t={int(time.time())}"
-            line_bot_api.reply_message(
-                event.reply_token,
-                [
-                    TextSendMessage(text=f"{ticker} 操作日報預覽"),
-                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
-                ],
+            history_path = os.path.join(parent_dir, "data", f"etf_{ticker}_history.json")
+            with open(history_path, "r", encoding="utf-8") as fh:
+                date_str = max(json.load(fh).keys())
+
+            img_url = (
+                f"https://raw.githubusercontent.com/{_github_repo()}/main/"
+                f"data/summaries/{filename}?t={int(time.time())}"
             )
+            messages = [
+                {
+                    "type": "text",
+                    "text": f"{date_str} {ETF_QUOTE_NAMES.get(ticker, ticker)} ({ticker}) 操作日報",
+                },
+                {
+                    "type": "image",
+                    "originalContentUrl": img_url,
+                    "previewImageUrl": img_url,
+                },
+            ]
+            token = _line_access_token()
+            if not token:
+                raise RuntimeError("LINE access token is not configured")
+
+            res = requests.post(
+                "https://api.line.me/v2/bot/message/broadcast",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                data=json.dumps({"messages": messages}, ensure_ascii=False).encode("utf-8"),
+                timeout=20,
+            )
+            res.raise_for_status()
+            status_text = "已重新渲染、推送 GitHub 並廣播。" if pushed else "圖片無變更，已用 GitHub 最新版本廣播。"
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{ticker} 操作日報{status_text}"))
         except Exception as e:
-            print("ETF operation report preview failed:", e)
+            print("ETF operation report broadcast failed:", e)
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="操作日報預覽暫時無法產生，請稍後再試。")
+                TextSendMessage(text="操作日報廣播暫時無法送出，請稍後再試。")
             )
 
     elif user_msg == "油價":
