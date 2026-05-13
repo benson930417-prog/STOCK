@@ -72,6 +72,7 @@ FONTS = {
     "small": _font(18),
     "small_bold": _font(18, "bold"),
     "tiny": _font(15),
+    "tiny_bold": _font(15, "bold"),
 }
 
 
@@ -148,14 +149,16 @@ def _bar(draw, x, y, width, height, pct, scale):
         mx = int(zero + marker * width / 2)
         draw.line((mx, y + 4, mx, y + height - 4), fill=(224, 229, 235), width=1)
     if pct is None:
-        return
+        return zero
     clamped = max(-scale, min(scale, pct))
     bar_w = int(abs(clamped) / scale * (width / 2))
     color = _color_for_pct(pct)
     if clamped >= 0:
         _round_rect(draw, (zero, y + 6, zero + bar_w, y + height - 6), 4, color)
+        return zero + bar_w
     else:
         _round_rect(draw, (zero - bar_w, y + 6, zero, y + height - 6), 4, color)
+        return zero - bar_w
 
 
 def _draw_stat(draw, x, y, w, label, value, accent):
@@ -198,12 +201,13 @@ def _draw_session(draw, x, y, session):
 
 
 def _draw_col_header(draw, x, y, w, scale):
-    _text(draw, (x + 48, y), "持股", FONTS["tiny"], MUTED)
-    _text(draw, (x + 276, y), "市場", FONTS["tiny"], MUTED)
-    _text(draw, (x + 328, y), "權重", FONTS["tiny"], MUTED)
-    _text(draw, (x + 414, y), "狀態", FONTS["tiny"], MUTED)
-    _text(draw, (x + 504, y), "漲跌", FONTS["tiny"], MUTED)
-    _text(draw, (x + w - 12, y), "更新", FONTS["tiny"], MUTED, anchor="ra")
+    _text(draw, (x + 48, y), "持股", FONTS["tiny_bold"], INK)
+    _text(draw, (x + 276, y), "市場", FONTS["tiny_bold"], INK)
+    _text(draw, (x + 328, y), "權重", FONTS["tiny_bold"], INK)
+    _text(draw, (x + 414, y), "狀態", FONTS["tiny_bold"], INK)
+    _text(draw, (x + 504, y), "漲跌", FONTS["tiny_bold"], INK)
+    _text(draw, (x + w - 12, y), "更新", FONTS["tiny_bold"], INK, anchor="ra")
+    draw.line((x, y + 28, x + w, y + 28), fill=(209, 216, 224), width=2)
 
 
 def _draw_row(draw, row, x, y, w, rank, scale):
@@ -224,9 +228,22 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     _text(draw, (x + 276, y + 11), country, FONTS["tiny"], MUTED)
     _text(draw, (x + 328, y + 11), weight_text, FONTS["tiny"], MUTED)
     _draw_session(draw, x + 402, y + 7, session)
-    _text(draw, (x + 506, y + 8), pct_text, FONTS["small_bold"], _color_for_pct(change))
     _text(draw, (x + w - 12, y + 12), age, FONTS["tiny"], MUTED, anchor="ra")
-    _bar(draw, x + 48, y + 61, w - 60, 22, change, scale)
+    bar_x = x + 48
+    bar_y = y + 61
+    bar_w = w - 60
+    endpoint = _bar(draw, bar_x, bar_y, bar_w, 22, change, scale)
+    if change is not None:
+        pct_color = _color_for_pct(change)
+        pct_w, _ = _measure(draw, pct_text, FONTS["small_bold"])
+        zero = bar_x + bar_w // 2
+        if change >= 0:
+            tx = min(endpoint + 8, bar_x + bar_w - pct_w)
+            anchor = None
+        else:
+            tx = max(endpoint - 8, bar_x + pct_w)
+            anchor = "ra"
+        _text(draw, (tx, bar_y - 2), pct_text, FONTS["small_bold"], pct_color, anchor=anchor)
 
 
 def generate_quote_card(ticker="00997A"):
@@ -279,13 +296,14 @@ def generate_quote_card(ticker="00997A"):
     _draw_stat(draw, 1216, 184, 202, "刻度範圍", f"±{scale}%", MUTED)
 
     draw.line((74, 302, width - 74, 302), fill=LINE, width=2)
-    _text(draw, (74, 330), "依ETF持股權重排序，紅色代表上漲、綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small"], MUTED)
+    _text(draw, (74, 326), "依ETF持股權重排序", FONTS["small_bold"], INK)
+    _text(draw, (254, 326), "紅色代表上漲，綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small"], MUTED)
 
     left_x = 74
     right_x = 762
     col_w = 664
-    header_y = 375
-    start_y = 440
+    header_y = 358
+    start_y = 405
     row_h = 104
 
     _draw_col_header(draw, left_x, header_y, col_w, scale)
