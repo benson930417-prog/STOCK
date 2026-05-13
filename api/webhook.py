@@ -314,7 +314,8 @@ def webhook():
 @line_handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_msg = event.message.text.strip()
-    etf_quote_ticker = parse_etf_quote_command(user_msg)
+    is_operation_report = is_operation_report_command(user_msg)
+    etf_quote_ticker = None if is_operation_report else parse_etf_quote_command(user_msg)
     print(f"LINE text={user_msg!r} parsed_etf={etf_quote_ticker}", flush=True)
     
     if etf_quote_ticker:
@@ -334,7 +335,7 @@ def handle_message(event):
                 TextSendMessage(text=f"{etf_quote_ticker} 報價圖暫時無法產生，請稍後再試。")
             )
 
-    elif is_operation_report_command(user_msg):
+    elif is_operation_report:
         try:
             from scripts.generate_etf_summary import generate
 
