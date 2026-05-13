@@ -25,7 +25,7 @@ SOFT = (245, 247, 250)
 LINE = (220, 226, 232)
 PANEL = (255, 255, 255)
 WASH = (248, 250, 252)
-HOLDING_TEXT_W = 400
+HOLDING_TEXT_W = 200
 
 
 def _font(size, weight="regular"):
