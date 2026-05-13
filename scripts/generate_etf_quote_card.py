@@ -141,21 +141,21 @@ def _fit_text(draw, text, font, max_width):
 
 
 def _bar(draw, x, y, width, height, pct, scale):
-    _round_rect(draw, (x, y, x + width, y + height), 5, (249, 251, 253))
+    _round_rect(draw, (x, y, x + width, y + height), 6, (249, 251, 253))
     zero = x + width // 2
     draw.line((zero, y - 3, zero, y + height + 3), fill=(196, 204, 214), width=2)
     for marker in (-0.5, 0.5):
         mx = int(zero + marker * width / 2)
-        draw.line((mx, y + height - 5, mx, y + height), fill=(218, 224, 230), width=1)
+        draw.line((mx, y + 4, mx, y + height - 4), fill=(224, 229, 235), width=1)
     if pct is None:
         return
     clamped = max(-scale, min(scale, pct))
     bar_w = int(abs(clamped) / scale * (width / 2))
     color = _color_for_pct(pct)
     if clamped >= 0:
-        _round_rect(draw, (zero, y + 5, zero + bar_w, y + height - 5), 3, color)
+        _round_rect(draw, (zero, y + 6, zero + bar_w, y + height - 6), 4, color)
     else:
-        _round_rect(draw, (zero - bar_w, y + 5, zero, y + height - 5), 3, color)
+        _round_rect(draw, (zero - bar_w, y + 6, zero, y + height - 6), 4, color)
 
 
 def _draw_stat(draw, x, y, w, label, value, accent):
@@ -194,7 +194,7 @@ def _session_label(session):
 def _draw_session(draw, x, y, session):
     session = session or "--"
     _round_rect(draw, (x, y, x + 66, y + 28), 14, _session_fill(session))
-    _text(draw, (x + 33, y + 6), _session_label(session), FONTS["tiny"], _session_text(session), anchor="ma")
+    _text(draw, (x + 33, y + 14), _session_label(session), FONTS["tiny"], _session_text(session), anchor="mm")
 
 
 def _draw_col_header(draw, x, y, w, scale):
@@ -204,12 +204,6 @@ def _draw_col_header(draw, x, y, w, scale):
     _text(draw, (x + 414, y), "狀態", FONTS["tiny"], MUTED)
     _text(draw, (x + 504, y), "漲跌", FONTS["tiny"], MUTED)
     _text(draw, (x + w - 12, y), "更新", FONTS["tiny"], MUTED, anchor="ra")
-    bar_x = x + 276
-    bar_w = w - 290
-    zero = bar_x + bar_w // 2
-    _text(draw, (bar_x, y + 28), f"-{scale}%", FONTS["tiny"], MUTED)
-    _text(draw, (zero, y + 28), "0", FONTS["tiny"], MUTED, anchor="ma")
-    _text(draw, (bar_x + bar_w, y + 28), f"+{scale}%", FONTS["tiny"], MUTED, anchor="ra")
 
 
 def _draw_row(draw, row, x, y, w, rank, scale):
@@ -223,8 +217,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     ticker = row.get("id") or "--"
     name = row.get("name") or "--"
 
-    fill = WASH if rank % 2 == 0 else PANEL
-    _round_rect(draw, (x, y, x + w, y + 55), 8, fill)
+    draw.line((x, y + 92, x + w, y + 92), fill=(236, 240, 245), width=1)
     _text(draw, (x + 10, y + 13), f"{rank:02d}", FONTS["tiny"], MUTED)
     _text(draw, (x + 48, y + 7), _fit_text(draw, name, FONTS["small_bold"], 185), FONTS["small_bold"], INK)
     _text(draw, (x + 48, y + 31), _fit_text(draw, ticker, FONTS["tiny"], 130), FONTS["tiny"], MUTED)
@@ -233,7 +226,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     _draw_session(draw, x + 402, y + 7, session)
     _text(draw, (x + 506, y + 8), pct_text, FONTS["small_bold"], _color_for_pct(change))
     _text(draw, (x + w - 12, y + 12), age, FONTS["tiny"], MUTED, anchor="ra")
-    _bar(draw, x + 276, y + 39, w - 290, 16, change, scale)
+    _bar(draw, x + 48, y + 61, w - 60, 22, change, scale)
 
 
 def generate_quote_card(ticker="00997A"):
@@ -253,7 +246,7 @@ def generate_quote_card(ticker="00997A"):
     scale = max(5, min(30, int(math.ceil(max_abs / 5.0) * 5)))
 
     width = 1500
-    height = 2760
+    height = 3160
     img = Image.new("RGB", (width, height), (241, 244, 248))
     draw = ImageDraw.Draw(img)
 
@@ -293,7 +286,7 @@ def generate_quote_card(ticker="00997A"):
     col_w = 664
     header_y = 375
     start_y = 440
-    row_h = 88
+    row_h = 104
 
     _draw_col_header(draw, left_x, header_y, col_w, scale)
     _draw_col_header(draw, right_x, header_y, col_w, scale)
