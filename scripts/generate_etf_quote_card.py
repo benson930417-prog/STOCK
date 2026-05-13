@@ -262,7 +262,7 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     _text(draw, (82, 68), ticker, FONTS["title"], INK)
     _text(draw, (82, 140), etf_name, FONTS["title_small"], INK)
     _text(draw, (84, 218), f"持股日期：{cache.get('holdings_date', '----')}", FONTS["body_bold"], MUTED)
-    _text(draw, (84, 266), f"第 {page_no}/{total_pages} 張", FONTS["body_bold"], MUTED)
+    _text(draw, (width - 92, 76), f"{page_no}/{total_pages}", FONTS["title"], MUTED, anchor="ra")
     counts = cache.get("counts", {})
     up = counts.get("up", 0)
     down = counts.get("down", 0)
