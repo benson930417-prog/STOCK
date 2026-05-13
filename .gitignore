@@ -21,5 +21,6 @@ Thumbs.db
 # Generated Assets
 data/images/
 data/fonts/
+data/quote_cache/
 data/debug_00997A/
 data/etf_*_summary_*.jpg
