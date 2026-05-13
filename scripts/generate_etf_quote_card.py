@@ -68,6 +68,7 @@ FONTS = {
     "title": _font(64, "bold"),
     "title_small": _font(48, "bold"),
     "h2": _font(40, "bold"),
+    "rank": _font(60, "bold"),
     "body": _font(30),
     "body_bold": _font(30, "bold"),
     "small": _font(24),
@@ -111,12 +112,12 @@ def _fmt_pct(value):
 
 def _color_for_pct(value):
     if value is None:
-        return MUTED
+        return INK
     if value > 0:
         return RED
     if value < 0:
         return GREEN
-    return MUTED
+    return INK
 
 
 def _text(draw, xy, text, font, fill=INK, anchor=None):
@@ -164,7 +165,7 @@ def _bar(draw, x, y, width, height, pct, scale):
 
 def _draw_stat(draw, x, y, w, label, value, accent):
     _round_rect(draw, (x, y, x + w, y + 106), 18, PANEL, (225, 231, 239))
-    _text(draw, (x + 20, y + 18), label, FONTS["small_bold"], MUTED)
+    _text(draw, (x + 20, y + 18), label, FONTS["small_bold"], INK)
     value_font = FONTS["body_bold"]
     if _measure(draw, value, value_font)[0] > w - 40:
         value_font = FONTS["small_bold"]
@@ -182,11 +183,11 @@ def _session_fill(session):
 
 def _session_text(session):
     return {
-        "PRE": (180, 83, 9),
-        "REG": (37, 99, 235),
-        "POST": (109, 40, 217),
-        "CLOSE": (75, 85, 99),
-    }.get(session, MUTED)
+        "PRE": INK,
+        "REG": INK,
+        "POST": INK,
+        "CLOSE": INK,
+    }.get(session, INK)
 
 
 def _session_label(session):
@@ -225,16 +226,16 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     name = row.get("name") or "--"
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
-    _text(draw, (x + 10, y + 19), f"{rank:02d}", FONTS["tiny"], MUTED)
-    _text(draw, (x + 64, y + 10), _fit_text(draw, name, FONTS["body_bold"], 290), FONTS["body_bold"], INK)
-    _text(draw, (x + 64, y + 54), _fit_text(draw, ticker, FONTS["small"], 220), FONTS["small"], MUTED)
-    _text(draw, (x + 410, y + 21), country, FONTS["small"], MUTED)
-    _text(draw, (x + 490, y + 21), weight_text, FONTS["small"], MUTED)
+    _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
+    _text(draw, (x + 118, y + 10), _fit_text(draw, name, FONTS["body_bold"], 236), FONTS["body_bold"], INK)
+    _text(draw, (x + 118, y + 54), _fit_text(draw, ticker, FONTS["small"], 184), FONTS["small"], INK)
+    _text(draw, (x + 410, y + 21), country, FONTS["small"], INK)
+    _text(draw, (x + 490, y + 21), weight_text, FONTS["small"], INK)
     _draw_session(draw, x + 592, y + 10, session)
-    _text(draw, (x + 760, y + 21), age, FONTS["small"], MUTED)
-    bar_x = x + 64
+    _text(draw, (x + 760, y + 21), age, FONTS["small"], INK)
+    bar_x = x + 118
     bar_y = y + 90
-    bar_w = w - 112
+    bar_w = w - 166
     endpoint = _bar(draw, bar_x, bar_y, bar_w, 30, change, scale)
     if change is not None:
         pct_color = _color_for_pct(change)
@@ -252,7 +253,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
 def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     extra_stat_slot = 226
     width = 1500 + extra_stat_slot
-    height = 4320
+    height = 4052
     img = Image.new("RGB", (width, height), (241, 244, 248))
     draw = ImageDraw.Draw(img)
 
@@ -276,10 +277,10 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     y0 = 328
     _draw_stat(draw, x0 + (box_w + gap) * 0, y0, box_w, "上漲", str(up), RED)
     _draw_stat(draw, x0 + (box_w + gap) * 1, y0, box_w, "下跌", str(down), GREEN)
-    _draw_stat(draw, x0 + (box_w + gap) * 2, y0, box_w, "無變動", str(no_change), MUTED)
+    _draw_stat(draw, x0 + (box_w + gap) * 2, y0, box_w, "無變動", str(no_change), INK)
     _draw_stat(draw, x0 + (box_w + gap) * 3, y0, box_w, "最新報價", _ago(cache.get("newest_quote_utc")), RED)
-    _draw_stat(draw, x0 + (box_w + gap) * 4, y0, box_w, "最舊報價", _ago(cache.get("oldest_quote_utc")), MUTED)
-    _draw_stat(draw, x0 + (box_w + gap) * 5, y0, box_w, "權重更新", _ago(cache.get("etf_refresh_utc")), MUTED)
+    _draw_stat(draw, x0 + (box_w + gap) * 4, y0, box_w, "最舊報價", _ago(cache.get("oldest_quote_utc")), INK)
+    _draw_stat(draw, x0 + (box_w + gap) * 5, y0, box_w, "權重更新", _ago(cache.get("etf_refresh_utc")), INK)
     _draw_stat(
         draw,
         x0 + (box_w + gap) * 6,
@@ -292,7 +293,7 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
 
     draw.line((74, 510, width - 74, 510), fill=LINE, width=2)
     _text(draw, (74, 540), "依ETF持股權重排序", FONTS["small_bold"], INK)
-    _text(draw, (314, 540), "紅色代表上漲，綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small_bold"], MUTED)
+    _text(draw, (314, 540), "紅色代表上漲，綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small_bold"], INK)
 
     x = 74
     col_w = width - 148
@@ -305,9 +306,6 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     rank_offset = (page_no - 1) * 25
     for idx, row in enumerate(rows):
         _draw_row(draw, row, x, start_y + idx * row_h, col_w, rank_offset + idx + 1, scale)
-
-    footer = f"報表產生：{_ago(cache.get('generated_utc'))}"
-    _text(draw, (width // 2, height - 58), footer, FONTS["tiny"], MUTED, anchor="ma")
 
     return img
 
