@@ -162,9 +162,12 @@ def _bar(draw, x, y, width, height, pct, scale):
 
 
 def _draw_stat(draw, x, y, w, label, value, accent):
-    _round_rect(draw, (x, y, x + w, y + 92), 18, PANEL, (225, 231, 239))
-    _text(draw, (x + 20, y + 16), label, FONTS["small_bold"], MUTED)
-    _text(draw, (x + 20, y + 50), _fit_text(draw, value, FONTS["body_bold"], w - 34), FONTS["body_bold"], accent)
+    _round_rect(draw, (x, y, x + w, y + 106), 18, PANEL, (225, 231, 239))
+    _text(draw, (x + 20, y + 18), label, FONTS["small_bold"], MUTED)
+    value_font = FONTS["body_bold"]
+    if _measure(draw, value, value_font)[0] > w - 40:
+        value_font = FONTS["small_bold"]
+    _text(draw, (x + 20, y + 62), _fit_text(draw, value, value_font, w - 40), value_font, accent)
 
 
 def _session_fill(session):
@@ -205,7 +208,6 @@ def _draw_col_header(draw, x, y, w, scale):
     _text(draw, (x + 410, y), "市場", FONTS["tiny_bold"], INK)
     _text(draw, (x + 490, y), "權重", FONTS["tiny_bold"], INK)
     _text(draw, (x + 605, y), "狀態", FONTS["tiny_bold"], INK)
-    _text(draw, (x + 745, y), "漲跌", FONTS["tiny_bold"], INK)
     _text(draw, (x + w - 12, y), "更新", FONTS["tiny_bold"], INK, anchor="ra")
     draw.line((x, y + 38, x + w, y + 38), fill=(209, 216, 224), width=3)
 
@@ -221,16 +223,16 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     ticker = row.get("id") or "--"
     name = row.get("name") or "--"
 
-    draw.line((x, y + 112, x + w, y + 112), fill=(232, 237, 243), width=2)
+    draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
     _text(draw, (x + 10, y + 19), f"{rank:02d}", FONTS["tiny"], MUTED)
     _text(draw, (x + 64, y + 10), _fit_text(draw, name, FONTS["body_bold"], 290), FONTS["body_bold"], INK)
-    _text(draw, (x + 64, y + 47), _fit_text(draw, ticker, FONTS["small"], 220), FONTS["small"], MUTED)
+    _text(draw, (x + 64, y + 54), _fit_text(draw, ticker, FONTS["small"], 220), FONTS["small"], MUTED)
     _text(draw, (x + 410, y + 21), country, FONTS["small"], MUTED)
     _text(draw, (x + 490, y + 21), weight_text, FONTS["small"], MUTED)
     _draw_session(draw, x + 592, y + 16, session)
     _text(draw, (x + w - 12, y + 21), age, FONTS["small"], MUTED, anchor="ra")
     bar_x = x + 64
-    bar_y = y + 76
+    bar_y = y + 90
     bar_w = w - 112
     endpoint = _bar(draw, bar_x, bar_y, bar_w, 30, change, scale)
     if change is not None:
@@ -248,12 +250,12 @@ def _draw_row(draw, row, x, y, w, rank, scale):
 
 def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     width = 1500
-    height = 3720
+    height = 4050
     img = Image.new("RGB", (width, height), (241, 244, 248))
     draw = ImageDraw.Draw(img)
 
     _round_rect(draw, (28, 28, width - 28, height - 28), 28, PANEL, (221, 228, 236), 2)
-    _round_rect(draw, (54, 54, width - 54, 430), 24, (250, 252, 255), (234, 238, 244), 1)
+    _round_rect(draw, (54, 54, width - 54, 360), 24, (250, 252, 255), (234, 238, 244), 1)
 
     title = f"{ticker} {ETF_NAMES.get(ticker, '')}".strip()
     title_font = FONTS["title"] if _measure(draw, title, FONTS["title"])[0] < 1020 else FONTS["title_small"]
@@ -269,23 +271,23 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     box_w = 210
     gap = 16
     x0 = 84
-    y0 = 226
+    y0 = 214
     _draw_stat(draw, x0 + (box_w + gap) * 0, y0, box_w, "上漲", str(up), RED)
     _draw_stat(draw, x0 + (box_w + gap) * 1, y0, box_w, "下跌", str(down), GREEN)
-    _draw_stat(draw, x0 + (box_w + gap) * 2, y0, box_w, "最新報價", _ago(cache.get("newest_quote_utc")), RED)
-    _draw_stat(draw, x0 + (box_w + gap) * 3, y0, box_w, "無變動", str(no_change), MUTED)
+    _draw_stat(draw, x0 + (box_w + gap) * 2, y0, box_w, "無變動", str(no_change), MUTED)
+    _draw_stat(draw, x0 + (box_w + gap) * 3, y0, box_w, "最新報價", _ago(cache.get("newest_quote_utc")), RED)
     _draw_stat(draw, x0 + (box_w + gap) * 4, y0, box_w, "最舊報價", _ago(cache.get("oldest_quote_utc")), MUTED)
     _draw_stat(draw, x0 + (box_w + gap) * 5, y0, box_w, "權重更新", _ago(cache.get("etf_refresh_utc")), MUTED)
 
-    draw.line((74, 470, width - 74, 470), fill=LINE, width=2)
-    _text(draw, (74, 500), "依ETF持股權重排序", FONTS["small_bold"], INK)
-    _text(draw, (314, 500), "紅色代表上漲，綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small_bold"], MUTED)
+    draw.line((74, 400, width - 74, 400), fill=LINE, width=2)
+    _text(draw, (74, 430), "依ETF持股權重排序", FONTS["small_bold"], INK)
+    _text(draw, (314, 430), "紅色代表上漲，綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small_bold"], MUTED)
 
     x = 74
     col_w = width - 148
-    header_y = 566
-    start_y = 626
-    row_h = 114
+    header_y = 496
+    start_y = 556
+    row_h = 132
 
     _draw_col_header(draw, x, header_y, col_w, scale)
 
