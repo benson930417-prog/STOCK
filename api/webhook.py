@@ -55,6 +55,10 @@ def parse_etf_quote_command(text):
         return "00981A"
     return None
 
+def is_operation_report_command(text):
+    normalized = unicodedata.normalize("NFKC", text).strip()
+    return "操作日報" in normalized
+
 def _parse_iso_time(value):
     if not value:
         return None
@@ -200,6 +204,10 @@ def home():
 def serve_image(filename):
     return send_from_directory('/home/ubuntu/STOCK/data/images', filename)
 
+@app.route('/api/webhook/summaries/<filename>', methods=['GET'])
+def serve_summary(filename):
+    return send_from_directory('/home/ubuntu/STOCK/data/summaries', filename)
+
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
     signature = request.headers.get('X-Line-Signature', '')
@@ -232,6 +240,32 @@ def handle_message(event):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text=f"{etf_quote_ticker} 報價圖暫時無法產生，請稍後再試。")
+            )
+
+    elif is_operation_report_command(user_msg):
+        try:
+            from scripts.generate_etf_summary import generate
+
+            ticker = "00997A"
+            generate()
+            filename = f"etf_{ticker}_summary_latest.jpg"
+            image_path = os.path.join(parent_dir, "data", "summaries", filename)
+            if not os.path.exists(image_path):
+                raise FileNotFoundError(image_path)
+
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/summaries/{filename}?t={int(time.time())}"
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    TextSendMessage(text=f"{ticker} 操作日報預覽"),
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
+                ],
+            )
+        except Exception as e:
+            print("ETF operation report preview failed:", e)
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="操作日報預覽暫時無法產生，請稍後再試。")
             )
 
     elif user_msg == "油價":
