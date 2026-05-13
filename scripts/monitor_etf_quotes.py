@@ -3,6 +3,7 @@ import json
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -14,7 +15,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
 QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 
-YAHOO_QUOTE_URL = "https://query1.finance.yahoo.com/v7/finance/quote"
+YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 
@@ -108,28 +109,77 @@ def normalize_yahoo_symbol(raw_id):
     return symbol, country or "US"
 
 
-def fetch_yahoo_quotes(symbols, timeout=20):
+def _fetch_yahoo_chart_quote(symbol, timeout=10):
+    try:
+        res = requests.get(
+            YAHOO_CHART_URL.format(symbol=symbol),
+            params={"range": "5d", "interval": "1d"},
+            headers=HEADERS,
+            timeout=timeout,
+        )
+        res.raise_for_status()
+        payload = res.json()
+        chart = payload.get("chart", {})
+        error = chart.get("error")
+        if error:
+            return {"symbol": symbol, "error": str(error)}
+
+        result = chart.get("result") or []
+        if not result:
+            return {"symbol": symbol, "error": "empty chart result"}
+
+        data = result[0]
+        meta = data.get("meta", {})
+        price = meta.get("regularMarketPrice")
+        quote_time = meta.get("regularMarketTime")
+        previous = (
+            meta.get("regularMarketPreviousClose")
+            or meta.get("previousClose")
+            or meta.get("chartPreviousClose")
+        )
+
+        timestamps = data.get("timestamp") or []
+        closes = data.get("indicators", {}).get("quote", [{}])[0].get("close", [])
+        valid_closes = [close for close in closes if close is not None]
+        if previous is None and len(valid_closes) >= 2:
+            previous = valid_closes[-2]
+        if price is None and valid_closes:
+            price = valid_closes[-1]
+        if quote_time is None and timestamps:
+            quote_time = timestamps[-1]
+
+        change_pct = None
+        if price is not None and previous:
+            change_pct = (float(price) - float(previous)) / float(previous) * 100.0
+
+        return {
+            "symbol": symbol,
+            "regularMarketPrice": price,
+            "regularMarketTime": quote_time,
+            "regularMarketChangePercent": change_pct,
+            "currency": meta.get("currency"),
+        }
+    except Exception as exc:
+        return {"symbol": symbol, "error": str(exc)}
+
+
+def fetch_yahoo_quotes(symbols, max_workers=12):
     quotes = {}
     unique_symbols = [s for s in dict.fromkeys(symbols) if s]
+    if not unique_symbols:
+        return quotes
 
-    for start in range(0, len(unique_symbols), 50):
-        batch = unique_symbols[start:start + 50]
-        try:
-            res = requests.get(
-                YAHOO_QUOTE_URL,
-                params={"symbols": ",".join(batch)},
-                headers=HEADERS,
-                timeout=timeout,
-            )
-            res.raise_for_status()
-            results = res.json().get("quoteResponse", {}).get("result", [])
-            for item in results:
-                symbol = item.get("symbol")
-                if symbol:
-                    quotes[symbol] = item
-        except Exception as exc:
-            for symbol in batch:
-                quotes.setdefault(symbol, {"symbol": symbol, "error": str(exc)})
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {
+            executor.submit(_fetch_yahoo_chart_quote, symbol): symbol
+            for symbol in unique_symbols
+        }
+        for future in as_completed(future_map):
+            symbol = future_map[future]
+            try:
+                quotes[symbol] = future.result()
+            except Exception as exc:
+                quotes[symbol] = {"symbol": symbol, "error": str(exc)}
 
     return quotes
 
@@ -192,6 +242,7 @@ def build_cache(ticker):
             "day_change_pct": day_change_pct,
             "quote_time_utc": quote_time_utc,
             "status": status,
+            "error": quote.get("error") if quote else "missing yahoo symbol",
         })
 
     composite_move_pct = None
