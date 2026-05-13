@@ -296,14 +296,28 @@ def fetch_and_update_00997A():
             if json.dumps(curr_cmp, sort_keys=True) == json.dumps(prev_cmp, sort_keys=True):
                 is_changed = False
 
+        meta_changed = False
+        if existing_day_data:
+            meta_changed = json.dumps(
+                existing_day_data.get("meta", {}),
+                ensure_ascii=False,
+                sort_keys=True,
+            ) != json.dumps(day_data.get("meta", {}), ensure_ascii=False, sort_keys=True)
+
         history[file_date_str] = day_data
         os.makedirs(DATA_DIR, exist_ok=True)
-        if is_changed:
+        if is_changed or meta_changed:
             with open(HISTORY_FILE, "w", encoding="utf-8") as f:
                 json.dump(history, f, ensure_ascii=False, indent=2)
             log_data["last_updated_utc"] = now_utc
-            log_data["status"] = "NEW DATA FOUND"
-            print(f"Successfully updated {ETF_TICKER} holdings for {file_date_str}. Total stocks: {len(holdings)}")
+            log_data["status"] = "NEW DATA FOUND" if is_changed else "META UPDATED"
+            if is_changed:
+                print(f"Successfully updated {ETF_TICKER} holdings for {file_date_str}. Total stocks: {len(holdings)}")
+            else:
+                print(
+                    f"Updated {ETF_TICKER} metadata for {file_date_str} "
+                    f"(closing_price_date={closing_price_date}, closing_price={closing_price})."
+                )
         else:
             log_data["status"] = "No Change"
             log_data["official_page_date"] = official_page_date
