@@ -229,9 +229,7 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
                 session = "CLOSE"
 
         previous = None
-        if country == "US" and session == "POST" and meta.get("regularMarketPrice"):
-            previous = meta.get("regularMarketPrice")
-        elif len(valid_points) >= 2 and country != "US":
+        if len(valid_points) >= 2 and country != "US":
             _, previous = valid_points[-2]
         if previous is None:
             previous = (
