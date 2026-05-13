@@ -314,7 +314,8 @@
     "meta": {
       "fund_size": 12666148230.0,
       "nav": 12.61,
-      "closing_price": 12.819999694824219
+      "closing_price": 12.470000267028809,
+      "closing_price_date": "2026-05-11"
     },
     "holdings": [
       {
