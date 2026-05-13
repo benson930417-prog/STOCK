@@ -257,7 +257,8 @@ def _draw_row(draw, row, x, y, w, rank, scale):
 
 
 def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
-    width = 1500
+    extra_stat_slot = 226
+    width = 1500 + extra_stat_slot
     height = 4320
     img = Image.new("RGB", (width, height), (241, 244, 248))
     draw = ImageDraw.Draw(img)
