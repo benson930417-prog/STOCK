@@ -130,23 +130,32 @@ def _fetch_yahoo_chart_quote(symbol, timeout=10):
 
         data = result[0]
         meta = data.get("meta", {})
-        price = meta.get("regularMarketPrice")
-        quote_time = meta.get("regularMarketTime")
-        previous = (
-            meta.get("regularMarketPreviousClose")
-            or meta.get("previousClose")
-            or meta.get("chartPreviousClose")
-        )
-
         timestamps = data.get("timestamp") or []
         closes = data.get("indicators", {}).get("quote", [{}])[0].get("close", [])
-        valid_closes = [close for close in closes if close is not None]
-        if previous is None and len(valid_closes) >= 2:
-            previous = valid_closes[-2]
-        if price is None and valid_closes:
-            price = valid_closes[-1]
-        if quote_time is None and timestamps:
-            quote_time = timestamps[-1]
+        valid_points = [
+            (timestamp, close)
+            for timestamp, close in zip(timestamps, closes)
+            if timestamp is not None and close is not None
+        ]
+
+        price = None
+        previous = None
+        quote_time = None
+        if valid_points:
+            quote_time, price = valid_points[-1]
+        if len(valid_points) >= 2:
+            _, previous = valid_points[-2]
+
+        if price is None:
+            price = meta.get("regularMarketPrice")
+        if quote_time is None:
+            quote_time = meta.get("regularMarketTime")
+        if previous is None:
+            previous = (
+                meta.get("regularMarketPreviousClose")
+                or meta.get("previousClose")
+                or meta.get("chartPreviousClose")
+            )
 
         change_pct = None
         if price is not None and previous:
@@ -155,6 +164,7 @@ def _fetch_yahoo_chart_quote(symbol, timeout=10):
         return {
             "symbol": symbol,
             "regularMarketPrice": price,
+            "previousClose": previous,
             "regularMarketTime": quote_time,
             "regularMarketChangePercent": change_pct,
             "currency": meta.get("currency"),
@@ -238,6 +248,7 @@ def build_cache(ticker):
             "country": country,
             "yahoo_symbol": yahoo_symbol,
             "price": quote.get("regularMarketPrice") if quote else None,
+            "previous_close": quote.get("previousClose") if quote else None,
             "currency": quote.get("currency") if quote else None,
             "day_change_pct": day_change_pct,
             "quote_time_utc": quote_time_utc,

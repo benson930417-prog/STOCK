@@ -4,6 +4,7 @@ import re
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -56,6 +57,31 @@ def _parse_weight(value):
         return None
 
 
+def _latest_us_trading_date():
+    try:
+        res = requests.get(
+            "https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=10d&interval=1d",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=5,
+        )
+        if res.status_code == 200:
+            chart = res.json()["chart"]["result"][0]
+            timestamps = chart.get("timestamp", [])
+            closes = chart.get("indicators", {}).get("quote", [{}])[0].get("close", [])
+            for timestamp, close in reversed(list(zip(timestamps, closes))):
+                if close is not None:
+                    return datetime.fromtimestamp(timestamp, ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    except Exception:
+        pass
+
+    day = datetime.now(ZoneInfo("America/New_York")).date()
+    if datetime.now(ZoneInfo("America/New_York")).hour < 16:
+        day -= timedelta(days=1)
+    while day.weekday() >= 5:
+        day -= timedelta(days=1)
+    return day.strftime("%Y-%m-%d")
+
+
 def _download_official_workbook():
     with tempfile.TemporaryDirectory() as tmpdir:
         download_path = Path(tmpdir) / f"{ETF_TICKER}.xlsx"
@@ -86,9 +112,9 @@ def _download_official_workbook():
 
             body_text = page.locator("body").inner_text(timeout=10000)
             date_matches = re.findall(r"20\d{2}/\d{1,2}/\d{1,2}", body_text)
-            if not date_matches:
-                raise ValueError("Could not find official portfolio date on Capital Fund page")
-            file_date_str = datetime.strptime(date_matches[0], "%Y/%m/%d").strftime("%Y-%m-%d")
+            official_page_date = None
+            if date_matches:
+                official_page_date = datetime.strptime(date_matches[0], "%Y/%m/%d").strftime("%Y-%m-%d")
 
             with page.expect_download(timeout=30000) as download_info:
                 page.locator("button.buyback-search-section-btn").click()
@@ -97,7 +123,7 @@ def _download_official_workbook():
             browser.close()
 
         with open(download_path, "rb") as f:
-            return file_date_str, f.read()
+            return official_page_date, f.read()
 
 
 def _parse_workbook(workbook_bytes):
@@ -158,6 +184,28 @@ def _get_closing_price(file_date_str, nav):
     return closing_price
 
 
+def _holdings_fingerprint(day_data):
+    holdings = day_data.get("holdings", [])
+    normalized = [
+        {
+            "id": str(item.get("id", "")).strip(),
+            "name": str(item.get("name", "")).strip(),
+            "weight_pct": item.get("weight_pct"),
+            "shares": item.get("shares"),
+        }
+        for item in holdings
+    ]
+    normalized.sort(key=lambda item: item["id"])
+    return json.dumps(normalized, ensure_ascii=False, sort_keys=True)
+
+
+def _latest_history_day(history):
+    if not history:
+        return None, None
+    latest_date = max(history.keys())
+    return latest_date, history[latest_date]
+
+
 def fetch_and_update_00997A():
     now_utc = datetime.now(timezone.utc).isoformat()
     log_data = {"last_checked_utc": None, "last_updated_utc": None, "status": "Initializing"}
@@ -170,7 +218,8 @@ def fetch_and_update_00997A():
     log_data["last_checked_utc"] = now_utc
 
     try:
-        file_date_str, workbook_bytes = _download_official_workbook()
+        official_page_date, workbook_bytes = _download_official_workbook()
+        file_date_str = _latest_us_trading_date()
         fund_size, nav, holdings = _parse_workbook(workbook_bytes)
         closing_price = _get_closing_price(file_date_str, nav)
 
@@ -193,8 +242,12 @@ def fetch_and_update_00997A():
                 pass
 
         is_changed = True
+        latest_existing_date, latest_existing_day_data = _latest_history_day(history)
+        if latest_existing_day_data and _holdings_fingerprint(day_data) == _holdings_fingerprint(latest_existing_day_data):
+            is_changed = False
+
         existing_day_data = history.get(file_date_str)
-        if existing_day_data:
+        if is_changed and existing_day_data:
             import copy
 
             curr_cmp = copy.deepcopy(day_data)
@@ -214,7 +267,13 @@ def fetch_and_update_00997A():
             print(f"Successfully updated {ETF_TICKER} holdings for {file_date_str}. Total stocks: {len(holdings)}")
         else:
             log_data["status"] = "No Change"
-            print(f"No changes detected for {ETF_TICKER} on {file_date_str}.")
+            log_data["official_page_date"] = official_page_date
+            log_data["candidate_holding_date"] = file_date_str
+            print(
+                f"No holding changes detected for {ETF_TICKER}. "
+                f"Latest stored date remains {latest_existing_date or 'none'} "
+                f"(official_page_date={official_page_date}, candidate_holding_date={file_date_str})."
+            )
 
     except Exception as e:
         log_data["status"] = f"Error: {e}"
