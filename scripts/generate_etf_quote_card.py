@@ -133,17 +133,6 @@ def _measure(draw, text, font):
     return box[2] - box[0], box[3] - box[1]
 
 
-def _text_box(draw, xy, text, font, fill, anchor=None, pad_x=6, pad_y=2):
-    box = draw.textbbox(xy, str(text), font=font, anchor=anchor)
-    _round_rect(
-        draw,
-        (box[0] - pad_x, box[1] - pad_y, box[2] + pad_x, box[3] + pad_y),
-        5,
-        PANEL,
-    )
-    _text(draw, xy, text, font, fill, anchor=anchor)
-
-
 def _fit_text(draw, text, font, max_width):
     text = str(text)
     if _measure(draw, text, font)[0] <= max_width:
@@ -226,11 +215,12 @@ def _draw_session(draw, x, y, session):
 
 
 def _draw_col_header(draw, x, y, w, scale):
-    _text(draw, (x + 64, y), "持股", FONTS["body_bold"], INK)
-    _text(draw, (x + 410, y), "市場", FONTS["body_bold"], INK)
-    _text(draw, (x + 490, y), "權重", FONTS["body_bold"], INK)
-    _text(draw, (x + 605, y), "狀態", FONTS["body_bold"], INK)
-    _text(draw, (x + 760, y), "更新", FONTS["body_bold"], INK)
+    meta_x = x + w - 850
+    _text(draw, (x + 118, y), "持股", FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 0, y), "市場", FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 90, y), "權重", FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 220, y), "狀態", FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 390, y), "更新", FONTS["body_bold"], INK)
     draw.line((x, y + 54, x + w, y + 54), fill=(209, 216, 224), width=3)
 
 
@@ -244,16 +234,19 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     weight_text = f"{weight:.2f}%" if weight is not None else "--"
     ticker = row.get("id") or "--"
     name = row.get("name") or "--"
+    meta_x = x + w - 850
+    holding_x = x + 118
+    name_max_w = max(220, meta_x - holding_x - 32)
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
     _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
-    _text(draw, (x + 118, y + 10), _fit_text(draw, name, FONTS["body_bold"], 236), FONTS["body_bold"], INK)
-    _text(draw, (x + 118, y + 54), _fit_text(draw, ticker, FONTS["small"], 184), FONTS["small"], INK)
-    _text(draw, (x + 410, y + 21), country, FONTS["small"], INK)
-    _text(draw, (x + 490, y + 21), weight_text, FONTS["small"], INK)
-    _draw_session(draw, x + 592, y + 10, session)
-    _text(draw, (x + 760, y + 21), age, FONTS["small"], INK)
-    bar_x = x + 118
+    _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
+    _text(draw, (holding_x, y + 54), _fit_text(draw, ticker, FONTS["small"], name_max_w), FONTS["small"], INK)
+    _text(draw, (meta_x + 0, y + 21), country, FONTS["small"], INK)
+    _text(draw, (meta_x + 90, y + 21), weight_text, FONTS["small"], INK)
+    _draw_session(draw, meta_x + 205, y + 10, session)
+    _text(draw, (meta_x + 390, y + 21), age, FONTS["small"], INK)
+    bar_x = holding_x
     bar_y = y + 90
     bar_w = w - 166
     endpoint = _bar(draw, bar_x, bar_y, bar_w, 30, change, scale)
@@ -267,7 +260,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
         else:
             tx = max(endpoint - 12, bar_x + pct_w + 2)
             anchor = "ra"
-        _text_box(draw, (tx, bar_y - 6), pct_text, FONTS["body_bold"], pct_color, anchor=anchor)
+        _text(draw, (tx, bar_y - 12), pct_text, FONTS["body_bold"], pct_color, anchor=anchor)
 
 
 def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
