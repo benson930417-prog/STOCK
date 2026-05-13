@@ -114,16 +114,29 @@ def _fmt_pct(value):
     return f"{sign}{value:.2f}%"
 
 
-def _country_display(country):
-    return {
-        "US": "🇺🇸",
-        "TW": "🇹🇼",
-        "JP": "🇯🇵",
-        "HK": "🇭🇰",
-        "CN": "🇨🇳",
-        "KR": "🇰🇷",
-        "SG": "🇸🇬",
-    }.get(str(country or "").upper(), "🏳️")
+def _draw_country_flag(draw, x, y, country):
+    country = str(country or "").upper()
+    w, h = 46, 30
+    _round_rect(draw, (x, y, x + w, y + h), 4, PANEL, (190, 198, 208), 1)
+
+    if country == "US":
+        stripe_h = h / 7
+        for i in range(7):
+            color = (191, 10, 48) if i % 2 == 0 else PANEL
+            draw.rectangle((x + 1, y + int(i * stripe_h), x + w - 1, y + int((i + 1) * stripe_h)), fill=color)
+        draw.rectangle((x + 1, y + 1, x + 21, y + 16), fill=(0, 40, 104))
+    elif country == "TW":
+        draw.rectangle((x + 1, y + 1, x + w - 1, y + h - 1), fill=(254, 0, 0))
+        draw.rectangle((x + 1, y + 1, x + 23, y + 16), fill=(0, 0, 149))
+        draw.ellipse((x + 9, y + 5, x + 15, y + 11), fill=PANEL)
+    elif country == "JP":
+        draw.rectangle((x + 1, y + 1, x + w - 1, y + h - 1), fill=PANEL)
+        draw.ellipse((x + 16, y + 7, x + 30, y + 21), fill=(188, 0, 45))
+    elif country == "HK":
+        draw.rectangle((x + 1, y + 1, x + w - 1, y + h - 1), fill=(222, 41, 16))
+        draw.ellipse((x + 17, y + 9, x + 29, y + 21), fill=PANEL)
+    else:
+        _text(draw, (x + w / 2, y + h / 2), country[:2] or "--", FONTS["tiny_bold"], INK, anchor="mm")
 
 
 def _color_for_pct(value):
@@ -260,7 +273,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
     _text(draw, (holding_x, y + 54), _fit_text(draw, ticker, FONTS["small"], name_max_w), FONTS["small"], INK)
-    _text(draw, (meta_x + 0, y + 15), _country_display(country), FONTS["flag"], INK)
+    _draw_country_flag(draw, meta_x + 0, y + 15, country)
     _text(draw, (meta_x + 90, y + 21), weight_text, FONTS["small"], INK)
     _draw_session(draw, meta_x + 205, y + 10, session)
     _text(draw, (meta_x + 500, y + 21), age, FONTS["small"], INK)
