@@ -133,6 +133,17 @@ def _measure(draw, text, font):
     return box[2] - box[0], box[3] - box[1]
 
 
+def _text_box(draw, xy, text, font, fill, anchor=None, pad_x=6, pad_y=2):
+    box = draw.textbbox(xy, str(text), font=font, anchor=anchor)
+    _round_rect(
+        draw,
+        (box[0] - pad_x, box[1] - pad_y, box[2] + pad_x, box[3] + pad_y),
+        5,
+        PANEL,
+    )
+    _text(draw, xy, text, font, fill, anchor=anchor)
+
+
 def _fit_text(draw, text, font, max_width):
     text = str(text)
     if _measure(draw, text, font)[0] <= max_width:
@@ -256,7 +267,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
         else:
             tx = max(endpoint - 12, bar_x + pct_w + 2)
             anchor = "ra"
-        _text(draw, (tx, bar_y - 6), pct_text, FONTS["body_bold"], pct_color, anchor=anchor)
+        _text_box(draw, (tx, bar_y - 6), pct_text, FONTS["body_bold"], pct_color, anchor=anchor)
 
 
 def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
@@ -332,7 +343,7 @@ def generate_quote_card(ticker="00997A"):
     )
     valid_changes = [abs(row["day_change_pct"]) for row in all_rows if row.get("day_change_pct") is not None]
     max_abs = max(valid_changes) if valid_changes else 5
-    scale = max(5, min(30, int(math.ceil(max_abs / 5.0) * 5)))
+    scale = max(5, min(30, int(math.ceil((max_abs * 1.2) / 5.0) * 5)))
 
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
     output_paths = []
