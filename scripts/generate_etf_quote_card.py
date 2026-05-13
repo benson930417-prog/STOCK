@@ -260,7 +260,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
         else:
             tx = max(endpoint - 12, bar_x + pct_w + 2)
             anchor = "ra"
-        _text(draw, (tx, bar_y - 12), pct_text, FONTS["body_bold"], pct_color, anchor=anchor)
+        _text(draw, (tx, bar_y - 9), pct_text, FONTS["body_bold"], pct_color, anchor=anchor)
 
 
 def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
