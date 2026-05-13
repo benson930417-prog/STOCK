@@ -111,6 +111,12 @@ def _candidate_holding_date(now_tw=None):
     return _previous_global_trading_date(latest_disclosure_day, known_dates).strftime("%Y-%m-%d")
 
 
+def _closing_price_date_for_holding_date(holding_date_str):
+    holding_day = datetime.strptime(holding_date_str, "%Y-%m-%d").date()
+    known_dates = _recent_global_trading_dates()
+    return _previous_global_trading_date(holding_day, known_dates).strftime("%Y-%m-%d")
+
+
 def _download_official_workbook():
     with tempfile.TemporaryDirectory() as tmpdir:
         download_path = Path(tmpdir) / f"{ETF_TICKER}.xlsx"
@@ -250,7 +256,8 @@ def fetch_and_update_00997A():
         official_page_date, workbook_bytes = _download_official_workbook()
         file_date_str = _candidate_holding_date()
         fund_size, nav, holdings = _parse_workbook(workbook_bytes)
-        closing_price = _get_closing_price(file_date_str, nav)
+        closing_price_date = _closing_price_date_for_holding_date(file_date_str)
+        closing_price = _get_closing_price(closing_price_date, nav)
 
         day_data = {
             "date": file_date_str,
@@ -258,6 +265,7 @@ def fetch_and_update_00997A():
                 "fund_size": fund_size,
                 "nav": nav,
                 "closing_price": float(closing_price) if closing_price is not None else None,
+                "closing_price_date": closing_price_date,
             },
             "holdings": holdings,
         }
@@ -282,7 +290,9 @@ def fetch_and_update_00997A():
             curr_cmp = copy.deepcopy(day_data)
             prev_cmp = copy.deepcopy(existing_day_data)
             curr_cmp["meta"].pop("closing_price", None)
+            curr_cmp["meta"].pop("closing_price_date", None)
             prev_cmp["meta"].pop("closing_price", None)
+            prev_cmp["meta"].pop("closing_price_date", None)
             if json.dumps(curr_cmp, sort_keys=True) == json.dumps(prev_cmp, sort_keys=True):
                 is_changed = False
 
