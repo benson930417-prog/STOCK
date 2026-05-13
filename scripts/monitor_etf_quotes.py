@@ -118,6 +118,31 @@ def _market_time(meta, key):
         return None
 
 
+def _exchange_session(country):
+    if country == "TW":
+        now = datetime.now(ZoneInfo("Asia/Taipei"))
+        minutes = now.hour * 60 + now.minute
+        if now.weekday() < 5 and 9 * 60 <= minutes < 13 * 60 + 30:
+            return "REG"
+        return "CLOSE"
+
+    if country == "JP":
+        now = datetime.now(ZoneInfo("Asia/Tokyo"))
+        minutes = now.hour * 60 + now.minute
+        if now.weekday() < 5 and 9 * 60 <= minutes < 15 * 60 + 30:
+            return "REG"
+        return "CLOSE"
+
+    if country == "HK":
+        now = datetime.now(ZoneInfo("Asia/Hong_Kong"))
+        minutes = now.hour * 60 + now.minute
+        if now.weekday() < 5 and 9 * 60 + 30 <= minutes < 16 * 60:
+            return "REG"
+        return "CLOSE"
+
+    return "REG"
+
+
 def _session_quote_from_meta(meta, country):
     if country == "US":
         now_et = datetime.now(ZoneInfo("America/New_York"))
@@ -141,7 +166,7 @@ def _session_quote_from_meta(meta, country):
         price = meta.get("regularMarketPrice")
         timestamp = _market_time(meta, "regularMarketTime")
         if price is not None and timestamp is not None:
-            return price, timestamp, "REG"
+            return price, timestamp, _exchange_session(country)
         return None, None, None
 
 
