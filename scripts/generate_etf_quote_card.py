@@ -90,14 +90,14 @@ def _ago(value):
         return "----"
     seconds = max(0, int((datetime.now(timezone.utc) - dt).total_seconds()))
     if seconds < 60:
-        return f"{seconds}s ago"
+        return f"{seconds}秒前"
     minutes = seconds // 60
     if minutes < 60:
-        return f"{minutes}min ago"
+        return f"{minutes}分鐘前"
     hours = minutes // 60
     if hours < 48:
-        return f"{hours}hr ago"
-    return f"{hours // 24}d ago"
+        return f"{hours}小時前"
+    return f"{hours // 24}天前"
 
 
 def _fmt_pct(value):
@@ -182,19 +182,28 @@ def _session_text(session):
     }.get(session, MUTED)
 
 
+def _session_label(session):
+    return {
+        "PRE": "盤前",
+        "REG": "盤中",
+        "POST": "盤後",
+        "CLOSE": "收盤",
+    }.get(session, "--")
+
+
 def _draw_session(draw, x, y, session):
     session = session or "--"
     _round_rect(draw, (x, y, x + 58, y + 24), 12, _session_fill(session))
-    _text(draw, (x + 29, y + 5), session, FONTS["tiny"], _session_text(session), anchor="ma")
+    _text(draw, (x + 29, y + 5), _session_label(session), FONTS["tiny"], _session_text(session), anchor="ma")
 
 
 def _draw_col_header(draw, x, y, w, scale):
-    _text(draw, (x + 48, y), "Holding", FONTS["tiny"], MUTED)
-    _text(draw, (x + 260, y), "Mkt", FONTS["tiny"], MUTED)
-    _text(draw, (x + 312, y), "Weight", FONTS["tiny"], MUTED)
-    _text(draw, (x + 390, y), "State", FONTS["tiny"], MUTED)
-    _text(draw, (x + 464, y), "Move", FONTS["tiny"], MUTED)
-    _text(draw, (x + w - 12, y), "Age", FONTS["tiny"], MUTED, anchor="ra")
+    _text(draw, (x + 48, y), "持股", FONTS["tiny"], MUTED)
+    _text(draw, (x + 260, y), "市場", FONTS["tiny"], MUTED)
+    _text(draw, (x + 312, y), "權重", FONTS["tiny"], MUTED)
+    _text(draw, (x + 390, y), "狀態", FONTS["tiny"], MUTED)
+    _text(draw, (x + 464, y), "漲跌", FONTS["tiny"], MUTED)
+    _text(draw, (x + w - 12, y), "更新", FONTS["tiny"], MUTED, anchor="ra")
     _text(draw, (x + 262, y + 25), f"-{scale}%", FONTS["tiny"], MUTED)
     _text(draw, (x + 390, y + 25), "0", FONTS["tiny"], MUTED)
     _text(draw, (x + 502, y + 25), f"+{scale}%", FONTS["tiny"], MUTED)
@@ -251,30 +260,30 @@ def generate_quote_card(ticker="00997A"):
     title = f"{ticker} {ETF_NAMES.get(ticker, '')}".strip()
     title_font = FONTS["title"] if _measure(draw, title, FONTS["title"])[0] < 880 else FONTS["title_small"]
     _text(draw, (82, 78), title, title_font, INK)
-    _text(draw, (84, 138), f"Holdings date: {cache.get('holdings_date', '----')}", FONTS["body_bold"], MUTED)
+    _text(draw, (84, 138), f"持股日期：{cache.get('holdings_date', '----')}", FONTS["body_bold"], MUTED)
 
     composite = cache.get("composite_move_pct")
     comp_text = _fmt_pct(composite)
     comp_color = _color_for_pct(composite)
     comp_fill = (255, 244, 242) if composite and composite > 0 else (239, 249, 237)
     _round_rect(draw, (1110, 74, 1418, 154), 20, comp_fill, None)
-    _text(draw, (1138, 92), "Composite move", FONTS["small_bold"], MUTED)
+    _text(draw, (1138, 92), "加權漲跌", FONTS["small_bold"], MUTED)
     _text(draw, (1398, 98), comp_text, FONTS["h2"], comp_color, anchor="ra")
 
-    _draw_stat(draw, 84, 184, 250, "newest data", _ago(cache.get("newest_quote_utc")), RED)
-    _draw_stat(draw, 352, 184, 250, "oldest data", _ago(cache.get("oldest_quote_utc")), MUTED)
-    _draw_stat(draw, 620, 184, 250, "ETF data refresh", _ago(cache.get("etf_refresh_utc")), MUTED)
+    _draw_stat(draw, 84, 184, 250, "最新報價", _ago(cache.get("newest_quote_utc")), RED)
+    _draw_stat(draw, 352, 184, 250, "最舊報價", _ago(cache.get("oldest_quote_utc")), MUTED)
+    _draw_stat(draw, 620, 184, 250, "ETF資料更新", _ago(cache.get("etf_refresh_utc")), MUTED)
 
     counts = cache.get("counts", {})
     up = counts.get("up", 0)
     down = counts.get("down", 0)
     flat = counts.get("flat", 0)
-    summary = f"Up {up} / Down {down} / Flat {flat}"
-    _draw_stat(draw, 888, 184, 310, "market breadth", summary, INK)
-    _draw_stat(draw, 1216, 184, 202, "x-axis scale", f"±{scale}%", MUTED)
+    summary = f"上漲 {up} / 下跌 {down} / 持平 {flat}"
+    _draw_stat(draw, 888, 184, 310, "漲跌家數", summary, INK)
+    _draw_stat(draw, 1216, 184, 202, "刻度範圍", f"±{scale}%", MUTED)
 
     draw.line((74, 302, width - 74, 302), fill=LINE, width=2)
-    _text(draw, (74, 330), "Ranked by ETF weight. Red = up, green = down. Missing Yahoo data shows ----.", FONTS["small"], MUTED)
+    _text(draw, (74, 330), "依ETF持股權重排序，紅色代表上漲、綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small"], MUTED)
 
     left_x = 74
     right_x = 762
@@ -291,7 +300,7 @@ def generate_quote_card(ticker="00997A"):
     for idx, row in enumerate(rows[25:50]):
         _draw_row(draw, row, right_x, start_y + idx * row_h, col_w, idx + 26, scale)
 
-    footer = f"Generated {_ago(cache.get('generated_utc'))} from server quote cache"
+    footer = f"報表產生：{_ago(cache.get('generated_utc'))}"
     _text(draw, (width // 2, height - 58), footer, FONTS["tiny"], MUTED, anchor="ma")
 
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
