@@ -57,29 +57,58 @@ def _parse_weight(value):
         return None
 
 
-def _latest_us_trading_date():
+def _yahoo_daily_dates(symbol, tz_name, range_days=45):
     try:
         res = requests.get(
-            "https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=10d&interval=1d",
+            f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range={range_days}d&interval=1d",
             headers={"User-Agent": "Mozilla/5.0"},
             timeout=5,
         )
-        if res.status_code == 200:
-            chart = res.json()["chart"]["result"][0]
-            timestamps = chart.get("timestamp", [])
-            closes = chart.get("indicators", {}).get("quote", [{}])[0].get("close", [])
-            for timestamp, close in reversed(list(zip(timestamps, closes))):
-                if close is not None:
-                    return datetime.fromtimestamp(timestamp, ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+        if res.status_code != 200:
+            return set()
+        chart = res.json()["chart"]["result"][0]
+        timestamps = chart.get("timestamp", [])
+        closes = chart.get("indicators", {}).get("quote", [{}])[0].get("close", [])
+        return {
+            datetime.fromtimestamp(timestamp, ZoneInfo(tz_name)).date()
+            for timestamp, close in zip(timestamps, closes)
+            if timestamp is not None and close is not None
+        }
     except Exception:
-        pass
+        return set()
 
-    day = datetime.now(ZoneInfo("America/New_York")).date()
-    if datetime.now(ZoneInfo("America/New_York")).hour < 16:
+
+def _recent_global_trading_dates():
+    dates = set()
+    dates.update(_yahoo_daily_dates("SPY", "America/New_York"))
+    dates.update(_yahoo_daily_dates("2330.TW", "Asia/Taipei"))
+    dates.update(_yahoo_daily_dates("7203.T", "Asia/Tokyo"))
+    return dates
+
+
+def _is_global_trading_date(day, known_dates):
+    return day in known_dates or day.weekday() < 5
+
+
+def _previous_global_trading_date(before_day, known_dates):
+    day = before_day - timedelta(days=1)
+    while not _is_global_trading_date(day, known_dates):
         day -= timedelta(days=1)
-    while day.weekday() >= 5:
-        day -= timedelta(days=1)
-    return day.strftime("%Y-%m-%d")
+    return day
+
+
+def _candidate_holding_date(now_tw=None):
+    now_tw = now_tw or datetime.now(ZoneInfo("Asia/Taipei"))
+    known_dates = _recent_global_trading_dates()
+    today = now_tw.date()
+    after_official_update = now_tw.hour > 15 or (now_tw.hour == 15 and now_tw.minute >= 0)
+
+    if after_official_update and _is_global_trading_date(today, known_dates):
+        latest_disclosure_day = today
+    else:
+        latest_disclosure_day = _previous_global_trading_date(today, known_dates)
+
+    return _previous_global_trading_date(latest_disclosure_day, known_dates).strftime("%Y-%m-%d")
 
 
 def _download_official_workbook():
@@ -219,7 +248,7 @@ def fetch_and_update_00997A():
 
     try:
         official_page_date, workbook_bytes = _download_official_workbook()
-        file_date_str = _latest_us_trading_date()
+        file_date_str = _candidate_holding_date()
         fund_size, nav, holdings = _parse_workbook(workbook_bytes)
         closing_price = _get_closing_price(file_date_str, nav)
 
