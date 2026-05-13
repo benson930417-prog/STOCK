@@ -22,6 +22,8 @@ INK = (17, 24, 39)
 MUTED = (102, 112, 128)
 SOFT = (245, 247, 250)
 LINE = (220, 226, 232)
+PANEL = (255, 255, 255)
+WASH = (248, 250, 252)
 
 
 def _font(size, weight="regular"):
@@ -33,9 +35,18 @@ def _font(size, weight="regular"):
             r"C:\Windows\Fonts\NotoSansTC-Regular.otf",
         ])
     candidates.extend([
+        str(DATA_DIR / "fonts" / "NotoSansCJK-Regular.ttc"),
+        str(DATA_DIR / "fonts" / "NotoSansCJK-Bold.ttc"),
+        str(DATA_DIR / "fonts" / "NotoSansTC-Regular.otf"),
+        str(DATA_DIR / "fonts" / "NotoSansTC-Bold.otf"),
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+        "/usr/share/fonts/opentype/noto/NotoSansCJKtc-Regular.otf",
+        "/usr/share/fonts/opentype/noto/NotoSansCJKtc-Bold.otf",
         "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+        "/usr/share/fonts/truetype/arphic/uming.ttc",
+        "/usr/share/fonts/truetype/arphic/ukai.ttc",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     ])
     if weight == "bold":
@@ -54,6 +65,7 @@ def _font(size, weight="regular"):
 
 FONTS = {
     "title": _font(46, "bold"),
+    "title_small": _font(34, "bold"),
     "h2": _font(28, "bold"),
     "body": _font(22),
     "body_bold": _font(22, "bold"),
@@ -129,7 +141,7 @@ def _fit_text(draw, text, font, max_width):
 
 
 def _bar(draw, x, y, width, height, pct, scale):
-    _round_rect(draw, (x, y, x + width, y + height), 5, (250, 251, 253))
+    _round_rect(draw, (x, y, x + width, y + height), 5, (249, 251, 253))
     zero = x + width // 2
     draw.line((zero, y - 3, zero, y + height + 3), fill=(196, 204, 214), width=2)
     for marker in (-0.5, 0.5):
@@ -147,9 +159,45 @@ def _bar(draw, x, y, width, height, pct, scale):
 
 
 def _draw_stat(draw, x, y, w, label, value, accent):
-    _round_rect(draw, (x, y, x + w, y + 70), 14, (255, 255, 255), (232, 236, 241))
+    _round_rect(draw, (x, y, x + w, y + 70), 14, PANEL, (229, 234, 240))
     _text(draw, (x + 18, y + 14), label, FONTS["tiny"], MUTED)
     _text(draw, (x + 18, y + 38), value, FONTS["small_bold"], accent)
+
+
+def _session_fill(session):
+    return {
+        "PRE": (255, 247, 237),
+        "REG": (239, 246, 255),
+        "POST": (245, 243, 255),
+        "CLOSE": (243, 244, 246),
+    }.get(session, (243, 244, 246))
+
+
+def _session_text(session):
+    return {
+        "PRE": (180, 83, 9),
+        "REG": (37, 99, 235),
+        "POST": (109, 40, 217),
+        "CLOSE": (75, 85, 99),
+    }.get(session, MUTED)
+
+
+def _draw_session(draw, x, y, session):
+    session = session or "--"
+    _round_rect(draw, (x, y, x + 58, y + 24), 12, _session_fill(session))
+    _text(draw, (x + 29, y + 5), session, FONTS["tiny"], _session_text(session), anchor="ma")
+
+
+def _draw_col_header(draw, x, y, w, scale):
+    _text(draw, (x + 48, y), "Holding", FONTS["tiny"], MUTED)
+    _text(draw, (x + 260, y), "Mkt", FONTS["tiny"], MUTED)
+    _text(draw, (x + 312, y), "Weight", FONTS["tiny"], MUTED)
+    _text(draw, (x + 390, y), "State", FONTS["tiny"], MUTED)
+    _text(draw, (x + 464, y), "Move", FONTS["tiny"], MUTED)
+    _text(draw, (x + w - 12, y), "Age", FONTS["tiny"], MUTED, anchor="ra")
+    _text(draw, (x + 262, y + 25), f"-{scale}%", FONTS["tiny"], MUTED)
+    _text(draw, (x + 390, y + 25), "0", FONTS["tiny"], MUTED)
+    _text(draw, (x + 502, y + 25), f"+{scale}%", FONTS["tiny"], MUTED)
 
 
 def _draw_row(draw, row, x, y, w, rank, scale):
@@ -163,14 +211,15 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     ticker = row.get("id") or "--"
     name = row.get("name") or "--"
 
-    _round_rect(draw, (x, y, x + w, y + 55), 8, (255, 255, 255))
+    fill = WASH if rank % 2 == 0 else PANEL
+    _round_rect(draw, (x, y, x + w, y + 55), 8, fill)
     _text(draw, (x + 10, y + 9), f"{rank:02d}", FONTS["tiny"], MUTED)
     _text(draw, (x + 48, y + 7), _fit_text(draw, name, FONTS["small_bold"], 185), FONTS["small_bold"], INK)
     _text(draw, (x + 48, y + 31), _fit_text(draw, ticker, FONTS["tiny"], 130), FONTS["tiny"], MUTED)
     _text(draw, (x + 260, y + 9), country, FONTS["tiny"], MUTED)
     _text(draw, (x + 312, y + 9), weight_text, FONTS["tiny"], MUTED)
-    _text(draw, (x + 395, y + 9), session, FONTS["tiny"], MUTED)
-    _text(draw, (x + 455, y + 7), pct_text, FONTS["small_bold"], _color_for_pct(change))
+    _draw_session(draw, x + 382, y + 6, session)
+    _text(draw, (x + 456, y + 7), pct_text, FONTS["small_bold"], _color_for_pct(change))
     _text(draw, (x + w - 12, y + 10), age, FONTS["tiny"], MUTED, anchor="ra")
     _bar(draw, x + 260, y + 31, w - 275, 18, change, scale)
 
@@ -193,45 +242,49 @@ def generate_quote_card(ticker="00997A"):
 
     width = 1500
     height = 1980
-    img = Image.new("RGB", (width, height), (246, 248, 251))
+    img = Image.new("RGB", (width, height), (241, 244, 248))
     draw = ImageDraw.Draw(img)
 
-    _round_rect(draw, (28, 28, width - 28, height - 28), 28, (255, 255, 255), (224, 230, 237), 2)
+    _round_rect(draw, (28, 28, width - 28, height - 28), 28, PANEL, (221, 228, 236), 2)
+    _round_rect(draw, (54, 54, width - 54, 274), 24, (250, 252, 255), (234, 238, 244), 1)
 
     title = f"{ticker} {ETF_NAMES.get(ticker, '')}".strip()
-    _text(draw, (72, 74), title, FONTS["title"], INK)
-    _text(draw, (74, 132), f"Holdings date: {cache.get('holdings_date', '----')}", FONTS["body_bold"], MUTED)
+    title_font = FONTS["title"] if _measure(draw, title, FONTS["title"])[0] < 880 else FONTS["title_small"]
+    _text(draw, (82, 78), title, title_font, INK)
+    _text(draw, (84, 138), f"Holdings date: {cache.get('holdings_date', '----')}", FONTS["body_bold"], MUTED)
 
     composite = cache.get("composite_move_pct")
     comp_text = _fmt_pct(composite)
     comp_color = _color_for_pct(composite)
-    _round_rect(draw, (1110, 70, 1428, 150), 20, (255, 244, 242) if composite and composite > 0 else (239, 249, 237), None)
-    _text(draw, (1138, 88), "Composite move", FONTS["small_bold"], MUTED)
-    _text(draw, (1410, 94), comp_text, FONTS["h2"], comp_color, anchor="ra")
+    comp_fill = (255, 244, 242) if composite and composite > 0 else (239, 249, 237)
+    _round_rect(draw, (1110, 74, 1418, 154), 20, comp_fill, None)
+    _text(draw, (1138, 92), "Composite move", FONTS["small_bold"], MUTED)
+    _text(draw, (1398, 98), comp_text, FONTS["h2"], comp_color, anchor="ra")
 
-    _draw_stat(draw, 74, 185, 250, "newest data", _ago(cache.get("newest_quote_utc")), RED)
-    _draw_stat(draw, 342, 185, 250, "oldest data", _ago(cache.get("oldest_quote_utc")), MUTED)
-    _draw_stat(draw, 610, 185, 250, "ETF data refresh", _ago(cache.get("etf_refresh_utc")), MUTED)
+    _draw_stat(draw, 84, 184, 250, "newest data", _ago(cache.get("newest_quote_utc")), RED)
+    _draw_stat(draw, 352, 184, 250, "oldest data", _ago(cache.get("oldest_quote_utc")), MUTED)
+    _draw_stat(draw, 620, 184, 250, "ETF data refresh", _ago(cache.get("etf_refresh_utc")), MUTED)
 
     counts = cache.get("counts", {})
     up = counts.get("up", 0)
     down = counts.get("down", 0)
     flat = counts.get("flat", 0)
     summary = f"Up {up} / Down {down} / Flat {flat}"
-    _draw_stat(draw, 878, 185, 310, "market breadth", summary, INK)
-    _draw_stat(draw, 1206, 185, 222, "x-axis scale", f"±{scale}%", MUTED)
+    _draw_stat(draw, 888, 184, 310, "market breadth", summary, INK)
+    _draw_stat(draw, 1216, 184, 202, "x-axis scale", f"±{scale}%", MUTED)
 
-    draw.line((74, 290, width - 74, 290), fill=LINE, width=2)
-    _text(draw, (74, 318), "Ranked by ETF weight. Red = up, green = down. Missing Yahoo data shows ----.", FONTS["small"], MUTED)
+    draw.line((74, 302, width - 74, 302), fill=LINE, width=2)
+    _text(draw, (74, 330), "Ranked by ETF weight. Red = up, green = down. Missing Yahoo data shows ----.", FONTS["small"], MUTED)
 
     left_x = 74
     right_x = 762
     col_w = 664
-    start_y = 365
+    header_y = 365
+    start_y = 415
     row_h = 59
 
-    _text(draw, (left_x + 260, 350), f"-{scale}%        0        +{scale}%", FONTS["tiny"], MUTED)
-    _text(draw, (right_x + 260, 350), f"-{scale}%        0        +{scale}%", FONTS["tiny"], MUTED)
+    _draw_col_header(draw, left_x, header_y, col_w, scale)
+    _draw_col_header(draw, right_x, header_y, col_w, scale)
 
     for idx, row in enumerate(rows[:25]):
         _draw_row(draw, row, left_x, start_y + idx * row_h, col_w, idx + 1, scale)
