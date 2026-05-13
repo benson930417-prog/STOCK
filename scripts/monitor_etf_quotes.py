@@ -133,6 +133,38 @@ def _session_for_us_timestamp(timestamp):
     return "CLOSE"
 
 
+def _previous_us_regular_close(symbol, quote_time, timeout=10):
+    if not quote_time:
+        return None
+    try:
+        quote_date = datetime.fromtimestamp(int(quote_time), ZoneInfo("America/New_York")).date()
+        res = requests.get(
+            YAHOO_CHART_URL.format(symbol=symbol),
+            params={"range": "10d", "interval": "1d"},
+            headers=HEADERS,
+            timeout=timeout,
+        )
+        res.raise_for_status()
+        payload = res.json()
+        result = (payload.get("chart", {}).get("result") or [None])[0]
+        if not result:
+            return None
+        timestamps = result.get("timestamp") or []
+        closes = result.get("indicators", {}).get("quote", [{}])[0].get("close", [])
+        previous_points = []
+        for timestamp, close in zip(timestamps, closes):
+            if timestamp is None or close is None:
+                continue
+            close_date = datetime.fromtimestamp(int(timestamp), ZoneInfo("America/New_York")).date()
+            if close_date < quote_date:
+                previous_points.append((timestamp, close))
+        if previous_points:
+            return previous_points[-1][1]
+    except Exception:
+        return None
+    return None
+
+
 def _exchange_session(country):
     if country == "TW":
         now = datetime.now(ZoneInfo("Asia/Taipei"))
@@ -229,6 +261,8 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
                 session = "CLOSE"
 
         previous = None
+        if country == "US":
+            previous = _previous_us_regular_close(symbol, quote_time, timeout=timeout)
         if len(valid_points) >= 2 and country != "US":
             _, previous = valid_points[-2]
         if previous is None:
