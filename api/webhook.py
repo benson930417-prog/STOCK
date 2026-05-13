@@ -8,6 +8,8 @@ import sys
 import requests
 import re
 import unicodedata
+import json
+from datetime import datetime, timezone
 
 # Ensure the root STOCK directory is in sys.path so 'scripts' can be imported dynamically
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -46,6 +48,46 @@ def parse_etf_quote_command(text):
     if match:
         return "00997A"
     return None
+
+def _parse_iso_time(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+def _ago_zh(value):
+    dt = _parse_iso_time(value)
+    if not dt:
+        return "----"
+    seconds = max(0, int((datetime.now(timezone.utc) - dt).total_seconds()))
+    if seconds < 60:
+        return f"{seconds}秒前"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes}分鐘前"
+    hours = minutes // 60
+    if hours < 48:
+        return f"{hours}小時前"
+    return f"{hours // 24}天前"
+
+def build_etf_quote_text(ticker):
+    cache_path = os.path.join(parent_dir, "data", "quote_cache", f"etf_{ticker}_quotes.json")
+    with open(cache_path, "r", encoding="utf-8") as fh:
+        cache = json.load(fh)
+    counts = cache.get("counts", {})
+    composite = cache.get("composite_move_pct")
+    comp_text = "----" if composite is None else f"{composite:+.2f}%"
+    return (
+        f"{ticker} 主動群益美國增長\n"
+        f"持股日期：{cache.get('holdings_date', '----')}\n"
+        f"加權漲跌：{comp_text}\n"
+        f"上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}\n"
+        f"最新報價：{_ago_zh(cache.get('newest_quote_utc'))}｜"
+        f"最舊報價：{_ago_zh(cache.get('oldest_quote_utc'))}｜"
+        f"權重更新：{_ago_zh(cache.get('etf_refresh_utc'))}"
+    )
 
 def get_yahoo_data_text(symbol, title, emoji, precision=2):
     try:
@@ -173,7 +215,7 @@ def handle_message(event):
             from scripts.generate_etf_quote_card import generate_quote_card
 
             output_paths = generate_quote_card(etf_quote_ticker)
-            messages = []
+            messages = [TextSendMessage(text=build_etf_quote_text(etf_quote_ticker))]
             for output_path in output_paths[:2]:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
