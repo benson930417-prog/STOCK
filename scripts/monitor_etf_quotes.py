@@ -118,6 +118,21 @@ def _market_time(meta, key):
         return None
 
 
+def _session_for_us_timestamp(timestamp):
+    try:
+        dt = datetime.fromtimestamp(int(timestamp), ZoneInfo("America/New_York"))
+    except Exception:
+        return "CLOSE"
+    minutes = dt.hour * 60 + dt.minute
+    if dt.weekday() < 5 and 4 * 60 <= minutes < 9 * 60 + 30:
+        return "PRE"
+    if dt.weekday() < 5 and 9 * 60 + 30 <= minutes < 16 * 60:
+        return "REG"
+    if dt.weekday() < 5 and 16 * 60 <= minutes < 20 * 60:
+        return "POST"
+    return "CLOSE"
+
+
 def _exchange_session(country):
     if country == "TW":
         now = datetime.now(ZoneInfo("Asia/Taipei"))
@@ -172,9 +187,13 @@ def _session_quote_from_meta(meta, country):
 
 def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
     try:
+        params = {"range": "5d", "interval": "1d"}
+        if country == "US":
+            params = {"range": "1d", "interval": "1m", "includePrePost": "true"}
+
         res = requests.get(
             YAHOO_CHART_URL.format(symbol=symbol),
-            params={"range": "5d", "interval": "1d"},
+            params=params,
             headers=HEADERS,
             timeout=timeout,
         )
@@ -201,13 +220,18 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
 
         price, quote_time, session = _session_quote_from_meta(meta, country)
 
-        if price is None or quote_time is None:
+        if country == "US" and valid_points:
+            quote_time, price = valid_points[-1]
+            session = _session_for_us_timestamp(quote_time)
+        elif price is None or quote_time is None:
             if valid_points:
                 quote_time, price = valid_points[-1]
                 session = "CLOSE"
 
         previous = None
-        if len(valid_points) >= 2:
+        if country == "US" and session == "POST" and meta.get("regularMarketPrice"):
+            previous = meta.get("regularMarketPrice")
+        elif len(valid_points) >= 2 and country != "US":
             _, previous = valid_points[-2]
         if previous is None:
             previous = (
