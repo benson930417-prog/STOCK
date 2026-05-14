@@ -22,14 +22,14 @@ GITHUB_REPO="${GITHUB_REPO:-benson930417-prog/STOCK}"
 if [ "$#" -gt 0 ]; then
     ETFS=("$@")
 else
-    ETFS=("00981A" "00991A" "00997A")
+    ETFS=("00981A" "00997A")
 fi
 
 echo "Running ETF fetch for: ${ETFS[*]}"
 
 for ETF in "${ETFS[@]}"; do
     case "$ETF" in
-        00981A|00991A|00997A)
+        00981A|00997A)
             python "scripts/fetch_etf_${ETF}.py"
             ;;
         *)
@@ -71,7 +71,6 @@ token = os.environ["LINE_TOKEN"]
 tickers = os.environ["LINE_ETFS"].split()
 names = {
     "00981A": "主動統一台股增長",
-    "00991A": "主動復華台灣科技優息",
     "00997A": "主動群益美國增長",
 }
 

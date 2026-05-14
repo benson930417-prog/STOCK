@@ -44,7 +44,6 @@ line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
 
 ETF_QUOTE_NAMES = {
     "00981A": "主動統一台股增長",
-    "00991A": "主動復華台灣科技優息",
     "00997A": "主動群益美國增長",
 }
 
@@ -66,8 +65,6 @@ def parse_operation_report_ticker(text):
     compact = re.sub(r"[^0-9a-z]", "", compact)
     if "997" in compact:
         return "00997A"
-    if "991" in compact:
-        return "00991A"
     if "981" in compact:
         return "00981A"
     return None
@@ -344,7 +341,7 @@ def handle_message(event):
             if not ticker:
                 line_bot_api.reply_message(
                     event.reply_token,
-                    TextSendMessage(text="請在操作日報訊息中指定 981、991 或 997。")
+                    TextSendMessage(text="請在操作日報訊息中指定 981 或 997。")
                 )
                 return
 
