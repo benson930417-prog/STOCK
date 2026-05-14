@@ -2883,7 +2883,7 @@ try:
             with m2:
                 st.metric("總成本", fmt_money(total_cost_open))
             with m3:
-                st.metric("未實現損益", fmt_signed_money(unrealized_pnl), delta=f"扣費稅後 {fmt_signed_pct(unrealized_pct)}", delta_color=delta_color_param)
+                st.metric("未實現損益 (扣費稅後)", fmt_signed_money(unrealized_pnl), delta=fmt_signed_pct(unrealized_pct), delta_color=delta_color_param)
             with m4:
                 st.metric("持股檔數", f"{len(portfolio_positions)}")
 
