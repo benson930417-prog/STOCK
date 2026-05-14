@@ -433,7 +433,16 @@ ETF_NAME_TO_TICKER = {
 
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
 SELL_FEE_RATE = 0.001425 * 0.28
-SELL_TAX_RATE = 0.003
+SELL_STOCK_TAX_RATE = 0.003
+SELL_ETF_TAX_RATE = 0.001
+
+
+def _sell_tax_rate_for_position(item):
+    code = str(item.get("code") or item.get("ticker") or "").upper()
+    ticker = str(item.get("ticker") or "").upper()
+    if ticker or code.startswith("00"):
+        return SELL_ETF_TAX_RATE
+    return SELL_STOCK_TAX_RATE
 
 
 def calculate_open_positions(raw_trades: pd.DataFrame) -> pd.DataFrame:
@@ -557,7 +566,8 @@ def enrich_positions_with_quotes(positions: pd.DataFrame) -> pd.DataFrame:
         item["day_change_pct"] = float(day_pct) if day_pct is not None else None
         item["market_value"] = item["shares"] * item["price"] if item["price"] is not None else None
         item["est_sell_fee"] = item["market_value"] * SELL_FEE_RATE if item["market_value"] is not None else None
-        item["est_sell_tax"] = item["market_value"] * SELL_TAX_RATE if item["market_value"] is not None else None
+        item["sell_tax_rate"] = _sell_tax_rate_for_position(item)
+        item["est_sell_tax"] = item["market_value"] * item["sell_tax_rate"] if item["market_value"] is not None else None
         item["liquidation_value"] = (
             item["market_value"] - item["est_sell_fee"] - item["est_sell_tax"]
             if item["market_value"] is not None else None
