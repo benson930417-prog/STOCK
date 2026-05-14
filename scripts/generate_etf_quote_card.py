@@ -310,7 +310,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     _text(draw, (x + STATUS_COL_W + 2, y + 4), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
     _text(draw, (holding_x, y + 54), _fit_text(draw, ticker, FONTS["small"], name_max_w), FONTS["small"], INK)
-    _draw_country_flag(draw, meta_x + 0, y + 12, country)
+    _draw_country_flag(draw, meta_x + 0, y + 24, country)
     _text(draw, (meta_x + 126, y + 21), weight_text, FONTS["small"], INK)
     _text(draw, (meta_x + 550, y + 21), age, FONTS["small"], INK)
     bar_x = holding_x
