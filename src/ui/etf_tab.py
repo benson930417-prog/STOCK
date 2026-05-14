@@ -530,21 +530,6 @@ def render_passive_etf_tab(
         def _fmt_units_yi(value):
             return "N/A" if not value else f"{value / 100000000:,.2f} 億股"
 
-        def _metric_card(title, value, delta=None, force_positive=None):
-            is_positive = force_positive if force_positive is not None else (delta or 0) >= 0
-            color = "#CC2400" if is_positive else "#258C18"
-            bg = "#FFF1F1" if is_positive else "#F0FBEC"
-            delta_text = "" if delta is None else f"<span class='passive-delta' style='color:{color}; background:{bg}'>{_fmt_pct(delta)}</span>"
-            return f"""
-            <div class="passive-card">
-                <div class="passive-title">{title}</div>
-                <div class="passive-value-row">
-                    <span class="passive-value">{value}</span>
-                    {delta_text}
-                </div>
-            </div>
-            """
-
         if latest_nav or meta.get("fund_size") or meta.get("nav") or meta.get("outstanding_units"):
             fund_size = latest_nav.get("fund_net_assets", meta.get("fund_size"))
             nav = latest_nav.get("nav", meta.get("nav"))
@@ -552,77 +537,19 @@ def render_passive_etf_tab(
             premium = latest_nav.get("premium_discount", meta.get("premium_discount"))
             premium_pct = latest_nav.get("premium_discount_pct", meta.get("premium_discount_pct"))
             units = latest_nav.get("outstanding_units", meta.get("outstanding_units"))
-            premium_positive = premium is None or premium >= 0
 
-            st.markdown(
-                """
-                <style>
-                .passive-grid {
-                    display: grid;
-                    grid-template-columns: repeat(5, minmax(150px, 1fr));
-                    gap: 18px;
-                    margin: 18px 0 30px;
-                }
-                .passive-card {
-                    background: #ffffff;
-                    border: 1px solid #eef0f4;
-                    border-radius: 8px;
-                    padding: 22px 24px;
-                    min-height: 132px;
-                    box-shadow: 0 8px 18px rgba(17, 24, 39, 0.06);
-                }
-                .passive-title {
-                    color: #6b7788;
-                    font-size: 19px;
-                    font-weight: 800;
-                    margin-bottom: 10px;
-                    letter-spacing: 0;
-                }
-                .passive-value-row {
-                    display: flex;
-                    flex-wrap: wrap;
-                    align-items: baseline;
-                    gap: 12px;
-                }
-                .passive-value {
-                    color: #111111;
-                    font-size: 44px;
-                    line-height: 1.05;
-                    font-weight: 900;
-                    letter-spacing: 0;
-                    white-space: nowrap;
-                }
-                .passive-delta {
-                    display: inline-block;
-                    padding: 7px 14px;
-                    border-radius: 999px;
-                    font-size: 19px;
-                    font-weight: 800;
-                    white-space: nowrap;
-                }
-                @media (max-width: 1200px) {
-                    .passive-grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
-                    .passive-value { font-size: 36px; }
-                }
-                </style>
-                """,
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                "<div class='passive-grid'>"
-                + _metric_card("基金規模 (TWD)", _fmt_money_yi(fund_size), deltas.get("fund_net_assets_pct"))
-                + _metric_card("基金淨值", f"{nav:.2f}" if nav else "N/A", deltas.get("nav_pct"))
-                + _metric_card("收盤市價", f"{close_price:.2f}" if close_price else "N/A", deltas.get("closing_price_pct"))
-                + _metric_card(
-                    "折溢價",
-                    "N/A" if premium is None else f"{premium:+.2f}",
-                    None if premium_pct is None else premium_pct,
-                    premium_positive,
-                )
-                + _metric_card("在外流通單位", _fmt_units_yi(units), deltas.get("outstanding_units_pct"))
-                + "</div>",
-                unsafe_allow_html=True,
-            )
+            metric_cols = st.columns(5)
+            with metric_cols[0]:
+                st.metric("基金規模 (TWD)", _fmt_money_yi(fund_size), delta=_fmt_pct(deltas.get("fund_net_assets_pct")))
+            with metric_cols[1]:
+                st.metric("基金淨值", f"{nav:.2f}" if nav else "N/A", delta=_fmt_pct(deltas.get("nav_pct")))
+            with metric_cols[2]:
+                st.metric("收盤市價", f"{close_price:.2f}" if close_price else "N/A", delta=_fmt_pct(deltas.get("closing_price_pct")))
+            with metric_cols[3]:
+                premium_value = "N/A" if premium is None else f"{premium:+.2f} ({premium_pct:+.2f}%)"
+                st.metric("折溢價", premium_value)
+            with metric_cols[4]:
+                st.metric("在外流通單位", _fmt_units_yi(units), delta=_fmt_pct(deltas.get("outstanding_units_pct")))
 
         if holdings:
             df_h = pd.DataFrame(holdings)
