@@ -1786,9 +1786,9 @@ try:
     # For chart scaling, we use the expanding max to prevent artificial spikes when withdrawing funds
     daily_base["dynamic_base"] = daily_base["invested_capital"].expanding().max().clip(lower=1.0)
     
-    # Mathematically derived Base Capital (Final Active Principal before liquidation)
-    # This precisely matches the user's derivation: Proceeds - Total PNL
-    active_bases = daily_base[daily_base["invested_capital"] >= 100]["invested_capital"]
+    # Realized-return capital base. This matches the Money Invested chart and
+    # keeps realized P/L from being measured against the latest net open cash.
+    active_bases = daily_base[daily_base["invested_capital"] >= 100]["dynamic_base"]
     peak_base = float(active_bases.iloc[-1]) if not active_bases.empty else 1.0
 
     TYPE_ZH = {"day_trade": "當沖交易", "cash": "現股交易"}
@@ -2188,9 +2188,7 @@ try:
         # Ensure we have fig_base initialized
         fig_base = go.Figure()
         
-        # Dedicated trace for Money Invested.
-        # Use invested_capital so the chart matches the Total P/L KPI base.
-        invested_capital_for_chart = pd.Series(dtype=float)
+        # Dedicated trace for Money Invested (dynamic_base)
         scaled_invested = pd.Series(dtype=float)
         unit_lbl_inv = unit_lbl
         inv_div = unit_div
@@ -2199,11 +2197,10 @@ try:
              pass
              
              # Scale invested capital using the same scale function
-             invested_capital_for_chart = daily_agg["invested_capital"]
-             scaled_invested, unit_lbl_inv, inv_div = scale_unit(invested_capital_for_chart, lang, CURRENCY_RATE)
+             scaled_invested, unit_lbl_inv, inv_div = scale_unit(daily_agg["dynamic_base"], lang, CURRENCY_RATE)
              
              # Align the Total Equity (Capital + Cumulative P/L) to the same y-axis scale
-             scaled_equity_for_inv = ((invested_capital_for_chart + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
+             scaled_equity_for_inv = ((daily_agg["dynamic_base"] + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
              
              # Extend traces to today for step-plot visuals
              plot_dates = daily_agg["date"].tolist()
@@ -2555,7 +2552,7 @@ try:
         
         # Calculate bounds for secondary axis (Invested)
         if not scaled_invested.empty:
-            scaled_equity_for_inv = ((invested_capital_for_chart + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
+            scaled_equity_for_inv = ((daily_agg["dynamic_base"] + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
             inv_max = max(scaled_invested.max(), scaled_equity_for_inv.max())
             inv_min = min(scaled_invested.min(), scaled_equity_for_inv.min())
             inv_pad = (inv_max - inv_min) * 0.1 if (inv_max - inv_min) > 0 else 10
