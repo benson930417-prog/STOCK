@@ -237,6 +237,7 @@ def _session_fill(session):
         "REG": (239, 246, 255),
         "POST": (237, 233, 254),
         "FUT_NIGHT": (224, 242, 254),
+        "FUT_NIGHT_CLOSE": (226, 232, 240),
         "POST_CLOSE": (229, 231, 235),
         "CLOSE": (229, 231, 235),
     }.get(session, (229, 231, 235))
@@ -248,6 +249,7 @@ def _session_outline(session):
         "REG": (37, 99, 235),
         "POST": (139, 92, 246),
         "FUT_NIGHT": (6, 182, 212),
+        "FUT_NIGHT_CLOSE": (100, 116, 139),
         "POST_CLOSE": (156, 163, 175),
         "CLOSE": (156, 163, 175),
     }.get(session, (156, 163, 175))
@@ -259,6 +261,7 @@ def _session_text(session):
         "REG": (29, 78, 216),
         "POST": (91, 33, 182),
         "FUT_NIGHT": (14, 116, 144),
+        "FUT_NIGHT_CLOSE": INK,
         "POST_CLOSE": INK,
         "CLOSE": INK,
     }.get(session, INK)
@@ -269,7 +272,8 @@ def _session_label(session):
         "PRE": "盤前",
         "REG": "盤中",
         "POST": "盤後",
-        "FUT_NIGHT": "期貨夜盤",
+        "FUT_NIGHT": "期夜盤中",
+        "FUT_NIGHT_CLOSE": "期夜盤收",
         "POST_CLOSE": "盤後收",
         "CLOSE": "收盤",
     }.get(session, "--")

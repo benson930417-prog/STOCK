@@ -19,7 +19,7 @@ QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 TRADINGVIEW_SCAN_URL = "https://scanner.tradingview.com/futures/scan"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
-LIVE_MARKET_SESSIONS = {"PRE", "REG", "POST", "FUT_NIGHT"}
+LIVE_MARKET_SESSIONS = {"PRE", "REG", "POST", "FUT_NIGHT", "FUT_NIGHT_CLOSE"}
 COUNTRY_LABELS = {
     "TW": "台",
     "US": "美",
@@ -31,7 +31,8 @@ COUNTRY_ORDER = ["TW", "JP", "TSMC_FUT", "US", "HK"]
 TSMC_PROXY_SYMBOL = "TAIFEX:QFF1!"
 TSMC_PROXY_TARGETS = {"2330", "2330.TW"}
 TRADINGVIEW_DELAY_SECONDS = 900
-TSMC_NIGHT_FUTURES_CLOSE_GRACE_MINUTES = 10
+TSMC_NIGHT_FUTURES_START_MINUTES = 17 * 60 + 40
+TSMC_NIGHT_FUTURES_CLOSE_MINUTES = 5 * 60 + 15
 
 
 def utc_now_iso():
@@ -52,21 +53,26 @@ def _country_scope_label(countries):
     return "".join(labels) or "--"
 
 
-def _is_tsmc_night_futures_session(now=None):
+def _tsmc_night_futures_session(now=None):
     now = now or datetime.now(ZoneInfo("Asia/Taipei"))
     minutes = now.hour * 60 + now.minute
-    evening_start = 17 * 60 + 25
-    morning_end = 5 * 60 + TSMC_NIGHT_FUTURES_CLOSE_GRACE_MINUTES
-    # TAIFEX night session is treated as Mon-Fri evening plus Tue-Sat early morning.
-    if now.weekday() < 5 and minutes >= evening_start:
-        return True
-    if 1 <= now.weekday() <= 5 and minutes < morning_end:
-        return True
-    return False
+    # TradingView is delayed, so start after delay headroom and keep final prints until 05:15.
+    if now.weekday() < 5 and minutes >= TSMC_NIGHT_FUTURES_START_MINUTES:
+        return "FUT_NIGHT"
+    if 1 <= now.weekday() <= 5 and minutes < 5 * 60:
+        return "FUT_NIGHT"
+    if 1 <= now.weekday() <= 5 and minutes < TSMC_NIGHT_FUTURES_CLOSE_MINUTES:
+        return "FUT_NIGHT_CLOSE"
+    return None
+
+
+def _is_tsmc_night_futures_session(now=None):
+    return _tsmc_night_futures_session(now) is not None
 
 
 def _fetch_tsmc_night_futures_proxy(timeout=10):
-    if not _is_tsmc_night_futures_session():
+    proxy_session = _tsmc_night_futures_session()
+    if not proxy_session:
         return None
     payload = {
         "symbols": {"tickers": [TSMC_PROXY_SYMBOL], "query": {"types": []}},
@@ -103,6 +109,7 @@ def _fetch_tsmc_night_futures_proxy(timeout=10):
             "volume": values[4] if len(values) > 4 else None,
             "update_mode": values[5] if len(values) > 5 else None,
             "delay_seconds": TRADINGVIEW_DELAY_SECONDS,
+            "market_session": proxy_session,
             "quote_time": int(quote_time.timestamp()),
             "quote_time_utc": quote_time.isoformat().replace("+00:00", "Z"),
         }
@@ -129,7 +136,7 @@ def _apply_tsmc_night_futures_proxy(quote, yahoo_symbol, proxy):
     proxied["previousClose"] = baseline
     proxied["regularMarketTime"] = proxy["quote_time"]
     proxied["regularMarketChangePercent"] = (proxy_price - baseline) / baseline * 100.0
-    proxied["marketSession"] = "FUT_NIGHT"
+    proxied["marketSession"] = proxy.get("market_session") or "FUT_NIGHT"
     proxied["composite_scope"] = "TSMC_FUT"
     proxied["proxy"] = {
         "source": "tsmc_night_futures",
