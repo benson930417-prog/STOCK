@@ -117,6 +117,20 @@ def _fmt_pct(value):
     return f"{sign}{value:.2f}%"
 
 
+def _composite_title(cache):
+    prefix = "即時加權" if cache.get("composite_mode") == "live" else "最新加權"
+    scope = cache.get("composite_country_scope") or "--"
+    return f"{prefix}({scope}): {_fmt_pct(cache.get('composite_move_pct'))}"
+
+
+def _composite_detail(cache):
+    count = cache.get("composite_holding_count") or 0
+    weight = cache.get("composite_weight_pct")
+    weight_text = "--" if weight is None else f"{float(weight):.1f}%"
+    prefix = "交易中" if cache.get("composite_mode") == "live" else "全持股"
+    return f"{prefix}{count}檔・權重{weight_text}"
+
+
 def _draw_country_flag(draw, x, y, country):
     country = str(country or "").upper()
     w, h = FLAG_W, FLAG_H
@@ -288,6 +302,8 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     name_max_w = HOLDING_TEXT_W
     meta_x = holding_x + name_max_w + 56
 
+    if row.get("is_live_market"):
+        _round_rect(draw, (x - 8, y - 2, x + w + 8, y + 126), 12, (235, 247, 255), (191, 219, 254), 1)
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
     _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
@@ -349,8 +365,8 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
         x0 + (box_w + gap) * 6,
         y0,
         box_w,
-        "即時美股加權漲跌" if ticker == "00997A" else "加權漲跌",
-        _fmt_pct(cache.get("composite_move_pct")),
+        _composite_title(cache),
+        _composite_detail(cache),
         _color_for_pct(cache.get("composite_move_pct")),
     )
 
@@ -379,11 +395,23 @@ def generate_quote_card(ticker="00997A"):
     with cache_path.open("r", encoding="utf-8") as fh:
         cache = json.load(fh)
 
-    all_rows = sorted(
-        cache.get("holdings", []),
-        key=lambda item: item.get("weight_pct") if item.get("weight_pct") is not None else -1,
-        reverse=True,
-    )
+    rows = cache.get("holdings", [])
+    has_live_rows = any(row.get("is_live_market") for row in rows)
+    if has_live_rows:
+        all_rows = sorted(
+            rows,
+            key=lambda item: (
+                bool(item.get("is_live_market")),
+                item.get("weight_pct") if item.get("weight_pct") is not None else -1,
+            ),
+            reverse=True,
+        )
+    else:
+        all_rows = sorted(
+            rows,
+            key=lambda item: item.get("weight_pct") if item.get("weight_pct") is not None else -1,
+            reverse=True,
+        )
     valid_changes = [abs(row["day_change_pct"]) for row in all_rows if row.get("day_change_pct") is not None]
     max_abs = max(valid_changes) if valid_changes else 5
     scale = max(5, min(30, int(math.ceil((max_abs * 1.2) / 5.0) * 5)))

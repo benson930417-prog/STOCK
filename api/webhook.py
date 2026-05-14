@@ -187,11 +187,18 @@ def build_etf_quote_text(ticker):
     composite = cache.get("composite_move_pct")
     comp_text = "----" if composite is None else f"{composite:+.2f}%"
     etf_name = ETF_QUOTE_NAMES.get(ticker, "")
-    composite_label = "即時美股加權漲跌" if ticker == "00997A" else "加權漲跌"
+    composite_prefix = "即時加權" if cache.get("composite_mode") == "live" else "最新加權"
+    composite_scope = cache.get("composite_country_scope") or "--"
+    composite_label = f"{composite_prefix}({composite_scope})"
+    composite_count = cache.get("composite_holding_count") or 0
+    composite_weight = cache.get("composite_weight_pct")
+    composite_weight_text = "--" if composite_weight is None else f"{float(composite_weight):.1f}%"
+    composite_detail_prefix = "交易中" if cache.get("composite_mode") == "live" else "全持股"
     return (
         f"{ticker} {etf_name}\n"
         f"持股日期：{cache.get('holdings_date', '----')}\n"
         f"{composite_label}：{comp_text}\n"
+        f"{composite_detail_prefix}{composite_count}檔・權重{composite_weight_text}\n"
         f"上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}\n"
         f"最新報價：{_ago_zh(cache.get('newest_quote_utc'))}｜"
         f"最舊報價：{_ago_zh(cache.get('oldest_quote_utc'))}｜"

@@ -18,10 +18,29 @@ QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 
 YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
+LIVE_MARKET_SESSIONS = {"PRE", "REG", "POST"}
+COUNTRY_LABELS = {
+    "TW": "台",
+    "US": "美",
+    "JP": "日",
+    "HK": "港",
+}
+COUNTRY_ORDER = ["TW", "US", "JP", "HK"]
 
 
 def utc_now_iso():
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _is_live_market_session(session):
+    return str(session or "").upper() in LIVE_MARKET_SESSIONS
+
+
+def _country_scope_label(countries):
+    normalized = {str(country or "").upper() for country in countries if country}
+    ordered = [country for country in COUNTRY_ORDER if country in normalized]
+    ordered.extend(sorted(normalized - set(ordered)))
+    return "".join(COUNTRY_LABELS.get(country, country) for country in ordered) or "--"
 
 
 def load_latest_holdings(ticker):
@@ -353,8 +372,14 @@ def build_cache(ticker):
 
     rows = []
     valid_quote_times = []
-    weighted_move_sum = 0.0
-    valid_weight_sum = 0.0
+    all_weighted_move_sum = 0.0
+    all_valid_weight_sum = 0.0
+    live_weighted_move_sum = 0.0
+    live_valid_weight_sum = 0.0
+    all_composite_count = 0
+    live_composite_count = 0
+    all_composite_countries = set()
+    live_composite_countries = set()
     up_count = down_count = flat_count = missing_count = 0
 
     for holding, yahoo_symbol, country in normalized:
@@ -362,10 +387,12 @@ def build_cache(ticker):
         weight_pct = holding.get("weight_pct")
         day_change_pct = None
         quote_time_utc = None
+        market_session = None
         status = "missing"
 
         if quote and not quote.get("error"):
             day_change_pct = quote.get("regularMarketChangePercent")
+            market_session = quote.get("marketSession")
             quote_time = quote.get("regularMarketTime")
             if quote_time:
                 quote_time_utc = datetime.fromtimestamp(quote_time, timezone.utc).isoformat().replace("+00:00", "Z")
@@ -378,10 +405,18 @@ def build_cache(ticker):
                     down_count += 1
                 else:
                     flat_count += 1
-                include_in_composite = ticker != "00997A" or country == "US"
-                if weight_pct is not None and include_in_composite:
-                    weighted_move_sum += float(weight_pct) * float(day_change_pct)
-                    valid_weight_sum += float(weight_pct)
+                if weight_pct is not None:
+                    weight = float(weight_pct)
+                    move = float(day_change_pct)
+                    all_weighted_move_sum += weight * move
+                    all_valid_weight_sum += weight
+                    all_composite_count += 1
+                    all_composite_countries.add(country)
+                    if _is_live_market_session(market_session):
+                        live_weighted_move_sum += weight * move
+                        live_valid_weight_sum += weight
+                        live_composite_count += 1
+                        live_composite_countries.add(country)
             else:
                 missing_count += 1
         else:
@@ -400,14 +435,25 @@ def build_cache(ticker):
             "currency": quote.get("currency") if quote else None,
             "day_change_pct": day_change_pct,
             "quote_time_utc": quote_time_utc,
-            "market_session": quote.get("marketSession") if quote else None,
+            "market_session": market_session,
+            "is_live_market": _is_live_market_session(market_session),
             "status": status,
             "error": quote.get("error") if quote else "missing yahoo symbol",
         })
 
     composite_move_pct = None
-    if valid_weight_sum:
-        composite_move_pct = weighted_move_sum / valid_weight_sum
+    composite_mode = "latest"
+    composite_count = all_composite_count
+    composite_weight_sum = all_valid_weight_sum
+    composite_countries = all_composite_countries
+    if live_valid_weight_sum:
+        composite_mode = "live"
+        composite_move_pct = live_weighted_move_sum / live_valid_weight_sum
+        composite_count = live_composite_count
+        composite_weight_sum = live_valid_weight_sum
+        composite_countries = live_composite_countries
+    elif all_valid_weight_sum:
+        composite_move_pct = all_weighted_move_sum / all_valid_weight_sum
 
     return {
         "ticker": ticker,
@@ -417,6 +463,10 @@ def build_cache(ticker):
         "newest_quote_utc": max(valid_quote_times) if valid_quote_times else None,
         "oldest_quote_utc": min(valid_quote_times) if valid_quote_times else None,
         "composite_move_pct": composite_move_pct,
+        "composite_mode": composite_mode,
+        "composite_country_scope": _country_scope_label(composite_countries),
+        "composite_holding_count": composite_count,
+        "composite_weight_pct": composite_weight_sum,
         "counts": {
             "total": len(rows),
             "up": up_count,
