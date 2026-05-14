@@ -3003,7 +3003,7 @@ try:
                 with mh_tabs[2]:
                     st.markdown("### ETF 展開後總權重")
                     full_exp = expanded_df.copy()
-                    full_exp = full_exp.sort_values("權重", ascending=False)
+                    full_exp = full_exp.sort_values("權重", ascending=True)
                     
                     def format_exp_text(row):
                         weight = row['權重']
@@ -3026,9 +3026,8 @@ try:
                         color="市場",
                         text="custom_text",
                         color_discrete_sequence=px.colors.qualitative.Bold,
-                        category_orders={"名稱": full_exp["名稱"].tolist()},
                     )
-                    fig_bar.update_yaxes(autorange="reversed")
+                    fig_bar.update_yaxes(categoryorder="total ascending")
                     fig_bar.update_traces(textposition="outside", cliponaxis=False)
                     fig_bar.update_layout(
                         height=max(460, len(full_exp) * 28),
