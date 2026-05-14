@@ -3127,7 +3127,7 @@ try:
                 st.markdown(
                     f"""
 <div style="margin-top:-0.45rem; font-size:0.875rem; line-height:1.25; color:rgba(250,250,250,0.62);">
-  <span>此次投入本金</span>
+  <span>此次投入本金: </span>
   <span>{fmt_money(deployed_principal)}</span>
   <span style="opacity:0.55; padding:0 0.45rem;">|</span>
   <span>之前獲利</span>
