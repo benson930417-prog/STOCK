@@ -767,9 +767,32 @@ def github_get_file_sha(repo: str, path: str, ref: str):
     return r.json().get("sha")
 
 
+def _github_debug_context():
+    return {
+        "repo": GITHUB_REPO or "",
+        "branch": GITHUB_BRANCH or "",
+        "master_path": GITHUB_FILE_PATH or "",
+        "token_configured": bool(GITHUB_TOKEN),
+        "token_length": len(str(GITHUB_TOKEN or "")),
+        "token_prefix": str(GITHUB_TOKEN or "")[:4] if GITHUB_TOKEN else "",
+    }
+
+
+def _github_response_excerpt(response):
+    try:
+        payload = response.json()
+        return {
+            "message": payload.get("message"),
+            "documentation_url": payload.get("documentation_url"),
+            "errors": payload.get("errors"),
+        }
+    except Exception:
+        return {"text": response.text[:500]}
+
+
 def github_put_file(repo: str, path: str, ref: str, content_bytes: bytes, message: str):
     if not GITHUB_TOKEN or not repo:
-        raise RuntimeError("Missing GITHUB_TOKEN or GITHUB_REPO in Streamlit Secrets.")
+        raise RuntimeError(f"Missing GitHub config: {_github_debug_context()}")
 
     sha = github_get_file_sha(repo, path, ref)
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
@@ -782,8 +805,19 @@ def github_put_file(repo: str, path: str, ref: str, content_bytes: bytes, messag
         payload["sha"] = sha
 
     r = requests.put(url, headers=github_api_headers(), data=json.dumps(payload), timeout=30)
-    r.raise_for_status()
-    return r.json()
+    if not r.ok:
+        raise RuntimeError(
+            f"GitHub PUT failed for {path}: status={r.status_code}, "
+            f"context={_github_debug_context()}, response={_github_response_excerpt(r)}"
+        )
+    data = r.json()
+    commit = data.get("commit", {})
+    return {
+        "path": path,
+        "status_code": r.status_code,
+        "commit_sha": commit.get("sha"),
+        "html_url": commit.get("html_url"),
+    }
 
 
 # -------------------- master file handling --------------------
@@ -989,22 +1023,33 @@ def merge_into_master(new_month_df: pd.DataFrame, upload_filename: str):
 def push_master_and_meta_to_github(message_suffix: str = ""):
     master_bytes = MASTER_PATH.read_bytes()
     msg = f"Update master_trades.csv {message_suffix}".strip()
-    github_put_file(
+    results = []
+    results.append(github_put_file(
         repo=GITHUB_REPO,
         path=GITHUB_FILE_PATH,
         ref=GITHUB_BRANCH,
         content_bytes=master_bytes,
         message=msg,
-    )
+    ))
+
+    meta = load_meta()
+    meta["last_github_push"] = {
+        "ok": True,
+        "pushed_at_utc": datetime.now(timezone.utc).isoformat(),
+        "context": _github_debug_context(),
+        "results": results.copy(),
+    }
+    save_meta(meta)
 
     meta_bytes = META_PATH.read_bytes()
-    github_put_file(
+    results.append(github_put_file(
         repo=GITHUB_REPO,
         path=str(META_PATH).replace("\\", "/"),
         ref=GITHUB_BRANCH,
         content_bytes=meta_bytes,
         message=f"Update master_meta.json {message_suffix}".strip(),
-    )
+    ))
+    return results
 
 
 # -------------------- accounting --------------------
@@ -1602,9 +1647,23 @@ try:
                         stats = merge_into_master(monthly_df, upload_filename=getattr(up_admin, "name", "uploaded.csv"))
 
                         suffix = f"({datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')})"
-                        push_master_and_meta_to_github(message_suffix=suffix)
+                        try:
+                            push_result = push_master_and_meta_to_github(message_suffix=suffix)
+                        except Exception as push_error:
+                            meta = load_meta()
+                            meta["last_github_push"] = {
+                                "ok": False,
+                                "failed_at_utc": datetime.now(timezone.utc).isoformat(),
+                                "context": _github_debug_context(),
+                                "error": str(push_error),
+                            }
+                            save_meta(meta)
+                            st.error("GitHub push failed after local CSV merge. Local files were updated, but remote was not.")
+                            st.code(json.dumps(meta["last_github_push"], ensure_ascii=False, indent=2))
+                            raise
 
                         st.session_state["last_upload_stats"] = stats
+                        st.session_state["last_upload_push_result"] = push_result
                         
                         st.session_state["last_upload_stats"] = stats
                         
