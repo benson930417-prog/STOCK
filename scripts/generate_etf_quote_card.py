@@ -214,9 +214,9 @@ def _draw_stat(draw, x, y, w, label, value, accent):
 
 def _session_fill(session):
     return {
-        "PRE": (239, 246, 255),
+        "PRE": (255, 237, 213),
         "REG": (239, 246, 255),
-        "POST": (239, 246, 255),
+        "POST": (237, 233, 254),
         "POST_CLOSE": (229, 231, 235),
         "CLOSE": (229, 231, 235),
     }.get(session, (229, 231, 235))
@@ -224,9 +224,9 @@ def _session_fill(session):
 
 def _session_outline(session):
     return {
-        "PRE": (37, 99, 235),
+        "PRE": (251, 146, 60),
         "REG": (37, 99, 235),
-        "POST": (37, 99, 235),
+        "POST": (139, 92, 246),
         "POST_CLOSE": (156, 163, 175),
         "CLOSE": (156, 163, 175),
     }.get(session, (156, 163, 175))
@@ -234,9 +234,9 @@ def _session_outline(session):
 
 def _session_text(session):
     return {
-        "PRE": (29, 78, 216),
+        "PRE": (154, 52, 18),
         "REG": (29, 78, 216),
-        "POST": (29, 78, 216),
+        "POST": (91, 33, 182),
         "POST_CLOSE": INK,
         "CLOSE": INK,
     }.get(session, INK)
@@ -244,9 +244,9 @@ def _session_text(session):
 
 def _session_label(session):
     return {
-        "PRE": "交易中",
-        "REG": "交易中",
-        "POST": "交易中",
+        "PRE": "盤前",
+        "REG": "盤中",
+        "POST": "盤後",
         "POST_CLOSE": "盤後收",
         "CLOSE": "收盤",
     }.get(session, "--")
@@ -256,8 +256,7 @@ def _draw_session(draw, x, y, session):
     session = session or "--"
     label = _session_label(session)
     pill_w = 112
-    outline_w = 3 if session in {"PRE", "REG", "POST"} else 2
-    _round_rect(draw, (x, y, x + pill_w, y + 46), 23, _session_fill(session), _session_outline(session), outline_w)
+    _round_rect(draw, (x, y, x + pill_w, y + 46), 23, _session_fill(session), _session_outline(session), 2)
     _text(draw, (x + pill_w / 2, y + 23), label, FONTS["small_bold"], _session_text(session), anchor="mm")
 
 

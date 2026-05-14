@@ -286,9 +286,9 @@ def _draw_country_flag(draw, x, y, country):
 
 def _session_label(session):
     return {
-        "PRE": "交易中",
-        "REG": "交易中",
-        "POST": "交易中",
+        "PRE": "盤前",
+        "REG": "盤中",
+        "POST": "盤後",
         "POST_CLOSE": "盤後收",
         "CLOSE": "收盤",
     }.get(str(session or "").upper(), "--")
@@ -296,8 +296,12 @@ def _session_label(session):
 
 def _session_style(session):
     session = str(session or "").upper()
-    if session in {"PRE", "REG", "POST"}:
-        return (239, 246, 255), (37, 99, 235), (29, 78, 216), 3
+    if session == "PRE":
+        return (255, 237, 213), (251, 146, 60), (154, 52, 18), 2
+    if session == "REG":
+        return (239, 246, 255), (37, 99, 235), (29, 78, 216), 2
+    if session == "POST":
+        return (237, 233, 254), (139, 92, 246), (91, 33, 182), 2
     return (229, 231, 235), (156, 163, 175), INK, 2
 
 

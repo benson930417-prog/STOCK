@@ -378,7 +378,8 @@ def build_cache(ticker):
                     down_count += 1
                 else:
                     flat_count += 1
-                if weight_pct is not None:
+                include_in_composite = ticker != "00997A" or country == "US"
+                if weight_pct is not None and include_in_composite:
                     weighted_move_sum += float(weight_pct) * float(day_change_pct)
                     valid_weight_sum += float(weight_pct)
             else:
