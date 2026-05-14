@@ -221,14 +221,14 @@ def _bar(draw, x, y, width, height, pct, scale):
 
 def _draw_stat(draw, x, y, w, label, value, accent):
     _round_rect(draw, (x, y, x + w, y + 140), 18, PANEL, (225, 231, 239))
-    label_font = FONTS["title"]
-    for candidate in (FONTS["title_small"], FONTS["h2"], FONTS["body_bold"], FONTS["small_bold"], FONTS["tiny_bold"]):
+    label_font = FONTS["title_small"]
+    for candidate in (FONTS["h2"], FONTS["body_bold"], FONTS["small_bold"], FONTS["tiny_bold"]):
         if _measure(draw, label, label_font)[0] <= w - 40:
             break
         label_font = candidate
     _text(draw, (x + 20, y + 18), _fit_text(draw, label, label_font, w - 40), label_font, INK)
     value_font = FONTS["body_bold"]
-    _text(draw, (x + 20, y + 62), _fit_text(draw, value, value_font, w - 40), value_font, accent)
+    _text(draw, (x + 20, y + 82), _fit_text(draw, value, value_font, w - 40), value_font, accent)
 
 
 def _session_fill(session):
