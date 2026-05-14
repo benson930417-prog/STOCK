@@ -122,7 +122,7 @@ def _fmt_pct(value):
 def _composite_title(cache):
     prefix = "即時加權" if cache.get("composite_mode") == "live" else "最新加權"
     scope = cache.get("composite_country_scope") or "--"
-    return f"{prefix}({scope}): {_fmt_pct(cache.get('composite_move_pct'))}"
+    return f"{prefix}({scope}):"
 
 
 def _composite_detail(cache):
@@ -221,11 +221,7 @@ def _bar(draw, x, y, width, height, pct, scale):
 
 def _draw_stat(draw, x, y, w, label, value, accent):
     _round_rect(draw, (x, y, x + w, y + 140), 18, PANEL, (225, 231, 239))
-    label_font = FONTS["title_small"]
-    for candidate in (FONTS["h2"], FONTS["body_bold"], FONTS["small_bold"], FONTS["tiny_bold"]):
-        if _measure(draw, label, label_font)[0] <= w - 40:
-            break
-        label_font = candidate
+    label_font = FONTS["h2"]
     _text(draw, (x + 20, y + 18), _fit_text(draw, label, label_font, w - 40), label_font, INK)
     value_font = FONTS["body_bold"]
     _text(draw, (x + 20, y + 82), _fit_text(draw, value, value_font, w - 40), value_font, accent)
@@ -331,7 +327,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
 
 
 def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
-    extra_stat_slot = 226
+    extra_stat_slot = 360
     width = 1500 + extra_stat_slot
     height = 4052
     img = Image.new("RGB", (width, height), (241, 244, 248))
@@ -352,6 +348,7 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     no_change = flat
 
     box_w = 210
+    composite_box_w = 340
     gap = 16
     x0 = 84
     y0 = 328
@@ -365,9 +362,9 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
         draw,
         x0 + (box_w + gap) * 6,
         y0,
-        box_w,
+        composite_box_w,
         _composite_title(cache),
-        _composite_detail(cache),
+        _fmt_pct(cache.get("composite_move_pct")),
         _color_for_pct(cache.get("composite_move_pct")),
     )
 
