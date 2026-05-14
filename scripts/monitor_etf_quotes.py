@@ -299,6 +299,23 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
         return {"symbol": symbol, "error": str(exc)}
 
 
+def _fetch_yahoo_chart_quote_with_fallback(symbol, country=None, timeout=10):
+    quote = _fetch_yahoo_chart_quote(symbol, country=country, timeout=timeout)
+    if (
+        country == "TW"
+        and isinstance(symbol, str)
+        and symbol.endswith(".TW")
+        and quote.get("error")
+    ):
+        fallback_symbol = symbol[:-3] + ".TWO"
+        fallback_quote = _fetch_yahoo_chart_quote(fallback_symbol, country=country, timeout=timeout)
+        if not fallback_quote.get("error"):
+            fallback_quote["symbol"] = fallback_symbol
+            fallback_quote["fallback_from"] = symbol
+            return fallback_quote
+    return quote
+
+
 def fetch_yahoo_quotes(symbol_country_pairs, max_workers=12):
     quotes = {}
     unique_pairs = {}
@@ -310,7 +327,7 @@ def fetch_yahoo_quotes(symbol_country_pairs, max_workers=12):
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_map = {
-            executor.submit(_fetch_yahoo_chart_quote, symbol, country): symbol
+            executor.submit(_fetch_yahoo_chart_quote_with_fallback, symbol, country): symbol
             for symbol, country in unique_pairs.items()
         }
         for future in as_completed(future_map):
@@ -375,7 +392,8 @@ def build_cache(ticker):
             "weight_pct": weight_pct,
             "shares": holding.get("shares"),
             "country": country,
-            "yahoo_symbol": yahoo_symbol,
+            "yahoo_symbol": quote.get("symbol", yahoo_symbol) if quote else yahoo_symbol,
+            "fallback_from_symbol": quote.get("fallback_from") if quote else None,
             "price": quote.get("regularMarketPrice") if quote else None,
             "previous_close": quote.get("previousClose") if quote else None,
             "currency": quote.get("currency") if quote else None,
