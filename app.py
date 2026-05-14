@@ -432,6 +432,8 @@ ETF_NAME_TO_TICKER = {
 }
 
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
+SELL_FEE_RATE = 0.001425 * 0.28
+SELL_TAX_RATE = 0.003
 
 
 def calculate_open_positions(raw_trades: pd.DataFrame) -> pd.DataFrame:
@@ -554,7 +556,13 @@ def enrich_positions_with_quotes(positions: pd.DataFrame) -> pd.DataFrame:
         item["previous_close"] = float(prev) if prev is not None else None
         item["day_change_pct"] = float(day_pct) if day_pct is not None else None
         item["market_value"] = item["shares"] * item["price"] if item["price"] is not None else None
-        item["unrealized_pnl"] = (item["market_value"] - item["cost"]) if item["market_value"] is not None else None
+        item["est_sell_fee"] = item["market_value"] * SELL_FEE_RATE if item["market_value"] is not None else None
+        item["est_sell_tax"] = item["market_value"] * SELL_TAX_RATE if item["market_value"] is not None else None
+        item["liquidation_value"] = (
+            item["market_value"] - item["est_sell_fee"] - item["est_sell_tax"]
+            if item["market_value"] is not None else None
+        )
+        item["unrealized_pnl"] = (item["liquidation_value"] - item["cost"]) if item["liquidation_value"] is not None else None
         item["unrealized_pct"] = (item["unrealized_pnl"] / item["cost"] * 100.0) if item.get("cost") else None
 
     out = pd.DataFrame(rows)
@@ -1821,7 +1829,7 @@ try:
         sub_lbl = f"{T(lang, 'Fee', '手續費')}: {fee_str}  {T(lang, 'Tax', '稅')}: {tax_str}"
         KPI_CARD(T(lang, "Trade volume", "交易量"), fmt_money(trade_volume, 1.0, CURRENCY_SYMBOL), NEUTRAL_BLUE, sub_lbl)
     with k6:
-        KPI_CARD("未實現損益", fmt_signed_money(unrealized_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), unrealized_color, fmt_signed_pct(unrealized_pct))
+        KPI_CARD("未實現損益", fmt_signed_money(unrealized_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), unrealized_color, f"扣費稅後 {fmt_signed_pct(unrealized_pct)}")
 
     hr()
 
@@ -2865,11 +2873,11 @@ try:
 
             m1, m2, m3, m4 = st.columns(4)
             with m1:
-                st.metric("庫存總市值 (TWD)", fmt_money(total_market_value), delta=fmt_signed_pct(today_pct))
+                st.metric("庫存總市值 (TWD)", fmt_money(total_market_value))
             with m2:
                 st.metric("總成本", fmt_money(total_cost_open))
             with m3:
-                st.metric("未實現損益", fmt_signed_money(unrealized_pnl), delta=fmt_signed_pct(unrealized_pct))
+                st.metric("未實現損益", fmt_signed_money(unrealized_pnl), delta=f"扣費稅後 {fmt_signed_pct(unrealized_pct)}")
             with m4:
                 st.metric("持股檔數", f"{len(portfolio_positions)}")
 
@@ -2886,15 +2894,17 @@ try:
             fig_pie.update_traces(
                 textposition="inside",
                 textinfo="percent+label",
+                textfont=dict(size=20, color="#111111"),
+                insidetextfont=dict(size=20, color="#111111"),
                 hovertemplate="%{label}<br>市值: %{value:,.0f}<br>權重: %{percent}<extra></extra>",
             )
             fig_pie.update_layout(
-                height=520,
+                height=650,
                 margin=dict(l=10, r=10, t=10, b=10),
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="white"),
-                legend=dict(orientation="v"),
+                font=dict(color="white", size=20),
+                legend=dict(orientation="v", font=dict(size=20)),
             )
             st.plotly_chart(fig_pie, use_container_width=True)
 
@@ -2908,6 +2918,9 @@ try:
                     "price",
                     "cost",
                     "market_value",
+                    "liquidation_value",
+                    "est_sell_fee",
+                    "est_sell_tax",
                     "weight_pct",
                     "unrealized_pnl",
                     "unrealized_pct",
@@ -2922,6 +2935,9 @@ try:
                 "現價",
                 "成本",
                 "市值",
+                "扣費稅後市值",
+                "預估賣出手續費",
+                "預估交易稅",
                 "權重%",
                 "未實現損益",
                 "未實現%",
@@ -2935,6 +2951,9 @@ try:
                         "現價": "{:,.2f}",
                         "成本": "{:,.0f}",
                         "市值": "{:,.0f}",
+                        "扣費稅後市值": "{:,.0f}",
+                        "預估賣出手續費": "{:,.0f}",
+                        "預估交易稅": "{:,.0f}",
                         "權重%": "{:.2f}%",
                         "未實現損益": "{:+,.0f}",
                         "未實現%": "{:+.2f}%",
