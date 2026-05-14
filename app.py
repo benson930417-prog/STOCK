@@ -2882,132 +2882,182 @@ try:
             with m4:
                 st.metric("持股檔數", f"{len(portfolio_positions)}")
 
-            st.markdown("### 目前持股權重")
-            pie_df = portfolio_positions.dropna(subset=["market_value"]).copy()
-            pie_df["label"] = pie_df["stock"] + " (" + pie_df["code"].astype(str) + ")"
-            fig_pie = px.pie(
-                pie_df,
-                names="label",
-                values="market_value",
-                hole=0.48,
-                color_discrete_sequence=px.colors.qualitative.Set2,
-            )
-            fig_pie.update_traces(
-                textposition="inside",
-                textinfo="percent+label",
-                textfont=dict(size=20, color="#111111"),
-                insidetextfont=dict(size=20, color="#111111"),
-                hovertemplate="%{label}<br>市值: %{value:,.0f}<br>權重: %{percent}<extra></extra>",
-            )
-            fig_pie.update_layout(
-                height=650,
-                margin=dict(l=10, r=10, t=10, b=10),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="white", size=20),
-                legend=dict(orientation="v", font=dict(size=20)),
-            )
-            st.plotly_chart(fig_pie, use_container_width=True)
+            mh_tabs = st.tabs(["投資組合摘要", "ETF 展開權重圖", "展開後絕對權重", "今日貢獻圖"])
 
-            st.markdown("### 直接持股明細")
-            direct_show = portfolio_positions[
-                [
-                    "stock",
-                    "code",
-                    "shares",
-                    "avg_cost",
-                    "price",
-                    "cost",
-                    "market_value",
-                    "liquidation_value",
-                    "est_sell_fee",
-                    "est_sell_tax",
-                    "weight_pct",
-                    "unrealized_pnl",
-                    "unrealized_pct",
-                    "day_change_pct",
-                ]
-            ].copy()
-            direct_show.columns = [
-                "股名",
-                "代號",
-                "股數",
-                "均價",
-                "現價",
-                "成本",
-                "原始市值",
-                "目前淨值",
-                "預估賣出手續費",
-                "預估交易稅",
-                "權重%",
-                "未實現損益",
-                "未實現%",
-                "今日漲跌%",
-            ]
-            st.dataframe(
-                make_trade_styler(direct_show, PROFIT_COLOR, LOSS_COLOR).format(
-                    {
-                        "股數": "{:,.0f}",
-                        "均價": "{:,.2f}",
-                        "現價": "{:,.2f}",
-                        "成本": "{:,.0f}",
-                        "原始市值": "{:,.0f}",
-                        "目前淨值": "{:,.0f}",
-                        "預估賣出手續費": "{:,.0f}",
-                        "預估交易稅": "{:,.0f}",
-                        "權重%": "{:.2f}%",
-                        "未實現損益": "{:+,.0f}",
-                        "未實現%": "{:+.2f}%",
-                        "今日漲跌%": "{:+.2f}%",
-                    },
-                    na_rep="----",
-                ),
-                width="stretch",
-                height=240,
-            )
-
-            expanded_df = build_expanded_etf_exposure(portfolio_positions)
-            if expanded_df.empty:
-                st.info("目前沒有 ETF 展開持股資料。")
-            else:
-                st.markdown("### ETF 展開後總權重")
-                top_exp = expanded_df.head(20).copy()
-                fig_bar = px.bar(
-                    top_exp.sort_values("權重", ascending=True),
-                    x="權重",
-                    y="名稱",
-                    orientation="h",
-                    color="市場",
-                    text="權重",
-                    color_discrete_sequence=px.colors.qualitative.Bold,
+            with mh_tabs[0]:
+                st.markdown("### 目前持股權重")
+                pie_df = portfolio_positions.dropna(subset=["market_value"]).copy()
+                pie_df["label"] = pie_df["stock"] + " (" + pie_df["code"].astype(str) + ")"
+                fig_pie = px.pie(
+                    pie_df,
+                    names="label",
+                    values="market_value",
+                    hole=0.48,
+                    color_discrete_sequence=px.colors.qualitative.Set2,
                 )
-                fig_bar.update_traces(texttemplate="%{text:.2f}%", textposition="outside", cliponaxis=False)
-                fig_bar.update_layout(
-                    height=max(460, len(top_exp) * 28),
-                    margin=dict(l=10, r=80, t=20, b=10),
-                    xaxis_title="權重 (%)",
-                    yaxis_title="",
+                fig_pie.update_traces(
+                    textposition="inside",
+                    textinfo="percent+label",
+                    textfont=dict(size=20, color="#111111"),
+                    insidetextfont=dict(size=20, color="#111111"),
+                    hovertemplate="%{label}<br>市值: %{value:,.0f}<br>權重: %{percent}<extra></extra>",
+                )
+                fig_pie.update_layout(
+                    height=650,
+                    margin=dict(l=10, r=10, t=10, b=10),
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="white"),
+                    font=dict(color="white", size=20),
+                    legend=dict(orientation="v", font=dict(size=20)),
                 )
-                st.plotly_chart(fig_bar, use_container_width=True)
+                st.plotly_chart(fig_pie, use_container_width=True)
 
-                st.markdown("### 全部成分股絕對權重")
-                expanded_show = expanded_df.copy()
+                st.markdown("### 直接持股明細")
+                direct_show = portfolio_positions[
+                    [
+                        "stock",
+                        "code",
+                        "shares",
+                        "avg_cost",
+                        "price",
+                        "cost",
+                        "market_value",
+                        "liquidation_value",
+                        "est_sell_fee",
+                        "est_sell_tax",
+                        "weight_pct",
+                        "unrealized_pnl",
+                        "unrealized_pct",
+                        "day_change_pct",
+                    ]
+                ].copy()
+                direct_show.columns = [
+                    "股名",
+                    "代號",
+                    "股數",
+                    "均價",
+                    "現價",
+                    "成本",
+                    "原始市值",
+                    "目前淨值",
+                    "預估賣出手續費",
+                    "預估交易稅",
+                    "權重%",
+                    "未實現損益",
+                    "未實現%",
+                    "今日漲跌%",
+                ]
                 st.dataframe(
-                    make_trade_styler(expanded_show, PROFIT_COLOR, LOSS_COLOR).format(
+                    make_trade_styler(direct_show, PROFIT_COLOR, LOSS_COLOR).format(
                         {
-                            "曝險市值": "{:,.0f}",
-                            "權重": "{:.2f}%",
+                            "股數": "{:,.0f}",
+                            "均價": "{:,.2f}",
+                            "現價": "{:,.2f}",
+                            "成本": "{:,.0f}",
+                            "原始市值": "{:,.0f}",
+                            "目前淨值": "{:,.0f}",
+                            "預估賣出手續費": "{:,.0f}",
+                            "預估交易稅": "{:,.0f}",
+                            "權重%": "{:.2f}%",
+                            "未實現損益": "{:+,.0f}",
+                            "未實現%": "{:+.2f}%",
                             "今日漲跌%": "{:+.2f}%",
-                            "今日貢獻": "{:+.3f}%",
                         },
                         na_rep="----",
                     ),
                     width="stretch",
-                    height=650,
+                    height=240,
                 )
+
+            expanded_df = build_expanded_etf_exposure(portfolio_positions)
+            if expanded_df.empty:
+                for t in mh_tabs[1:]:
+                    with t:
+                        st.info("目前沒有 ETF 展開持股資料。")
+            else:
+                with mh_tabs[1]:
+                    st.markdown("### ETF 展開後總權重")
+                    full_exp = expanded_df.copy()
+                    fig_bar = px.bar(
+                        full_exp.sort_values("權重", ascending=True),
+                        x="權重",
+                        y="名稱",
+                        orientation="h",
+                        color="市場",
+                        text="權重",
+                        color_discrete_sequence=px.colors.qualitative.Bold,
+                    )
+                    fig_bar.update_traces(texttemplate="%{text:.2f}%", textposition="outside", cliponaxis=False)
+                    fig_bar.update_layout(
+                        height=max(460, len(full_exp) * 28),
+                        margin=dict(l=10, r=80, t=20, b=10),
+                        xaxis_title="權重 (%)",
+                        yaxis_title="",
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="white"),
+                    )
+                    st.plotly_chart(fig_bar, use_container_width=True)
+
+                with mh_tabs[2]:
+                    st.markdown("### 全部成分股絕對權重")
+                    expanded_show = expanded_df.copy()
+                    st.dataframe(
+                        make_trade_styler(expanded_show, PROFIT_COLOR, LOSS_COLOR).format(
+                            {
+                                "曝險市值": "{:,.0f}",
+                                "權重": "{:.2f}%",
+                                "今日漲跌%": "{:+.2f}%",
+                                "今日貢獻": "{:+.3f}%",
+                            },
+                            na_rep="----",
+                        ),
+                        width="stretch",
+                        height=650,
+                    )
+
+                with mh_tabs[3]:
+                    st.markdown("### 今日貢獻圖")
+                    contrib_df = expanded_df.dropna(subset=["今日貢獻"]).copy()
+                    contrib_df = contrib_df.sort_values("今日貢獻", ascending=True)
+                    
+                    def format_custom_text(row):
+                        contrib = row['今日貢獻']
+                        change = row['今日漲跌%']
+                        if pd.isna(contrib): return ""
+                        contrib_str = f"{contrib:+.3f}%"
+                        if pd.notna(change):
+                            change_str = f" <span style='font-size: 11px; color: #888888;'>(漲跌 {change:+.2f}%)</span>"
+                        else:
+                            change_str = ""
+                        return contrib_str + change_str
+
+                    contrib_df["custom_text"] = contrib_df.apply(format_custom_text, axis=1)
+                    
+                    contrib_df["sign"] = np.where(contrib_df["今日貢獻"] >= 0, "獲利", "虧損")
+                    
+                    fig_contrib = px.bar(
+                        contrib_df,
+                        x="今日貢獻",
+                        y="名稱",
+                        orientation="h",
+                        color="sign",
+                        color_discrete_map={"獲利": PROFIT_COLOR, "虧損": LOSS_COLOR},
+                        text="custom_text"
+                    )
+                    
+                    fig_contrib.update_traces(textposition="outside", cliponaxis=False)
+                    fig_contrib.update_layout(
+                        height=max(460, len(contrib_df) * 28),
+                        margin=dict(l=10, r=120, t=20, b=10),
+                        xaxis_title="今日貢獻 (%)",
+                        yaxis_title="",
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="white"),
+                        showlegend=False
+                    )
+                    st.plotly_chart(fig_contrib, use_container_width=True)
 
 except Exception:
     st.error("App crashed during rendering. Here is the full traceback:")
