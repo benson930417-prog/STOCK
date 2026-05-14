@@ -3047,7 +3047,7 @@ try:
                 st.metric("總成本", fmt_money(total_cost_open))
                 st.markdown(
                     f"""
-<div style="margin-top:-0.45rem; font-size:0.875rem; line-height:1.25; color:rgba(250,250,250,0.62);">
+<div style="margin-top:-0.45rem; font-size:0.875rem; line-height:0.5; color:rgba(250,250,250,0.62);">
   <span>此次投入本金</span>
   <span>{fmt_money(deployed_principal)}</span>
   <span style="opacity:0.55; padding:0 0.45rem;">|</span>
