@@ -29,8 +29,12 @@ WASH = (248, 250, 252)
 HOLDING_TEXT_W = 400
 FLAG_W = 61
 FLAG_H = 40
+CODE_COL_W = 180
+NAME_COL_W = 420
+COUNTRY_COL_W = 92
+WEIGHT_COL_W = 132
+UPDATE_COL_W = 200
 STATUS_COL_W = 150
-RANK_COL_W = 82
 
 
 def _font(size, weight="regular"):
@@ -276,13 +280,18 @@ def _draw_session(draw, x, y, session, pill_w=112, pill_h=46, font=None):
 
 
 def _draw_col_header(draw, x, y, w, scale):
-    holding_x = x + STATUS_COL_W + RANK_COL_W + 22
-    meta_x = holding_x + HOLDING_TEXT_W + 56
-    _text(draw, (x + 18, y), "狀態", FONTS["body_bold"], INK)
-    _text(draw, (holding_x, y), "持股", FONTS["body_bold"], INK)
-    _text(draw, (meta_x + 0, y), "市場", FONTS["body_bold"], INK)
-    _text(draw, (meta_x + 126, y), "權重", FONTS["body_bold"], INK)
-    _text(draw, (meta_x + 550, y), "更新", FONTS["body_bold"], INK)
+    code_x = x
+    name_x = code_x + CODE_COL_W
+    country_x = name_x + NAME_COL_W
+    weight_x = country_x + COUNTRY_COL_W
+    status_x = x + w - STATUS_COL_W
+    update_x = status_x - UPDATE_COL_W
+    _text(draw, (code_x, y), "代號", FONTS["body_bold"], INK)
+    _text(draw, (name_x, y), "持股", FONTS["body_bold"], INK)
+    _text(draw, (country_x, y), "市場", FONTS["body_bold"], INK)
+    _text(draw, (weight_x, y), "權重", FONTS["body_bold"], INK)
+    _text(draw, (update_x + UPDATE_COL_W - 8, y), "更新", FONTS["body_bold"], INK, anchor="ra")
+    _text(draw, (status_x + STATUS_COL_W - 4, y), "狀態", FONTS["body_bold"], INK, anchor="ra")
     draw.line((x, y + 54, x + w, y + 54), fill=(209, 216, 224), width=3)
 
 
@@ -297,21 +306,23 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     weight_text = f"{weight:.2f}%" if weight is not None else "--"
     ticker = row.get("id") or "--"
     name = row.get("name") or "--"
-    holding_x = x + STATUS_COL_W + RANK_COL_W + 22
-    name_max_w = HOLDING_TEXT_W
-    meta_x = holding_x + name_max_w + 56
+    code_x = x
+    name_x = code_x + CODE_COL_W
+    country_x = name_x + NAME_COL_W
+    weight_x = country_x + COUNTRY_COL_W
+    status_x = x + w - STATUS_COL_W
+    update_x = status_x - UPDATE_COL_W
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
-    _draw_session(draw, x + 4, y + 24, session, pill_w=136, pill_h=58, font=FONTS["body_bold"])
-    _text(draw, (x + STATUS_COL_W + 2, y + 4), f"{rank:02d}", FONTS["rank"], INK)
-    _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
-    _text(draw, (holding_x, y + 54), _fit_text(draw, ticker, FONTS["small"], name_max_w), FONTS["small"], INK)
-    _draw_country_flag(draw, meta_x + 0, y + 24, country)
-    _text(draw, (meta_x + 126, y + 21), weight_text, FONTS["body_bold"], INK)
-    _text(draw, (meta_x + 550, y + 21), age, FONTS["body_bold"], INK)
-    bar_x = holding_x
+    _text(draw, (code_x, y + 18), _fit_text(draw, ticker, FONTS["body_bold"], CODE_COL_W - 18), FONTS["body_bold"], INK)
+    _text(draw, (name_x, y + 18), _fit_text(draw, name, FONTS["body_bold"], NAME_COL_W - 18), FONTS["body_bold"], INK)
+    _draw_country_flag(draw, country_x, y + 14, country)
+    _text(draw, (weight_x, y + 21), weight_text, FONTS["body_bold"], INK)
+    _text(draw, (update_x + UPDATE_COL_W - 8, y + 21), age, FONTS["body_bold"], INK, anchor="ra")
+    _draw_session(draw, status_x + STATUS_COL_W - 136, y + 12, session, pill_w=136, pill_h=58, font=FONTS["body_bold"])
+    bar_x = name_x
     bar_y = y + 90
-    bar_w = w - (holding_x - x) - 48
+    bar_w = w - (bar_x - x)
     endpoint = _bar(draw, bar_x, bar_y, bar_w, 30, change, scale)
     if change is not None:
         pct_color = _color_for_pct(change)
