@@ -26,6 +26,8 @@ import os
 import time
 import base64
 import json
+import shutil
+import subprocess
 import traceback
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -790,6 +792,27 @@ def _github_response_excerpt(response):
         return {"text": response.text[:500]}
 
 
+def _sync_local_git_after_github_push():
+    if not Path(".git").exists():
+        return {"skipped": True, "reason": "not a git checkout"}
+
+    git_bin = shutil.which("git") or "/usr/bin/git"
+    cmd = [git_bin, "pull", "origin", GITHUB_BRANCH, "--rebase", "--autostash"]
+    result = subprocess.run(
+        cmd,
+        cwd=".",
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    return {
+        "skipped": False,
+        "returncode": result.returncode,
+        "stdout": result.stdout[-1000:],
+        "stderr": result.stderr[-1000:],
+    }
+
+
 def github_put_file(repo: str, path: str, ref: str, content_bytes: bytes, message: str):
     if not GITHUB_TOKEN or not repo:
         raise RuntimeError(f"Missing GitHub config: {_github_debug_context()}")
@@ -1049,6 +1072,10 @@ def push_master_and_meta_to_github(message_suffix: str = ""):
         content_bytes=meta_bytes,
         message=f"Update master_meta.json {message_suffix}".strip(),
     ))
+    sync_result = _sync_local_git_after_github_push()
+    if not sync_result.get("skipped") and sync_result.get("returncode") != 0:
+        raise RuntimeError(f"GitHub push succeeded, but local git sync failed: {sync_result}")
+    results.append({"local_git_sync": sync_result})
     return results
 
 
