@@ -303,7 +303,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     meta_x = holding_x + name_max_w + 56
 
     if row.get("is_live_market"):
-        _round_rect(draw, (x - 8, y - 2, x + w + 8, y + 126), 12, (235, 247, 255), (191, 219, 254), 1)
+        _round_rect(draw, (x - 8, y - 2, x + w + 8, y + 126), 12, None, (0, 191, 255), 4)
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
     _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
