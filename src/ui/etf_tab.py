@@ -546,10 +546,19 @@ def render_passive_etf_tab(
             with metric_cols[2]:
                 st.metric("收盤市價", f"{close_price:.2f}" if close_price else "N/A", delta=_fmt_pct(deltas.get("closing_price_pct")))
             with metric_cols[3]:
-                premium_value = "N/A" if premium_pct is None else f"{premium_pct:+.2f}%"
-                st.metric("折溢價", premium_value)
-            with metric_cols[4]:
                 st.metric("在外流通單位", _fmt_units_yi(units), delta=_fmt_pct(deltas.get("outstanding_units_pct")))
+            with metric_cols[4]:
+                premium_value = "N/A" if premium_pct is None else f"{premium_pct:+.2f}%"
+                premium_color = "#ff4b4b" if (premium_pct or 0) >= 0 else "#3dd56d"
+                st.markdown(
+                    f"""
+                    <div style="padding: 0.25rem 0;">
+                        <div style="font-size: 0.875rem; color: rgba(250,250,250,0.85); margin-bottom: 0.35rem;">折溢價</div>
+                        <div style="font-size: 2.75rem; line-height: 1.2; color: {premium_color}; font-weight: 400;">{premium_value}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
         if holdings:
             df_h = pd.DataFrame(holdings)
