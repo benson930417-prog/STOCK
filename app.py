@@ -2861,6 +2861,7 @@ try:
             st.info("目前沒有可計算的庫存持股。")
         else:
             total_market_value = float(portfolio_positions["market_value"].dropna().sum())
+            total_liquidation_value = float(portfolio_positions["liquidation_value"].dropna().sum())
             total_cost_open = float(portfolio_positions["cost"].sum())
             today_pnl = float(
                 (
@@ -2873,7 +2874,7 @@ try:
 
             m1, m2, m3, m4 = st.columns(4)
             with m1:
-                st.metric("庫存總市值 (TWD)", fmt_money(total_market_value))
+                st.metric("目前淨值 (扣費稅)", fmt_money(total_liquidation_value))
             with m2:
                 st.metric("總成本", fmt_money(total_cost_open))
             with m3:
@@ -2934,8 +2935,8 @@ try:
                 "均價",
                 "現價",
                 "成本",
-                "市值",
-                "扣費稅後市值",
+                "原始市值",
+                "目前淨值",
                 "預估賣出手續費",
                 "預估交易稅",
                 "權重%",
@@ -2950,8 +2951,8 @@ try:
                         "均價": "{:,.2f}",
                         "現價": "{:,.2f}",
                         "成本": "{:,.0f}",
-                        "市值": "{:,.0f}",
-                        "扣費稅後市值": "{:,.0f}",
+                        "原始市值": "{:,.0f}",
+                        "目前淨值": "{:,.0f}",
                         "預估賣出手續費": "{:,.0f}",
                         "預估交易稅": "{:,.0f}",
                         "權重%": "{:.2f}%",
