@@ -3037,12 +3037,17 @@ try:
                 ).fillna(0).sum()
             )
             today_pct = (today_pnl / (total_market_value - today_pnl) * 100.0) if total_market_value != today_pnl else 0.0
+            reinvested_realized_pnl = float(total_pnl)
+            deployed_principal = total_cost_open - reinvested_realized_pnl
 
             m1, m2, m3, m4 = st.columns(4)
             with m1:
                 st.metric("目前淨值 (扣費稅)", fmt_money(total_liquidation_value))
             with m2:
                 st.metric("總成本", fmt_money(total_cost_open))
+                st.caption(
+                    f"投入本金 {fmt_money(deployed_principal)} ｜ 之前獲利 {fmt_signed_money(reinvested_realized_pnl)}"
+                )
             with m3:
                 st.metric("未實現損益 (扣費稅後)", fmt_signed_money(unrealized_pnl), delta=fmt_signed_pct(unrealized_pct), delta_color=delta_color_param)
             with m4:
