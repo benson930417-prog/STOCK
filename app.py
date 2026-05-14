@@ -3130,7 +3130,7 @@ try:
   <span>此次投入本金: </span>
   <span>{fmt_money(deployed_principal)}</span>
   <span style="opacity:0.55; padding:0 0.45rem;">|</span>
-  <span>之前獲利</span>
+  <span>加上之前獲利</span>
   <span>{fmt_signed_money(reinvested_realized_pnl)}</span>
 </div>
 """,
