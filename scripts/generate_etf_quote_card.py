@@ -302,8 +302,6 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     name_max_w = HOLDING_TEXT_W
     meta_x = holding_x + name_max_w + 56
 
-    if row.get("is_live_market"):
-        _round_rect(draw, (x - 8, y - 2, x + w + 8, y + 126), 12, None, (0, 191, 255), 4)
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
     _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
@@ -385,6 +383,14 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     rank_offset = (page_no - 1) * 25
     for idx, row in enumerate(rows):
         _draw_row(draw, row, x, start_y + idx * row_h, col_w, rank_offset + idx + 1, scale)
+
+    live_indexes = [idx for idx, row in enumerate(rows) if row.get("is_live_market")]
+    if live_indexes:
+        first_live = min(live_indexes)
+        last_live = max(live_indexes)
+        top = start_y + first_live * row_h - 12
+        bottom = start_y + last_live * row_h + 126 + 12
+        _round_rect(draw, (x - 16, top, x + col_w + 16, bottom), 18, None, (0, 191, 255), 5)
 
     return img
 
