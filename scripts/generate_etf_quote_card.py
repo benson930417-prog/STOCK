@@ -29,6 +29,8 @@ WASH = (248, 250, 252)
 HOLDING_TEXT_W = 400
 FLAG_W = 61
 FLAG_H = 40
+STATUS_COL_W = 150
+RANK_COL_W = 82
 
 
 def _font(size, weight="regular"):
@@ -269,20 +271,21 @@ def _session_label(session):
     }.get(session, "--")
 
 
-def _draw_session(draw, x, y, session):
+def _draw_session(draw, x, y, session, pill_w=112, pill_h=46, font=None):
     session = session or "--"
     label = _session_label(session)
-    pill_w = 112
-    _round_rect(draw, (x, y, x + pill_w, y + 46), 23, _session_fill(session), _session_outline(session), 2)
-    _text(draw, (x + pill_w / 2, y + 23), label, FONTS["small_bold"], _session_text(session), anchor="mm")
+    font = font or FONTS["small_bold"]
+    _round_rect(draw, (x, y, x + pill_w, y + pill_h), pill_h // 2, _session_fill(session), _session_outline(session), 2)
+    _text(draw, (x + pill_w / 2, y + pill_h / 2), label, font, _session_text(session), anchor="mm")
 
 
 def _draw_col_header(draw, x, y, w, scale):
-    meta_x = x + 118 + HOLDING_TEXT_W + 56
-    _text(draw, (x + 118, y), "持股", FONTS["body_bold"], INK)
+    holding_x = x + STATUS_COL_W + RANK_COL_W + 22
+    meta_x = holding_x + HOLDING_TEXT_W + 56
+    _text(draw, (x + 18, y), "狀態", FONTS["body_bold"], INK)
+    _text(draw, (holding_x, y), "持股", FONTS["body_bold"], INK)
     _text(draw, (meta_x + 0, y), "市場", FONTS["body_bold"], INK)
     _text(draw, (meta_x + 126, y), "權重", FONTS["body_bold"], INK)
-    _text(draw, (meta_x + 270, y), "狀態", FONTS["body_bold"], INK)
     _text(draw, (meta_x + 550, y), "更新", FONTS["body_bold"], INK)
     draw.line((x, y + 54, x + w, y + 54), fill=(209, 216, 224), width=3)
 
@@ -298,21 +301,21 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     weight_text = f"{weight:.2f}%" if weight is not None else "--"
     ticker = row.get("id") or "--"
     name = row.get("name") or "--"
-    holding_x = x + 118
+    holding_x = x + STATUS_COL_W + RANK_COL_W + 22
     name_max_w = HOLDING_TEXT_W
     meta_x = holding_x + name_max_w + 56
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
-    _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
+    _draw_session(draw, x + 4, y + 4, session, pill_w=136, pill_h=58, font=FONTS["body_bold"])
+    _text(draw, (x + STATUS_COL_W + 2, y + 4), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
     _text(draw, (holding_x, y + 54), _fit_text(draw, ticker, FONTS["small"], name_max_w), FONTS["small"], INK)
     _draw_country_flag(draw, meta_x + 0, y + 12, country)
     _text(draw, (meta_x + 126, y + 21), weight_text, FONTS["small"], INK)
-    _draw_session(draw, meta_x + 255, y + 10, session)
     _text(draw, (meta_x + 550, y + 21), age, FONTS["small"], INK)
     bar_x = holding_x
     bar_y = y + 90
-    bar_w = w - 166
+    bar_w = w - (holding_x - x) - 48
     endpoint = _bar(draw, bar_x, bar_y, bar_w, 30, change, scale)
     if change is not None:
         pct_color = _color_for_pct(change)
@@ -383,14 +386,6 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     rank_offset = (page_no - 1) * 25
     for idx, row in enumerate(rows):
         _draw_row(draw, row, x, start_y + idx * row_h, col_w, rank_offset + idx + 1, scale)
-
-    live_indexes = [idx for idx, row in enumerate(rows) if row.get("is_live_market")]
-    if live_indexes:
-        first_live = min(live_indexes)
-        last_live = max(live_indexes)
-        top = start_y + first_live * row_h - 12
-        bottom = start_y + last_live * row_h + 126 + 12
-        _round_rect(draw, (x - 16, top, x + col_w + 16, bottom), 18, None, (0, 191, 255), 5)
 
     return img
 
