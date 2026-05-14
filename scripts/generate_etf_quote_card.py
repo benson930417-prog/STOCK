@@ -205,7 +205,10 @@ def _bar(draw, x, y, width, height, pct, scale):
 
 def _draw_stat(draw, x, y, w, label, value, accent):
     _round_rect(draw, (x, y, x + w, y + 106), 18, PANEL, (225, 231, 239))
-    _text(draw, (x + 20, y + 18), label, FONTS["small_bold"], INK)
+    label_font = FONTS["small_bold"]
+    if _measure(draw, label, label_font)[0] > w - 40:
+        label_font = FONTS["tiny_bold"]
+    _text(draw, (x + 20, y + 18), _fit_text(draw, label, label_font, w - 40), label_font, INK)
     value_font = FONTS["body_bold"]
     if _measure(draw, value, value_font)[0] > w - 40:
         value_font = FONTS["small_bold"]
@@ -286,8 +289,6 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     meta_x = holding_x + name_max_w + 56
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
-    if session_key in {"PRE", "REG", "POST"}:
-        draw.ellipse((x - 30, y + 28, x - 8, y + 50), fill=(191, 219, 254), outline=(96, 165, 250), width=2)
     _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
     _text(draw, (holding_x, y + 54), _fit_text(draw, ticker, FONTS["small"], name_max_w), FONTS["small"], INK)
@@ -348,7 +349,7 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
         x0 + (box_w + gap) * 6,
         y0,
         box_w,
-        "加權漲跌",
+        "即時美股加權漲跌" if ticker == "00997A" else "加權漲跌",
         _fmt_pct(cache.get("composite_move_pct")),
         _color_for_pct(cache.get("composite_move_pct")),
     )
