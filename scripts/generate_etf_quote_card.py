@@ -29,9 +29,9 @@ WASH = (248, 250, 252)
 HOLDING_TEXT_W = 400
 FLAG_W = 61
 FLAG_H = 40
-CODE_COL_W = 180
-NAME_COL_W = 420
-COUNTRY_COL_W = 92
+INDEX_COL_W = 100
+FLAG_COL_W = 90
+NAME_COL_W = 500
 WEIGHT_COL_W = 132
 UPDATE_COL_W = 200
 STATUS_COL_W = 150
@@ -280,15 +280,15 @@ def _draw_session(draw, x, y, session, pill_w=112, pill_h=46, font=None):
 
 
 def _draw_col_header(draw, x, y, w, scale):
-    code_x = x
-    name_x = code_x + CODE_COL_W
-    country_x = name_x + NAME_COL_W
-    weight_x = country_x + COUNTRY_COL_W
+    index_x = x
+    flag_x = index_x + INDEX_COL_W
+    name_x = flag_x + FLAG_COL_W
+    weight_x = name_x + NAME_COL_W
     status_x = x + w - STATUS_COL_W
     update_x = status_x - UPDATE_COL_W
-    _text(draw, (code_x, y), "代號", FONTS["body_bold"], INK)
+    _text(draw, (index_x, y), "序號", FONTS["body_bold"], INK)
+    _text(draw, (flag_x, y), "市場", FONTS["body_bold"], INK)
     _text(draw, (name_x, y), "持股", FONTS["body_bold"], INK)
-    _text(draw, (country_x, y), "市場", FONTS["body_bold"], INK)
     _text(draw, (weight_x, y), "權重", FONTS["body_bold"], INK)
     _text(draw, (update_x + UPDATE_COL_W - 8, y), "更新", FONTS["body_bold"], INK, anchor="ra")
     _text(draw, (status_x + STATUS_COL_W - 4, y), "狀態", FONTS["body_bold"], INK, anchor="ra")
@@ -306,17 +306,18 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     weight_text = f"{weight:.2f}%" if weight is not None else "--"
     ticker = row.get("id") or "--"
     name = row.get("name") or "--"
-    code_x = x
-    name_x = code_x + CODE_COL_W
-    country_x = name_x + NAME_COL_W
-    weight_x = country_x + COUNTRY_COL_W
+    index_x = x
+    flag_x = index_x + INDEX_COL_W
+    name_x = flag_x + FLAG_COL_W
+    weight_x = name_x + NAME_COL_W
     status_x = x + w - STATUS_COL_W
     update_x = status_x - UPDATE_COL_W
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
-    _text(draw, (code_x, y + 18), _fit_text(draw, ticker, FONTS["body_bold"], CODE_COL_W - 18), FONTS["body_bold"], INK)
-    _text(draw, (name_x, y + 18), _fit_text(draw, name, FONTS["body_bold"], NAME_COL_W - 18), FONTS["body_bold"], INK)
-    _draw_country_flag(draw, country_x, y + 14, country)
+    _text(draw, (index_x, y + 4), f"{rank:02d}", FONTS["rank"], INK)
+    _draw_country_flag(draw, flag_x, y + 24, country)
+    _text(draw, (name_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], NAME_COL_W - 18), FONTS["body_bold"], INK)
+    _text(draw, (name_x, y + 54), _fit_text(draw, ticker, FONTS["small"], NAME_COL_W - 18), FONTS["small"], INK)
     _text(draw, (weight_x, y + 21), weight_text, FONTS["body_bold"], INK)
     _text(draw, (update_x + UPDATE_COL_W - 8, y + 21), age, FONTS["body_bold"], INK, anchor="ra")
     _draw_session(draw, status_x + STATUS_COL_W - 136, y + 12, session, pill_w=136, pill_h=58, font=FONTS["body_bold"])
@@ -345,7 +346,7 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     draw = ImageDraw.Draw(img)
 
     _round_rect(draw, (28, 28, width - 28, height - 28), 28, PANEL, (221, 228, 236), 2)
-    _round_rect(draw, (54, 54, width - 54, 470), 24, (250, 252, 255), (234, 238, 244), 1)
+    _round_rect(draw, (54, 54, width - 54, 300), 24, (238, 242, 247), (209, 216, 224), 2)
 
     etf_name = ETF_NAMES.get(ticker, "")
     _text(draw, (82, 68), ticker, FONTS["title"], INK)
