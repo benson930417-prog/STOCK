@@ -275,6 +275,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     change = row.get("day_change_pct")
     country = row.get("country") or "--"
     session = row.get("market_session") or "--"
+    session_key = str(session or "").upper()
     age = _ago(row.get("quote_time_utc"))
     pct_text = _fmt_pct(change)
     weight = row.get("weight_pct")
@@ -285,6 +286,9 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     name_max_w = HOLDING_TEXT_W
     meta_x = holding_x + name_max_w + 56
 
+    if session_key == "REG":
+        _round_rect(draw, (x - 8, y + 4, x + w + 8, y + 124), 18, (248, 251, 255), (37, 99, 235), 3)
+        _round_rect(draw, (x - 8, y + 4, x + 2, y + 124), 8, (37, 99, 235), (37, 99, 235), 0)
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
     _text(draw, (x + 10, y + 4), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
