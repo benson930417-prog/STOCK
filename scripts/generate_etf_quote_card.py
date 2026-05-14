@@ -34,7 +34,7 @@ FLAG_COL_W = 90
 NAME_COL_W = 500
 WEIGHT_COL_W = 132
 UPDATE_COL_W = 200
-STATUS_COL_W = 150
+STATUS_COL_W = 180
 
 
 def _font(size, weight="regular"):
@@ -236,6 +236,7 @@ def _session_fill(session):
         "PRE": (255, 237, 213),
         "REG": (239, 246, 255),
         "POST": (237, 233, 254),
+        "FUT_NIGHT": (224, 242, 254),
         "POST_CLOSE": (229, 231, 235),
         "CLOSE": (229, 231, 235),
     }.get(session, (229, 231, 235))
@@ -246,6 +247,7 @@ def _session_outline(session):
         "PRE": (251, 146, 60),
         "REG": (37, 99, 235),
         "POST": (139, 92, 246),
+        "FUT_NIGHT": (6, 182, 212),
         "POST_CLOSE": (156, 163, 175),
         "CLOSE": (156, 163, 175),
     }.get(session, (156, 163, 175))
@@ -256,6 +258,7 @@ def _session_text(session):
         "PRE": (154, 52, 18),
         "REG": (29, 78, 216),
         "POST": (91, 33, 182),
+        "FUT_NIGHT": (14, 116, 144),
         "POST_CLOSE": INK,
         "CLOSE": INK,
     }.get(session, INK)
@@ -266,6 +269,7 @@ def _session_label(session):
         "PRE": "盤前",
         "REG": "盤中",
         "POST": "盤後",
+        "FUT_NIGHT": "期貨夜盤",
         "POST_CLOSE": "盤後收",
         "CLOSE": "收盤",
     }.get(session, "--")
@@ -305,6 +309,8 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     weight = row.get("weight_pct")
     weight_text = f"{weight:.2f}%" if weight is not None else "--"
     ticker = row.get("id") or "--"
+    if row.get("proxy"):
+        ticker = f"{ticker} / {row['proxy'].get('symbol', 'QFF1!')} 延遲15分"
     name = row.get("name") or "--"
     index_x = x
     flag_x = index_x + INDEX_COL_W
@@ -320,7 +326,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     _text(draw, (name_x, y + 54), _fit_text(draw, ticker, FONTS["small"], NAME_COL_W - 18), FONTS["small"], INK)
     _text(draw, (weight_x, y + 21), weight_text, FONTS["body_bold"], INK)
     _text(draw, (update_x + UPDATE_COL_W - 8, y + 21), age, FONTS["body_bold"], INK, anchor="ra")
-    _draw_session(draw, status_x + STATUS_COL_W - 136, y + 12, session, pill_w=136, pill_h=58, font=FONTS["body_bold"])
+    _draw_session(draw, status_x + STATUS_COL_W - 166, y + 12, session, pill_w=166, pill_h=58, font=FONTS["body_bold"])
     bar_x = name_x
     bar_y = y + 90
     bar_w = w - (bar_x - x)

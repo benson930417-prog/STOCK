@@ -4,7 +4,7 @@ import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from zoneinfo import ZoneInfo
@@ -17,15 +17,21 @@ DATA_DIR = ROOT_DIR / "data"
 QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 
 YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+TRADINGVIEW_SCAN_URL = "https://scanner.tradingview.com/futures/scan"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
-LIVE_MARKET_SESSIONS = {"PRE", "REG", "POST"}
+LIVE_MARKET_SESSIONS = {"PRE", "REG", "POST", "FUT_NIGHT"}
 COUNTRY_LABELS = {
     "TW": "台",
     "US": "美",
     "JP": "日",
     "HK": "港",
+    "TSMC_FUT": "台積電期貨",
 }
-COUNTRY_ORDER = ["TW", "US", "JP", "HK"]
+COUNTRY_ORDER = ["TW", "JP", "TSMC_FUT", "US", "HK"]
+TSMC_PROXY_SYMBOL = "TAIFEX:QFF1!"
+TSMC_PROXY_TARGETS = {"2330", "2330.TW"}
+TRADINGVIEW_DELAY_SECONDS = 900
+TSMC_NIGHT_FUTURES_CLOSE_GRACE_MINUTES = 10
 
 
 def utc_now_iso():
@@ -40,7 +46,102 @@ def _country_scope_label(countries):
     normalized = {str(country or "").upper() for country in countries if country}
     ordered = [country for country in COUNTRY_ORDER if country in normalized]
     ordered.extend(sorted(normalized - set(ordered)))
-    return "".join(COUNTRY_LABELS.get(country, country) for country in ordered) or "--"
+    labels = [COUNTRY_LABELS.get(country, country) for country in ordered]
+    if "TSMC_FUT" in normalized:
+        return "+".join(labels) or "--"
+    return "".join(labels) or "--"
+
+
+def _is_tsmc_night_futures_session(now=None):
+    now = now or datetime.now(ZoneInfo("Asia/Taipei"))
+    minutes = now.hour * 60 + now.minute
+    evening_start = 17 * 60 + 25
+    morning_end = 5 * 60 + TSMC_NIGHT_FUTURES_CLOSE_GRACE_MINUTES
+    # TAIFEX night session is treated as Mon-Fri evening plus Tue-Sat early morning.
+    if now.weekday() < 5 and minutes >= evening_start:
+        return True
+    if 1 <= now.weekday() <= 5 and minutes < morning_end:
+        return True
+    return False
+
+
+def _fetch_tsmc_night_futures_proxy(timeout=10):
+    if not _is_tsmc_night_futures_session():
+        return None
+    payload = {
+        "symbols": {"tickers": [TSMC_PROXY_SYMBOL], "query": {"types": []}},
+        "columns": [
+            "name",
+            "close",
+            "change",
+            "change_abs",
+            "volume",
+            "update_mode",
+            "pricescale",
+            "minmov",
+            "description",
+            "exchange",
+        ],
+    }
+    try:
+        res = requests.post(TRADINGVIEW_SCAN_URL, json=payload, headers=HEADERS, timeout=timeout)
+        res.raise_for_status()
+        data = res.json().get("data") or []
+        if not data:
+            return None
+        values = data[0].get("d") or []
+        price = values[1] if len(values) > 1 else None
+        if price is None:
+            return None
+        quote_time = datetime.now(timezone.utc) - timedelta(seconds=TRADINGVIEW_DELAY_SECONDS)
+        return {
+            "proxy_symbol": TSMC_PROXY_SYMBOL,
+            "proxy_name": values[0] if len(values) > 0 else "QFF1!",
+            "price": float(price),
+            "tradingview_change_pct": values[2] if len(values) > 2 else None,
+            "tradingview_change_abs": values[3] if len(values) > 3 else None,
+            "volume": values[4] if len(values) > 4 else None,
+            "update_mode": values[5] if len(values) > 5 else None,
+            "delay_seconds": TRADINGVIEW_DELAY_SECONDS,
+            "quote_time": int(quote_time.timestamp()),
+            "quote_time_utc": quote_time.isoformat().replace("+00:00", "Z"),
+        }
+    except Exception:
+        return None
+
+
+def _apply_tsmc_night_futures_proxy(quote, yahoo_symbol, proxy):
+    if not proxy or not quote or quote.get("error"):
+        return quote
+    if str(yahoo_symbol or "").upper() not in TSMC_PROXY_TARGETS:
+        return quote
+    baseline = quote.get("regularMarketPrice")
+    try:
+        baseline = float(baseline)
+        proxy_price = float(proxy["price"])
+    except (TypeError, ValueError, KeyError):
+        return quote
+    if baseline <= 0:
+        return quote
+
+    proxied = dict(quote)
+    proxied["regularMarketPrice"] = proxy_price
+    proxied["previousClose"] = baseline
+    proxied["regularMarketTime"] = proxy["quote_time"]
+    proxied["regularMarketChangePercent"] = (proxy_price - baseline) / baseline * 100.0
+    proxied["marketSession"] = "FUT_NIGHT"
+    proxied["composite_scope"] = "TSMC_FUT"
+    proxied["proxy"] = {
+        "source": "tsmc_night_futures",
+        "symbol": proxy["proxy_symbol"],
+        "name": proxy["proxy_name"],
+        "baseline_symbol": "2330.TW",
+        "baseline_price": baseline,
+        "delay_seconds": proxy["delay_seconds"],
+        "volume": proxy.get("volume"),
+        "update_mode": proxy.get("update_mode"),
+    }
+    return proxied
 
 
 def load_latest_holdings(ticker):
@@ -369,6 +470,9 @@ def build_cache(ticker):
         normalized.append((holding, yahoo_symbol, country))
 
     quotes = fetch_yahoo_quotes([(item[1], item[2]) for item in normalized])
+    tsmc_proxy = None
+    if any(str(yahoo_symbol or "").upper() in TSMC_PROXY_TARGETS for _, yahoo_symbol, _ in normalized):
+        tsmc_proxy = _fetch_tsmc_night_futures_proxy()
 
     rows = []
     valid_quote_times = []
@@ -384,6 +488,7 @@ def build_cache(ticker):
 
     for holding, yahoo_symbol, country in normalized:
         quote = quotes.get(yahoo_symbol) if yahoo_symbol else None
+        quote = _apply_tsmc_night_futures_proxy(quote, yahoo_symbol, tsmc_proxy)
         weight_pct = holding.get("weight_pct")
         day_change_pct = None
         quote_time_utc = None
@@ -411,12 +516,12 @@ def build_cache(ticker):
                     all_weighted_move_sum += weight * move
                     all_valid_weight_sum += weight
                     all_composite_count += 1
-                    all_composite_countries.add(country)
+                    all_composite_countries.add(quote.get("composite_scope") or country)
                     if _is_live_market_session(market_session):
                         live_weighted_move_sum += weight * move
                         live_valid_weight_sum += weight
                         live_composite_count += 1
-                        live_composite_countries.add(country)
+                        live_composite_countries.add(quote.get("composite_scope") or country)
             else:
                 missing_count += 1
         else:
@@ -437,6 +542,8 @@ def build_cache(ticker):
             "quote_time_utc": quote_time_utc,
             "market_session": market_session,
             "is_live_market": _is_live_market_session(market_session),
+            "composite_scope": quote.get("composite_scope") if quote else None,
+            "proxy": quote.get("proxy") if quote else None,
             "status": status,
             "error": quote.get("error") if quote else "missing yahoo symbol",
         })
