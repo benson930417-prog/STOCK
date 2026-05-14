@@ -538,8 +538,14 @@ def render_passive_etf_tab(
             fund_size = latest_nav.get("fund_net_assets", meta.get("fund_size"))
             nav = latest_nav.get("nav", meta.get("nav"))
             close_price = latest_nav.get("closing_price", meta.get("closing_price"))
-            premium = latest_nav.get("premium_discount", meta.get("premium_discount"))
-            premium_pct = latest_nav.get("premium_discount_pct", meta.get("premium_discount_pct"))
+            premium = None
+            premium_pct = None
+            if nav and close_price:
+                premium = float(close_price) - float(nav)
+                premium_pct = premium / float(nav) * 100.0
+            else:
+                premium = latest_nav.get("premium_discount", meta.get("premium_discount"))
+                premium_pct = latest_nav.get("premium_discount_pct", meta.get("premium_discount_pct"))
             units = latest_nav.get("outstanding_units", meta.get("outstanding_units"))
 
             metric_cols = st.columns(5)
