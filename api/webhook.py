@@ -59,6 +59,10 @@ def parse_etf_quote_command(text):
         return "0050"
     return None
 
+def is_master_holding_command(text):
+    normalized = unicodedata.normalize("NFKC", text).strip()
+    return "吳大師" in normalized
+
 def is_operation_report_command(text):
     normalized = unicodedata.normalize("NFKC", text).strip()
     return "操作日報" in normalized
@@ -315,11 +319,29 @@ def webhook():
 @line_handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_msg = event.message.text.strip()
+    is_master_holding = is_master_holding_command(user_msg)
     is_operation_report = is_operation_report_command(user_msg)
-    etf_quote_ticker = None if is_operation_report else parse_etf_quote_command(user_msg)
+    etf_quote_ticker = None if is_operation_report or is_master_holding else parse_etf_quote_command(user_msg)
     print(f"LINE text={user_msg!r} parsed_etf={etf_quote_ticker}", flush=True)
     
-    if etf_quote_ticker:
+    if is_master_holding:
+        try:
+            from scripts.generate_master_holding_card import generate_master_holding_card
+
+            text, output_paths = generate_master_holding_card(limit=50)
+            messages = [TextSendMessage(text=text)]
+            for output_path in output_paths:
+                img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
+                messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
+            line_bot_api.reply_message(event.reply_token, messages)
+        except Exception as e:
+            print("Master holding card generation failed:", e)
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="吳大師持股暫時無法產生，請稍後再試。")
+            )
+
+    elif etf_quote_ticker:
         try:
             from scripts.generate_etf_quote_card import generate_quote_card
 
