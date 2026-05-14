@@ -129,6 +129,10 @@ def _session_for_us_timestamp(timestamp):
     if dt.weekday() < 5 and 9 * 60 + 30 <= minutes < 16 * 60:
         return "REG"
     if dt.weekday() < 5 and 16 * 60 <= minutes < 20 * 60:
+        now_et = datetime.now(ZoneInfo("America/New_York"))
+        now_minutes = now_et.hour * 60 + now_et.minute
+        if now_et.date() == dt.date() and now_minutes >= 20 * 60:
+            return "POST_CLOSE"
         return "POST"
     return "CLOSE"
 
