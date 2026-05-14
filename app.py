@@ -2970,6 +2970,9 @@ try:
                 )
 
             expanded_df = build_expanded_etf_exposure(portfolio_positions)
+            if not expanded_df.empty and "今日貢獻" in expanded_df.columns:
+                expanded_df["今日貢獻"] = expanded_df["今日貢獻"] / 100.0 * total_liquidation_value
+
             if expanded_df.empty:
                 for t in mh_tabs[1:]:
                     with t:
@@ -2984,7 +2987,7 @@ try:
                                 "曝險市值": "{:,.0f}",
                                 "權重": "{:.2f}%",
                                 "今日漲跌%": "{:+.2f}%",
-                                "今日貢獻": "{:+.3f}%",
+                                "今日貢獻": "{:+,.0f}",
                             },
                             na_rep="----",
                         ),
@@ -3015,7 +3018,9 @@ try:
                         x="權重",
                         y="名稱",
                         orientation="h",
-                        text="custom_text"
+                        color="市場",
+                        text="custom_text",
+                        color_discrete_sequence=px.colors.qualitative.Bold,
                     )
                     fig_bar.update_traces(textposition="outside", cliponaxis=False)
                     fig_bar.update_layout(
@@ -3038,7 +3043,7 @@ try:
                         contrib = row['今日貢獻']
                         change = row['今日漲跌%']
                         if pd.isna(contrib): return ""
-                        contrib_str = f"{contrib:+.3f}%"
+                        contrib_str = f"{contrib:+,.0f}"
                         if pd.notna(change):
                             change_str = f" <span style='font-size: 11px; color: #888888;'>(漲跌 {change:+.2f}%)</span>"
                         else:
@@ -3063,7 +3068,7 @@ try:
                     fig_contrib.update_layout(
                         height=max(460, len(contrib_df) * 28),
                         margin=dict(l=10, r=120, t=20, b=10),
-                        xaxis_title="今日貢獻 (%)",
+                        xaxis_title="今日貢獻",
                         yaxis_title="",
                         paper_bgcolor="rgba(0,0,0,0)",
                         plot_bgcolor="rgba(0,0,0,0)",
