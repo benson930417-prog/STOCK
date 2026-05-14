@@ -33,12 +33,59 @@ ETF_NAME_TO_TICKER = {
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
 
 
-def _sell_tax_rate_for_position(item):
+def _default_sell_tax_rate_for_position(item):
     code = str(item.get("code") or item.get("ticker") or "").upper()
     ticker = str(item.get("ticker") or "").upper()
     if ticker or code.startswith("00"):
         return SELL_ETF_TAX_RATE
     return SELL_STOCK_TAX_RATE
+
+
+def _sell_tax_rate_for_position(item):
+    bank_rate = item.get("bank_sell_tax_rate")
+    if bank_rate is not None and not pd.isna(bank_rate):
+        return float(bank_rate)
+    return _default_sell_tax_rate_for_position(item)
+
+
+def _infer_bank_sell_tax_rates(raw_trades):
+    by_stock = defaultdict(list)
+    by_class = defaultdict(list)
+    required = {"股名", "成交股數", "成交價", "交易稅"}
+    if raw_trades.empty or not required.issubset(raw_trades.columns):
+        return {}, {}
+
+    for _, row in raw_trades.iterrows():
+        qty = _to_int(row.get("成交股數"))
+        price = _to_float(row.get("成交價"))
+        tax = _to_float(row.get("交易稅"))
+        gross = qty * price
+        if qty <= 0 or price <= 0 or tax <= 0 or gross <= 0:
+            continue
+
+        rate = tax / gross
+        if not 0 < rate < 0.01:
+            continue
+
+        stock = str(row.get("股名", "")).strip()
+        if stock:
+            by_stock[stock].append(rate)
+        product_class = "etf" if ETF_NAME_TO_TICKER.get(stock) or rate < 0.002 else "stock"
+        by_class[product_class].append(rate)
+
+    return (
+        {stock: float(pd.Series(rates).median()) for stock, rates in by_stock.items() if rates},
+        {product_class: float(pd.Series(rates).median()) for product_class, rates in by_class.items() if rates},
+    )
+
+
+def _bank_tax_rate_for_open_position(stock, ticker, stock_rates, class_rates):
+    if stock in stock_rates:
+        return stock_rates[stock]
+    product_class = "etf" if ticker else "stock"
+    if product_class in class_rates:
+        return class_rates[product_class]
+    return _default_sell_tax_rate_for_position({"stock": stock, "ticker": ticker})
 
 RED = (198, 36, 0)
 GREEN = (37, 140, 24)
@@ -277,6 +324,7 @@ def calculate_open_positions(raw_trades):
     df["淨收付金額"] = df["淨收付金額"].apply(_to_float)
     df["股名"] = df["股名"].astype(str).str.strip()
     df = df.sort_values(["股名", "日期"]).reset_index(drop=True)
+    bank_stock_tax_rates, bank_class_tax_rates = _infer_bank_sell_tax_rates(raw_trades)
 
     inventory = defaultdict(deque)
     for stock, sdf in df.groupby("股名", sort=False):
@@ -305,12 +353,19 @@ def calculate_open_positions(raw_trades):
         if qty <= 0:
             continue
         total_cost = sum(float(lot["cost"]) for lot in lots)
+        ticker = ETF_NAME_TO_TICKER.get(stock)
         rows.append({
             "stock": stock,
             "shares": qty,
             "cost": total_cost,
             "avg_cost": total_cost / qty if qty else 0.0,
-            "ticker": ETF_NAME_TO_TICKER.get(stock),
+            "ticker": ticker,
+            "bank_sell_tax_rate": _bank_tax_rate_for_open_position(
+                stock,
+                ticker,
+                bank_stock_tax_rates,
+                bank_class_tax_rates,
+            ),
         })
     return pd.DataFrame(rows).sort_values("cost", ascending=False).reset_index(drop=True) if rows else pd.DataFrame()
 
