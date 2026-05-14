@@ -16,6 +16,7 @@ ETF_NAMES = {
     "00981A": "主動統一台股增長",
     "00997A": "主動群益美國增長",
     "0050": "元大台灣50",
+    "MASTER": "吳大師展開持股",
 }
 
 RED = (198, 36, 0)
@@ -358,10 +359,11 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     _round_rect(draw, (28, 28, width - 28, height - 28), 28, PANEL, (221, 228, 236), 2)
     _round_rect(draw, (54, 54, width - 54, 490), 24, (238, 242, 247), (209, 216, 224), 2)
 
-    etf_name = ETF_NAMES.get(ticker, "")
-    _text(draw, (82, 68), ticker, FONTS["title"], INK)
+    etf_name = cache.get("display_name") or ETF_NAMES.get(ticker, "")
+    title = cache.get("display_ticker") or ticker
+    _text(draw, (82, 68), title, FONTS["title"], INK)
     _text(draw, (82, 140), etf_name, FONTS["title_small"], INK)
-    _text(draw, (84, 218), f"持股日期：{cache.get('holdings_date', '----')}", FONTS["body_bold"], MUTED)
+    _text(draw, (84, 218), cache.get("subtitle") or f"持股日期：{cache.get('holdings_date', '----')}", FONTS["body_bold"], MUTED)
     _text(draw, (width - 92, 76), f"{page_no}/{total_pages}", FONTS["title"], MUTED, anchor="ra")
     counts = cache.get("counts", {})
     up = counts.get("up", 0)
@@ -391,7 +393,7 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     )
 
     draw.line((74, 528, width - 74, 528), fill=LINE, width=2)
-    _text(draw, (74, 558), "依ETF持股權重排序", FONTS["small_bold"], INK)
+    _text(draw, (74, 558), cache.get("sort_note") or "依ETF持股權重排序", FONTS["small_bold"], INK)
     _text(draw, (314, 558), "紅色代表上漲，綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small_bold"], INK)
 
     x = 74
@@ -409,12 +411,8 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     return img
 
 
-def generate_quote_card(ticker="00997A"):
-    ticker = ticker.upper()
-    cache_path = QUOTE_CACHE_DIR / f"etf_{ticker}_quotes.json"
-    with cache_path.open("r", encoding="utf-8") as fh:
-        cache = json.load(fh)
-
+def generate_quote_card_from_cache(ticker, cache, output_prefix=None):
+    ticker = str(ticker).upper()
     rows = cache.get("holdings", [])
     has_live_rows = any(row.get("is_live_market") for row in rows)
     if has_live_rows:
@@ -439,12 +437,21 @@ def generate_quote_card(ticker="00997A"):
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
     output_paths = []
     pages = [all_rows[index:index + 25] for index in range(0, len(all_rows), 25)] or [[]]
+    output_prefix = output_prefix or f"etf_{ticker}_quote_card"
     for index, page_rows in enumerate(pages, start=1):
         img = _draw_quote_card_page(ticker, cache, page_rows, scale, index, len(pages))
-        output_path = IMAGE_DIR / f"etf_{ticker}_quote_card_{index}.jpg"
+        output_path = IMAGE_DIR / f"{output_prefix}_{index}.jpg"
         img.save(output_path, "JPEG", quality=92, optimize=True)
         output_paths.append(output_path)
     return output_paths
+
+
+def generate_quote_card(ticker="00997A"):
+    ticker = ticker.upper()
+    cache_path = QUOTE_CACHE_DIR / f"etf_{ticker}_quotes.json"
+    with cache_path.open("r", encoding="utf-8") as fh:
+        cache = json.load(fh)
+    return generate_quote_card_from_cache(ticker, cache)
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from scripts.generate_master_holding_card import generate_master_holding_card
+from scripts.master_holding_quote_card import generate_master_quote_card
 
 
 def utc_now():
@@ -17,7 +17,7 @@ def utc_now():
 
 
 def refresh_once(limit=50):
-    text, paths = generate_master_holding_card(limit=limit)
+    text, paths = generate_master_quote_card(limit=limit)
     print(
         f"{utc_now()} updated master holding cache: "
         f"images={len(paths)}, text_chars={len(text)}",

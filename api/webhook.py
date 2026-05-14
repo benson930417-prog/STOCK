@@ -349,12 +349,12 @@ def handle_message(event):
     
     if is_master_holding:
         try:
-            from scripts.generate_master_holding_card import generate_master_holding_card, load_cached_master_holding
+            from scripts.master_holding_quote_card import generate_master_quote_card, load_cached_master_quote_card
 
             try:
-                text, output_paths, cache = load_cached_master_holding()
+                text, output_paths, cache = load_cached_master_quote_card()
             except Exception:
-                text, output_paths = generate_master_holding_card(limit=50)
+                text, output_paths = generate_master_quote_card(limit=50)
             messages = [TextSendMessage(text=text)]
             for output_path in output_paths:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
@@ -369,7 +369,7 @@ def handle_message(event):
 
     elif etf_quote_ticker:
         try:
-            from scripts.generate_etf_quote_card import generate_quote_card
+            from scripts.generate_quote_card import generate_quote_card
 
             output_paths = generate_quote_card(etf_quote_ticker)
             messages = [TextSendMessage(text=build_etf_quote_text(etf_quote_ticker))]
