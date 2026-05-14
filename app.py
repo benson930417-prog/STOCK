@@ -630,19 +630,53 @@ def _market_scope_label(markets) -> str:
 def _market_time_summary(df: pd.DataFrame) -> str:
     if df.empty or "報價時間" not in df.columns:
         return "更新----"
-    parts = []
-    for market in [m for m in MARKET_ORDER if m in set(df.get("市場", []))]:
-        times = [_parse_utc_iso(value) for value in df.loc[df["市場"] == market, "報價時間"].dropna()]
-        times = [value for value in times if value]
-        if not times:
-            continue
-        latest = max(times)
-        tz = ZoneInfo(MARKET_TIMEZONES.get(market, "UTC"))
-        local = latest.astimezone(tz)
-        now_local = datetime.now(tz)
-        stamp = local.strftime("%H:%M") if local.date() == now_local.date() else local.strftime("%m/%d %H:%M")
-        parts.append(f"{MARKET_LABELS.get(market, market)} {stamp}")
-    return "｜".join(parts) if parts else "更新----"
+    times = [_parse_utc_iso(value) for value in df["報價時間"].dropna()]
+    times = [value for value in times if value]
+    if not times:
+        return "更新----"
+    newest = max(times)
+    oldest = min(times)
+
+    def fmt(dt):
+        seconds = max(0, int((datetime.now(timezone.utc) - dt.astimezone(timezone.utc)).total_seconds()))
+        if seconds < 60:
+            return f"{seconds}秒前"
+        minutes = seconds // 60
+        if minutes < 60:
+            return f"{minutes}分鐘前"
+        hours = minutes // 60
+        if hours < 48:
+            return f"{hours}小時前"
+        return f"{hours // 24}天前"
+
+    if newest == oldest:
+        return f"最新資料 {fmt(newest)}"
+    return f"最新資料 {fmt(newest)}｜最舊資料 {fmt(oldest)}"
+
+
+def refresh_master_quote_data(tickers):
+    """Refresh direct quote cache and ETF holding quote caches used by contribution views."""
+    try:
+        fetch_portfolio_quotes.clear()
+    except Exception:
+        pass
+
+    refreshed = []
+    errors = []
+    try:
+        from scripts.monitor_etf_quotes import QUOTE_CACHE_DIR, atomic_write_json, build_cache
+
+        for ticker in sorted(set(tickers)):
+            try:
+                cache = build_cache(ticker)
+                atomic_write_json(QUOTE_CACHE_DIR / f"etf_{ticker}_quotes.json", cache)
+                refreshed.append(ticker)
+            except Exception as exc:
+                errors.append(f"{ticker}: {exc}")
+    except Exception as exc:
+        errors.append(str(exc))
+
+    return refreshed, errors
 
 
 def _direct_symbol_for_position(row, name_map):
@@ -3292,6 +3326,26 @@ try:
                     st.plotly_chart(fig_bar, use_container_width=True)
 
                 with mh_tabs[3]:
+                    refresh_col, _ = st.columns([1, 4])
+                    with refresh_col:
+                        if st.button("刷新資料", key="btn_refresh_contribution_data", use_container_width=True):
+                            etf_tickers = []
+                            if "ticker" in portfolio_positions.columns:
+                                etf_tickers = [
+                                    str(ticker)
+                                    for ticker in portfolio_positions["ticker"].dropna().unique()
+                                    if str(ticker) in {"00981A", "00997A", "0050"}
+                                ]
+                            with st.spinner("更新報價資料中..."):
+                                refreshed, errors = refresh_master_quote_data(etf_tickers)
+                            if errors:
+                                st.warning("部分資料更新失敗：" + "；".join(errors))
+                            elif refreshed:
+                                st.toast("報價資料已更新：" + "、".join(refreshed), icon="✅")
+                            else:
+                                st.toast("直接持股報價快取已清除。", icon="✅")
+                            st.rerun()
+
                     contrib_df = expanded_df.dropna(subset=["今日貢獻"]).copy()
                     if contrib_df.empty:
                         st.info("目前沒有可用的貢獻資料。")
