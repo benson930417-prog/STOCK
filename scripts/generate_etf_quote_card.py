@@ -216,7 +216,7 @@ def _session_fill(session):
         "PRE": (255, 237, 213),
         "REG": (191, 219, 254),
         "POST": (221, 214, 254),
-        "POST_CLOSE": (237, 233, 254),
+        "POST_CLOSE": (229, 231, 235),
         "CLOSE": (229, 231, 235),
     }.get(session, (229, 231, 235))
 
@@ -226,7 +226,7 @@ def _session_outline(session):
         "PRE": (251, 146, 60),
         "REG": (59, 130, 246),
         "POST": (139, 92, 246),
-        "POST_CLOSE": (124, 58, 237),
+        "POST_CLOSE": (156, 163, 175),
         "CLOSE": (156, 163, 175),
     }.get(session, (156, 163, 175))
 
