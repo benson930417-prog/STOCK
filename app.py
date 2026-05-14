@@ -32,6 +32,7 @@ import traceback
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from collections import defaultdict, deque
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -585,6 +586,65 @@ def fetch_portfolio_quotes(symbol_country_pairs_tuple):
         return {}
 
 
+LIVE_MARKET_SESSIONS = {"PRE", "REG", "POST"}
+MARKET_LABELS = {"TW": "台", "US": "美", "JP": "日", "HK": "港"}
+MARKET_ORDER = ["TW", "US", "JP", "HK"]
+MARKET_TIMEZONES = {
+    "TW": "Asia/Taipei",
+    "US": "America/New_York",
+    "JP": "Asia/Tokyo",
+    "HK": "Asia/Hong_Kong",
+}
+
+
+def _is_live_market_session(session) -> bool:
+    return str(session or "").upper() in LIVE_MARKET_SESSIONS
+
+
+def _quote_time_utc_iso(timestamp):
+    if not timestamp:
+        return None
+    try:
+        return datetime.fromtimestamp(int(timestamp), timezone.utc).isoformat().replace("+00:00", "Z")
+    except Exception:
+        return None
+
+
+def _parse_utc_iso(value):
+    if not value or pd.isna(value):
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
+
+
+def _market_scope_label(markets) -> str:
+    normalized = {str(market or "").upper() for market in markets if market and not pd.isna(market)}
+    ordered = [market for market in MARKET_ORDER if market in normalized]
+    ordered.extend(sorted(normalized - set(ordered)))
+    return "".join(MARKET_LABELS.get(market, market) for market in ordered) or "--"
+
+
+def _market_time_summary(df: pd.DataFrame) -> str:
+    if df.empty or "報價時間" not in df.columns:
+        return "更新----"
+    parts = []
+    for market in [m for m in MARKET_ORDER if m in set(df.get("市場", []))]:
+        times = [_parse_utc_iso(value) for value in df.loc[df["市場"] == market, "報價時間"].dropna()]
+        times = [value for value in times if value]
+        if not times:
+            continue
+        latest = max(times)
+        tz = ZoneInfo(MARKET_TIMEZONES.get(market, "UTC"))
+        local = latest.astimezone(tz)
+        now_local = datetime.now(tz)
+        stamp = local.strftime("%H:%M") if local.date() == now_local.date() else local.strftime("%m/%d %H:%M")
+        parts.append(f"{MARKET_LABELS.get(market, market)} {stamp}")
+    return "｜".join(parts) if parts else "更新----"
+
+
 def _direct_symbol_for_position(row, name_map):
     ticker = row.get("ticker")
     if ticker:
@@ -621,6 +681,9 @@ def enrich_positions_with_quotes(positions: pd.DataFrame) -> pd.DataFrame:
         item["price"] = float(price) if price is not None else None
         item["previous_close"] = float(prev) if prev is not None else None
         item["day_change_pct"] = float(day_pct) if day_pct is not None else None
+        item["quote_time_utc"] = _quote_time_utc_iso(quote.get("regularMarketTime"))
+        item["market_session"] = quote.get("marketSession")
+        item["is_live_market"] = _is_live_market_session(quote.get("marketSession"))
         item["market_value"] = item["shares"] * item["price"] if item["price"] is not None else None
         item["est_sell_fee"] = item["market_value"] * SELL_FEE_RATE if item["market_value"] is not None else None
         item["sell_tax_rate"] = _sell_tax_rate_for_position(item)
@@ -697,6 +760,9 @@ def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
                 "value_twd": exposures.get(key, {}).get("value_twd", 0.0) + float(pos["market_value"]),
                 "source_etfs": "直接持股",
                 "day_change_pct": pos.get("day_change_pct"),
+                "quote_time_utc": pos.get("quote_time_utc"),
+                "market_session": pos.get("market_session"),
+                "is_live_market": bool(pos.get("is_live_market")),
             }
             continue
 
@@ -721,6 +787,9 @@ def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
                     "source_parts": [],
                     "weighted_move_sum": 0.0,
                     "move_weight": 0.0,
+                    "quote_time_utc": quote_row.get("quote_time_utc"),
+                    "market_session": quote_row.get("market_session"),
+                    "is_live_market": bool(quote_row.get("is_live_market")),
                 }
             exposures[key]["value_twd"] += value
             exposures[key]["source_parts"].append(f"{ticker} {float(weight):.2f}%")
@@ -728,6 +797,13 @@ def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
             if day_change is not None:
                 exposures[key]["weighted_move_sum"] += value * float(day_change)
                 exposures[key]["move_weight"] += value
+            quote_time = quote_row.get("quote_time_utc")
+            existing_time = _parse_utc_iso(exposures[key].get("quote_time_utc"))
+            next_time = _parse_utc_iso(quote_time)
+            if next_time and (not existing_time or next_time > existing_time):
+                exposures[key]["quote_time_utc"] = quote_time
+                exposures[key]["market_session"] = quote_row.get("market_session")
+                exposures[key]["is_live_market"] = bool(quote_row.get("is_live_market"))
 
     rows = []
     total_value = sum(item.get("value_twd", 0.0) for item in exposures.values())
@@ -747,6 +823,9 @@ def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
                 "權重": weight_pct,
                 "今日漲跌%": day_change,
                 "今日貢獻": weight_pct * day_change / 100.0 if day_change is not None else None,
+                "報價時間": item.get("quote_time_utc"),
+                "交易狀態": item.get("market_session"),
+                "交易中": bool(item.get("is_live_market")),
             }
         )
     return pd.DataFrame(rows).sort_values("曝險市值", ascending=False).reset_index(drop=True) if rows else pd.DataFrame()
@@ -3214,53 +3293,150 @@ try:
                     st.plotly_chart(fig_bar, use_container_width=True)
 
                 with mh_tabs[3]:
-                    st.markdown("### 今日貢獻圖")
                     contrib_df = expanded_df.dropna(subset=["今日貢獻"]).copy()
-                    contrib_df = contrib_df.sort_values("今日貢獻", ascending=True)
-                    
-                    def format_custom_text(row):
-                        contrib = row['今日貢獻']
-                        change = row['今日漲跌%']
-                        if pd.isna(contrib): return ""
-                        contrib_str = f"{contrib:+,.0f}"
-                        if pd.notna(change):
-                            change_str = f" <span style='font-size: 11px; color: #888888;'>(漲跌 {change:+.2f}%)</span>"
-                        else:
-                            change_str = ""
-                        return contrib_str + change_str
+                    if contrib_df.empty:
+                        st.info("目前沒有可用的貢獻資料。")
+                    else:
+                        if "交易中" not in contrib_df.columns:
+                            contrib_df["交易中"] = False
+                        contrib_df["交易中"] = contrib_df["交易中"].fillna(False).astype(bool)
+                        live_df = contrib_df[contrib_df["交易中"]].copy()
+                        reference_df = contrib_df[~contrib_df["交易中"]].copy()
 
-                    contrib_df["custom_text"] = contrib_df.apply(format_custom_text, axis=1)
-                    
-                    contrib_df["sign"] = np.where(contrib_df["今日貢獻"] >= 0, "獲利", "虧損")
-                    
-                    fig_contrib = px.bar(
-                        contrib_df,
-                        x="今日貢獻",
-                        y="名稱",
-                        orientation="h",
-                        color="sign",
-                        color_discrete_map={"獲利": PROFIT_COLOR, "虧損": LOSS_COLOR},
-                        text="custom_text"
-                    )
-                    
-                    fig_contrib.update_traces(textposition="outside", cliponaxis=False)
-                    fig_contrib.update_layout(
-                        height=max(460, len(contrib_df) * 28),
-                        margin=dict(l=10, r=120, t=20, b=10),
-                        xaxis_title="今日貢獻",
-                        yaxis_title="",
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        font=dict(color="white"),
-                        showlegend=False
-                    )
-                    
-                    x_min = contrib_df["今日貢獻"].min()
-                    x_max = contrib_df["今日貢獻"].max()
-                    x_pad = (x_max - x_min) * 0.4 if pd.notna(x_max) and pd.notna(x_min) and x_max != x_min else 100
-                    fig_contrib.update_xaxes(range=[x_min - x_pad, x_max + x_pad])
-                    
-                    st.plotly_chart(fig_contrib, use_container_width=True)
+                        st.markdown(
+                            """
+<style>
+.contrib-card {
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  margin: 0.35rem 0 0.65rem 0;
+  background: rgba(15, 23, 42, 0.34);
+}
+.contrib-card.muted {
+  background: rgba(15, 23, 42, 0.18);
+}
+.contrib-title {
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: rgba(255,255,255,0.96);
+}
+.contrib-meta {
+  margin-top: 0.25rem;
+  font-size: 0.92rem;
+  color: rgba(255,255,255,0.68);
+}
+.contrib-note {
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.48);
+}
+</style>
+""",
+                            unsafe_allow_html=True,
+                        )
+
+                        def format_custom_text(row):
+                            contrib = row["今日貢獻"]
+                            change = row["今日漲跌%"]
+                            if pd.isna(contrib):
+                                return ""
+                            contrib_str = f"{contrib:+,.0f}"
+                            if pd.notna(change):
+                                change_str = f" <span style='font-size: 11px; color: #9ca3af;'>(漲跌 {change:+.2f}%)</span>"
+                            else:
+                                change_str = ""
+                            return contrib_str + change_str
+
+                        def render_contribution_chart(rows, title_prefix, detail_prefix, note="", muted=False, coverage_word="權重"):
+                            if rows.empty:
+                                return
+                            chart_df = rows.copy().sort_values("今日貢獻", ascending=True)
+                            scope = _market_scope_label(chart_df["市場"])
+                            weight_sum = float(chart_df["權重"].dropna().sum()) if "權重" in chart_df else 0.0
+                            time_summary = _market_time_summary(chart_df)
+                            card_class = "contrib-card muted" if muted else "contrib-card"
+                            note_html = f"<div class='contrib-note'>{note}</div>" if note else ""
+                            st.markdown(
+                                f"""
+<div class="{card_class}">
+  <div class="contrib-title">{title_prefix}（{scope}）</div>
+  <div class="contrib-meta">{detail_prefix}{len(chart_df)}檔・{coverage_word}{weight_sum:.1f}%・{time_summary}</div>
+  {note_html}
+</div>
+""",
+                                unsafe_allow_html=True,
+                            )
+
+                            chart_df["custom_text"] = chart_df.apply(format_custom_text, axis=1)
+                            chart_df["sign"] = np.where(chart_df["今日貢獻"] >= 0, "獲利", "虧損")
+                            color_map = (
+                                {"獲利": "rgba(198, 36, 0, 0.55)", "虧損": "rgba(37, 140, 24, 0.55)"}
+                                if muted
+                                else {"獲利": PROFIT_COLOR, "虧損": LOSS_COLOR}
+                            )
+
+                            fig_contrib = px.bar(
+                                chart_df,
+                                x="今日貢獻",
+                                y="名稱",
+                                orientation="h",
+                                color="sign",
+                                color_discrete_map=color_map,
+                                text="custom_text",
+                                hover_data={
+                                    "市場": True,
+                                    "權重": ":.2f",
+                                    "今日漲跌%": ":+.2f",
+                                    "今日貢獻": ":,.0f",
+                                    "報價時間": True,
+                                    "sign": False,
+                                    "custom_text": False,
+                                },
+                            )
+
+                            fig_contrib.update_traces(textposition="outside", cliponaxis=False)
+                            fig_contrib.update_layout(
+                                height=max(320, len(chart_df) * 28),
+                                margin=dict(l=10, r=130, t=10, b=10),
+                                xaxis_title="貢獻",
+                                yaxis_title="",
+                                paper_bgcolor="rgba(0,0,0,0)",
+                                plot_bgcolor="rgba(0,0,0,0)",
+                                font=dict(color="white"),
+                                showlegend=False,
+                            )
+
+                            x_min = chart_df["今日貢獻"].min()
+                            x_max = chart_df["今日貢獻"].max()
+                            x_pad = (x_max - x_min) * 0.4 if pd.notna(x_max) and pd.notna(x_min) and x_max != x_min else 100
+                            fig_contrib.update_xaxes(range=[x_min - x_pad, x_max + x_pad], zeroline=True, zerolinecolor="rgba(255,255,255,0.28)")
+                            st.plotly_chart(fig_contrib, use_container_width=True)
+
+                        if not live_df.empty:
+                            render_contribution_chart(
+                                live_df,
+                                "即時貢獻圖",
+                                "交易中",
+                                coverage_word="權重",
+                            )
+                            if not reference_df.empty:
+                                render_contribution_chart(
+                                    reference_df,
+                                    "非交易中參考",
+                                    "",
+                                    note="未納入即時貢獻",
+                                    muted=True,
+                                    coverage_word="權重",
+                                )
+                        else:
+                            render_contribution_chart(
+                                contrib_df,
+                                "最新貢獻圖",
+                                "全持股",
+                                coverage_word="覆蓋",
+                            )
 
 except Exception:
     st.error("App crashed during rendering. Here is the full traceback:")
