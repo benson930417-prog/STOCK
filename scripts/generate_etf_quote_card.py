@@ -79,7 +79,6 @@ FONTS = {
     "rank": _font(60, "bold"),
     "body": _font(30),
     "body_bold": _font(30, "bold"),
-    "value_lg": _font(40, "bold"),
     "small": _font(24),
     "small_bold": _font(24, "bold"),
     "flag": _font(30),
@@ -312,8 +311,8 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
     _text(draw, (holding_x, y + 54), _fit_text(draw, ticker, FONTS["small"], name_max_w), FONTS["small"], INK)
     _draw_country_flag(draw, meta_x + 0, y + 24, country)
-    _text(draw, (meta_x + 126, y + 14), weight_text, FONTS["value_lg"], INK)
-    _text(draw, (meta_x + 550, y + 14), age, FONTS["value_lg"], INK)
+    _text(draw, (meta_x + 126, y + 21), weight_text, FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 550, y + 21), age, FONTS["body_bold"], INK)
     bar_x = holding_x
     bar_y = y + 90
     bar_w = w - (holding_x - x) - 48
