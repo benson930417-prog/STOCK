@@ -546,7 +546,7 @@ def render_passive_etf_tab(
             with metric_cols[2]:
                 st.metric("收盤市價", f"{close_price:.2f}" if close_price else "N/A", delta=_fmt_pct(deltas.get("closing_price_pct")))
             with metric_cols[3]:
-                premium_value = "N/A" if premium is None else f"{premium:+.2f} ({premium_pct:+.2f}%)"
+                premium_value = "N/A" if premium_pct is None else f"{premium_pct:+.2f}%"
                 st.metric("折溢價", premium_value)
             with metric_cols[4]:
                 st.metric("在外流通單位", _fmt_units_yi(units), delta=_fmt_pct(deltas.get("outstanding_units_pct")))
