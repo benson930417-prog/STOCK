@@ -2882,7 +2882,7 @@ try:
             with m4:
                 st.metric("持股檔數", f"{len(portfolio_positions)}")
 
-            mh_tabs = st.tabs(["投資組合摘要", "ETF 展開權重圖", "展開後絕對權重", "今日貢獻圖"])
+            mh_tabs = st.tabs(["投資組合摘要", "展開後絕對權重", "ETF 展開權重圖", "今日貢獻圖"])
 
             with mh_tabs[0]:
                 st.markdown("### 目前持股權重")
@@ -2976,30 +2976,6 @@ try:
                         st.info("目前沒有 ETF 展開持股資料。")
             else:
                 with mh_tabs[1]:
-                    st.markdown("### ETF 展開後總權重")
-                    full_exp = expanded_df.copy()
-                    fig_bar = px.bar(
-                        full_exp.sort_values("權重", ascending=True),
-                        x="權重",
-                        y="名稱",
-                        orientation="h",
-                        color="市場",
-                        text="權重",
-                        color_discrete_sequence=px.colors.qualitative.Bold,
-                    )
-                    fig_bar.update_traces(texttemplate="%{text:.2f}%", textposition="outside", cliponaxis=False)
-                    fig_bar.update_layout(
-                        height=max(460, len(full_exp) * 28),
-                        margin=dict(l=10, r=80, t=20, b=10),
-                        xaxis_title="權重 (%)",
-                        yaxis_title="",
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        font=dict(color="white"),
-                    )
-                    st.plotly_chart(fig_bar, use_container_width=True)
-
-                with mh_tabs[2]:
                     st.markdown("### 全部成分股絕對權重")
                     expanded_show = expanded_df.copy()
                     st.dataframe(
@@ -3015,6 +2991,43 @@ try:
                         width="stretch",
                         height=650,
                     )
+
+                with mh_tabs[2]:
+                    st.markdown("### ETF 展開後總權重")
+                    full_exp = expanded_df.copy()
+                    full_exp = full_exp.sort_values("權重", ascending=True)
+                    
+                    def format_exp_text(row):
+                        weight = row['權重']
+                        val = row['曝險市值']
+                        if pd.isna(weight): return ""
+                        weight_str = f"{weight:.2f}%"
+                        if pd.notna(val):
+                            val_str = f" <span style='font-size: 11px; color: #888888;'>({fmt_money(val)})</span>"
+                        else:
+                            val_str = ""
+                        return weight_str + val_str
+
+                    full_exp["custom_text"] = full_exp.apply(format_exp_text, axis=1)
+
+                    fig_bar = px.bar(
+                        full_exp,
+                        x="權重",
+                        y="名稱",
+                        orientation="h",
+                        text="custom_text"
+                    )
+                    fig_bar.update_traces(textposition="outside", cliponaxis=False)
+                    fig_bar.update_layout(
+                        height=max(460, len(full_exp) * 28),
+                        margin=dict(l=10, r=120, t=20, b=10),
+                        xaxis_title="權重 (%)",
+                        yaxis_title="",
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="white"),
+                    )
+                    st.plotly_chart(fig_bar, use_container_width=True)
 
                 with mh_tabs[3]:
                     st.markdown("### 今日貢獻圖")
