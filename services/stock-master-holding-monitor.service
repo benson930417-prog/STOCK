@@ -1,0 +1,17 @@
+[Unit]
+Description=Master Holding Quote Card Monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/STOCK
+ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_master_holding.py --interval 60 --limit 50
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/ubuntu/STOCK/master_holding_monitor.log
+StandardError=append:/home/ubuntu/STOCK/master_holding_monitor.log
+
+[Install]
+WantedBy=multi-user.target

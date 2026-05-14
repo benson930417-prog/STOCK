@@ -21,6 +21,7 @@ DATA_DIR = ROOT_DIR / "data"
 IMAGE_DIR = DATA_DIR / "images"
 QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 MASTER_PATH = DATA_DIR / "master_trades.csv"
+MASTER_CACHE_PATH = QUOTE_CACHE_DIR / "master_holding.json"
 
 SELL_FEE_RATE = 0.001425 * 0.28
 SELL_STOCK_TAX_RATE = 0.003
@@ -683,7 +684,36 @@ def generate_master_holding_card(limit=50):
         output_path = IMAGE_DIR / f"master_holding_top50_{index}.jpg"
         img.save(output_path, "JPEG", quality=92, optimize=True)
         output_paths.append(output_path)
-    return build_master_text(snapshot), output_paths
+    text = build_master_text(snapshot)
+    QUOTE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    cache = {
+        "generated_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "text": text,
+        "image_files": [path.name for path in output_paths],
+        "limit": limit,
+        "summary": {
+            "total_liq": snapshot["total_liq"],
+            "total_cost": snapshot["total_cost"],
+            "unrealized": snapshot["unrealized"],
+            "unrealized_pct": snapshot["unrealized_pct"],
+            "holding_count": snapshot["holding_count"],
+            "expanded_count": len(snapshot["exposures"]),
+        },
+    }
+    tmp_path = MASTER_CACHE_PATH.with_suffix(".tmp")
+    tmp_path.write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp_path.replace(MASTER_CACHE_PATH)
+    return text, output_paths
+
+
+def load_cached_master_holding():
+    with MASTER_CACHE_PATH.open("r", encoding="utf-8") as fh:
+        cache = json.load(fh)
+    image_files = cache.get("image_files") or []
+    output_paths = [IMAGE_DIR / filename for filename in image_files]
+    if not cache.get("text") or not output_paths or any(not path.exists() for path in output_paths):
+        raise FileNotFoundError("Master holding cache is incomplete")
+    return cache["text"], output_paths, cache
 
 
 if __name__ == "__main__":

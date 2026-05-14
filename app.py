@@ -1664,6 +1664,12 @@ try:
 
                         st.session_state["last_upload_stats"] = stats
                         st.session_state["last_upload_push_result"] = push_result
+                        try:
+                            from scripts.generate_master_holding_card import generate_master_holding_card
+
+                            generate_master_holding_card(limit=50)
+                        except Exception as cache_error:
+                            st.warning(f"Master holding cache refresh failed: {cache_error}")
                         
                         st.session_state["last_upload_stats"] = stats
                         

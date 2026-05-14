@@ -326,9 +326,12 @@ def handle_message(event):
     
     if is_master_holding:
         try:
-            from scripts.generate_master_holding_card import generate_master_holding_card
+            from scripts.generate_master_holding_card import generate_master_holding_card, load_cached_master_holding
 
-            text, output_paths = generate_master_holding_card(limit=50)
+            try:
+                text, output_paths, cache = load_cached_master_holding()
+            except Exception:
+                text, output_paths = generate_master_holding_card(limit=50)
             messages = [TextSendMessage(text=text)]
             for output_path in output_paths:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
