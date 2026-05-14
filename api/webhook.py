@@ -189,7 +189,7 @@ def build_etf_quote_text(ticker):
     etf_name = ETF_QUOTE_NAMES.get(ticker, "")
     composite_prefix = "即時加權" if cache.get("composite_mode") == "live" else "最新加權"
     composite_scope = cache.get("composite_country_scope") or "--"
-    composite_label = f"{composite_prefix}({composite_scope})"
+    composite_label = f"{composite_prefix} ({composite_scope})"
     composite_count = cache.get("composite_holding_count") or 0
     composite_weight = cache.get("composite_weight_pct")
     composite_weight_text = "--" if composite_weight is None else f"{float(composite_weight):.1f}%"
@@ -197,9 +197,9 @@ def build_etf_quote_text(ticker):
     return (
         f"{ticker} {etf_name}\n"
         f"持股日期：{cache.get('holdings_date', '----')}\n"
-        f"{composite_label}：{comp_text}\n"
-        f"{composite_detail_prefix}{composite_count}檔・權重{composite_weight_text}\n"
-        f"上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}\n"
+        f"- {composite_label}：{comp_text}\n"
+        f"- {composite_detail_prefix}{composite_count}檔（權重{composite_weight_text}）\n"
+        f"- 上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}\n"
         f"最新報價：{_ago_zh(cache.get('newest_quote_utc'))}｜"
         f"最舊報價：{_ago_zh(cache.get('oldest_quote_utc'))}｜"
         f"權重更新：{_ago_zh(cache.get('etf_refresh_utc'))}"
