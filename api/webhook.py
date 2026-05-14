@@ -188,10 +188,28 @@ def build_etf_quote_text(ticker):
     comp_text = "----" if composite is None else f"{composite:+.2f}%"
     etf_name = ETF_QUOTE_NAMES.get(ticker, "")
     composite_prefix = "即時加權" if cache.get("composite_mode") == "live" else "最新加權"
-    composite_scope = cache.get("composite_country_scope") or "--"
+    holdings = cache.get("holdings", [])
+    fallback_rows = [row for row in holdings if row.get("day_change_pct") is not None and row.get("weight_pct") is not None]
+    country_labels = {"TW": "台", "US": "美", "JP": "日", "HK": "港"}
+    country_order = ["TW", "US", "JP", "HK"]
+    fallback_countries = {str(row.get("country") or "").upper() for row in fallback_rows if row.get("country")}
+    fallback_scope = "".join(
+        country_labels.get(country, country)
+        for country in country_order
+        if country in fallback_countries
+    )
+    fallback_scope += "".join(
+        country_labels.get(country, country)
+        for country in sorted(fallback_countries - set(country_order))
+    )
+    composite_scope = cache.get("composite_country_scope") or fallback_scope or "--"
     composite_label = f"{composite_prefix} ({composite_scope})"
-    composite_count = cache.get("composite_holding_count") or 0
+    composite_count = cache.get("composite_holding_count")
+    if composite_count is None:
+        composite_count = len(fallback_rows)
     composite_weight = cache.get("composite_weight_pct")
+    if composite_weight is None and fallback_rows:
+        composite_weight = sum(float(row.get("weight_pct") or 0) for row in fallback_rows)
     composite_weight_text = "--" if composite_weight is None else f"{float(composite_weight):.1f}%"
     composite_detail_prefix = "交易中" if cache.get("composite_mode") == "live" else "全持股"
     return (
