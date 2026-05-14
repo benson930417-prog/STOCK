@@ -2,10 +2,40 @@
   "2026-05-13": {
     "date": "2026-05-13",
     "meta": {
-      "fund_size": 1772860510246.0,
+      "fund_size": 1772860510246,
       "nav": 95.33,
       "outstanding_units": 18597000000,
-      "source_url": "https://www.yuantaetfs.com/product/detail/0050/ratio"
+      "source_url": "https://www.yuantaetfs.com/product/detail/0050/ratio",
+      "closing_price": 95.5,
+      "premium_discount": 0.17,
+      "premium_discount_pct": 0.18,
+      "nav_history": {
+        "source_url": "https://www.yuantaetfs.com/tradeInfo/comparison/0050/NAVhistory#table",
+        "latest": {
+          "date": "2026-05-13",
+          "nav": 95.33,
+          "closing_price": 95.5,
+          "premium_discount": 0.17,
+          "premium_discount_pct": 0.18,
+          "fund_net_assets": 1772860510246,
+          "outstanding_units": 18597000000,
+          "deltas": {
+            "nav_pct": -1.4880644827942522,
+            "closing_price_pct": -1.3939081053174955,
+            "fund_net_assets_pct": -1.328470756574024,
+            "outstanding_units_pct": 0.15887976302679413
+          }
+        },
+        "previous": {
+          "date": "2026-05-12",
+          "nav": 96.77,
+          "closing_price": 96.85,
+          "premium_discount": 0.08,
+          "premium_discount_pct": 0.08,
+          "fund_net_assets": 1796729536716,
+          "outstanding_units": 18567500000
+        }
+      }
     },
     "holdings": [
       {

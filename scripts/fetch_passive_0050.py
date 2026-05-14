@@ -10,6 +10,7 @@ DATA_DIR = "data"
 HISTORY_FILE = os.path.join(DATA_DIR, "passive_0050_history.json")
 LOG_FILE = os.path.join(DATA_DIR, "passive_0050_log.json")
 URL = "https://www.yuantaetfs.com/product/detail/0050/ratio"
+NAV_HISTORY_URL = "https://www.yuantaetfs.com/tradeInfo/comparison/0050/NAVhistory#table"
 
 
 def _num(value):
@@ -123,6 +124,61 @@ def _extract_page_data(page):
     }
 
 
+def _pct_change(curr, prev):
+    if curr is None or prev in (None, 0):
+        return None
+    return ((curr - prev) / prev) * 100.0
+
+
+def _extract_nav_history(page):
+    text = page.locator("body").inner_text(timeout=10000)
+    table_start = text.find("淨值日期")
+    if table_start < 0:
+        raise ValueError("Missing 0050 NAV history table")
+
+    table_text = text[table_start:]
+    row_pattern = re.compile(
+        r"(\d{4}/\d{2}/\d{2})\s+"
+        r"([0-9,]+(?:\.\d+)?)\s+"
+        r"([0-9,]+(?:\.\d+)?)\s+"
+        r"([0-9,]+(?:\.\d+)?)\(([0-9,]+(?:\.\d+)?)%\)\s+"
+        r"([0-9,]+)\s+"
+        r"([0-9,]+)"
+    )
+
+    rows = []
+    for match in row_pattern.finditer(table_text):
+        premium = _num(match.group(4))
+        rows.append(
+            {
+                "date": _date_to_key(match.group(1)),
+                "nav": _num(match.group(2)),
+                "closing_price": _num(match.group(3)),
+                "premium_discount": premium,
+                "premium_discount_pct": _num(match.group(5)),
+                "fund_net_assets": int(_num(match.group(6))),
+                "outstanding_units": int(_num(match.group(7))),
+            }
+        )
+
+    if len(rows) < 2:
+        raise ValueError(f"Only parsed {len(rows)} 0050 NAV rows; expected at least 2")
+
+    latest = rows[0]
+    previous = rows[1]
+    latest["deltas"] = {
+        "nav_pct": _pct_change(latest["nav"], previous["nav"]),
+        "closing_price_pct": _pct_change(latest["closing_price"], previous["closing_price"]),
+        "fund_net_assets_pct": _pct_change(latest["fund_net_assets"], previous["fund_net_assets"]),
+        "outstanding_units_pct": _pct_change(latest["outstanding_units"], previous["outstanding_units"]),
+    }
+    return {
+        "source_url": NAV_HISTORY_URL,
+        "latest": latest,
+        "previous": previous,
+    }
+
+
 def fetch_and_update_0050():
     now_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     history = _load_json(HISTORY_FILE, {})
@@ -138,7 +194,22 @@ def fetch_and_update_0050():
         )
         page.goto(URL, wait_until="networkidle", timeout=60000)
         date_key, payload = _extract_page_data(page)
+        page.goto(NAV_HISTORY_URL, wait_until="networkidle", timeout=60000)
+        nav_history = _extract_nav_history(page)
         browser.close()
+
+    latest_nav = nav_history["latest"]
+    payload["meta"].update(
+        {
+            "fund_size": latest_nav["fund_net_assets"],
+            "nav": latest_nav["nav"],
+            "closing_price": latest_nav["closing_price"],
+            "outstanding_units": latest_nav["outstanding_units"],
+            "premium_discount": latest_nav["premium_discount"],
+            "premium_discount_pct": latest_nav["premium_discount_pct"],
+            "nav_history": nav_history,
+        }
+    )
 
     previous = history.get(date_key)
     changed = previous != payload
