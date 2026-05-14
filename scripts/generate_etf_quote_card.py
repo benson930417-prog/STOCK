@@ -315,7 +315,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
     _text(draw, (index_x, y + 4), f"{rank:02d}", FONTS["rank"], INK)
-    _draw_country_flag(draw, flag_x, y + 24, country)
+    _draw_country_flag(draw, flag_x, y + 40, country)
     _text(draw, (name_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], NAME_COL_W - 18), FONTS["body_bold"], INK)
     _text(draw, (name_x, y + 54), _fit_text(draw, ticker, FONTS["small"], NAME_COL_W - 18), FONTS["small"], INK)
     _text(draw, (weight_x, y + 21), weight_text, FONTS["body_bold"], INK)
@@ -346,7 +346,7 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     draw = ImageDraw.Draw(img)
 
     _round_rect(draw, (28, 28, width - 28, height - 28), 28, PANEL, (221, 228, 236), 2)
-    _round_rect(draw, (54, 54, width - 54, 300), 24, (238, 242, 247), (209, 216, 224), 2)
+    _round_rect(draw, (54, 54, width - 54, 490), 24, (238, 242, 247), (209, 216, 224), 2)
 
     etf_name = ETF_NAMES.get(ticker, "")
     _text(draw, (82, 68), ticker, FONTS["title"], INK)
@@ -380,14 +380,14 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
         _color_for_pct(cache.get("composite_move_pct")),
     )
 
-    draw.line((74, 510, width - 74, 510), fill=LINE, width=2)
-    _text(draw, (74, 540), "依ETF持股權重排序", FONTS["small_bold"], INK)
-    _text(draw, (314, 540), "紅色代表上漲，綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small_bold"], INK)
+    draw.line((74, 528, width - 74, 528), fill=LINE, width=2)
+    _text(draw, (74, 558), "依ETF持股權重排序", FONTS["small_bold"], INK)
+    _text(draw, (314, 558), "紅色代表上漲，綠色代表下跌；無報價資料以 ---- 表示。", FONTS["small_bold"], INK)
 
     x = 74
     col_w = width - 148
-    header_y = 606
-    start_y = 686
+    header_y = 624
+    start_y = 704
     row_h = 132
 
     _draw_col_header(draw, x, header_y, col_w, scale)
