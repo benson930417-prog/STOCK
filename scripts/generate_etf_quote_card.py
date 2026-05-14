@@ -214,9 +214,9 @@ def _draw_stat(draw, x, y, w, label, value, accent):
 
 def _session_fill(session):
     return {
-        "PRE": (255, 237, 213),
+        "PRE": (239, 246, 255),
         "REG": (239, 246, 255),
-        "POST": (221, 214, 254),
+        "POST": (239, 246, 255),
         "POST_CLOSE": (229, 231, 235),
         "CLOSE": (229, 231, 235),
     }.get(session, (229, 231, 235))
@@ -224,9 +224,9 @@ def _session_fill(session):
 
 def _session_outline(session):
     return {
-        "PRE": (251, 146, 60),
+        "PRE": (37, 99, 235),
         "REG": (37, 99, 235),
-        "POST": (139, 92, 246),
+        "POST": (37, 99, 235),
         "POST_CLOSE": (156, 163, 175),
         "CLOSE": (156, 163, 175),
     }.get(session, (156, 163, 175))
@@ -234,9 +234,9 @@ def _session_outline(session):
 
 def _session_text(session):
     return {
-        "PRE": INK,
+        "PRE": (29, 78, 216),
         "REG": (29, 78, 216),
-        "POST": INK,
+        "POST": (29, 78, 216),
         "POST_CLOSE": INK,
         "CLOSE": INK,
     }.get(session, INK)
@@ -244,9 +244,9 @@ def _session_text(session):
 
 def _session_label(session):
     return {
-        "PRE": "盤前",
+        "PRE": "交易中",
         "REG": "交易中",
-        "POST": "盤後",
+        "POST": "交易中",
         "POST_CLOSE": "盤後收",
         "CLOSE": "收盤",
     }.get(session, "--")
@@ -256,7 +256,7 @@ def _draw_session(draw, x, y, session):
     session = session or "--"
     label = _session_label(session)
     pill_w = 112
-    outline_w = 3 if session == "REG" else 2
+    outline_w = 3 if session in {"PRE", "REG", "POST"} else 2
     _round_rect(draw, (x, y, x + pill_w, y + 46), 23, _session_fill(session), _session_outline(session), outline_w)
     _text(draw, (x + pill_w / 2, y + 23), label, FONTS["small_bold"], _session_text(session), anchor="mm")
 
@@ -309,7 +309,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
             tx = max(endpoint - 12, bar_x + pct_w + 2)
             anchor = "ra"
         _text(draw, (tx, bar_y - 9), pct_text, FONTS["body_bold"], pct_color, anchor=anchor)
-    if session_key == "REG":
+    if session_key in {"PRE", "REG", "POST"}:
         draw.rounded_rectangle((x - 10, y + 6, x + w + 10, y + 122), radius=18, fill=None, outline=(37, 99, 235), width=5)
         draw.rounded_rectangle((x - 5, y + 11, x + w + 5, y + 117), radius=14, fill=None, outline=(191, 219, 254), width=2)
 
