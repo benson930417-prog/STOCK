@@ -496,7 +496,7 @@ def handle_message(event):
     else:
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="抱歉，我目前只聽得懂「油價」、「匯率」、「債券」與「id」！請輸入這些關鍵字來進行查詢。")
+            TextSendMessage(text="可用關鍵字：\n油價：查詢 WTI 與 Brent 原油價格\n匯率：查詢美元兌台幣、瑞郎、日圓\n債券：查詢美國 10 年期公債殖利率\n981：查詢 00981A 持股即時表\n997：查詢 00997A 持股即時表\n0050：查詢 0050 持股即時表\n吳大師：查詢目前投資組合與展開持股\nid：查詢 LINE 使用者或群組 ID")
         )
 
 @line_handler.add(FollowEvent)
