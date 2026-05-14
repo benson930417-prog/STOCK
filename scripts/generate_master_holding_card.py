@@ -624,6 +624,8 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     meta_x = holding_x + HOLDING_TEXT_W + 56
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
+    if session_key in {"PRE", "REG", "POST"}:
+        draw.ellipse((x - 30, y + 28, x - 8, y + 50), fill=(191, 219, 254), outline=(96, 165, 250), width=2)
     _text(draw, (x + 8, y + 6), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, row["name"], FONTS["body_bold"], HOLDING_TEXT_W), FONTS["body_bold"], INK)
     _text(draw, (holding_x, y + 54), _fit_text(draw, row["code"], FONTS["small"], HOLDING_TEXT_W), FONTS["small"], INK)
@@ -646,9 +648,6 @@ def _draw_row(draw, row, x, y, w, rank, scale):
             tx = max(endpoint - 12, bar_x + text_w + 2)
             anchor = "ra"
         _text(draw, (tx, bar_y - 9), pct_text, FONTS["body_bold"], color, anchor=anchor)
-    if session_key in {"PRE", "REG", "POST"}:
-        draw.rounded_rectangle((x - 10, y + 6, x + w + 10, y + 122), radius=18, fill=None, outline=(37, 99, 235), width=5)
-        draw.rounded_rectangle((x - 5, y + 11, x + w + 5, y + 117), radius=14, fill=None, outline=(191, 219, 254), width=2)
 
 
 def _draw_page(snapshot, rows, page_no, total_pages, scale):
