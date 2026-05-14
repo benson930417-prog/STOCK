@@ -3075,6 +3075,12 @@ try:
                         font=dict(color="white"),
                         showlegend=False
                     )
+                    
+                    x_min = contrib_df["今日貢獻"].min()
+                    x_max = contrib_df["今日貢獻"].max()
+                    x_pad = (x_max - x_min) * 0.4 if pd.notna(x_max) and pd.notna(x_min) and x_max != x_min else 100
+                    fig_contrib.update_xaxes(range=[x_min - x_pad, x_max + x_pad])
+                    
                     st.plotly_chart(fig_contrib, use_container_width=True)
 
 except Exception:
