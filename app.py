@@ -2822,41 +2822,94 @@ try:
         st.plotly_chart(fig_hist, width="stretch")
 
         hr()
-        st.subheader(T(lang, "Per-stock Contribution", "各股貢獻"))
 
         by_stock = f_view.groupby("stock", as_index=False)["realized_pnl"].sum()
-        profit_label = T(lang, "Profit", "獲利")
-        loss_label = T(lang, "Loss", "虧損")
-        by_stock["sign"] = np.where(by_stock["realized_pnl"] >= 0, profit_label, loss_label)
-        by_stock["abs"] = by_stock["realized_pnl"].abs()
-        by_stock = by_stock.sort_values("abs", ascending=False)
+        if by_stock.empty:
+            st.info(T(lang, "No per-stock contribution data.", "目前沒有各股貢獻資料。"))
+        else:
+            st.markdown(
+                """
+<style>
+.contrib-card {
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  margin: 0.35rem 0 0.65rem 0;
+  background: rgba(15, 23, 42, 0.34);
+}
+.contrib-title {
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: rgba(255,255,255,0.96);
+}
+.contrib-meta {
+  margin-top: 0.25rem;
+  font-size: 0.92rem;
+  color: rgba(255,255,255,0.68);
+}
+</style>
+""",
+                unsafe_allow_html=True,
+            )
 
-        scaled_vals, unit_lbl2, _ = scale_unit(by_stock["realized_pnl"], lang, CURRENCY_RATE)
-        by_stock["_scaled_pnl"] = scaled_vals
+            profit_label = T(lang, "Profit", "獲利")
+            loss_label = T(lang, "Loss", "虧損")
+            by_stock["sign"] = np.where(by_stock["realized_pnl"] >= 0, profit_label, loss_label)
+            scaled_vals, unit_lbl2, _ = scale_unit(by_stock["realized_pnl"], lang, CURRENCY_RATE)
+            by_stock["_scaled_pnl"] = scaled_vals
+            by_stock = by_stock.sort_values("_scaled_pnl")
 
-        sorted_df = by_stock.sort_values("_scaled_pnl")
-        fig_bar = px.bar(
-            sorted_df,
-            x="_scaled_pnl",
-            y="stock",
-            orientation="h",
-            color="sign",
-            color_discrete_map={profit_label: PROFIT_COLOR, loss_label: LOSS_COLOR},
-            # Strict format +€1000
-            text=sorted_df["_scaled_pnl"].map(lambda v: (f"{'+' if v>0 else '-' if v<0 else ''}€{abs(v):.2f}" if "€" in unit_lbl2 else f"{v:+.2f} {unit_lbl2}")),
-        )
-        fig_bar.update_traces(textposition="outside", cliponaxis=False)
-        fig_bar.update_layout(
-            title=T(lang, "Realized P/L by stock", "各股已實現損益"),
-            xaxis_title=f"{T(lang, 'P/L', '損益')} ({unit_lbl2})",
-            yaxis_title="",
-            height=520,
-            # Increase right margin for labels
-            margin=dict(l=10, r=60, t=60, b=10),
-            legend_title_text="",
-        )
-        add_zero_line(fig_bar, axis="x", color="#A9B1BD", width=3, dash="dash")
-        st.plotly_chart(fig_bar, width="stretch")
+            total_realized = float(by_stock["realized_pnl"].sum())
+            pos_count = int((by_stock["realized_pnl"] > 0).sum())
+            neg_count = int((by_stock["realized_pnl"] < 0).sum())
+            st.markdown(
+                f"""
+<div class="contrib-card">
+  <div class="contrib-title">{T(lang, "Per-stock Contribution", "各股貢獻")}</div>
+  <div class="contrib-meta">{T(lang, "Realized P/L", "已實現損益")}・{len(by_stock)}檔・{T(lang, "Profit", "獲利")}{pos_count}・{T(lang, "Loss", "虧損")}{neg_count}・{fmt_signed_money(total_realized)}</div>
+</div>
+""",
+                unsafe_allow_html=True,
+            )
+
+            def fmt_scaled_value(value):
+                if "€" in unit_lbl2:
+                    return f"{'+' if value > 0 else '-' if value < 0 else ''}€{abs(value):.2f}"
+                return f"{value:+.2f} {unit_lbl2}"
+
+            by_stock["custom_text"] = by_stock["_scaled_pnl"].map(fmt_scaled_value)
+            fig_bar = px.bar(
+                by_stock,
+                x="_scaled_pnl",
+                y="stock",
+                orientation="h",
+                color="sign",
+                color_discrete_map={profit_label: PROFIT_COLOR, loss_label: LOSS_COLOR},
+                text="custom_text",
+                hover_data={
+                    "realized_pnl": ":,.0f",
+                    "_scaled_pnl": False,
+                    "sign": False,
+                    "custom_text": False,
+                },
+            )
+            fig_bar.update_traces(textposition="outside", cliponaxis=False)
+            fig_bar.update_layout(
+                height=max(420, len(by_stock) * 30),
+                margin=dict(l=10, r=130, t=10, b=10),
+                xaxis_title=f"{T(lang, 'P/L', '損益')} ({unit_lbl2})",
+                yaxis_title="",
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="white"),
+                showlegend=False,
+            )
+            x_min = by_stock["_scaled_pnl"].min()
+            x_max = by_stock["_scaled_pnl"].max()
+            x_pad = (x_max - x_min) * 0.4 if pd.notna(x_max) and pd.notna(x_min) and x_max != x_min else 100
+            fig_bar.update_xaxes(range=[x_min - x_pad, x_max + x_pad], zeroline=True, zerolinecolor="rgba(255,255,255,0.28)")
+            st.plotly_chart(fig_bar, width="stretch")
 
     # -------------------- Leaderboard --------------------
     with tab_leader:
@@ -3326,26 +3379,6 @@ try:
                     st.plotly_chart(fig_bar, use_container_width=True)
 
                 with mh_tabs[3]:
-                    refresh_col, _ = st.columns([1, 4])
-                    with refresh_col:
-                        if st.button("刷新資料", key="btn_refresh_contribution_data", use_container_width=True):
-                            etf_tickers = []
-                            if "ticker" in portfolio_positions.columns:
-                                etf_tickers = [
-                                    str(ticker)
-                                    for ticker in portfolio_positions["ticker"].dropna().unique()
-                                    if str(ticker) in {"00981A", "00997A", "0050"}
-                                ]
-                            with st.spinner("更新報價資料中..."):
-                                refreshed, errors = refresh_master_quote_data(etf_tickers)
-                            if errors:
-                                st.warning("部分資料更新失敗：" + "；".join(errors))
-                            elif refreshed:
-                                st.toast("報價資料已更新：" + "、".join(refreshed), icon="✅")
-                            else:
-                                st.toast("直接持股報價快取已清除。", icon="✅")
-                            st.rerun()
-
                     contrib_df = expanded_df.dropna(subset=["今日貢獻"]).copy()
                     if contrib_df.empty:
                         st.info("目前沒有可用的貢獻資料。")
@@ -3411,16 +3444,47 @@ try:
                             time_summary = _market_time_summary(chart_df)
                             card_class = "contrib-card muted" if muted else "contrib-card"
                             note_html = f"<div class='contrib-note'>{note}</div>" if note else ""
-                            st.markdown(
-                                f"""
+                            if muted:
+                                st.markdown(
+                                    f"""
 <div class="{card_class}">
   <div class="contrib-title">{title_prefix}（{scope}）</div>
   <div class="contrib-meta">{detail_prefix}{len(chart_df)}檔・{coverage_word}{weight_sum:.1f}%・{time_summary}</div>
   {note_html}
 </div>
 """,
-                                unsafe_allow_html=True,
-                            )
+                                    unsafe_allow_html=True,
+                                )
+                            else:
+                                with st.container(border=True):
+                                    header_col, button_col = st.columns([5, 1])
+                                    with header_col:
+                                        st.markdown(
+                                            f"""
+<div class="contrib-title">{title_prefix}（{scope}）</div>
+<div class="contrib-meta">{detail_prefix}{len(chart_df)}檔・{coverage_word}{weight_sum:.1f}%・{time_summary}</div>
+{note_html}
+""",
+                                            unsafe_allow_html=True,
+                                        )
+                                    with button_col:
+                                        if st.button("刷新資料", key=f"btn_refresh_contribution_data_{title_prefix}", use_container_width=True):
+                                            etf_tickers = []
+                                            if "ticker" in portfolio_positions.columns:
+                                                etf_tickers = [
+                                                    str(ticker)
+                                                    for ticker in portfolio_positions["ticker"].dropna().unique()
+                                                    if str(ticker) in {"00981A", "00997A", "0050"}
+                                                ]
+                                            with st.spinner("更新報價資料中..."):
+                                                refreshed, errors = refresh_master_quote_data(etf_tickers)
+                                            if errors:
+                                                st.warning("部分資料更新失敗：" + "；".join(errors))
+                                            elif refreshed:
+                                                st.toast("報價資料已更新：" + "、".join(refreshed), icon="✅")
+                                            else:
+                                                st.toast("直接持股報價快取已清除。", icon="✅")
+                                            st.rerun()
 
                             chart_df["custom_text"] = chart_df.apply(format_custom_text, axis=1)
                             chart_df["sign"] = np.where(chart_df["今日貢獻"] >= 0, "獲利", "虧損")
