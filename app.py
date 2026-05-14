@@ -3023,9 +3023,10 @@ try:
                         x="權重",
                         y="名稱",
                         orientation="h",
-                        color="權重",
+                        color="市場",
                         text="custom_text",
-                        color_continuous_scale=px.colors.sequential.Blues,
+                        color_discrete_sequence=px.colors.qualitative.Bold,
+                        category_orders={"名稱": full_exp["名稱"].tolist()},
                     )
                     fig_bar.update_traces(textposition="outside", cliponaxis=False)
                     fig_bar.update_layout(
@@ -3036,7 +3037,6 @@ try:
                         paper_bgcolor="rgba(0,0,0,0)",
                         plot_bgcolor="rgba(0,0,0,0)",
                         font=dict(color="white"),
-                        coloraxis_showscale=False,
                     )
                     st.plotly_chart(fig_bar, use_container_width=True)
 
