@@ -306,7 +306,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     meta_x = holding_x + name_max_w + 56
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
-    _draw_session(draw, x + 4, y + 4, session, pill_w=136, pill_h=58, font=FONTS["body_bold"])
+    _draw_session(draw, x + 4, y + 12, session, pill_w=136, pill_h=58, font=FONTS["body_bold"])
     _text(draw, (x + STATUS_COL_W + 2, y + 4), f"{rank:02d}", FONTS["rank"], INK)
     _text(draw, (holding_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], name_max_w), FONTS["body_bold"], INK)
     _text(draw, (holding_x, y + 54), _fit_text(draw, ticker, FONTS["small"], name_max_w), FONTS["small"], INK)
