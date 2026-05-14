@@ -18,6 +18,7 @@ def render_etf_tab(
     REMOVED_COLOR,
     PROFIT_COLOR,
     LOSS_COLOR,
+    delta_color_param="normal",
 ):
     st.subheader(T(lang, "Active ETF Holdings", "主動型 ETF 投資組合"))
     
@@ -207,19 +208,19 @@ def render_etf_tab(
                             
                         if CURRENCY_RATE != 1.0:
                             f_size_disp = f"€ {c_val / 1_000_000:,.1f}M"
-                            st.metric(T(lang, "Fund Size (EUR)", "基金規模 (歐元)"), f_size_disp, delta=delta_str)
+                            st.metric(T(lang, "Fund Size (EUR)", "基金規模 (歐元)"), f_size_disp, delta=delta_str, delta_color=delta_color_param)
                         else:
                             if lang == "中文":
                                 f_size_disp = f"{int(c_val / 100000000)} 億"
-                                st.metric("基金規模 (TWD)", f_size_disp, delta=delta_str)
+                                st.metric("基金規模 (TWD)", f_size_disp, delta=delta_str, delta_color=delta_color_param)
                             else:
                                 f_size_disp = f"{c_val / 1_000_000:,.1f}M"
-                                st.metric("Fund Size (TWD)", f_size_disp, delta=delta_str)
+                                st.metric("Fund Size (TWD)", f_size_disp, delta=delta_str, delta_color=delta_color_param)
                     else:
                         st.metric(T(lang, "Fund Size", "基金規模"), "N/A")
                 with m2:
                     st.metric(T(lang, "Premium/Discount", "折溢價"), f"{premium_pct:+.2f}%", 
-                              help=f"{T(lang, 'Market Price:', '股價:')} {market_price:.2f} | {T(lang, 'NAV:', '淨值:')} {nav:.2f}" if nav else "")
+                              delta_color=delta_color_param, help=f"{T(lang, 'Market Price:', '股價:')} {market_price:.2f} | {T(lang, 'NAV:', '淨值:')} {nav:.2f}" if nav else "")
                               
                 # Calculate Differences
                 prev_map = { h['id']: h for h in prev_data.get('holdings', []) }
@@ -441,6 +442,9 @@ def render_passive_etf_tab(
     T,
     DATA_DIR,
     NEUTRAL_PURPLE,
+    delta_color_param="normal",
+    PROFIT_COLOR="#2ECC71",
+    LOSS_COLOR="#E74C3C",
 ):
     st.subheader(T(lang, "Passive ETF Holdings", "被動式 ETF 投資組合"))
 
@@ -540,16 +544,16 @@ def render_passive_etf_tab(
 
             metric_cols = st.columns(5)
             with metric_cols[0]:
-                st.metric("基金規模 (TWD)", _fmt_money_yi(fund_size), delta=_fmt_pct(deltas.get("fund_net_assets_pct")))
+                st.metric("基金規模 (TWD)", _fmt_money_yi(fund_size), delta=_fmt_pct(deltas.get("fund_net_assets_pct")), delta_color=delta_color_param)
             with metric_cols[1]:
-                st.metric("基金淨值", f"{nav:.2f}" if nav else "N/A", delta=_fmt_pct(deltas.get("nav_pct")))
+                st.metric("基金淨值", f"{nav:.2f}" if nav else "N/A", delta=_fmt_pct(deltas.get("nav_pct")), delta_color=delta_color_param)
             with metric_cols[2]:
-                st.metric("收盤市價", f"{close_price:.2f}" if close_price else "N/A", delta=_fmt_pct(deltas.get("closing_price_pct")))
+                st.metric("收盤市價", f"{close_price:.2f}" if close_price else "N/A", delta=_fmt_pct(deltas.get("closing_price_pct")), delta_color=delta_color_param)
             with metric_cols[3]:
-                st.metric("在外流通單位", _fmt_units_yi(units), delta=_fmt_pct(deltas.get("outstanding_units_pct")))
+                st.metric("在外流通單位", _fmt_units_yi(units), delta=_fmt_pct(deltas.get("outstanding_units_pct")), delta_color=delta_color_param)
             with metric_cols[4]:
                 premium_value = "N/A" if premium_pct is None else f"{premium_pct:+.2f}%"
-                premium_color = "#ff4b4b" if (premium_pct or 0) >= 0 else "#3dd56d"
+                premium_color = PROFIT_COLOR if (premium_pct or 0) >= 0 else LOSS_COLOR
                 st.markdown(
                     f"""
                     <div style="padding: 0.25rem 0;">

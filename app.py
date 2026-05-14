@@ -1139,9 +1139,9 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
     styler = df_show.style
     for col in df_show.columns:
         low = str(col).lower()
-        if low in ["realized p/l", "total p/l", "month p/l"] or col in ["已實現損益", "總損益", "損益", "月損益"]:
+        if low in ["realized p/l", "total p/l", "month p/l"] or col in ["已實現損益", "總損益", "損益", "月損益", "未實現損益", "今日貢獻"]:
             styler = styler.applymap(color_pl, subset=[col])
-        if low in ["realized %", "total p/l %", "month %", "p/l %"] or col in ["已實現%", "總損益%", "報酬%", "月報酬%", "損益%"]:
+        if low in ["realized %", "total p/l %", "month %", "p/l %"] or col in ["已實現%", "總損益%", "報酬%", "月報酬%", "損益%", "未實現%", "今日漲跌%", "權重%"]:
             styler = styler.applymap(color_pct, subset=[col])
         if low in ["win rate %", "win rate"] or col in ["勝率%", "勝率"]:
             styler = styler.applymap(color_winrate, subset=[col])
@@ -1568,6 +1568,8 @@ try:
         NEW_COLOR = "#ccff00"
         REMOVED_COLOR = "#ff80ab"
         
+    delta_color_param = "inverse" if tw_colors else "normal"
+        
     NEUTRAL_BLUE = "#4C78A8"
     NEUTRAL_PURPLE = "#6F42C1"
 
@@ -1809,7 +1811,6 @@ try:
         except Exception:
              pass
 
-        # TWR is standard for strategy performance.
         KPI_CARD(T(lang, "Personal Return %", "個人報酬率 %"), fmt_signed_pct(total_pl_pct), plpct_color, alpha_text)
     with k3:
         sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.1f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.1f}%"
@@ -1840,7 +1841,7 @@ try:
             T(lang, "Monthly report", "月報"),
             T(lang, "Trades", "交易"),
             T(lang, "Active ETFs", "主動型 ETF"),
-            T(lang, "Passive ETFs", "被動式"),
+            T(lang, "Passive ETFs", "被動式 ETF"),
             "吳大師持股",
         ]
     )
@@ -2842,6 +2843,7 @@ try:
             REMOVED_COLOR=REMOVED_COLOR,
             PROFIT_COLOR=PROFIT_COLOR,
             LOSS_COLOR=LOSS_COLOR,
+            delta_color_param=delta_color_param,
         )
 
     # -------------------- Passive ETFs --------------------
@@ -2851,6 +2853,9 @@ try:
             T=T,
             DATA_DIR=DATA_DIR,
             NEUTRAL_PURPLE=NEUTRAL_PURPLE,
+            delta_color_param=delta_color_param,
+            PROFIT_COLOR=PROFIT_COLOR,
+            LOSS_COLOR=LOSS_COLOR,
         )
 
     # -------------------- Master Holdings --------------------
@@ -2878,7 +2883,7 @@ try:
             with m2:
                 st.metric("總成本", fmt_money(total_cost_open))
             with m3:
-                st.metric("未實現損益", fmt_signed_money(unrealized_pnl), delta=f"扣費稅後 {fmt_signed_pct(unrealized_pct)}")
+                st.metric("未實現損益", fmt_signed_money(unrealized_pnl), delta=f"扣費稅後 {fmt_signed_pct(unrealized_pct)}", delta_color=delta_color_param)
             with m4:
                 st.metric("持股檔數", f"{len(portfolio_positions)}")
 
