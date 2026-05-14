@@ -199,10 +199,7 @@ def build_etf_quote_text(ticker):
         f"持股日期：{cache.get('holdings_date', '----')}\n"
         f"- {composite_label}：{comp_text}\n"
         f"- {composite_detail_prefix}{composite_count}檔（權重{composite_weight_text}）\n"
-        f"- 上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}\n"
-        f"最新報價：{_ago_zh(cache.get('newest_quote_utc'))}｜"
-        f"最舊報價：{_ago_zh(cache.get('oldest_quote_utc'))}｜"
-        f"權重更新：{_ago_zh(cache.get('etf_refresh_utc'))}"
+        f"- 上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}"
     )
 
 def get_yahoo_data_text(symbol, title, emoji, precision=2):
