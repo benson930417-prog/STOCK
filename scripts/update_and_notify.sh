@@ -22,7 +22,7 @@ GITHUB_REPO="${GITHUB_REPO:-benson930417-prog/STOCK}"
 if [ "$#" -gt 0 ]; then
     ETFS=("$@")
 else
-    ETFS=("00981A" "00997A")
+    ETFS=("00981A" "00997A" "0050")
 fi
 
 echo "Running ETF fetch for: ${ETFS[*]}"
@@ -32,33 +32,50 @@ for ETF in "${ETFS[@]}"; do
         00981A|00997A)
             python "scripts/fetch_etf_${ETF}.py"
             ;;
+        0050)
+            python "scripts/fetch_passive_0050.py"
+            ;;
         *)
             echo "Skipping unknown ETF: $ETF"
             ;;
     esac
 done
 
-NEW_ETFS=()
+CHANGED_ETFS=()
+ACTIVE_NEW_ETFS=()
 for ETF in "${ETFS[@]}"; do
-    if grep -q "NEW DATA FOUND" "data/etf_${ETF}_log.json" 2>/dev/null; then
-        NEW_ETFS+=("$ETF")
+    if [ "$ETF" = "0050" ]; then
+        LOG_FILE="data/passive_0050_log.json"
+    else
+        LOG_FILE="data/etf_${ETF}_log.json"
+    fi
+
+    if grep -q "NEW DATA FOUND" "$LOG_FILE" 2>/dev/null; then
+        CHANGED_ETFS+=("$ETF")
+        case "$ETF" in
+            00981A|00997A)
+                ACTIVE_NEW_ETFS+=("$ETF")
+                ;;
+        esac
     fi
 done
 
 git config --global user.name "OCI Server Bot"
 git config --global user.email "oci-bot@localhost"
 
-if [ "${#NEW_ETFS[@]}" -gt 0 ]; then
-    echo "New data detected for: ${NEW_ETFS[*]}"
-    python scripts/generate_etf_summary.py
+if [ "${#CHANGED_ETFS[@]}" -gt 0 ]; then
+    echo "New data detected for: ${CHANGED_ETFS[*]}"
+    if [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ]; then
+        python scripts/generate_etf_summary.py
+    fi
 
     git add data/*.json data/summaries/*.jpg
     git commit -m "Auto-update ETF data and summary images from OCI" || true
     git push origin main
 
-    if [ -n "${LINE_TOKEN:-}" ]; then
+    if [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ] && [ -n "${LINE_TOKEN:-}" ]; then
         export GITHUB_REPO
-        export LINE_ETFS="${NEW_ETFS[*]}"
+        export LINE_ETFS="${ACTIVE_NEW_ETFS[*]}"
         export LINE_TOKEN
         python - <<'PY'
 import json

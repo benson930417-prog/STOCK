@@ -434,3 +434,142 @@ def render_etf_tab(
                 else:
                     st.info(T(lang, "No portfolio changes detected from previous day.", "相較前日無任何持股變動。"))
 
+
+def render_passive_etf_tab(
+    *,
+    lang,
+    T,
+    DATA_DIR,
+    NEUTRAL_PURPLE,
+):
+    st.subheader(T(lang, "Passive ETF Holdings", "被動式 ETF 投資組合"))
+
+    etf_ticker = st.selectbox(
+        T(lang, "Select ETF", "選擇 ETF"),
+        ["0050"],
+        key="passive_etf_ticker",
+    )
+
+    log_file = DATA_DIR / f"passive_{etf_ticker}_log.json"
+    if log_file.exists():
+        try:
+            with open(log_file, "r", encoding="utf-8") as fl:
+                log_data = json.loads(fl.read())
+
+            def _time_ago(dt_str):
+                if not dt_str:
+                    return T(lang, "Unknown", "未知")
+                dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+                now = datetime.now(timezone.utc)
+                diff = max(0, (now - dt).total_seconds())
+                mins = int(diff / 60)
+                if mins < 60:
+                    rel = T(lang, f"{mins} mins ago", f"{mins} 分鐘前")
+                elif mins < 1440:
+                    rel = T(lang, f"{mins // 60} hrs ago", f"{mins // 60} 小時前")
+                else:
+                    rel = T(lang, f"{mins // 1440} days ago", f"{mins // 1440} 天前")
+
+                try:
+                    import zoneinfo
+
+                    local_tz = zoneinfo.ZoneInfo("Asia/Taipei")
+                    local_time = dt.astimezone(local_tz).strftime("%m-%d %H:%M")
+                    return f"{rel} ({local_time} TW)"
+                except Exception:
+                    return rel
+
+            checked_str = _time_ago(log_data.get("last_checked_utc"))
+            update_str = _time_ago(log_data.get("last_updated_utc")) if log_data.get("last_updated_utc") else T(lang, "Never", "從未")
+            status_msg = log_data.get("status", "Unknown")
+
+            st.info(
+                f"**{T(lang, 'Backend Tracker', '雲端更新狀態')}**: {status_msg}  \n"
+                f"**{T(lang, 'Last checked', '最後檢查時間')}**: {checked_str}  \n"
+                f"**{T(lang, 'Last updated', '最後資料更新')}**: {update_str}",
+                icon="🔎",
+            )
+        except Exception:
+            pass
+
+    etf_file = DATA_DIR / f"passive_{etf_ticker}_history.json"
+    history_data = {}
+    if etf_file.exists():
+        try:
+            with open(etf_file, "r", encoding="utf-8") as fl:
+                history_data = json.loads(fl.read())
+        except Exception:
+            pass
+
+    dates = sorted(list(history_data.keys()), reverse=True)
+    if not dates:
+        st.warning(T(lang, "No passive ETF history data available currently.", "目前沒有被動式 ETF 歷史資料。"))
+        return
+
+    col_d1, col_d2 = st.columns([1, 3])
+    with col_d1:
+        selected_date = st.selectbox(T(lang, "Select Data Date", "選擇資料日期"), dates, key="passive_etf_date")
+
+    if selected_date and selected_date in history_data:
+        curr_day_data = history_data[selected_date]
+        holdings = curr_day_data.get("holdings", [])
+        meta = curr_day_data.get("meta", {})
+
+        st.markdown(f"**{T(lang, 'Total Stocks', '總檔數')}**: {len(holdings)}")
+        if meta.get("fund_size") or meta.get("nav") or meta.get("outstanding_units"):
+            m1, m2, m3 = st.columns(3)
+            with m1:
+                fund_size = meta.get("fund_size")
+                value = f"{fund_size / 100000000:,.0f} 億" if fund_size else "N/A"
+                st.metric(T(lang, "Fund Size (TWD)", "基金規模 (TWD)"), value)
+            with m2:
+                nav = meta.get("nav")
+                st.metric(T(lang, "NAV", "淨值"), f"{nav:.2f}" if nav else "N/A")
+            with m3:
+                units = meta.get("outstanding_units")
+                st.metric(T(lang, "Outstanding Units", "在外流通單位"), f"{units:,.0f}" if units else "N/A")
+
+        if holdings:
+            df_h = pd.DataFrame(holdings)
+            df_h = df_h.sort_values(by="weight_pct", ascending=False).reset_index(drop=True)
+            df_h["stock_label"] = df_h["id"].astype(str) + " " + df_h["name"]
+
+            top_n = st.slider(
+                T(lang, "Show Top N Holdings", "顯示前 N 大持股"),
+                min_value=5,
+                max_value=len(df_h),
+                value=min(20, len(df_h)),
+                step=5,
+                key="passive_etf_top_n",
+            )
+            df_top = df_h.head(top_n)
+
+            fig = px.bar(
+                df_top,
+                x="stock_label",
+                y="weight_pct",
+                text="weight_pct",
+                color_discrete_sequence=[NEUTRAL_PURPLE],
+                title=f"{T(lang, f'Top {top_n} Holdings', f'前 {top_n} 大持股')} ({selected_date})",
+                labels={"stock_label": T(lang, "Stock", "股票"), "weight_pct": T(lang, "Weight (%)", "權重 (%)")},
+            )
+            fig.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
+            fig.update_layout(
+                xaxis_title="",
+                yaxis_title=T(lang, "Weight (%)", "權重 (%)"),
+                height=500,
+                margin=dict(b=100),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            df_show = df_h[["id", "name", "weight_pct", "shares"]].copy()
+            df_show.columns = [
+                T(lang, "Stock ID", "代號"),
+                T(lang, "Stock Name", "名稱"),
+                T(lang, "Weight (%)", "權重 (%)"),
+                T(lang, "Holdings (shares)", "持股 (股)"),
+            ]
+            st.dataframe(df_show, width="stretch")
+        else:
+            st.info(T(lang, "No holdings data for this date.", "此日期無持股資料。"))
+

@@ -1,5 +1,5 @@
 [Unit]
-Description=Run 00981A/00997A ETF Fetch Daily at 17:30 Taiwan Time
+Description=Run 00981A/00997A/0050 ETF Fetch Daily at 17:30 Taiwan Time
 
 [Timer]
 # 17:30 Taiwan time = 09:30 UTC

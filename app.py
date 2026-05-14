@@ -37,7 +37,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import requests
 import streamlit as st
-from src.ui.etf_tab import render_etf_tab
+from src.ui.etf_tab import render_etf_tab, render_passive_etf_tab
 
 
 # -------------------- page --------------------
@@ -1565,13 +1565,14 @@ try:
 
     hr()
 
-    tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf = st.tabs(
+    tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf, tab_passive_etf = st.tabs(
         [
             T(lang, "Overview", "總覽"),
             T(lang, "Leaderboard", "排行"),
             T(lang, "Monthly report", "月報"),
             T(lang, "Trades", "交易"),
             T(lang, "Active ETFs", "主動型 ETF"),
+            T(lang, "Passive ETFs", "被動式"),
         ]
     )
 
@@ -2572,6 +2573,15 @@ try:
             REMOVED_COLOR=REMOVED_COLOR,
             PROFIT_COLOR=PROFIT_COLOR,
             LOSS_COLOR=LOSS_COLOR,
+        )
+
+    # -------------------- Passive ETFs --------------------
+    with tab_passive_etf:
+        render_passive_etf_tab(
+            lang=lang,
+            T=T,
+            DATA_DIR=DATA_DIR,
+            NEUTRAL_PURPLE=NEUTRAL_PURPLE,
         )
 
 except Exception:
