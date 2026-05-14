@@ -289,7 +289,7 @@ def _session_label(session):
         "PRE": "盤前",
         "REG": "盤中",
         "POST": "盤後",
-        "POST_CLOSE": "盤後",
+        "POST_CLOSE": "盤後收",
         "CLOSE": "收盤",
     }.get(str(session or "").upper(), "--")
 
