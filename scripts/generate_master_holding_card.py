@@ -37,6 +37,9 @@ INK = (17, 24, 39)
 MUTED = (102, 112, 128)
 LINE = (220, 226, 232)
 PANEL = (255, 255, 255)
+HOLDING_TEXT_W = 400
+FLAG_W = 61
+FLAG_H = 40
 
 
 def _font(size, weight="regular"):
@@ -191,6 +194,66 @@ def _draw_stat(draw, x, y, w, label, value, accent=INK):
     _text(draw, (x + 18, y + 60), _fit_text(draw, value, value_font, w - 36), value_font, accent)
 
 
+def _draw_country_flag(draw, x, y, country):
+    country = str(country or "").upper()
+    w, h = FLAG_W, FLAG_H
+    _round_rect(draw, (x, y, x + w, y + h), 4, PANEL, (190, 198, 208), 1)
+    sx = w / 46
+    sy = h / 30
+
+    def px(value):
+        return x + int(round(value * sx))
+
+    def py(value):
+        return y + int(round(value * sy))
+
+    if country == "US":
+        stripe_h = h / 7
+        for i in range(7):
+            color = (191, 10, 48) if i % 2 == 0 else PANEL
+            draw.rectangle((x + 1, y + int(i * stripe_h), x + w - 1, y + int((i + 1) * stripe_h)), fill=color)
+        draw.rectangle((x + 1, y + 1, px(21), py(16)), fill=(0, 40, 104))
+    elif country == "TW":
+        draw.rectangle((x + 1, y + 1, x + w - 1, y + h - 1), fill=(254, 0, 0))
+        draw.rectangle((x + 1, y + 1, px(23), py(16)), fill=(0, 0, 149))
+        draw.ellipse((px(9), py(5), px(15), py(11)), fill=PANEL)
+    elif country == "JP":
+        draw.rectangle((x + 1, y + 1, x + w - 1, y + h - 1), fill=PANEL)
+        draw.ellipse((px(16), py(7), px(30), py(21)), fill=(188, 0, 45))
+    elif country == "HK":
+        draw.rectangle((x + 1, y + 1, x + w - 1, y + h - 1), fill=(222, 41, 16))
+        draw.ellipse((px(17), py(9), px(29), py(21)), fill=PANEL)
+    else:
+        _text(draw, (x + w / 2, y + h / 2), country[:2] or "--", FONTS["tiny_bold"], INK, anchor="mm")
+
+
+def _session_label(session):
+    return {
+        "PRE": "盤前",
+        "REG": "盤中",
+        "POST": "盤後",
+        "POST_CLOSE": "盤後",
+        "CLOSE": "收盤",
+    }.get(str(session or "").upper(), "--")
+
+
+def _session_style(session):
+    session = str(session or "").upper()
+    if session == "REG":
+        return (219, 234, 254), (59, 130, 246)
+    if session in {"PRE", "POST"}:
+        return (237, 233, 254), (139, 92, 246)
+    return (229, 231, 235), (156, 163, 175)
+
+
+def _draw_session(draw, x, y, session):
+    label = _session_label(session)
+    fill, outline = _session_style(session)
+    pill_w = 112
+    _round_rect(draw, (x, y, x + pill_w, y + 46), 23, fill, outline, 2)
+    _text(draw, (x + pill_w / 2, y + 23), label, FONTS["small_bold"], INK, anchor="mm")
+
+
 def load_master_trades():
     return pd.read_csv(MASTER_PATH, encoding="utf-8-sig")
 
@@ -300,6 +363,7 @@ def enrich_positions_with_quotes(positions):
         item["price"] = float(price) if price is not None else None
         item["day_change_pct"] = float(day_pct) if day_pct is not None else None
         item["quote_time_utc"] = quote.get("regularMarketTimeUtc")
+        item["market_session"] = quote.get("market_session")
         item["market_value"] = item["shares"] * item["price"] if item["price"] is not None else None
         item["est_sell_fee"] = item["market_value"] * SELL_FEE_RATE if item["market_value"] is not None else None
         item["est_sell_tax"] = item["market_value"] * SELL_TAX_RATE if item["market_value"] is not None else None
@@ -373,6 +437,7 @@ def build_expanded_exposure(position_quotes):
                 "source_parts": ["直接持股"],
                 "day_change_pct": pos.get("day_change_pct"),
                 "quote_time_utc": pos.get("quote_time_utc"),
+                "market_session": pos.get("market_session"),
             }
             continue
 
@@ -396,6 +461,7 @@ def build_expanded_exposure(position_quotes):
                     "weighted_move_sum": 0.0,
                     "move_weight": 0.0,
                     "quote_time_utc": quote_row.get("quote_time_utc"),
+                    "market_session": quote_row.get("market_session"),
                 }
             exposures[key]["value_twd"] += value
             exposures[key]["source_parts"].append(f"{ticker} {float(weight):.2f}%")
@@ -404,6 +470,8 @@ def build_expanded_exposure(position_quotes):
                 exposures[key]["move_weight"] += value
             if quote_row.get("quote_time_utc"):
                 exposures[key]["quote_time_utc"] = quote_row.get("quote_time_utc")
+            if quote_row.get("market_session"):
+                exposures[key]["market_session"] = quote_row.get("market_session")
 
     total = sum(item.get("value_twd", 0.0) for item in exposures.values())
     rows = []
@@ -420,6 +488,7 @@ def build_expanded_exposure(position_quotes):
             "weight_pct": item.get("value_twd", 0.0) / total * 100.0 if total else 0.0,
             "day_change_pct": day_change,
             "quote_time_utc": item.get("quote_time_utc"),
+            "market_session": item.get("market_session"),
         })
     return sorted(rows, key=lambda row: row["weight_pct"], reverse=True)
 
@@ -471,40 +540,47 @@ def _draw_header(draw, width, snapshot, page_no, total_pages):
 
 
 def _draw_col_header(draw, x, y, w):
-    _text(draw, (x + 112, y), "成分股", FONTS["body_bold"], INK)
-    _text(draw, (x + 545, y), "市場", FONTS["body_bold"], INK)
-    _text(draw, (x + 660, y), "權重", FONTS["body_bold"], INK)
-    _text(draw, (x + 800, y), "來源", FONTS["body_bold"], INK)
-    _text(draw, (x + 1120, y), "更新", FONTS["body_bold"], INK)
+    meta_x = x + 118 + HOLDING_TEXT_W + 56
+    _text(draw, (x + 118, y), "持股", FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 0, y), "市場", FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 126, y), "權重", FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 270, y), "狀態", FONTS["body_bold"], INK)
+    _text(draw, (meta_x + 550, y), "更新", FONTS["body_bold"], INK)
     draw.line((x, y + 54, x + w, y + 54), fill=(209, 216, 224), width=3)
 
 
 def _draw_row(draw, row, x, y, w, rank, scale):
+    change = row.get("day_change_pct")
+    country = row.get("country") or "--"
+    session = row.get("market_session") or "--"
+    age = _ago(row.get("quote_time_utc"))
+    pct_text = _fmt_pct(change)
+    holding_x = x + 118
+    meta_x = holding_x + HOLDING_TEXT_W + 56
+
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
     _text(draw, (x + 8, y + 6), f"{rank:02d}", FONTS["rank"], INK)
-    _text(draw, (x + 112, y + 8), _fit_text(draw, row["name"], FONTS["body_bold"], 390), FONTS["body_bold"], INK)
-    _text(draw, (x + 112, y + 51), _fit_text(draw, row["code"], FONTS["small"], 390), FONTS["small"], INK)
-    _text(draw, (x + 545, y + 22), row["country"], FONTS["small_bold"], INK)
-    _text(draw, (x + 660, y + 22), f"{row['weight_pct']:.2f}%", FONTS["small"], INK)
-    _text(draw, (x + 800, y + 22), _fit_text(draw, row["source"], FONTS["tiny"], 280), FONTS["tiny"], MUTED)
-    _text(draw, (x + 1120, y + 22), _ago(row.get("quote_time_utc")), FONTS["small"], INK)
+    _text(draw, (holding_x, y + 10), _fit_text(draw, row["name"], FONTS["body_bold"], HOLDING_TEXT_W), FONTS["body_bold"], INK)
+    _text(draw, (holding_x, y + 54), _fit_text(draw, row["code"], FONTS["small"], HOLDING_TEXT_W), FONTS["small"], INK)
+    _draw_country_flag(draw, meta_x + 0, y + 12, country)
+    _text(draw, (meta_x + 126, y + 21), f"{row['weight_pct']:.2f}%", FONTS["small"], INK)
+    _draw_session(draw, meta_x + 255, y + 10, session)
+    _text(draw, (meta_x + 550, y + 21), age, FONTS["small"], INK)
 
-    bar_x = x + 112
+    bar_x = holding_x
     bar_y = y + 91
-    bar_w = w - 150
-    pct = row.get("day_change_pct")
-    endpoint = _bar(draw, bar_x, bar_y, bar_w, 30, pct, scale)
-    if pct is not None and not pd.isna(pct):
-        text = _fmt_pct(pct)
-        color = _color_for_pct(pct)
-        text_w, _ = _measure(draw, text, FONTS["body_bold"])
-        if pct >= 0:
+    bar_w = w - 166
+    endpoint = _bar(draw, bar_x, bar_y, bar_w, 30, change, scale)
+    if change is not None and not pd.isna(change):
+        color = _color_for_pct(change)
+        text_w, _ = _measure(draw, pct_text, FONTS["body_bold"])
+        if change >= 0:
             tx = min(endpoint + 12, bar_x + bar_w - text_w)
             anchor = None
         else:
-            tx = max(endpoint - 12, bar_x + text_w)
+            tx = max(endpoint - 12, bar_x + text_w + 2)
             anchor = "ra"
-        _text(draw, (tx, bar_y - 9), text, FONTS["body_bold"], color, anchor=anchor)
+        _text(draw, (tx, bar_y - 9), pct_text, FONTS["body_bold"], color, anchor=anchor)
 
 
 def _draw_page(snapshot, rows, page_no, total_pages, scale):
