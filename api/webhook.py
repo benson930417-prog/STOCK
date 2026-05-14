@@ -45,6 +45,7 @@ line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
 ETF_QUOTE_NAMES = {
     "00981A": "主動統一台股增長",
     "00997A": "主動群益美國增長",
+    "0050": "元大台灣50",
 }
 
 def parse_etf_quote_command(text):
@@ -54,6 +55,8 @@ def parse_etf_quote_command(text):
         return "00997A"
     if "981" in compact:
         return "00981A"
+    if "0050" in compact or compact == "50":
+        return "0050"
     return None
 
 def is_operation_report_command(text):

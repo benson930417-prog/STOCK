@@ -15,6 +15,7 @@ QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 ETF_NAMES = {
     "00981A": "主動統一台股增長",
     "00997A": "主動群益美國增長",
+    "0050": "元大台灣50",
 }
 
 RED = (198, 36, 0)

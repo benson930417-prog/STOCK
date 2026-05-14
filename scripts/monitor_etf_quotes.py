@@ -25,7 +25,10 @@ def utc_now_iso():
 
 
 def load_latest_holdings(ticker):
-    history_path = DATA_DIR / f"etf_{ticker}_history.json"
+    if ticker == "0050":
+        history_path = DATA_DIR / "passive_0050_history.json"
+    else:
+        history_path = DATA_DIR / f"etf_{ticker}_history.json"
     if not history_path.exists():
         raise FileNotFoundError(f"Missing history file: {history_path}")
 
@@ -45,7 +48,10 @@ def load_latest_holdings(ticker):
 
 
 def load_etf_refresh_time(ticker):
-    log_path = DATA_DIR / f"etf_{ticker}_log.json"
+    if ticker == "0050":
+        log_path = DATA_DIR / "passive_0050_log.json"
+    else:
+        log_path = DATA_DIR / f"etf_{ticker}_log.json"
     if not log_path.exists():
         return None
 

@@ -424,6 +424,258 @@ def get_tw_stock_options():
 
     return options
 
+
+ETF_NAME_TO_TICKER = {
+    "主動統一台股增長": "00981A",
+    "主動群益美國增長": "00997A",
+    "元大台灣50": "0050",
+}
+
+ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
+
+
+def calculate_open_positions(raw_trades: pd.DataFrame) -> pd.DataFrame:
+    df = raw_trades.copy()
+    if df.empty:
+        return pd.DataFrame()
+
+    df["日期"] = pd.to_datetime(df["日期"])
+    df["成交股數"] = df["成交股數"].apply(to_int)
+    df["淨收付金額"] = df["淨收付金額"].apply(to_float)
+    df["手續費"] = df["手續費"].apply(to_float)
+    df["股名"] = df["股名"].astype(str).str.strip()
+    df = df.sort_values(["股名", "日期"]).reset_index(drop=True)
+
+    inventory = defaultdict(deque)
+    for stock, sdf in df.groupby("股名", sort=False):
+        for _, row in sdf.sort_values("日期").iterrows():
+            qty = int(row["成交股數"])
+            cash = float(row["淨收付金額"])
+            fee = float(row.get("手續費", 0.0))
+            if qty <= 0:
+                continue
+
+            if cash < 0:
+                cost = -cash
+                inventory[stock].append(
+                    {
+                        "qty": qty,
+                        "cost": cost,
+                        "fee": fee,
+                    }
+                )
+            elif cash > 0:
+                remaining = qty
+                while remaining > 0 and inventory[stock]:
+                    lot = inventory[stock][0]
+                    take = min(remaining, lot["qty"])
+                    ratio = take / lot["qty"] if lot["qty"] else 0
+                    lot["qty"] -= take
+                    lot["cost"] -= lot["cost"] * ratio
+                    lot["fee"] -= lot["fee"] * ratio
+                    remaining -= take
+                    if lot["qty"] <= 0:
+                        inventory[stock].popleft()
+
+    rows = []
+    for stock, lots in inventory.items():
+        qty = sum(int(lot["qty"]) for lot in lots)
+        if qty <= 0:
+            continue
+        total_cost = sum(float(lot["cost"]) for lot in lots)
+        rows.append(
+            {
+                "stock": stock,
+                "shares": qty,
+                "cost": total_cost,
+                "avg_cost": total_cost / qty if qty else 0.0,
+                "ticker": ETF_NAME_TO_TICKER.get(stock),
+            }
+        )
+
+    return pd.DataFrame(rows).sort_values("cost", ascending=False).reset_index(drop=True) if rows else pd.DataFrame()
+
+
+def _stock_name_symbol_map():
+    options = get_tw_stock_options()
+    by_name = {}
+    for label, symbol in options.items():
+        parts = str(label).split(" ", 1)
+        if len(parts) == 2:
+            code, name = parts
+            by_name[name.strip()] = {"code": code.strip(), "symbol": symbol}
+    return by_name
+
+
+@st.cache_data(ttl=60)
+def fetch_portfolio_quotes(symbol_country_pairs_tuple):
+    try:
+        from scripts.monitor_etf_quotes import fetch_yahoo_quotes
+
+        return fetch_yahoo_quotes(list(symbol_country_pairs_tuple), max_workers=10)
+    except Exception:
+        return {}
+
+
+def _direct_symbol_for_position(row, name_map):
+    ticker = row.get("ticker")
+    if ticker:
+        return f"{ticker}.TW", "TW", ticker
+
+    info = name_map.get(str(row.get("stock", "")).strip())
+    if info:
+        code = info["code"]
+        return info["symbol"], "TW", code
+    return None, None, None
+
+
+def enrich_positions_with_quotes(positions: pd.DataFrame) -> pd.DataFrame:
+    if positions.empty:
+        return positions
+
+    name_map = _stock_name_symbol_map()
+    rows = []
+    symbol_pairs = []
+    for _, row in positions.iterrows():
+        symbol, country, code = _direct_symbol_for_position(row, name_map)
+        item = row.to_dict()
+        item.update({"symbol": symbol, "country": country, "code": code or item.get("ticker") or item["stock"]})
+        rows.append(item)
+        if symbol:
+            symbol_pairs.append((symbol, country))
+
+    quotes = fetch_portfolio_quotes(tuple(symbol_pairs))
+    for item in rows:
+        quote = quotes.get(item.get("symbol")) or {}
+        price = quote.get("regularMarketPrice")
+        prev = quote.get("previousClose")
+        day_pct = quote.get("regularMarketChangePercent")
+        item["price"] = float(price) if price is not None else None
+        item["previous_close"] = float(prev) if prev is not None else None
+        item["day_change_pct"] = float(day_pct) if day_pct is not None else None
+        item["market_value"] = item["shares"] * item["price"] if item["price"] is not None else None
+        item["unrealized_pnl"] = (item["market_value"] - item["cost"]) if item["market_value"] is not None else None
+        item["unrealized_pct"] = (item["unrealized_pnl"] / item["cost"] * 100.0) if item.get("cost") else None
+
+    out = pd.DataFrame(rows)
+    if "market_value" in out:
+        out["weight_pct"] = out["market_value"] / out["market_value"].sum() * 100.0
+    return out
+
+
+def _latest_history_payload(ticker):
+    if ticker == "0050":
+        path = DATA_DIR / "passive_0050_history.json"
+    else:
+        path = DATA_DIR / f"etf_{ticker}_history.json"
+    if not path.exists():
+        return None, {}
+    try:
+        history = json.loads(path.read_text(encoding="utf-8"))
+        date_key = max(history.keys())
+        return date_key, history[date_key]
+    except Exception:
+        return None, {}
+
+
+def _quote_cache_by_holding(ticker):
+    path = DATA_DIR / "quote_cache" / f"etf_{ticker}_quotes.json"
+    if not path.exists():
+        return {}
+    try:
+        cache = json.loads(path.read_text(encoding="utf-8"))
+        return {str(row.get("id")): row for row in cache.get("holdings", [])}
+    except Exception:
+        return {}
+
+
+def _normalize_underlying_key(holding_id, country=None):
+    raw = str(holding_id or "").strip().upper()
+    parts = raw.split()
+    symbol = parts[0] if parts else raw
+    market = parts[1] if len(parts) > 1 else ""
+    inferred_country = country or None
+    if not inferred_country:
+        if market in {"US", "JP", "HK", "TW"}:
+            inferred_country = market
+        elif symbol.isdigit():
+            inferred_country = "TW"
+        else:
+            inferred_country = "US"
+    return f"{inferred_country}:{symbol}", inferred_country, symbol
+
+
+def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
+    if position_quotes.empty:
+        return pd.DataFrame()
+
+    exposures = {}
+    for _, pos in position_quotes.dropna(subset=["market_value"]).iterrows():
+        ticker = pos.get("ticker")
+        if ticker not in {"00981A", "00997A", "0050"}:
+            key, country, code = _normalize_underlying_key(pos.get("code"), pos.get("country"))
+            exposures[key] = {
+                "key": key,
+                "code": code,
+                "name": pos.get("stock"),
+                "country": country,
+                "value_twd": exposures.get(key, {}).get("value_twd", 0.0) + float(pos["market_value"]),
+                "source_etfs": "直接持股",
+                "day_change_pct": pos.get("day_change_pct"),
+            }
+            continue
+
+        _, payload = _latest_history_payload(ticker)
+        holdings = payload.get("holdings", [])
+        quote_map = _quote_cache_by_holding(ticker)
+        for holding in holdings:
+            weight = holding.get("weight_pct")
+            if weight is None:
+                continue
+            quote_row = quote_map.get(str(holding.get("id")), {})
+            country = quote_row.get("country")
+            key, country, code = _normalize_underlying_key(holding.get("id"), country)
+            value = float(pos["market_value"]) * float(weight) / 100.0
+            if key not in exposures:
+                exposures[key] = {
+                    "key": key,
+                    "code": code,
+                    "name": holding.get("name"),
+                    "country": country,
+                    "value_twd": 0.0,
+                    "source_parts": [],
+                    "weighted_move_sum": 0.0,
+                    "move_weight": 0.0,
+                }
+            exposures[key]["value_twd"] += value
+            exposures[key]["source_parts"].append(f"{ticker} {float(weight):.2f}%")
+            day_change = quote_row.get("day_change_pct")
+            if day_change is not None:
+                exposures[key]["weighted_move_sum"] += value * float(day_change)
+                exposures[key]["move_weight"] += value
+
+    rows = []
+    total_value = sum(item.get("value_twd", 0.0) for item in exposures.values())
+    for item in exposures.values():
+        day_change = item.get("day_change_pct")
+        if day_change is None and item.get("move_weight"):
+            day_change = item["weighted_move_sum"] / item["move_weight"]
+        source = item.get("source_etfs") or " / ".join(sorted(set(item.get("source_parts", []))))
+        weight_pct = item["value_twd"] / total_value * 100.0 if total_value else 0.0
+        rows.append(
+            {
+                "代號": item["code"],
+                "名稱": item["name"],
+                "市場": item["country"],
+                "來源": source,
+                "曝險市值": item["value_twd"],
+                "權重": weight_pct,
+                "今日漲跌%": day_change,
+                "今日貢獻": weight_pct * day_change / 100.0 if day_change is not None else None,
+            }
+        )
+    return pd.DataFrame(rows).sort_values("曝險市值", ascending=False).reset_index(drop=True) if rows else pd.DataFrame()
+
 # -------------------- GitHub push helpers --------------------
 def github_api_headers():
     return {
@@ -1468,9 +1720,15 @@ try:
     win_rate = float((f_sorted["realized_pnl"].to_numpy() > 0).mean()) if trades else 0.0
     total_pl_pct = final_twr # Use TWR for the headline percentage
     trade_volume = float(f_sorted["allocated_cost"].sum()) * CURRENCY_RATE
+    open_positions = calculate_open_positions(raw_df)
+    portfolio_positions = enrich_positions_with_quotes(open_positions) if not open_positions.empty else pd.DataFrame()
+    unrealized_pnl = float(portfolio_positions["unrealized_pnl"].dropna().sum()) if not portfolio_positions.empty and "unrealized_pnl" in portfolio_positions else 0.0
+    unrealized_cost = float(portfolio_positions["cost"].sum()) if not portfolio_positions.empty and "cost" in portfolio_positions else 0.0
+    unrealized_pct = (unrealized_pnl / unrealized_cost * 100.0) if unrealized_cost else 0.0
 
     total_color = PROFIT_COLOR if total_pnl > 0 else (LOSS_COLOR if total_pnl < 0 else "#FFFFFF")
     plpct_color = PROFIT_COLOR if total_pl_pct > 0 else (LOSS_COLOR if total_pl_pct < 0 else "#FFFFFF")
+    unrealized_color = PROFIT_COLOR if unrealized_pnl > 0 else (LOSS_COLOR if unrealized_pnl < 0 else "#FFFFFF")
     
     # Win rate: 50% is neutral (White)
     wr_val = win_rate * 100.0
@@ -1482,7 +1740,7 @@ try:
         win_color = LOSS_COLOR
 
     st.markdown(f"### {T(lang, 'Key Metrics', '關鍵指標')}")
-    k1, k2, k3, k4, k5 = st.columns([1, 1, 1, 1, 1], gap="medium")
+    k1, k2, k3, k4, k5, k6 = st.columns([1, 1, 1, 1, 1, 1], gap="medium")
 
     # Sub-win rates
     def calc_wr(df_in):
@@ -1562,10 +1820,12 @@ try:
         
         sub_lbl = f"{T(lang, 'Fee', '手續費')}: {fee_str}  {T(lang, 'Tax', '稅')}: {tax_str}"
         KPI_CARD(T(lang, "Trade volume", "交易量"), fmt_money(trade_volume, 1.0, CURRENCY_SYMBOL), NEUTRAL_BLUE, sub_lbl)
+    with k6:
+        KPI_CARD("未實現損益", fmt_signed_money(unrealized_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), unrealized_color, fmt_signed_pct(unrealized_pct))
 
     hr()
 
-    tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf, tab_passive_etf = st.tabs(
+    tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf, tab_passive_etf, tab_master_holding = st.tabs(
         [
             T(lang, "Overview", "總覽"),
             T(lang, "Leaderboard", "排行"),
@@ -1573,6 +1833,7 @@ try:
             T(lang, "Trades", "交易"),
             T(lang, "Active ETFs", "主動型 ETF"),
             T(lang, "Passive ETFs", "被動式"),
+            "吳大師持股",
         ]
     )
 
@@ -2583,6 +2844,150 @@ try:
             DATA_DIR=DATA_DIR,
             NEUTRAL_PURPLE=NEUTRAL_PURPLE,
         )
+
+    # -------------------- Master Holdings --------------------
+    with tab_master_holding:
+        st.subheader("吳大師持股")
+
+        if portfolio_positions.empty:
+            st.info("目前沒有可計算的庫存持股。")
+        else:
+            total_market_value = float(portfolio_positions["market_value"].dropna().sum())
+            total_cost_open = float(portfolio_positions["cost"].sum())
+            today_pnl = float(
+                (
+                    portfolio_positions["market_value"]
+                    * portfolio_positions["day_change_pct"].fillna(0)
+                    / (100 + portfolio_positions["day_change_pct"].fillna(0)).replace(0, np.nan)
+                ).fillna(0).sum()
+            )
+            today_pct = (today_pnl / (total_market_value - today_pnl) * 100.0) if total_market_value != today_pnl else 0.0
+
+            m1, m2, m3, m4 = st.columns(4)
+            with m1:
+                st.metric("庫存總市值 (TWD)", fmt_money(total_market_value), delta=fmt_signed_pct(today_pct))
+            with m2:
+                st.metric("總成本", fmt_money(total_cost_open))
+            with m3:
+                st.metric("未實現損益", fmt_signed_money(unrealized_pnl), delta=fmt_signed_pct(unrealized_pct))
+            with m4:
+                st.metric("持股檔數", f"{len(portfolio_positions)}")
+
+            st.markdown("### 目前持股權重")
+            pie_df = portfolio_positions.dropna(subset=["market_value"]).copy()
+            pie_df["label"] = pie_df["stock"] + " (" + pie_df["code"].astype(str) + ")"
+            fig_pie = px.pie(
+                pie_df,
+                names="label",
+                values="market_value",
+                hole=0.48,
+                color_discrete_sequence=px.colors.qualitative.Set2,
+            )
+            fig_pie.update_traces(
+                textposition="inside",
+                textinfo="percent+label",
+                hovertemplate="%{label}<br>市值: %{value:,.0f}<br>權重: %{percent}<extra></extra>",
+            )
+            fig_pie.update_layout(
+                height=520,
+                margin=dict(l=10, r=10, t=10, b=10),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="white"),
+                legend=dict(orientation="v"),
+            )
+            st.plotly_chart(fig_pie, use_container_width=True)
+
+            st.markdown("### 直接持股明細")
+            direct_show = portfolio_positions[
+                [
+                    "stock",
+                    "code",
+                    "shares",
+                    "avg_cost",
+                    "price",
+                    "cost",
+                    "market_value",
+                    "weight_pct",
+                    "unrealized_pnl",
+                    "unrealized_pct",
+                    "day_change_pct",
+                ]
+            ].copy()
+            direct_show.columns = [
+                "股名",
+                "代號",
+                "股數",
+                "均價",
+                "現價",
+                "成本",
+                "市值",
+                "權重%",
+                "未實現損益",
+                "未實現%",
+                "今日漲跌%",
+            ]
+            st.dataframe(
+                make_trade_styler(direct_show, PROFIT_COLOR, LOSS_COLOR).format(
+                    {
+                        "股數": "{:,.0f}",
+                        "均價": "{:,.2f}",
+                        "現價": "{:,.2f}",
+                        "成本": "{:,.0f}",
+                        "市值": "{:,.0f}",
+                        "權重%": "{:.2f}%",
+                        "未實現損益": "{:+,.0f}",
+                        "未實現%": "{:+.2f}%",
+                        "今日漲跌%": "{:+.2f}%",
+                    },
+                    na_rep="----",
+                ),
+                width="stretch",
+                height=240,
+            )
+
+            expanded_df = build_expanded_etf_exposure(portfolio_positions)
+            if expanded_df.empty:
+                st.info("目前沒有 ETF 展開持股資料。")
+            else:
+                st.markdown("### ETF 展開後總權重")
+                top_exp = expanded_df.head(20).copy()
+                fig_bar = px.bar(
+                    top_exp.sort_values("權重", ascending=True),
+                    x="權重",
+                    y="名稱",
+                    orientation="h",
+                    color="市場",
+                    text="權重",
+                    color_discrete_sequence=px.colors.qualitative.Bold,
+                )
+                fig_bar.update_traces(texttemplate="%{text:.2f}%", textposition="outside", cliponaxis=False)
+                fig_bar.update_layout(
+                    height=max(460, len(top_exp) * 28),
+                    margin=dict(l=10, r=80, t=20, b=10),
+                    xaxis_title="權重 (%)",
+                    yaxis_title="",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="white"),
+                )
+                st.plotly_chart(fig_bar, use_container_width=True)
+
+                st.markdown("### 全部成分股絕對權重")
+                expanded_show = expanded_df.copy()
+                st.dataframe(
+                    make_trade_styler(expanded_show, PROFIT_COLOR, LOSS_COLOR).format(
+                        {
+                            "曝險市值": "{:,.0f}",
+                            "權重": "{:.2f}%",
+                            "今日漲跌%": "{:+.2f}%",
+                            "今日貢獻": "{:+.3f}%",
+                        },
+                        na_rep="----",
+                    ),
+                    width="stretch",
+                    height=650,
+                )
 
 except Exception:
     st.error("App crashed during rendering. Here is the full traceback:")
