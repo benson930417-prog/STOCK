@@ -3237,14 +3237,13 @@ try:
             else:
                 with mh_tabs[1]:
                     st.markdown("### 全部成分股絕對權重")
-                    expanded_show = expanded_df.copy()
+                    exposure_cols = ["代號", "名稱", "市場", "來源", "曝險市值", "權重"]
+                    expanded_show = expanded_df[[col for col in exposure_cols if col in expanded_df.columns]].copy()
                     st.dataframe(
                         make_trade_styler(expanded_show, PROFIT_COLOR, LOSS_COLOR).format(
                             {
                                 "曝險市值": "{:,.0f}",
                                 "權重": "{:.2f}%",
-                                "今日漲跌%": "{:+.2f}%",
-                                "今日貢獻": "{:+,.0f}",
                             },
                             na_rep="----",
                         ),
