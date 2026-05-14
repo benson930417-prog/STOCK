@@ -2069,6 +2069,7 @@ try:
             daily_base.sort_values("date"), 
             on="date"
         )
+        daily_agg["invested_capital"] = daily_agg["invested_capital"].ffill().bfill()
         daily_agg["dynamic_base"] = daily_agg["dynamic_base"].ffill().bfill().replace(0, 1.0)
         
         # Calculate TWR curve
@@ -2187,16 +2188,22 @@ try:
         # Ensure we have fig_base initialized
         fig_base = go.Figure()
         
-        # Dedicated trace for Money Invested (dynamic_base)
+        # Dedicated trace for Money Invested.
+        # Use invested_capital so the chart matches the Total P/L KPI base.
+        invested_capital_for_chart = pd.Series(dtype=float)
+        scaled_invested = pd.Series(dtype=float)
+        unit_lbl_inv = unit_lbl
+        inv_div = unit_div
         if not daily_agg.empty:
              # Already merged earlier
              pass
              
              # Scale invested capital using the same scale function
-             scaled_invested, unit_lbl_inv, inv_div = scale_unit(daily_agg["dynamic_base"], lang, CURRENCY_RATE)
+             invested_capital_for_chart = daily_agg["invested_capital"]
+             scaled_invested, unit_lbl_inv, inv_div = scale_unit(invested_capital_for_chart, lang, CURRENCY_RATE)
              
              # Align the Total Equity (Capital + Cumulative P/L) to the same y-axis scale
-             scaled_equity_for_inv = ((daily_agg["dynamic_base"] + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
+             scaled_equity_for_inv = ((invested_capital_for_chart + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
              
              # Extend traces to today for step-plot visuals
              plot_dates = daily_agg["date"].tolist()
@@ -2548,7 +2555,7 @@ try:
         
         # Calculate bounds for secondary axis (Invested)
         if not scaled_invested.empty:
-            scaled_equity_for_inv = ((daily_agg["dynamic_base"] + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
+            scaled_equity_for_inv = ((invested_capital_for_chart + daily_agg["cum_pnl"]) * CURRENCY_RATE) / inv_div
             inv_max = max(scaled_invested.max(), scaled_equity_for_inv.max())
             inv_min = min(scaled_invested.min(), scaled_equity_for_inv.min())
             inv_pad = (inv_max - inv_min) * 0.1 if (inv_max - inv_min) > 0 else 10
