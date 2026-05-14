@@ -315,7 +315,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
 
     draw.line((x, y + 128, x + w, y + 128), fill=(232, 237, 243), width=2)
     _text(draw, (index_x, y + 4), f"{rank:02d}", FONTS["rank"], INK)
-    _draw_country_flag(draw, flag_x, y + 40, country)
+    _draw_country_flag(draw, flag_x, y + 32, country)
     _text(draw, (name_x, y + 10), _fit_text(draw, name, FONTS["body_bold"], NAME_COL_W - 18), FONTS["body_bold"], INK)
     _text(draw, (name_x, y + 54), _fit_text(draw, ticker, FONTS["small"], NAME_COL_W - 18), FONTS["small"], INK)
     _text(draw, (weight_x, y + 21), weight_text, FONTS["body_bold"], INK)
