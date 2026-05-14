@@ -287,7 +287,7 @@ def _draw_country_flag(draw, x, y, country):
 def _session_label(session):
     return {
         "PRE": "盤前",
-        "REG": "盤中",
+        "REG": "交易中",
         "POST": "盤後",
         "POST_CLOSE": "盤後收",
         "CLOSE": "收盤",
@@ -297,18 +297,18 @@ def _session_label(session):
 def _session_style(session):
     session = str(session or "").upper()
     if session == "REG":
-        return (219, 234, 254), (59, 130, 246)
+        return (239, 246, 255), (37, 99, 235), (29, 78, 216), 3
     if session in {"PRE", "POST"}:
-        return (237, 233, 254), (139, 92, 246)
-    return (229, 231, 235), (156, 163, 175)
+        return (237, 233, 254), (139, 92, 246), INK, 2
+    return (229, 231, 235), (156, 163, 175), INK, 2
 
 
 def _draw_session(draw, x, y, session):
     label = _session_label(session)
-    fill, outline = _session_style(session)
+    fill, outline, text_color, outline_w = _session_style(session)
     pill_w = 112
-    _round_rect(draw, (x, y, x + pill_w, y + 46), 23, fill, outline, 2)
-    _text(draw, (x + pill_w / 2, y + 23), label, FONTS["small_bold"], INK, anchor="mm")
+    _round_rect(draw, (x, y, x + pill_w, y + 46), 23, fill, outline, outline_w)
+    _text(draw, (x + pill_w / 2, y + 23), label, FONTS["small_bold"], text_color, anchor="mm")
 
 
 def load_master_trades():
