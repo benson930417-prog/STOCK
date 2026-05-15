@@ -769,6 +769,12 @@ def _normalize_underlying_key(holding_id, country=None):
     parts = raw.split()
     symbol = parts[0] if parts else raw
     market = parts[1] if len(parts) > 1 else ""
+    
+    for suffix in [".US", ".TW", ".JP", ".HK"]:
+        if symbol.endswith(suffix):
+            symbol = symbol[:-len(suffix)]
+            break
+
     inferred_country = country or None
     if not inferred_country:
         if market in {"US", "JP", "HK", "TW"}:
@@ -3195,6 +3201,17 @@ try:
         if portfolio_positions.empty:
             st.info("目前沒有可計算的庫存持股。")
         else:
+            missing_etfs = []
+            for _, pos in portfolio_positions.dropna(subset=["market_value"]).iterrows():
+                ticker = pos.get("ticker")
+                if ticker in {"00981A", "00997A", "0050", "00830"}:
+                    _, payload = _latest_history_payload(ticker)
+                    if not payload.get("holdings"):
+                        missing_etfs.append(str(pos.get("stock") or ticker))
+            
+            if missing_etfs:
+                st.warning(f"🚨 **警告**：無法載入以下 ETF 的成分股資料，展開權重圖表將不包含其權重 (請檢查伺服器排程是否運行)：**{', '.join(missing_etfs)}**")
+
             total_market_value = float(portfolio_positions["market_value"].dropna().sum())
             total_liquidation_value = float(portfolio_positions["liquidation_value"].dropna().sum())
             total_cost_open = float(portfolio_positions["cost"].sum())
