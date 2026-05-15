@@ -15,8 +15,8 @@ if str(ROOT_DIR) not in sys.path:
 from scripts.monitor_etf_quotes import (
     TSMC_PROXY_TARGETS,
     _apply_tsmc_night_futures_proxy,
-    _cached_tsmc_proxy_for_display,
-    _fetch_tsmc_night_futures_proxy,
+    _select_tsmc_proxy,
+    _tsmc_data_mode,
     _tsmc_proxy_cache_status,
     fetch_yahoo_quotes,
 )
@@ -221,12 +221,10 @@ def enrich_positions_with_quotes(positions):
 
     quotes = fetch_yahoo_quotes(symbols, max_workers=10)
     has_tsmc_proxy_target = any(str(symbol or "").upper() in TSMC_PROXY_TARGETS for symbol, _ in symbols)
+    tsmc_data_mode = _tsmc_data_mode()
     tsmc_proxy = None
     if has_tsmc_proxy_target:
-        tsmc_proxy = _fetch_tsmc_night_futures_proxy(include_inactive=True)
-        cached_proxy = _cached_tsmc_proxy_for_display(None)
-        if cached_proxy:
-            tsmc_proxy = cached_proxy
+        tsmc_proxy = _select_tsmc_proxy(tsmc_data_mode)
     for item in rows:
         quote = quotes.get(item.get("symbol")) or {}
         quote = _apply_tsmc_night_futures_proxy(quote, item.get("symbol"), tsmc_proxy)
@@ -257,6 +255,7 @@ def enrich_positions_with_quotes(positions):
     if "market_value" in out and out["market_value"].dropna().sum():
         out["weight_pct"] = out["market_value"] / out["market_value"].sum() * 100.0
     out.attrs["tsmc_proxy"] = _tsmc_proxy_cache_status(has_tsmc_proxy_target, tsmc_proxy)
+    out.attrs["tsmc_data_mode"] = tsmc_data_mode
     return out
 
 
@@ -398,6 +397,7 @@ def load_master_snapshot():
         "holding_count": int(len(positions)),
         "exposures": exposures,
         "tsmc_proxy": positions.attrs.get("tsmc_proxy"),
+        "tsmc_data_mode": positions.attrs.get("tsmc_data_mode"),
     }
 
 
@@ -459,6 +459,7 @@ def _master_quote_cache(snapshot, rows):
         "generated_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "etf_refresh_utc": None,
         "tsmc_proxy": snapshot.get("tsmc_proxy"),
+        "tsmc_data_mode": snapshot.get("tsmc_data_mode"),
         "newest_quote_utc": max(valid_quote_times) if valid_quote_times else None,
         "oldest_quote_utc": min(valid_quote_times) if valid_quote_times else None,
         "composite_move_pct": weighted_sum / weight_sum if weight_sum else None,

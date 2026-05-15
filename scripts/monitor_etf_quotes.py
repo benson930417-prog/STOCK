@@ -107,17 +107,27 @@ def _before_next_tw_regular_data_open(now=None):
     return True
 
 
+def _tsmc_data_mode(now=None):
+    now = now or datetime.now(ZoneInfo("Asia/Taipei"))
+    if _tsmc_night_futures_collection_session(now):
+        return "FUTURES_FETCH"
+    if _before_next_tw_regular_data_open(now):
+        return "FUTURES_CLOSE_FETCH"
+    return "TW_NORMAL"
+
+
 def _is_tsmc_night_futures_session(now=None):
     return _tsmc_night_futures_session(now) is not None
 
 
-def _fetch_tsmc_night_futures_proxy(timeout=10, include_inactive=False):
-    proxy_session = _tsmc_night_futures_collection_session()
-    if not proxy_session:
+def _fetch_tsmc_night_futures_proxy(timeout=10, include_inactive=False, mode=None):
+    mode = mode or _tsmc_data_mode()
+    if mode not in {"FUTURES_FETCH", "FUTURES_CLOSE_FETCH"}:
         return {
             "active": False,
             "reason": "outside_tsmc_night_futures_window",
         } if include_inactive else None
+    proxy_session = "FUT_NIGHT" if mode == "FUTURES_FETCH" else "FUT_NIGHT_CLOSE"
     payload = {
         "symbols": {"tickers": [TSMC_PROXY_SYMBOL], "query": {"types": []}},
         "columns": [
@@ -217,6 +227,7 @@ def _tsmc_proxy_cache_status(has_target, proxy):
         }
     keys = [
         "active",
+        "data_mode",
         "reason",
         "error",
         "proxy_symbol",
@@ -338,9 +349,7 @@ def _proxy_status_from_cached_row(row):
 
 def _cached_tsmc_proxy_for_display(previous_cache, now=None):
     now = now or datetime.now(ZoneInfo("Asia/Taipei"))
-    if _tsmc_night_futures_collection_session(now):
-        return None
-    if not _before_next_tw_regular_data_open(now):
+    if _tsmc_data_mode(now) != "FUTURES_CLOSE_FETCH":
         return None
     proxy = previous_cache.get("tsmc_proxy") if previous_cache else None
     if not proxy or not proxy.get("active"):
@@ -368,6 +377,37 @@ def _cached_tsmc_proxy_for_display(previous_cache, now=None):
     cached_proxy["quote_time"] = cached_proxy.get("quote_time") or int(quote_dt.timestamp())
     cached_proxy["reason"] = "cached_until_tw_open"
     return cached_proxy
+
+
+def _select_tsmc_proxy(mode, previous_cache=None):
+    if mode == "TW_NORMAL":
+        return {
+            "active": False,
+            "reason": "tw_normal_selected",
+            "data_mode": mode,
+        }
+    if mode == "FUTURES_FETCH":
+        proxy = _fetch_tsmc_night_futures_proxy(include_inactive=True, mode=mode)
+        if proxy:
+            proxy["data_mode"] = mode
+        return proxy
+    if mode == "FUTURES_CLOSE_FETCH":
+        proxy = _fetch_tsmc_night_futures_proxy(include_inactive=True, mode=mode)
+        if proxy and proxy.get("active"):
+            proxy["data_mode"] = mode
+            return proxy
+        cached_proxy = _cached_tsmc_proxy_for_display(previous_cache)
+        if cached_proxy:
+            cached_proxy["data_mode"] = "FUTURES_CLOSE_CACHE"
+            return cached_proxy
+        if proxy:
+            proxy["data_mode"] = mode
+            return proxy
+    return {
+        "active": False,
+        "reason": "no_tsmc_data_mode",
+        "data_mode": mode,
+    }
 
 
 def load_latest_holdings(ticker):
@@ -706,12 +746,10 @@ def build_cache(ticker, previous_cache=None):
     has_tsmc_proxy_target = any(
         str(yahoo_symbol or "").upper() in TSMC_PROXY_TARGETS for _, yahoo_symbol, _ in normalized
     )
+    tsmc_data_mode = _tsmc_data_mode()
     tsmc_proxy = None
     if has_tsmc_proxy_target:
-        tsmc_proxy = _fetch_tsmc_night_futures_proxy(include_inactive=True)
-        cached_proxy = _cached_tsmc_proxy_for_display(previous_cache)
-        if cached_proxy:
-            tsmc_proxy = cached_proxy
+        tsmc_proxy = _select_tsmc_proxy(tsmc_data_mode, previous_cache)
 
     rows = []
     valid_quote_times = []
@@ -815,6 +853,7 @@ def build_cache(ticker, previous_cache=None):
         "generated_utc": utc_now_iso(),
         "etf_refresh_utc": etf_refresh_utc,
         "tsmc_proxy": _tsmc_proxy_cache_status(has_tsmc_proxy_target, tsmc_proxy),
+        "tsmc_data_mode": tsmc_data_mode,
         "newest_quote_utc": max(valid_quote_times) if valid_quote_times else None,
         "oldest_quote_utc": min(valid_quote_times) if valid_quote_times else None,
         "composite_move_pct": composite_move_pct,
