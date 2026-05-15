@@ -15,6 +15,7 @@ if str(ROOT_DIR) not in sys.path:
 from scripts.monitor_etf_quotes import (
     TSMC_PROXY_TARGETS,
     _apply_tsmc_night_futures_proxy,
+    _is_live_market_session,
     _select_tsmc_proxy,
     _tsmc_data_mode,
     _tsmc_proxy_cache_status,
@@ -441,7 +442,7 @@ def _master_quote_cache(snapshot, rows):
             "day_change_pct": change,
             "quote_time_utc": row.get("quote_time_utc"),
             "market_session": row.get("market_session"),
-            "is_live_market": row.get("market_session") in {"PRE", "REG", "POST", "FUT_NIGHT", "FUT_NIGHT_CLOSE"},
+            "is_live_market": _is_live_market_session(row.get("market_session")),
             "proxy": row.get("proxy"),
             "status": "ok" if change is not None and not pd.isna(change) else "missing",
         })

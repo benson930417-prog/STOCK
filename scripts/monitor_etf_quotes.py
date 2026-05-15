@@ -19,7 +19,7 @@ QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 TRADINGVIEW_SCAN_URL = "https://scanner.tradingview.com/futures/scan"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
-LIVE_MARKET_SESSIONS = {"PRE", "REG", "POST", "FUT_NIGHT", "FUT_NIGHT_CLOSE"}
+LIVE_MARKET_SESSIONS = {"PRE", "REG", "POST", "FUT_NIGHT"}
 COUNTRY_LABELS = {
     "TW": "台",
     "US": "美",
