@@ -116,6 +116,18 @@ def _tsmc_data_mode(now=None):
     return "TW_NORMAL"
 
 
+def _latest_tsmc_night_futures_close_available_time(now=None):
+    now = now or datetime.now(ZoneInfo("Asia/Taipei"))
+    close_minutes = TSMC_NIGHT_FUTURES_OFFICIAL_CLOSE_MINUTES + TRADINGVIEW_DELAY_SECONDS // 60
+    close_hour, close_minute = divmod(close_minutes, 60)
+    candidate = now.replace(hour=close_hour, minute=close_minute, second=0, microsecond=0)
+    if now < candidate:
+        candidate -= timedelta(days=1)
+    while candidate.weekday() not in {1, 2, 3, 4, 5}:
+        candidate -= timedelta(days=1)
+    return candidate.astimezone(timezone.utc)
+
+
 def _is_tsmc_night_futures_session(now=None):
     return _tsmc_night_futures_session(now) is not None
 
@@ -154,6 +166,8 @@ def _fetch_tsmc_night_futures_proxy(timeout=10, include_inactive=False, mode=Non
         if price is None:
             return None
         quote_time = datetime.now(timezone.utc) - timedelta(seconds=TRADINGVIEW_DELAY_SECONDS)
+        if mode == "FUTURES_CLOSE_FETCH":
+            quote_time = _latest_tsmc_night_futures_close_available_time()
         proxy = {
             "active": True,
             "proxy_symbol": TSMC_PROXY_SYMBOL,
