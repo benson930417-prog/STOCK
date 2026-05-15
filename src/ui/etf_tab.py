@@ -49,37 +49,36 @@ def render_etf_tab(
                    if not dt_str:
                         return T(lang, "Unknown", "未知")
                    dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
-                   import zoneinfo
-                   try:
-                       belgium_tz = zoneinfo.ZoneInfo("Europe/Brussels")
-                   except Exception:
-                       # Fallback to hardcoded UTC+1 (Note: misses daylight saving changes)
-                       import datetime as dt_mod
-                       belgium_tz = dt_mod.timezone(dt_mod.timedelta(hours=1))
-                   dt_local_str = dt.astimezone(belgium_tz).strftime('%m-%d %H:%M')
                    now = datetime.now(timezone.utc)
-                   diff = (now - dt).total_seconds()
+                   diff = max(0, (now - dt).total_seconds())
                    mins = int(diff / 60)
                    if mins < 60:
-                        rel = f"{mins} mins ago" if lang != "中文" else f"{mins} 分鐘前"
+                        rel = T(lang, f"{mins} mins ago", f"{mins} 分鐘前")
                    elif mins < 1440:
-                        rel = f"{mins//60} hrs ago" if lang != "中文" else f"{mins//60} 小時前"
+                        rel = T(lang, f"{mins // 60} hrs ago", f"{mins // 60} 小時前")
                    else:
-                        rel = f"{mins//1440} days ago" if lang != "中文" else f"{mins//1440} 天前"
-                   return f"{rel} ({dt_local_str})"
+                        rel = T(lang, f"{mins // 1440} days ago", f"{mins // 1440} 天前")
+
+                   try:
+                        import zoneinfo
+                        local_tz = zoneinfo.ZoneInfo("Asia/Taipei")
+                        local_time = dt.astimezone(local_tz).strftime("%m-%d %H:%M")
+                        return f"{rel} ({local_time} TW)"
+                   except Exception:
+                        return rel
                    
               lcu = log_data.get("last_checked_utc")
               luu = log_data.get("last_updated_utc")
               status_msg = log_data.get("status", "Unknown")
               
               checked_str = _time_ago(lcu, lang)
-              update_str = _time_ago(luu, lang) if luu else T(lang, "Never (or before tracking)", "從未 (或追蹤前)")
+              update_str = _time_ago(luu, lang) if luu else T(lang, "Never", "從未")
               
               st.info(
                   f"**{T(lang, 'Backend Tracker', '雲端更新狀態')}**: {status_msg}  \n"
                   f"**{T(lang, 'Last checked', '最後檢查時間')}**: {checked_str}  \n"
-                  f"**{T(lang, 'Last updated', '最後資料變動')}**: {update_str}",
-                  icon="🤖"
+                  f"**{T(lang, 'Last updated', '最後資料更新')}**: {update_str}",
+                  icon="🔎"
               )
          except Exception as e:
               pass
