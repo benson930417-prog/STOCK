@@ -306,7 +306,7 @@ def _normalize_underlying_key(holding_id, country=None):
             else:
                 inferred_country = "TW" if market == "TWO" else market
         elif raw.endswith(".TW") or raw.endswith(".TWO"):
-            inferred_country = "TW" if market == "TWO" else market
+            inferred_country = "TW"
         elif raw.endswith(".T"):
             inferred_country = "JP"
         elif raw.endswith(".HK"):
