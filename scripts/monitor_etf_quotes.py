@@ -672,6 +672,49 @@ def _session_quote_from_meta(meta, country):
         return None, None, session
 
 
+def _current_us_trading_period(meta, session):
+    period_key = {
+        "PRE": "pre",
+        "REG": "regular",
+        "POST": "post",
+    }.get(str(session or "").upper())
+    if not period_key:
+        return None
+    period = (meta.get("currentTradingPeriod") or {}).get(period_key)
+    if not isinstance(period, dict):
+        return None
+    start = _market_time(period, "start")
+    end = _market_time(period, "end")
+    if start is None or end is None:
+        return None
+    return start, end
+
+
+def _latest_us_session_point(meta, session, valid_points):
+    if not valid_points:
+        return None
+
+    bounds = _current_us_trading_period(meta, session)
+    if not bounds:
+        return valid_points[-1]
+
+    start, end = bounds
+    session_points = [
+        (timestamp, close)
+        for timestamp, close in valid_points
+        if start <= int(timestamp) < end
+    ]
+    return session_points[-1] if session_points else None
+
+
+def _regular_close_from_meta(meta):
+    price = meta.get("regularMarketPrice")
+    timestamp = _market_time(meta, "regularMarketTime")
+    if price is not None and timestamp is not None:
+        return price, timestamp
+    return None, None
+
+
 def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
     try:
         params = {"range": "5d", "interval": "1d"}
@@ -706,6 +749,16 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
         ]
 
         price, quote_time, session = _session_quote_from_meta(meta, country)
+
+        if country == "US" and (price is None or quote_time is None) and _is_live_market_session(session):
+            session_point = _latest_us_session_point(meta, session, valid_points)
+            if session_point:
+                quote_time, price = session_point
+                session = _session_for_us_timestamp(quote_time)
+            else:
+                price, quote_time = _regular_close_from_meta(meta)
+                if price is not None and quote_time is not None:
+                    session = "CLOSE"
 
         if (price is None or quote_time is None) and not _is_live_market_session(session):
             if valid_points:
