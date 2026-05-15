@@ -82,7 +82,8 @@ def render_etf_tab(
                   icon="🤖"
               )
          except Exception as e:
-              pass
+              import traceback
+              st.error(f"Error loading tracker UI: {e}\n{traceback.format_exc()}")
     # ----------------------
 
     etf_file = DATA_DIR / f"etf_{etf_ticker}_history.json"
