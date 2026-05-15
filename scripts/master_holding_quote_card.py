@@ -403,15 +403,31 @@ def load_master_snapshot():
     }
 
 
-def build_master_text(snapshot):
-    return (
-        "吳大師持股\n"
-        f"目前淨值(扣費稅)：{_fmt_money(snapshot['total_liq'])}\n"
-        f"總成本：{_fmt_money(snapshot['total_cost'])}\n"
-        f"未實損益：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:+.2f}%)\n"
-        f"持股檔數：{snapshot['holding_count']}\n"
-        "展開明細：前50大，依權重排序"
-    )
+def build_master_text(snapshot, quote_cache=None):
+    lines = [
+        "吳大師持股",
+        f"目前淨值(扣費稅)：{_fmt_money(snapshot['total_liq'])}",
+        f"總成本：{_fmt_money(snapshot['total_cost'])}",
+        f"未實損益：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:+.2f}%)",
+        f"ETF庫存：{snapshot['holding_count']} 檔"
+    ]
+    
+    if quote_cache:
+        composite = quote_cache.get("composite_move_pct")
+        if quote_cache.get("composite_mode") == "live" and composite is not None:
+            comp_text = f"{composite:+.2f}%"
+            composite_label = f"即時加權 ({quote_cache.get('composite_country_scope', '展開')})"
+            lines.append(f"- {composite_label}：{comp_text}")
+            composite_count = quote_cache.get("composite_holding_count", 0)
+            composite_weight = quote_cache.get("composite_weight_pct")
+            weight_text = "--" if composite_weight is None else f"{float(composite_weight):.1f}%"
+            lines.append(f"- 交易中{composite_count}檔（權重{weight_text}）")
+            
+        counts = quote_cache.get("counts", {})
+        lines.append(f"- 上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}")
+        
+    lines.append("展開明細：前50大，依權重排序")
+    return "\n".join(lines)
 
 
 def _master_quote_cache(snapshot, rows):
@@ -488,7 +504,7 @@ def generate_master_quote_card(limit=50):
     rows = snapshot["exposures"][:limit]
     quote_cache = _master_quote_cache(snapshot, rows)
     output_paths = generate_quote_card_from_cache("MASTER", quote_cache, output_prefix="master_holding_top50")
-    text = build_master_text(snapshot)
+    text = build_master_text(snapshot, quote_cache)
     QUOTE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cache = {
         "generated_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
