@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import requests
 
@@ -9,7 +9,8 @@ DATA_DIR = "data"
 HISTORY_FILE = os.path.join(DATA_DIR, "passive_00830_history.json")
 LOG_FILE = os.path.join(DATA_DIR, "passive_00830_log.json")
 URL = "https://www.cathaysite.com.tw/ETF/detail/EBO?tab=etf3"
-JSON_API_URL = "https://cwapi.cathaysite.com.tw/api/ETF/GetETFDetailStockList"
+JSON_API_STOCK_LIST = "https://cwapi.cathaysite.com.tw/api/ETF/GetETFDetailStockList"
+JSON_API_ASSETS = "https://cwapi.cathaysite.com.tw/api/ETF/GetETFAssets"
 
 
 def _num(value):
@@ -20,13 +21,6 @@ def _num(value):
         return float(text)
     except ValueError:
         return None
-
-
-def _date_to_key(value):
-    match = re.search(r"(\d{4})[/-](\d{1,2})[/-](\d{1,2})", str(value or ""))
-    if not match:
-        raise ValueError(f"Could not parse 00830 date from {value!r}")
-    return f"{int(match.group(1)):04d}-{int(match.group(2)):02d}-{int(match.group(3)):02d}"
 
 
 def _load_json(path, default):
@@ -43,24 +37,14 @@ def _write_json(path, payload):
         fh.write("\n")
 
 
-def _extract_page_meta(html_text):
-    # Strip HTML tags to make it plain text for the regex
-    text = re.sub(r'<[^>]+>', ' ', html_text)
-    if "Access Denied" in text or "edgesuite.net" in text:
-        raise PermissionError("Cathay blocked this host with Access Denied")
-    date_key = _date_to_key(text)
-
-    def value_after(label):
-        match = re.search(label + r".{0,40}?\$?\s*([0-9,]+(?:\.\d+)?)", text)
-        return _num(match.group(1)) if match else None
-
-    return date_key, {
-        "fund_size": value_after("基金資產總淨值"),
-        "nav": value_after("基金每單位淨值") or value_after("淨值"),
-        "outstanding_units": int(value_after("基金在外流通單位數") or 0) or None,
-        "closing_price": value_after("收盤價"),
-        "source_url": URL,
-    }
+def _get_yahoo_closing_price(ticker):
+    try:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=5d"
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+        data = r.json()
+        return float(data['chart']['result'][0]['meta']['regularMarketPrice'])
+    except Exception:
+        return None
 
 
 def fetch_and_update_00830():
@@ -70,21 +54,52 @@ def fetch_and_update_00830():
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept": "application/json, text/plain, */*",
     }
 
-    # Fetch HTML meta directly to avoid Playwright Akamai block
-    r_html = requests.get(URL, headers=headers, timeout=15)
-    r_html.raise_for_status()
-    date_key, meta = _extract_page_meta(r_html.text)
+    # Use today's date in Taiwan timezone to query the latest available data
+    # Taiwan is UTC+8
+    tw_now = datetime.now(timezone.utc) + timedelta(hours=8)
+    today_str = tw_now.strftime("%Y-%m-%d")
 
-    # Fetch Holdings from JSON API
-    params = {
+    # 1. Fetch ETF Assets (NAV, Fund Size, True Date)
+    params_assets = {
+        "FundCode": "BO",
+        "SearchDate": today_str
+    }
+    r_assets = requests.get(JSON_API_ASSETS, headers=headers, params=params_assets, timeout=15)
+    r_assets.raise_for_status()
+    assets_data = r_assets.json()
+    
+    if not assets_data.get("success") or not assets_data.get("result"):
+        raise ValueError(f"Failed to fetch 00830 assets from API: {assets_data.get('returnMessage')}")
+        
+    result_assets = assets_data["result"]
+    pre_date_raw = result_assets.get("preDate")
+    if not pre_date_raw:
+        raise ValueError("Missing preDate in assets response")
+        
+    date_key = pre_date_raw.replace("/", "-")
+    
+    fund_size = _num(result_assets.get("fundNav"))
+    nav = _num(result_assets.get("fundPerNav"))
+    outstanding_units = int(_num(result_assets.get("fundOutstandingShares")) or 0) or None
+    closing_price = _get_yahoo_closing_price("00830.TW")
+
+    meta = {
+        "fund_size": fund_size,
+        "nav": nav,
+        "outstanding_units": outstanding_units,
+        "closing_price": closing_price,
+        "source_url": URL,
+    }
+
+    # 2. Fetch Holdings from JSON API
+    params_holdings = {
         "FundCode": "BO",
         "SearchDate": date_key
     }
-    r_json = requests.get(JSON_API_URL, headers=headers, params=params, timeout=15)
+    r_json = requests.get(JSON_API_STOCK_LIST, headers=headers, params=params_holdings, timeout=15)
     r_json.raise_for_status()
     api_data = r_json.json()
     
