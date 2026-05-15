@@ -36,6 +36,7 @@ ETF_NAME_TO_TICKER = {
     "主動統一台股增長": "00981A",
     "主動群益美國增長": "00997A",
     "元大台灣50": "0050",
+    "國泰費城半導體": "00830",
 }
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
 
@@ -261,7 +262,7 @@ def enrich_positions_with_quotes(positions):
 
 
 def _latest_history_payload(ticker):
-    path = DATA_DIR / ("passive_0050_history.json" if ticker == "0050" else f"etf_{ticker}_history.json")
+    path = DATA_DIR / (f"passive_{ticker}_history.json" if ticker in {"0050", "00830"} else f"etf_{ticker}_history.json")
     if not path.exists():
         return None, {}
     history = json.loads(path.read_text(encoding="utf-8"))
@@ -307,7 +308,7 @@ def build_expanded_exposure(position_quotes):
     exposures = {}
     for _, pos in position_quotes.dropna(subset=["market_value"]).iterrows():
         ticker = pos.get("ticker")
-        if ticker not in {"00981A", "00997A", "0050"}:
+        if ticker not in {"00981A", "00997A", "0050", "00830"}:
             key, country, code = _normalize_underlying_key(pos.get("code"), pos.get("country"))
             exposures[key] = {
                 "key": key,

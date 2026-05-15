@@ -432,6 +432,7 @@ ETF_NAME_TO_TICKER = {
     "主動統一台股增長": "00981A",
     "主動群益美國增長": "00997A",
     "元大台灣50": "0050",
+    "國泰費城半導體": "00830",
 }
 
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
@@ -736,8 +737,8 @@ def enrich_positions_with_quotes(positions: pd.DataFrame) -> pd.DataFrame:
 
 
 def _latest_history_payload(ticker):
-    if ticker == "0050":
-        path = DATA_DIR / "passive_0050_history.json"
+    if ticker in {"0050", "00830"}:
+        path = DATA_DIR / f"passive_{ticker}_history.json"
     else:
         path = DATA_DIR / f"etf_{ticker}_history.json"
     if not path.exists():
@@ -784,7 +785,7 @@ def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
     exposures = {}
     for _, pos in position_quotes.dropna(subset=["market_value"]).iterrows():
         ticker = pos.get("ticker")
-        if ticker not in {"00981A", "00997A", "0050"}:
+        if ticker not in {"00981A", "00997A", "0050", "00830"}:
             key, country, code = _normalize_underlying_key(pos.get("code"), pos.get("country"))
             exposures[key] = {
                 "key": key,
@@ -3474,7 +3475,7 @@ try:
                                                 etf_tickers = [
                                                     str(ticker)
                                                     for ticker in portfolio_positions["ticker"].dropna().unique()
-                                                    if str(ticker) in {"00981A", "00997A", "0050"}
+                                                    if str(ticker) in {"00981A", "00997A", "0050", "00830"}
                                                 ]
                                             with st.spinner("更新報價資料中..."):
                                                 refreshed, errors = refresh_master_quote_data(etf_tickers)

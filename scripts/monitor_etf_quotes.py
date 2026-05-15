@@ -30,14 +30,21 @@ COUNTRY_LABELS = {
 COUNTRY_ORDER = ["TW", "JP", "TSMC_FUT", "US", "HK"]
 TSMC_PROXY_SYMBOL = "TAIFEX:QFF1!"
 TSMC_PROXY_TARGETS = {"2330", "2330.TW"}
+PASSIVE_ETF_TICKERS = {"0050", "00830"}
 TRADINGVIEW_DELAY_SECONDS = 900
 YAHOO_TWSE_DELAY_SECONDS = 20 * 60
-STALE_QUOTE_SECONDS = 5 * 60
-SESSION_GAP_BUFFER_SECONDS = 30 * 60
 TSMC_NIGHT_FUTURES_OFFICIAL_OPEN_MINUTES = 17 * 60 + 25
 TSMC_NIGHT_FUTURES_OFFICIAL_CLOSE_MINUTES = 5 * 60
 TW_REGULAR_OFFICIAL_OPEN_MINUTES = 9 * 60
 TW_REGULAR_OFFICIAL_CLOSE_MINUTES = 13 * 60 + 30
+JP_REGULAR_OFFICIAL_OPEN_MINUTES = 9 * 60
+JP_REGULAR_OFFICIAL_CLOSE_MINUTES = 15 * 60 + 30
+HK_REGULAR_OFFICIAL_OPEN_MINUTES = 9 * 60 + 30
+HK_REGULAR_OFFICIAL_BREAK_START_MINUTES = 12 * 60
+HK_REGULAR_OFFICIAL_BREAK_END_MINUTES = 13 * 60
+HK_REGULAR_OFFICIAL_CLOSE_MINUTES = 16 * 60
+JP_REGULAR_OFFICIAL_BREAK_START_MINUTES = 11 * 60 + 30
+JP_REGULAR_OFFICIAL_BREAK_END_MINUTES = 12 * 60 + 30
 TSMC_PROXY_CACHE_PATH = QUOTE_CACHE_DIR / "tsmc_qff_proxy.json"
 
 
@@ -103,14 +110,20 @@ def _before_next_tw_regular_data_open(now=None):
     now = now or datetime.now(ZoneInfo("Asia/Taipei"))
     minutes = now.hour * 60 + now.minute
     if now.weekday() < 5:
-        return minutes < TW_REGULAR_DATA_OPEN_MINUTES
+        return minutes < TW_REGULAR_OFFICIAL_OPEN_MINUTES
     return True
 
 
 def _tsmc_data_mode(now=None):
     now = now or datetime.now(ZoneInfo("Asia/Taipei"))
-    if _tsmc_night_futures_collection_session(now):
+    minutes = now.hour * 60 + now.minute
+    collection_session = _tsmc_night_futures_collection_session(now)
+    if collection_session == "FUT_NIGHT":
         return "FUTURES_FETCH"
+    if collection_session == "FUT_NIGHT_CLOSE":
+        return "FUTURES_CLOSE_FETCH"
+    if now.weekday() < 5 and TSMC_NIGHT_FUTURES_OFFICIAL_OPEN_MINUTES <= minutes < TSMC_NIGHT_FUTURES_START_MINUTES:
+        return "FUTURES_PENDING"
     if _before_next_tw_regular_data_open(now):
         return "FUTURES_CLOSE_FETCH"
     return "TW_NORMAL"
@@ -193,9 +206,27 @@ def _fetch_tsmc_night_futures_proxy(timeout=10, include_inactive=False, mode=Non
 
 
 def _apply_tsmc_night_futures_proxy(quote, yahoo_symbol, proxy):
-    if not proxy or not proxy.get("active") or not quote or quote.get("error"):
+    if not proxy or not quote or quote.get("error"):
         return quote
     if str(yahoo_symbol or "").upper() not in TSMC_PROXY_TARGETS:
+        return quote
+    if proxy.get("data_mode") == "FUTURES_PENDING":
+        proxied = dict(quote)
+        proxied["regularMarketPrice"] = None
+        proxied["regularMarketTime"] = None
+        proxied["regularMarketChangePercent"] = None
+        proxied["marketSession"] = "FUT_NIGHT"
+        proxied["composite_scope"] = "TSMC_FUT"
+        proxied["proxy"] = {
+            "source": "tsmc_night_futures",
+            "symbol": TSMC_PROXY_SYMBOL,
+            "name": "QFF1!",
+            "baseline_symbol": "2330.TW",
+            "delay_seconds": TRADINGVIEW_DELAY_SECONDS,
+            "status": "waiting_first_delayed_print",
+        }
+        return proxied
+    if not proxy.get("active"):
         return quote
     baseline = quote.get("regularMarketPrice")
     try:
@@ -256,59 +287,8 @@ def _tsmc_proxy_cache_status(has_target, proxy):
     ]
     status = {key: proxy.get(key) for key in keys if key in proxy}
     status["window_taipei"] = "17:40-05:15"
-    status["display_until_taipei"] = "09:15"
+    status["display_until_taipei"] = "09:00"
     return status
-
-
-def _previous_rows_by_symbol(previous_cache):
-    rows = {}
-    for row in (previous_cache or {}).get("holdings", []):
-        keys = [
-            row.get("yahoo_symbol"),
-            row.get("id"),
-        ]
-        for key in keys:
-            if key:
-                rows[str(key).upper()] = row
-    return rows
-
-
-def _delayed_exchange_quote_age_limit(country):
-    if str(country or "").upper() in {"TW", "JP", "HK"}:
-        return YAHOO_TWSE_DELAY_SECONDS + STALE_QUOTE_SECONDS
-    return None
-
-
-def _is_quote_time_age_stale(country, quote_time_utc):
-    limit = _delayed_exchange_quote_age_limit(country)
-    quote_dt = _parse_utc_timestamp(quote_time_utc)
-    if limit is None or not quote_dt:
-        return False
-    return datetime.now(timezone.utc) - quote_dt > timedelta(seconds=limit)
-
-
-def _is_stale_against_previous(row_key, quote_time_utc, previous_rows, previous_generated_utc):
-    previous = previous_rows.get(str(row_key or "").upper())
-    if not previous or not quote_time_utc:
-        return False
-    if previous.get("quote_time_utc") != quote_time_utc:
-        return False
-    previous_generated = _parse_utc_timestamp(previous_generated_utc)
-    if not previous_generated:
-        return False
-    return datetime.now(timezone.utc) - previous_generated >= timedelta(seconds=STALE_QUOTE_SECONDS)
-
-
-def _apply_stale_session_guard(session, country, row_key, quote_time_utc, previous_rows, previous_generated_utc):
-    if str(session or "").upper() != "REG":
-        return session
-    if str(country or "").upper() not in {"TW", "JP", "HK"}:
-        return session
-    if _is_quote_time_age_stale(country, quote_time_utc):
-        return "CLOSE"
-    if _is_stale_against_previous(row_key, quote_time_utc, previous_rows, previous_generated_utc):
-        return "CLOSE"
-    return session
 
 
 def _write_tsmc_proxy_cache(proxy):
@@ -400,6 +380,12 @@ def _select_tsmc_proxy(mode, previous_cache=None):
             "reason": "tw_normal_selected",
             "data_mode": mode,
         }
+    if mode == "FUTURES_PENDING":
+        return {
+            "active": False,
+            "reason": "waiting_first_delayed_print",
+            "data_mode": mode,
+        }
     if mode == "FUTURES_FETCH":
         proxy = _fetch_tsmc_night_futures_proxy(include_inactive=True, mode=mode)
         if proxy:
@@ -425,8 +411,8 @@ def _select_tsmc_proxy(mode, previous_cache=None):
 
 
 def load_latest_holdings(ticker):
-    if ticker == "0050":
-        history_path = DATA_DIR / "passive_0050_history.json"
+    if ticker in PASSIVE_ETF_TICKERS:
+        history_path = DATA_DIR / f"passive_{ticker}_history.json"
     else:
         history_path = DATA_DIR / f"etf_{ticker}_history.json"
     if not history_path.exists():
@@ -448,8 +434,8 @@ def load_latest_holdings(ticker):
 
 
 def load_etf_refresh_time(ticker):
-    if ticker == "0050":
-        log_path = DATA_DIR / "passive_0050_log.json"
+    if ticker in PASSIVE_ETF_TICKERS:
+        log_path = DATA_DIR / f"passive_{ticker}_log.json"
     else:
         log_path = DATA_DIR / f"etf_{ticker}_log.json"
     if not log_path.exists():
@@ -489,7 +475,9 @@ def normalize_yahoo_symbol(raw_id):
     symbol = symbol.replace("/", "-")
 
     if "." in symbol:
-        suffix = symbol.rsplit(".", 1)[-1]
+        base, suffix = symbol.rsplit(".", 1)
+        if suffix in {"US", "USA"}:
+            return base, "US"
         country = country or {
             "TW": "TW",
             "TWO": "TW",
@@ -575,34 +563,83 @@ def _previous_us_regular_close(symbol, quote_time, timeout=10):
     return None
 
 
-def _exchange_session(country):
+def _session_bounds(dt, start_minutes, end_minutes):
+    return (
+        dt.replace(hour=start_minutes // 60, minute=start_minutes % 60, second=0, microsecond=0),
+        dt.replace(hour=end_minutes // 60, minute=end_minutes % 60, second=0, microsecond=0),
+    )
+
+
+def _regular_session_bounds(country, now=None):
+    country = str(country or "").upper()
     if country == "TW":
-        now = datetime.now(ZoneInfo("Asia/Taipei"))
-        minutes = now.hour * 60 + now.minute
-        close_buffer_minutes = SESSION_GAP_BUFFER_SECONDS // 60
-        if now.weekday() < 5 and TW_REGULAR_DATA_OPEN_MINUTES <= minutes < TW_REGULAR_DATA_CLOSE_MINUTES + close_buffer_minutes:
-            return "REG"
-        return "CLOSE"
+        now = now or datetime.now(ZoneInfo("Asia/Taipei"))
+        if now.weekday() >= 5:
+            return None
+        start, end = _session_bounds(now, TW_REGULAR_OFFICIAL_OPEN_MINUTES, TW_REGULAR_OFFICIAL_CLOSE_MINUTES)
+        if start <= now < end:
+            return start, end
+        return None
 
     if country == "JP":
-        now = datetime.now(ZoneInfo("Asia/Tokyo"))
-        minutes = now.hour * 60 + now.minute
-        yahoo_delay_minutes = YAHOO_TWSE_DELAY_SECONDS // 60
-        close_buffer_minutes = SESSION_GAP_BUFFER_SECONDS // 60
-        if now.weekday() < 5 and 9 * 60 + yahoo_delay_minutes <= minutes < 15 * 60 + 30 + yahoo_delay_minutes + close_buffer_minutes:
-            return "REG"
-        return "CLOSE"
+        now = now or datetime.now(ZoneInfo("Asia/Tokyo"))
+        if now.weekday() >= 5:
+            return None
+        morning_start, morning_end = _session_bounds(
+            now,
+            JP_REGULAR_OFFICIAL_OPEN_MINUTES,
+            JP_REGULAR_OFFICIAL_BREAK_START_MINUTES,
+        )
+        afternoon_start, afternoon_end = _session_bounds(
+            now,
+            JP_REGULAR_OFFICIAL_BREAK_END_MINUTES,
+            JP_REGULAR_OFFICIAL_CLOSE_MINUTES,
+        )
+        if morning_start <= now < morning_end:
+            return morning_start, morning_end
+        if afternoon_start <= now < afternoon_end:
+            return afternoon_start, afternoon_end
+        return None
 
     if country == "HK":
-        now = datetime.now(ZoneInfo("Asia/Hong_Kong"))
-        minutes = now.hour * 60 + now.minute
-        yahoo_delay_minutes = YAHOO_TWSE_DELAY_SECONDS // 60
-        close_buffer_minutes = SESSION_GAP_BUFFER_SECONDS // 60
-        if now.weekday() < 5 and 9 * 60 + 30 + yahoo_delay_minutes <= minutes < 16 * 60 + yahoo_delay_minutes + close_buffer_minutes:
-            return "REG"
-        return "CLOSE"
+        now = now or datetime.now(ZoneInfo("Asia/Hong_Kong"))
+        if now.weekday() >= 5:
+            return None
+        morning_start, morning_end = _session_bounds(
+            now,
+            HK_REGULAR_OFFICIAL_OPEN_MINUTES,
+            HK_REGULAR_OFFICIAL_BREAK_START_MINUTES,
+        )
+        afternoon_start, afternoon_end = _session_bounds(
+            now,
+            HK_REGULAR_OFFICIAL_BREAK_END_MINUTES,
+            HK_REGULAR_OFFICIAL_CLOSE_MINUTES,
+        )
+        if morning_start <= now < morning_end:
+            return morning_start, morning_end
+        if afternoon_start <= now < afternoon_end:
+            return afternoon_start, afternoon_end
+        return None
 
+    return None
+
+
+def _exchange_session(country):
+    if country in {"TW", "JP", "HK"}:
+        return "REG" if _regular_session_bounds(country) else "CLOSE"
     return "REG"
+
+
+def _quote_belongs_to_current_regular_session(country, timestamp):
+    bounds = _regular_session_bounds(country)
+    if not bounds or not timestamp:
+        return False
+    start, _ = bounds
+    try:
+        quote_dt = datetime.fromtimestamp(int(timestamp), start.tzinfo)
+    except Exception:
+        return False
+    return quote_dt >= start
 
 
 def _session_quote_from_meta(meta, country):
@@ -627,9 +664,12 @@ def _session_quote_from_meta(meta, country):
     else:
         price = meta.get("regularMarketPrice")
         timestamp = _market_time(meta, "regularMarketTime")
+        session = _exchange_session(country)
+        if session == "REG" and not _quote_belongs_to_current_regular_session(country, timestamp):
+            return None, None, session
         if price is not None and timestamp is not None:
-            return price, timestamp, _exchange_session(country)
-        return None, None, None
+            return price, timestamp, session
+        return None, None, session
 
 
 def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
@@ -667,13 +707,13 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
 
         price, quote_time, session = _session_quote_from_meta(meta, country)
 
-        if country == "US" and valid_points:
-            quote_time, price = valid_points[-1]
-            session = _session_for_us_timestamp(quote_time)
-        elif price is None or quote_time is None:
+        if (price is None or quote_time is None) and not _is_live_market_session(session):
             if valid_points:
                 quote_time, price = valid_points[-1]
-                session = "CLOSE"
+                if country == "US":
+                    session = _session_for_us_timestamp(quote_time)
+                else:
+                    session = "CLOSE"
 
         previous = None
         if country == "US":
@@ -748,8 +788,6 @@ def fetch_yahoo_quotes(symbol_country_pairs, max_workers=12):
 def build_cache(ticker, previous_cache=None):
     holdings_date, latest_data, holdings = load_latest_holdings(ticker)
     etf_refresh_utc = load_etf_refresh_time(ticker)
-    previous_rows = _previous_rows_by_symbol(previous_cache)
-    previous_generated_utc = (previous_cache or {}).get("generated_utc")
 
     normalized = []
     for holding in holdings:
@@ -793,14 +831,6 @@ def build_cache(ticker, previous_cache=None):
             if quote_time:
                 quote_time_utc = datetime.fromtimestamp(quote_time, timezone.utc).isoformat().replace("+00:00", "Z")
                 valid_quote_times.append(quote_time_utc)
-            market_session = _apply_stale_session_guard(
-                market_session,
-                country,
-                quote.get("symbol", yahoo_symbol),
-                quote_time_utc,
-                previous_rows,
-                previous_generated_utc,
-            )
             if day_change_pct is not None:
                 status = "ok"
                 if day_change_pct > 0:

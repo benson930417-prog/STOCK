@@ -450,7 +450,7 @@ def render_passive_etf_tab(
 
     etf_ticker = st.selectbox(
         T(lang, "Select ETF", "選擇 ETF"),
-        ["0050"],
+        ["0050", "00830"],
         key="passive_etf_ticker",
     )
 
