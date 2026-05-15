@@ -506,6 +506,8 @@ def calculate_open_positions(raw_trades: pd.DataFrame) -> pd.DataFrame:
     df["淨收付金額"] = df["淨收付金額"].apply(to_float)
     df["手續費"] = df["手續費"].apply(to_float)
     df["股名"] = df["股名"].astype(str).str.strip()
+    if "買賣別" in df.columns:
+        df = df[~df["買賣別"].isin(["沖買", "沖賣"])]
     df = df.sort_values(["股名", "日期"]).reset_index(drop=True)
     bank_stock_tax_rates, bank_class_tax_rates = _infer_bank_sell_tax_rates(raw_trades)
 
