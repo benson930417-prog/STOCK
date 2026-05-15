@@ -82,8 +82,7 @@ def render_etf_tab(
                   icon="🤖"
               )
          except Exception as e:
-              import traceback
-              st.error(f"Error loading tracker UI: {e}\n{traceback.format_exc()}")
+              pass
     # ----------------------
 
     etf_file = DATA_DIR / f"etf_{etf_ticker}_history.json"
@@ -91,7 +90,6 @@ def render_etf_tab(
     history_data = {}
     if etf_file.exists():
          try:
-              import json
               with open(etf_file, "r", encoding="utf-8") as fl:
                    history_data = json.loads(fl.read())
          except Exception:
