@@ -3,15 +3,13 @@ import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-
-from openpyxl import load_workbook
-from playwright.sync_api import sync_playwright
-
+import requests
 
 DATA_DIR = "data"
 HISTORY_FILE = os.path.join(DATA_DIR, "passive_00830_history.json")
 LOG_FILE = os.path.join(DATA_DIR, "passive_00830_log.json")
 URL = "https://www.cathaysite.com.tw/ETF/detail/EBO?tab=etf3"
+JSON_API_URL = "https://cwapi.cathaysite.com.tw/api/ETF/GetETFDetailStockList"
 
 
 def _num(value):
@@ -45,8 +43,9 @@ def _write_json(path, payload):
         fh.write("\n")
 
 
-def _extract_page_meta(page):
-    text = page.locator("body").inner_text(timeout=10000)
+def _extract_page_meta(html_text):
+    # Strip HTML tags to make it plain text for the regex
+    text = re.sub(r'<[^>]+>', ' ', html_text)
     if "Access Denied" in text or "edgesuite.net" in text:
         raise PermissionError("Cathay blocked this host with Access Denied")
     date_key = _date_to_key(text)
@@ -64,122 +63,59 @@ def _extract_page_meta(page):
     }
 
 
-def _download_excel(page):
-    selectors = [
-        "text=/匯出\\s*Excel/i",
-        "text=/Excel/i",
-        "a[href*='Excel']",
-        "button:has-text('Excel')",
-    ]
-    for selector in selectors:
-        locator = page.locator(selector).first
-        try:
-            if locator.count() == 0:
-                continue
-            with page.expect_download(timeout=15000) as download_info:
-                locator.click()
-            download = download_info.value
-            path = Path(download.path())
-            return path
-        except Exception:
-            continue
-    raise ValueError("Could not trigger Cathay 00830 Excel download")
-
-
-def _cell_text(value):
-    return str(value or "").strip()
-
-
-def _looks_like_holding_row(values):
-    if len(values) < 4:
-        return False
-    code = _cell_text(values[0])
-    return bool(re.match(r"^[A-Z0-9./-]{1,12}$", code, re.I)) and _num(values[-1]) is not None
-
-
-def _parse_excel(path):
-    wb = load_workbook(path, data_only=True)
-    rows = []
-    for ws in wb.worksheets:
-        for raw in ws.iter_rows(values_only=True):
-            values = [_cell_text(value) for value in raw if _cell_text(value)]
-            if not _looks_like_holding_row(values):
-                continue
-
-            code = values[0].upper().replace(" ", "")
-            name = values[1]
-            nums = [_num(value) for value in values[2:]]
-            nums = [value for value in nums if value is not None]
-            if len(nums) < 2:
-                continue
-
-            shares = int(nums[0])
-            weight = float(nums[-1])
-            if weight <= 0 or weight > 100:
-                continue
-            if "." not in code and not code.endswith("US"):
-                code = f"{code}.US"
-            rows.append({
-                "id": code,
-                "name": name,
-                "weight_pct": weight,
-                "shares": shares,
-            })
-
-    # Deduplicate repeated print/header sections while preserving the first parsed instance.
-    seen = set()
-    holdings = []
-    for row in rows:
-        if row["id"] in seen:
-            continue
-        seen.add(row["id"])
-        holdings.append(row)
-
-    if len(holdings) < 10:
-        raise ValueError(f"Only parsed {len(holdings)} 00830 holdings from Excel")
-    return holdings
-
-
 def fetch_and_update_00830():
     now_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     history = _load_json(HISTORY_FILE, {})
     previous_log = _load_json(LOG_FILE, {})
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=[
-                "--disable-blink-features=AutomationControlled",
-                "--no-sandbox",
-            ],
-        )
-        page = browser.new_page(
-            accept_downloads=True,
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
-            ),
-            locale="zh-TW",
-            timezone_id="Asia/Taipei",
-            viewport={"width": 1440, "height": 1100},
-            extra_http_headers={
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Cache-Control": "no-cache",
-                "Pragma": "no-cache",
-                "Referer": "https://www.cathaysite.com.tw/ETF",
-                "Upgrade-Insecure-Requests": "1",
-            },
-        )
-        page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined});")
-        page.goto("https://www.cathaysite.com.tw/ETF", wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(1200)
-        page.goto(URL, wait_until="networkidle", timeout=60000)
-        page.wait_for_timeout(1500)
-        date_key, meta = _extract_page_meta(page)
-        excel_path = _download_excel(page)
-        holdings = _parse_excel(excel_path)
-        browser.close()
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+    }
+
+    # Fetch HTML meta directly to avoid Playwright Akamai block
+    r_html = requests.get(URL, headers=headers, timeout=15)
+    r_html.raise_for_status()
+    date_key, meta = _extract_page_meta(r_html.text)
+
+    # Fetch Holdings from JSON API
+    params = {
+        "FundCode": "BO",
+        "SearchDate": date_key
+    }
+    r_json = requests.get(JSON_API_URL, headers=headers, params=params, timeout=15)
+    r_json.raise_for_status()
+    api_data = r_json.json()
+    
+    if not api_data.get("success") or not api_data.get("result"):
+        raise ValueError(f"Failed to fetch 00830 holdings from API: {api_data.get('returnMessage')}")
+
+    holdings = []
+    for item in api_data["result"]:
+        code = str(item.get("stockCode") or "").strip().upper()
+        if not code:
+            continue
+        # Ensure code has .US extension as in original Excel parsing logic
+        if "." not in code and not code.endswith("US"):
+            code = f"{code}.US"
+        
+        weight = float(item.get("weights") or 0)
+        if weight <= 0 or weight > 100:
+            continue
+            
+        shares_str = str(item.get("volumn") or "").replace(",", "")
+        shares = int(shares_str) if shares_str.isdigit() else 0
+
+        holdings.append({
+            "id": code,
+            "name": str(item.get("stockName") or "").strip(),
+            "weight_pct": weight,
+            "shares": shares,
+        })
+
+    if len(holdings) < 10:
+        raise ValueError(f"Only parsed {len(holdings)} 00830 holdings from API")
 
     payload = {
         "date": date_key,
