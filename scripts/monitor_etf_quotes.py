@@ -848,18 +848,16 @@ def build_cache(ticker, previous_cache=None):
         })
 
     composite_move_pct = None
-    composite_mode = "latest"
-    composite_count = all_composite_count
-    composite_weight_sum = all_valid_weight_sum
-    composite_countries = all_composite_countries
+    composite_mode = "none"
+    composite_count = 0
+    composite_weight_sum = 0.0
+    composite_countries = set()
     if live_valid_weight_sum:
         composite_mode = "live"
         composite_move_pct = live_weighted_move_sum / live_valid_weight_sum
         composite_count = live_composite_count
         composite_weight_sum = live_valid_weight_sum
         composite_countries = live_composite_countries
-    elif all_valid_weight_sum:
-        composite_move_pct = all_weighted_move_sum / all_valid_weight_sum
 
     return {
         "ticker": ticker,

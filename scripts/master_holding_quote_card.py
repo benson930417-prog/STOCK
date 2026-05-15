@@ -416,12 +416,14 @@ def build_master_text(snapshot):
 def _master_quote_cache(snapshot, rows):
     valid_quote_times = [row.get("quote_time_utc") for row in rows if row.get("quote_time_utc")]
     up = down = flat = missing = 0
-    weighted_sum = 0.0
-    weight_sum = 0.0
+    live_weighted_sum = 0.0
+    live_weight_sum = 0.0
+    live_count = 0
     holdings = []
     for row in rows:
         change = row.get("day_change_pct")
         weight = row.get("weight_pct")
+        is_live = _is_live_market_session(row.get("market_session"))
         if change is None or pd.isna(change):
             missing += 1
         else:
@@ -431,9 +433,10 @@ def _master_quote_cache(snapshot, rows):
                 down += 1
             else:
                 flat += 1
-            if weight is not None and not pd.isna(weight):
-                weighted_sum += float(weight) * float(change)
-                weight_sum += float(weight)
+            if is_live and weight is not None and not pd.isna(weight):
+                live_weighted_sum += float(weight) * float(change)
+                live_weight_sum += float(weight)
+                live_count += 1
         holdings.append({
             "id": row.get("code"),
             "name": row.get("name"),
@@ -442,7 +445,7 @@ def _master_quote_cache(snapshot, rows):
             "day_change_pct": change,
             "quote_time_utc": row.get("quote_time_utc"),
             "market_session": row.get("market_session"),
-            "is_live_market": _is_live_market_session(row.get("market_session")),
+            "is_live_market": is_live,
             "proxy": row.get("proxy"),
             "status": "ok" if change is not None and not pd.isna(change) else "missing",
         })
@@ -463,11 +466,11 @@ def _master_quote_cache(snapshot, rows):
         "tsmc_data_mode": snapshot.get("tsmc_data_mode"),
         "newest_quote_utc": max(valid_quote_times) if valid_quote_times else None,
         "oldest_quote_utc": min(valid_quote_times) if valid_quote_times else None,
-        "composite_move_pct": weighted_sum / weight_sum if weight_sum else None,
-        "composite_mode": "latest",
+        "composite_move_pct": live_weighted_sum / live_weight_sum if live_weight_sum else None,
+        "composite_mode": "live" if live_weight_sum else "none",
         "composite_country_scope": "展開",
-        "composite_holding_count": len([row for row in rows if row.get("day_change_pct") is not None and not pd.isna(row.get("day_change_pct"))]),
-        "composite_weight_pct": weight_sum,
+        "composite_holding_count": live_count,
+        "composite_weight_pct": live_weight_sum,
         "counts": {
             "total": len(rows),
             "up": up,

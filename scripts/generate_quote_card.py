@@ -125,17 +125,21 @@ def _fmt_pct(value):
 
 
 def _composite_title(cache):
-    prefix = "即時加權" if cache.get("composite_mode") == "live" else "最新加權"
+    if cache.get("composite_mode") != "live":
+        return None
+    prefix = "即時加權"
     scope = cache.get("composite_country_scope") or "--"
+    scope = str(scope).replace("台積電期貨", "期")
     return f"{prefix}({scope}):"
 
 
 def _composite_detail(cache):
+    if cache.get("composite_mode") != "live":
+        return None
     count = cache.get("composite_holding_count") or 0
     weight = cache.get("composite_weight_pct")
     weight_text = "--" if weight is None else f"{float(weight):.1f}%"
-    prefix = "交易中" if cache.get("composite_mode") == "live" else "全持股"
-    return f"{prefix}{count}檔・權重{weight_text}"
+    return f"交易中{count}檔・權重{weight_text}"
 
 
 def _draw_country_flag(draw, x, y, country):
@@ -399,15 +403,17 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     _draw_stat(draw, x0 + (box_w + gap) * 3, y0, box_w, "最新報價", _ago(cache.get("newest_quote_utc")), RED)
     _draw_stat(draw, x0 + (box_w + gap) * 4, y0, box_w, "最舊報價", _ago(cache.get("oldest_quote_utc")), INK)
     _draw_stat(draw, x0 + (box_w + gap) * 5, y0, box_w, "權重更新", _ago(cache.get("etf_refresh_utc")), INK)
-    _draw_stat(
-        draw,
-        x0 + (box_w + gap) * 6,
-        y0,
-        composite_box_w,
-        _composite_title(cache),
-        _fmt_pct(cache.get("composite_move_pct")),
-        _color_for_pct(cache.get("composite_move_pct")),
-    )
+    composite_title = _composite_title(cache)
+    if composite_title:
+        _draw_stat(
+            draw,
+            x0 + (box_w + gap) * 6,
+            y0,
+            composite_box_w,
+            composite_title,
+            _fmt_pct(cache.get("composite_move_pct")),
+            _color_for_pct(cache.get("composite_move_pct")),
+        )
 
     draw.line((74, 528, width - 74, 528), fill=LINE, width=2)
     _text(draw, (74, 558), cache.get("sort_note") or "依ETF持股權重排序", FONTS["small_bold"], INK)

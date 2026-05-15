@@ -185,13 +185,11 @@ def build_etf_quote_text(ticker):
         cache = json.load(fh)
     counts = cache.get("counts", {})
     composite = cache.get("composite_move_pct")
-    comp_text = "----" if composite is None else f"{composite:+.2f}%"
     etf_name = ETF_QUOTE_NAMES.get(ticker, "")
-    composite_prefix = "即時加權" if cache.get("composite_mode") == "live" else "最新加權"
     holdings = cache.get("holdings", [])
     fallback_rows = [row for row in holdings if row.get("day_change_pct") is not None and row.get("weight_pct") is not None]
-    country_labels = {"TW": "台", "US": "美", "JP": "日", "HK": "港"}
-    country_order = ["TW", "US", "JP", "HK"]
+    country_labels = {"TW": "台", "US": "美", "JP": "日", "HK": "港", "TSMC_FUT": "期"}
+    country_order = ["TW", "US", "JP", "HK", "TSMC_FUT"]
     fallback_countries = {str(row.get("country") or "").upper() for row in fallback_rows if row.get("country")}
     fallback_scope = "".join(
         country_labels.get(country, country)
@@ -202,8 +200,7 @@ def build_etf_quote_text(ticker):
         country_labels.get(country, country)
         for country in sorted(fallback_countries - set(country_order))
     )
-    composite_scope = cache.get("composite_country_scope") or fallback_scope or "--"
-    composite_label = f"{composite_prefix} ({composite_scope})"
+    composite_scope = str(cache.get("composite_country_scope") or fallback_scope or "--").replace("台積電期貨", "期")
     composite_count = cache.get("composite_holding_count")
     if composite_count is None:
         composite_count = len(fallback_rows)
@@ -211,14 +208,17 @@ def build_etf_quote_text(ticker):
     if composite_weight is None and fallback_rows:
         composite_weight = sum(float(row.get("weight_pct") or 0) for row in fallback_rows)
     composite_weight_text = "--" if composite_weight is None else f"{float(composite_weight):.1f}%"
-    composite_detail_prefix = "交易中" if cache.get("composite_mode") == "live" else "全持股"
-    return (
-        f"{ticker} {etf_name}\n"
-        f"持股日期：{cache.get('holdings_date', '----')}\n"
-        f"- {composite_label}：{comp_text}\n"
-        f"- {composite_detail_prefix}{composite_count}檔（權重{composite_weight_text}）\n"
-        f"- 上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}"
-    )
+    lines = [
+        f"{ticker} {etf_name}",
+        f"持股日期：{cache.get('holdings_date', '----')}",
+    ]
+    if cache.get("composite_mode") == "live" and composite is not None:
+        comp_text = f"{composite:+.2f}%"
+        composite_label = f"即時加權 ({composite_scope})"
+        lines.append(f"- {composite_label}：{comp_text}")
+        lines.append(f"- 交易中{composite_count}檔（權重{composite_weight_text}）")
+    lines.append(f"- 上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}")
+    return "\n".join(lines)
 
 def get_yahoo_data_text(symbol, title, emoji, precision=2):
     try:
