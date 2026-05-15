@@ -31,8 +31,30 @@ COUNTRY_ORDER = ["TW", "JP", "TSMC_FUT", "US", "HK"]
 TSMC_PROXY_SYMBOL = "TAIFEX:QFF1!"
 TSMC_PROXY_TARGETS = {"2330", "2330.TW"}
 TRADINGVIEW_DELAY_SECONDS = 900
-TSMC_NIGHT_FUTURES_START_MINUTES = 17 * 60 + 40
-TSMC_NIGHT_FUTURES_CLOSE_MINUTES = 5 * 60 + 15
+YAHOO_TWSE_DELAY_SECONDS = 20 * 60
+STALE_QUOTE_SECONDS = 5 * 60
+SESSION_GAP_BUFFER_SECONDS = 30 * 60
+TSMC_NIGHT_FUTURES_OFFICIAL_OPEN_MINUTES = 17 * 60 + 25
+TSMC_NIGHT_FUTURES_OFFICIAL_CLOSE_MINUTES = 5 * 60
+TW_REGULAR_OFFICIAL_OPEN_MINUTES = 9 * 60
+TW_REGULAR_OFFICIAL_CLOSE_MINUTES = 13 * 60 + 30
+TSMC_PROXY_CACHE_PATH = QUOTE_CACHE_DIR / "tsmc_qff_proxy.json"
+
+
+def _delayed_minutes(official_minutes, delay_seconds):
+    return official_minutes + delay_seconds // 60
+
+
+TSMC_NIGHT_FUTURES_START_MINUTES = _delayed_minutes(
+    TSMC_NIGHT_FUTURES_OFFICIAL_OPEN_MINUTES,
+    TRADINGVIEW_DELAY_SECONDS,
+)
+TSMC_NIGHT_FUTURES_CLOSE_MINUTES = _delayed_minutes(
+    TSMC_NIGHT_FUTURES_OFFICIAL_CLOSE_MINUTES,
+    TRADINGVIEW_DELAY_SECONDS,
+)
+TW_REGULAR_DATA_OPEN_MINUTES = _delayed_minutes(TW_REGULAR_OFFICIAL_OPEN_MINUTES, YAHOO_TWSE_DELAY_SECONDS)
+TW_REGULAR_DATA_CLOSE_MINUTES = _delayed_minutes(TW_REGULAR_OFFICIAL_CLOSE_MINUTES, YAHOO_TWSE_DELAY_SECONDS)
 
 
 def utc_now_iso():
@@ -53,10 +75,10 @@ def _country_scope_label(countries):
     return "".join(labels) or "--"
 
 
-def _tsmc_night_futures_session(now=None):
+def _tsmc_night_futures_collection_session(now=None):
     now = now or datetime.now(ZoneInfo("Asia/Taipei"))
     minutes = now.hour * 60 + now.minute
-    # TradingView is delayed, so start after delay headroom and keep final prints until 05:15.
+    # TradingView is delayed, so start after delay headroom and collect final prints until 05:15.
     if now.weekday() < 5 and minutes >= TSMC_NIGHT_FUTURES_START_MINUTES:
         return "FUT_NIGHT"
     if 1 <= now.weekday() <= 5 and minutes < 5 * 60:
@@ -66,12 +88,31 @@ def _tsmc_night_futures_session(now=None):
     return None
 
 
+def _tsmc_night_futures_session(now=None):
+    now = now or datetime.now(ZoneInfo("Asia/Taipei"))
+    collection_session = _tsmc_night_futures_collection_session(now)
+    if collection_session:
+        return collection_session
+    minutes = now.hour * 60 + now.minute
+    if 1 <= now.weekday() <= 5 and minutes < TW_REGULAR_DATA_OPEN_MINUTES:
+        return "FUT_NIGHT_CLOSE"
+    return None
+
+
+def _before_next_tw_regular_data_open(now=None):
+    now = now or datetime.now(ZoneInfo("Asia/Taipei"))
+    minutes = now.hour * 60 + now.minute
+    if now.weekday() < 5:
+        return minutes < TW_REGULAR_DATA_OPEN_MINUTES
+    return True
+
+
 def _is_tsmc_night_futures_session(now=None):
     return _tsmc_night_futures_session(now) is not None
 
 
 def _fetch_tsmc_night_futures_proxy(timeout=10, include_inactive=False):
-    proxy_session = _tsmc_night_futures_session()
+    proxy_session = _tsmc_night_futures_collection_session()
     if not proxy_session:
         return {
             "active": False,
@@ -103,7 +144,7 @@ def _fetch_tsmc_night_futures_proxy(timeout=10, include_inactive=False):
         if price is None:
             return None
         quote_time = datetime.now(timezone.utc) - timedelta(seconds=TRADINGVIEW_DELAY_SECONDS)
-        return {
+        proxy = {
             "active": True,
             "proxy_symbol": TSMC_PROXY_SYMBOL,
             "proxy_name": values[0] if len(values) > 0 else "QFF1!",
@@ -117,6 +158,8 @@ def _fetch_tsmc_night_futures_proxy(timeout=10, include_inactive=False):
             "quote_time": int(quote_time.timestamp()),
             "quote_time_utc": quote_time.isoformat().replace("+00:00", "Z"),
         }
+        _write_tsmc_proxy_cache(proxy)
+        return proxy
     except Exception as exc:
         return {
             "active": False,
@@ -180,6 +223,7 @@ def _tsmc_proxy_cache_status(has_target, proxy):
         "proxy_name",
         "price",
         "market_session",
+        "quote_time",
         "quote_time_utc",
         "delay_seconds",
         "update_mode",
@@ -187,7 +231,143 @@ def _tsmc_proxy_cache_status(has_target, proxy):
     ]
     status = {key: proxy.get(key) for key in keys if key in proxy}
     status["window_taipei"] = "17:40-05:15"
+    status["display_until_taipei"] = "09:15"
     return status
+
+
+def _previous_rows_by_symbol(previous_cache):
+    rows = {}
+    for row in (previous_cache or {}).get("holdings", []):
+        keys = [
+            row.get("yahoo_symbol"),
+            row.get("id"),
+        ]
+        for key in keys:
+            if key:
+                rows[str(key).upper()] = row
+    return rows
+
+
+def _delayed_exchange_quote_age_limit(country):
+    if str(country or "").upper() in {"TW", "JP", "HK"}:
+        return YAHOO_TWSE_DELAY_SECONDS + STALE_QUOTE_SECONDS
+    return None
+
+
+def _is_quote_time_age_stale(country, quote_time_utc):
+    limit = _delayed_exchange_quote_age_limit(country)
+    quote_dt = _parse_utc_timestamp(quote_time_utc)
+    if limit is None or not quote_dt:
+        return False
+    return datetime.now(timezone.utc) - quote_dt > timedelta(seconds=limit)
+
+
+def _is_stale_against_previous(row_key, quote_time_utc, previous_rows, previous_generated_utc):
+    previous = previous_rows.get(str(row_key or "").upper())
+    if not previous or not quote_time_utc:
+        return False
+    if previous.get("quote_time_utc") != quote_time_utc:
+        return False
+    previous_generated = _parse_utc_timestamp(previous_generated_utc)
+    if not previous_generated:
+        return False
+    return datetime.now(timezone.utc) - previous_generated >= timedelta(seconds=STALE_QUOTE_SECONDS)
+
+
+def _apply_stale_session_guard(session, country, row_key, quote_time_utc, previous_rows, previous_generated_utc):
+    if str(session or "").upper() != "REG":
+        return session
+    if str(country or "").upper() not in {"TW", "JP", "HK"}:
+        return session
+    if _is_quote_time_age_stale(country, quote_time_utc):
+        return "CLOSE"
+    if _is_stale_against_previous(row_key, quote_time_utc, previous_rows, previous_generated_utc):
+        return "CLOSE"
+    return session
+
+
+def _write_tsmc_proxy_cache(proxy):
+    if not proxy or not proxy.get("active"):
+        return
+    TSMC_PROXY_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with NamedTemporaryFile("w", encoding="utf-8", dir=TSMC_PROXY_CACHE_PATH.parent, delete=False) as tmp:
+        json.dump(proxy, tmp, ensure_ascii=False, indent=2)
+        tmp.write("\n")
+        tmp_path = Path(tmp.name)
+    os.replace(tmp_path, TSMC_PROXY_CACHE_PATH)
+
+
+def _read_tsmc_proxy_cache():
+    if not TSMC_PROXY_CACHE_PATH.exists():
+        return None
+    try:
+        return json.loads(TSMC_PROXY_CACHE_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _parse_utc_timestamp(value):
+    if not value:
+        return None
+    try:
+        text = str(value).replace("Z", "+00:00")
+        return datetime.fromisoformat(text).astimezone(timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def _proxy_status_from_cached_row(row):
+    proxy = row.get("proxy") or {}
+    if not proxy or row.get("price") is None:
+        return None
+    quote_time_utc = row.get("quote_time_utc")
+    quote_dt = _parse_utc_timestamp(quote_time_utc)
+    return {
+        "active": True,
+        "proxy_symbol": proxy.get("symbol") or TSMC_PROXY_SYMBOL,
+        "proxy_name": proxy.get("name") or "QFF1!",
+        "price": row.get("price"),
+        "volume": proxy.get("volume"),
+        "update_mode": proxy.get("update_mode"),
+        "delay_seconds": proxy.get("delay_seconds") or TRADINGVIEW_DELAY_SECONDS,
+        "market_session": "FUT_NIGHT_CLOSE",
+        "quote_time": int(quote_dt.timestamp()) if quote_dt else None,
+        "quote_time_utc": quote_time_utc,
+    }
+
+
+def _cached_tsmc_proxy_for_display(previous_cache, now=None):
+    now = now or datetime.now(ZoneInfo("Asia/Taipei"))
+    if _tsmc_night_futures_collection_session(now):
+        return None
+    if not _before_next_tw_regular_data_open(now):
+        return None
+    proxy = previous_cache.get("tsmc_proxy") if previous_cache else None
+    if not proxy or not proxy.get("active"):
+        for row in (previous_cache or {}).get("holdings", []):
+            if str(row.get("yahoo_symbol") or row.get("id") or "").upper() in TSMC_PROXY_TARGETS:
+                proxy = _proxy_status_from_cached_row(row)
+                break
+    if not proxy or not proxy.get("active"):
+        proxy = _read_tsmc_proxy_cache()
+    if not proxy or not proxy.get("active") or proxy.get("price") is None:
+        return None
+
+    quote_dt = _parse_utc_timestamp(proxy.get("quote_time_utc"))
+    if not quote_dt:
+        return None
+    quote_taipei = quote_dt.astimezone(ZoneInfo("Asia/Taipei"))
+    if quote_taipei > now:
+        return None
+    if now - quote_taipei > timedelta(days=4):
+        return None
+
+    cached_proxy = dict(proxy)
+    cached_proxy["active"] = True
+    cached_proxy["market_session"] = "FUT_NIGHT_CLOSE"
+    cached_proxy["quote_time"] = cached_proxy.get("quote_time") or int(quote_dt.timestamp())
+    cached_proxy["reason"] = "cached_until_tw_open"
+    return cached_proxy
 
 
 def load_latest_holdings(ticker):
@@ -345,21 +525,26 @@ def _exchange_session(country):
     if country == "TW":
         now = datetime.now(ZoneInfo("Asia/Taipei"))
         minutes = now.hour * 60 + now.minute
-        if now.weekday() < 5 and 9 * 60 <= minutes < 13 * 60 + 30:
+        close_buffer_minutes = SESSION_GAP_BUFFER_SECONDS // 60
+        if now.weekday() < 5 and TW_REGULAR_DATA_OPEN_MINUTES <= minutes < TW_REGULAR_DATA_CLOSE_MINUTES + close_buffer_minutes:
             return "REG"
         return "CLOSE"
 
     if country == "JP":
         now = datetime.now(ZoneInfo("Asia/Tokyo"))
         minutes = now.hour * 60 + now.minute
-        if now.weekday() < 5 and 9 * 60 <= minutes < 15 * 60 + 30:
+        yahoo_delay_minutes = YAHOO_TWSE_DELAY_SECONDS // 60
+        close_buffer_minutes = SESSION_GAP_BUFFER_SECONDS // 60
+        if now.weekday() < 5 and 9 * 60 + yahoo_delay_minutes <= minutes < 15 * 60 + 30 + yahoo_delay_minutes + close_buffer_minutes:
             return "REG"
         return "CLOSE"
 
     if country == "HK":
         now = datetime.now(ZoneInfo("Asia/Hong_Kong"))
         minutes = now.hour * 60 + now.minute
-        if now.weekday() < 5 and 9 * 60 + 30 <= minutes < 16 * 60:
+        yahoo_delay_minutes = YAHOO_TWSE_DELAY_SECONDS // 60
+        close_buffer_minutes = SESSION_GAP_BUFFER_SECONDS // 60
+        if now.weekday() < 5 and 9 * 60 + 30 + yahoo_delay_minutes <= minutes < 16 * 60 + yahoo_delay_minutes + close_buffer_minutes:
             return "REG"
         return "CLOSE"
 
@@ -506,9 +691,11 @@ def fetch_yahoo_quotes(symbol_country_pairs, max_workers=12):
     return quotes
 
 
-def build_cache(ticker):
+def build_cache(ticker, previous_cache=None):
     holdings_date, latest_data, holdings = load_latest_holdings(ticker)
     etf_refresh_utc = load_etf_refresh_time(ticker)
+    previous_rows = _previous_rows_by_symbol(previous_cache)
+    previous_generated_utc = (previous_cache or {}).get("generated_utc")
 
     normalized = []
     for holding in holdings:
@@ -522,6 +709,9 @@ def build_cache(ticker):
     tsmc_proxy = None
     if has_tsmc_proxy_target:
         tsmc_proxy = _fetch_tsmc_night_futures_proxy(include_inactive=True)
+        cached_proxy = _cached_tsmc_proxy_for_display(previous_cache)
+        if cached_proxy:
+            tsmc_proxy = cached_proxy
 
     rows = []
     valid_quote_times = []
@@ -551,6 +741,14 @@ def build_cache(ticker):
             if quote_time:
                 quote_time_utc = datetime.fromtimestamp(quote_time, timezone.utc).isoformat().replace("+00:00", "Z")
                 valid_quote_times.append(quote_time_utc)
+            market_session = _apply_stale_session_guard(
+                market_session,
+                country,
+                quote.get("symbol", yahoo_symbol),
+                quote_time_utc,
+                previous_rows,
+                previous_generated_utc,
+            )
             if day_change_pct is not None:
                 status = "ok"
                 if day_change_pct > 0:
@@ -649,7 +847,13 @@ def monitor(ticker, interval):
     cache_path = QUOTE_CACHE_DIR / f"etf_{ticker}_quotes.json"
     while True:
         try:
-            cache = build_cache(ticker)
+            previous_cache = None
+            if cache_path.exists():
+                try:
+                    previous_cache = json.loads(cache_path.read_text(encoding="utf-8"))
+                except Exception:
+                    previous_cache = None
+            cache = build_cache(ticker, previous_cache=previous_cache)
             atomic_write_json(cache_path, cache)
             counts = cache["counts"]
             print(

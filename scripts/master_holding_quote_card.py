@@ -15,6 +15,7 @@ if str(ROOT_DIR) not in sys.path:
 from scripts.monitor_etf_quotes import (
     TSMC_PROXY_TARGETS,
     _apply_tsmc_night_futures_proxy,
+    _cached_tsmc_proxy_for_display,
     _fetch_tsmc_night_futures_proxy,
     _tsmc_proxy_cache_status,
     fetch_yahoo_quotes,
@@ -223,6 +224,9 @@ def enrich_positions_with_quotes(positions):
     tsmc_proxy = None
     if has_tsmc_proxy_target:
         tsmc_proxy = _fetch_tsmc_night_futures_proxy(include_inactive=True)
+        cached_proxy = _cached_tsmc_proxy_for_display(None)
+        if cached_proxy:
+            tsmc_proxy = cached_proxy
     for item in rows:
         quote = quotes.get(item.get("symbol")) or {}
         quote = _apply_tsmc_night_futures_proxy(quote, item.get("symbol"), tsmc_proxy)

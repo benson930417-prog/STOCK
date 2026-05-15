@@ -268,21 +268,29 @@ def _session_text(session):
     }.get(session, INK)
 
 
-def _session_label(session):
-    return {
+def _session_label(session, country=None):
+    session = str(session or "").upper()
+    country = str(country or "").upper()
+    if country in {"TW", "JP", "HK"}:
+        if session == "REG":
+            return "盤中"
+        if session in {"CLOSE", "POST_CLOSE"}:
+            return "已收盤"
+    labels = {
         "PRE": "盤前",
         "REG": "盤中",
         "POST": "盤後",
-        "FUT_NIGHT": "期夜盤中",
-        "FUT_NIGHT_CLOSE": "期夜盤收",
+        "FUT_NIGHT": "夜盤中",
+        "FUT_NIGHT_CLOSE": "夜盤收",
         "POST_CLOSE": "盤後收",
-        "CLOSE": "收盤",
-    }.get(session, "--")
+        "CLOSE": "盤後收",
+    }
+    return labels.get(session, "--")
 
 
-def _draw_session(draw, x, y, session, pill_w=112, pill_h=46, font=None):
+def _draw_session(draw, x, y, session, country=None, pill_w=112, pill_h=46, font=None):
     session = session or "--"
-    label = _session_label(session)
+    label = _session_label(session, country)
     font = font or FONTS["small_bold"]
     _round_rect(draw, (x, y, x + pill_w, y + pill_h), pill_h // 2, _session_fill(session), _session_outline(session), 2)
     _text(draw, (x + pill_w / 2, y + pill_h / 2), label, font, _session_text(session), anchor="mm")
@@ -331,7 +339,16 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     _text(draw, (name_x, y + 54), _fit_text(draw, ticker, FONTS["small"], NAME_COL_W - 18), FONTS["small"], INK)
     _text(draw, (weight_x, y + 21), weight_text, FONTS["body_bold"], INK)
     _text(draw, (update_x + UPDATE_COL_W - 8, y + 21), age, FONTS["body_bold"], INK, anchor="ra")
-    _draw_session(draw, status_x + STATUS_COL_W - 166, y + 12, session, pill_w=166, pill_h=58, font=FONTS["body_bold"])
+    _draw_session(
+        draw,
+        status_x + STATUS_COL_W - 166,
+        y + 12,
+        session,
+        country,
+        pill_w=166,
+        pill_h=58,
+        font=FONTS["body_bold"],
+    )
     bar_x = name_x
     bar_y = y + 90
     bar_w = w - (bar_x - x)
