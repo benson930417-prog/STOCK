@@ -70,10 +70,13 @@ def _is_tsmc_night_futures_session(now=None):
     return _tsmc_night_futures_session(now) is not None
 
 
-def _fetch_tsmc_night_futures_proxy(timeout=10):
+def _fetch_tsmc_night_futures_proxy(timeout=10, include_inactive=False):
     proxy_session = _tsmc_night_futures_session()
     if not proxy_session:
-        return None
+        return {
+            "active": False,
+            "reason": "outside_tsmc_night_futures_window",
+        } if include_inactive else None
     payload = {
         "symbols": {"tickers": [TSMC_PROXY_SYMBOL], "query": {"types": []}},
         "columns": [
@@ -101,6 +104,7 @@ def _fetch_tsmc_night_futures_proxy(timeout=10):
             return None
         quote_time = datetime.now(timezone.utc) - timedelta(seconds=TRADINGVIEW_DELAY_SECONDS)
         return {
+            "active": True,
             "proxy_symbol": TSMC_PROXY_SYMBOL,
             "proxy_name": values[0] if len(values) > 0 else "QFF1!",
             "price": float(price),
@@ -113,12 +117,16 @@ def _fetch_tsmc_night_futures_proxy(timeout=10):
             "quote_time": int(quote_time.timestamp()),
             "quote_time_utc": quote_time.isoformat().replace("+00:00", "Z"),
         }
-    except Exception:
-        return None
+    except Exception as exc:
+        return {
+            "active": False,
+            "reason": "fetch_failed",
+            "error": str(exc),
+        } if include_inactive else None
 
 
 def _apply_tsmc_night_futures_proxy(quote, yahoo_symbol, proxy):
-    if not proxy or not quote or quote.get("error"):
+    if not proxy or not proxy.get("active") or not quote or quote.get("error"):
         return quote
     if str(yahoo_symbol or "").upper() not in TSMC_PROXY_TARGETS:
         return quote
@@ -149,6 +157,37 @@ def _apply_tsmc_night_futures_proxy(quote, yahoo_symbol, proxy):
         "update_mode": proxy.get("update_mode"),
     }
     return proxied
+
+
+def _tsmc_proxy_cache_status(has_target, proxy):
+    if not has_target:
+        return {
+            "active": False,
+            "reason": "no_2330_holding",
+            "window_taipei": "17:40-05:15",
+        }
+    if not proxy:
+        return {
+            "active": False,
+            "reason": "not_fetched",
+            "window_taipei": "17:40-05:15",
+        }
+    keys = [
+        "active",
+        "reason",
+        "error",
+        "proxy_symbol",
+        "proxy_name",
+        "price",
+        "market_session",
+        "quote_time_utc",
+        "delay_seconds",
+        "update_mode",
+        "volume",
+    ]
+    status = {key: proxy.get(key) for key in keys if key in proxy}
+    status["window_taipei"] = "17:40-05:15"
+    return status
 
 
 def load_latest_holdings(ticker):
@@ -477,9 +516,12 @@ def build_cache(ticker):
         normalized.append((holding, yahoo_symbol, country))
 
     quotes = fetch_yahoo_quotes([(item[1], item[2]) for item in normalized])
+    has_tsmc_proxy_target = any(
+        str(yahoo_symbol or "").upper() in TSMC_PROXY_TARGETS for _, yahoo_symbol, _ in normalized
+    )
     tsmc_proxy = None
-    if any(str(yahoo_symbol or "").upper() in TSMC_PROXY_TARGETS for _, yahoo_symbol, _ in normalized):
-        tsmc_proxy = _fetch_tsmc_night_futures_proxy()
+    if has_tsmc_proxy_target:
+        tsmc_proxy = _fetch_tsmc_night_futures_proxy(include_inactive=True)
 
     rows = []
     valid_quote_times = []
@@ -574,6 +616,7 @@ def build_cache(ticker):
         "holdings_date": holdings_date,
         "generated_utc": utc_now_iso(),
         "etf_refresh_utc": etf_refresh_utc,
+        "tsmc_proxy": _tsmc_proxy_cache_status(has_tsmc_proxy_target, tsmc_proxy),
         "newest_quote_utc": max(valid_quote_times) if valid_quote_times else None,
         "oldest_quote_utc": min(valid_quote_times) if valid_quote_times else None,
         "composite_move_pct": composite_move_pct,

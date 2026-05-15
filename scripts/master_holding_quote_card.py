@@ -16,6 +16,7 @@ from scripts.monitor_etf_quotes import (
     TSMC_PROXY_TARGETS,
     _apply_tsmc_night_futures_proxy,
     _fetch_tsmc_night_futures_proxy,
+    _tsmc_proxy_cache_status,
     fetch_yahoo_quotes,
 )
 from scripts.generate_quote_card import generate_quote_card_from_cache
@@ -218,9 +219,10 @@ def enrich_positions_with_quotes(positions):
             symbols.append((symbol, country))
 
     quotes = fetch_yahoo_quotes(symbols, max_workers=10)
+    has_tsmc_proxy_target = any(str(symbol or "").upper() in TSMC_PROXY_TARGETS for symbol, _ in symbols)
     tsmc_proxy = None
-    if any(str(symbol or "").upper() in TSMC_PROXY_TARGETS for symbol, _ in symbols):
-        tsmc_proxy = _fetch_tsmc_night_futures_proxy()
+    if has_tsmc_proxy_target:
+        tsmc_proxy = _fetch_tsmc_night_futures_proxy(include_inactive=True)
     for item in rows:
         quote = quotes.get(item.get("symbol")) or {}
         quote = _apply_tsmc_night_futures_proxy(quote, item.get("symbol"), tsmc_proxy)
@@ -250,6 +252,7 @@ def enrich_positions_with_quotes(positions):
     out = pd.DataFrame(rows)
     if "market_value" in out and out["market_value"].dropna().sum():
         out["weight_pct"] = out["market_value"] / out["market_value"].sum() * 100.0
+    out.attrs["tsmc_proxy"] = _tsmc_proxy_cache_status(has_tsmc_proxy_target, tsmc_proxy)
     return out
 
 
@@ -390,6 +393,7 @@ def load_master_snapshot():
         "unrealized_pct": unrealized_pct,
         "holding_count": int(len(positions)),
         "exposures": exposures,
+        "tsmc_proxy": positions.attrs.get("tsmc_proxy"),
     }
 
 
@@ -450,6 +454,7 @@ def _master_quote_cache(snapshot, rows):
         "holdings_date": datetime.now(timezone.utc).date().isoformat(),
         "generated_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "etf_refresh_utc": None,
+        "tsmc_proxy": snapshot.get("tsmc_proxy"),
         "newest_quote_utc": max(valid_quote_times) if valid_quote_times else None,
         "oldest_quote_utc": min(valid_quote_times) if valid_quote_times else None,
         "composite_move_pct": weighted_sum / weight_sum if weight_sum else None,
