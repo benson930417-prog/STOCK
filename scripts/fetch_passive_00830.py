@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from openpyxl import load_workbook
 from playwright.sync_api import sync_playwright
@@ -12,6 +13,7 @@ DATA_DIR = "data"
 HISTORY_FILE = os.path.join(DATA_DIR, "passive_00830_history.json")
 LOG_FILE = os.path.join(DATA_DIR, "passive_00830_log.json")
 URL = "https://www.cathaysite.com.tw/ETF/detail/EBO?tab=etf3"
+FALLBACK_URL = "https://www.etfinfo.tw/etf/00830/holdings"
 
 
 def _num(value):
@@ -47,6 +49,8 @@ def _write_json(path, payload):
 
 def _extract_page_meta(page):
     text = page.locator("body").inner_text(timeout=10000)
+    if "Access Denied" in text or "edgesuite.net" in text:
+        raise PermissionError("Cathay blocked this host with Access Denied")
     date_key = _date_to_key(text)
 
     def value_after(label):
@@ -60,6 +64,13 @@ def _extract_page_meta(page):
         "closing_price": value_after("收盤價"),
         "source_url": URL,
     }
+
+
+def _fallback_date_key(text):
+    try:
+        return _date_to_key(text)
+    except ValueError:
+        return datetime.now(timezone.utc).astimezone(ZoneInfo("Asia/Taipei")).date().isoformat()
 
 
 def _download_excel(page):
@@ -138,6 +149,86 @@ def _parse_excel(path):
     return holdings
 
 
+def _extract_etfinfo_holdings(page):
+    text = page.locator("body").inner_text(timeout=15000)
+    rows = page.evaluate(
+        """() => {
+            const rows = [];
+            for (const tr of document.querySelectorAll('table tr')) {
+                const cells = [...tr.querySelectorAll('th,td')]
+                    .map(cell => cell.innerText.trim())
+                    .filter(Boolean);
+                if (cells.length >= 4) rows.push(cells);
+            }
+            return rows;
+        }"""
+    )
+
+    holdings = []
+    for values in rows:
+        joined = " ".join(values)
+        if "代號" in joined or "名稱" in joined:
+            continue
+
+        code = None
+        code_index = None
+        for index, value in enumerate(values):
+            candidate = value.strip().upper().replace(" ", "")
+            if re.match(r"^[A-Z]{1,6}(?:\.[A-Z]{1,4})?$", candidate):
+                code = candidate
+                code_index = index
+                break
+        if not code:
+            continue
+
+        weight = None
+        for value in reversed(values):
+            number = _num(value)
+            if number is not None and 0 < number <= 100:
+                weight = float(number)
+                break
+        if weight is None:
+            continue
+
+        shares = None
+        for value in values:
+            number = _num(value)
+            if number is not None and number > 100:
+                shares = int(number)
+                break
+        if shares is None:
+            shares = 0
+
+        name = values[code_index + 1] if code_index is not None and code_index + 1 < len(values) else code
+        if "." not in code and not code.endswith("US"):
+            code = f"{code}.US"
+        holdings.append({
+            "id": code,
+            "name": name,
+            "weight_pct": weight,
+            "shares": shares,
+        })
+
+    deduped = []
+    seen = set()
+    for row in holdings:
+        if row["id"] in seen:
+            continue
+        seen.add(row["id"])
+        deduped.append(row)
+
+    if len(deduped) < 10:
+        raise ValueError(f"Only parsed {len(deduped)} fallback 00830 holdings from ETFInfo")
+    return _fallback_date_key(text), {
+        "fund_size": None,
+        "nav": None,
+        "outstanding_units": None,
+        "closing_price": None,
+        "source_url": FALLBACK_URL,
+        "source_note": "Cathay page was blocked; holdings parsed from ETFInfo fallback.",
+    }, deduped
+
+
 def fetch_and_update_00830():
     now_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     history = _load_json(HISTORY_FILE, {})
@@ -154,11 +245,17 @@ def fetch_and_update_00830():
             locale="zh-TW",
             timezone_id="Asia/Taipei",
         )
-        page.goto(URL, wait_until="networkidle", timeout=60000)
-        page.wait_for_timeout(1000)
-        date_key, meta = _extract_page_meta(page)
-        excel_path = _download_excel(page)
-        holdings = _parse_excel(excel_path)
+        try:
+            page.goto(URL, wait_until="networkidle", timeout=60000)
+            page.wait_for_timeout(1000)
+            date_key, meta = _extract_page_meta(page)
+            excel_path = _download_excel(page)
+            holdings = _parse_excel(excel_path)
+        except PermissionError as exc:
+            print(f"Cathay blocked 00830 fetch: {exc}. Falling back to ETFInfo.")
+            page.goto(FALLBACK_URL, wait_until="networkidle", timeout=60000)
+            page.wait_for_timeout(1000)
+            date_key, meta, holdings = _extract_etfinfo_holdings(page)
         browser.close()
 
     payload = {
