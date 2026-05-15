@@ -293,10 +293,26 @@ def _normalize_underlying_key(holding_id, country=None):
     parts = raw.split()
     symbol = parts[0] if parts else raw
     market = parts[1] if len(parts) > 1 else ""
+    for suffix in [".US", ".TW", ".JP", ".HK", ".T"]:
+        if symbol.endswith(suffix):
+            symbol = symbol[:-len(suffix)]
+            market = market or suffix[1:]
+            break
     inferred_country = country or None
     if not inferred_country:
-        if market in {"US", "JP", "HK", "TW", "TWO"}:
+        if market in {"US", "JP", "HK", "TW", "T", "TWO"}:
+            if market == "T":
+                inferred_country = "JP"
+            else:
+                inferred_country = "TW" if market == "TWO" else market
+        elif raw.endswith(".TW") or raw.endswith(".TWO"):
             inferred_country = "TW" if market == "TWO" else market
+        elif raw.endswith(".T"):
+            inferred_country = "JP"
+        elif raw.endswith(".HK"):
+            inferred_country = "HK"
+        elif raw.endswith(".US"):
+            inferred_country = "US"
         elif symbol.isdigit():
             inferred_country = "TW"
         else:
