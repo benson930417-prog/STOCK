@@ -388,7 +388,8 @@ def load_master_snapshot():
     total_cost = float(positions["cost"].sum()) if not positions.empty else 0.0
     unrealized = total_liq - total_cost
     unrealized_pct = unrealized / total_cost * 100.0 if total_cost else 0.0
-    exposures = build_expanded_exposure(positions)[:50]
+    all_exposures = build_expanded_exposure(positions)
+    exposures = all_exposures[:50]
     return {
         "positions": positions,
         "total_market": total_market,
@@ -396,7 +397,7 @@ def load_master_snapshot():
         "total_cost": total_cost,
         "unrealized": unrealized,
         "unrealized_pct": unrealized_pct,
-        "holding_count": int(len(positions)),
+        "holding_count": len(all_exposures),
         "exposures": exposures,
         "tsmc_proxy": positions.attrs.get("tsmc_proxy"),
         "tsmc_data_mode": positions.attrs.get("tsmc_data_mode"),
@@ -409,7 +410,7 @@ def build_master_text(snapshot, quote_cache=None):
         f"目前淨值(扣費稅)：{_fmt_money(snapshot['total_liq'])}",
         f"總成本：{_fmt_money(snapshot['total_cost'])}",
         f"未實損益：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:+.2f}%)",
-        f"ETF庫存：{snapshot['holding_count']} 檔"
+        f"展開後庫存：{snapshot['holding_count']} 檔"
     ]
     
     if quote_cache:
@@ -466,15 +467,28 @@ def _master_quote_cache(snapshot, rows):
             "proxy": row.get("proxy"),
             "status": "ok" if change is not None and not pd.isna(change) else "missing",
         })
+    unrealized_text = f"{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:+.2f}%)"
+    if snapshot["unrealized"] > 0:
+        unrealized_color = "RED"
+    elif snapshot["unrealized"] < 0:
+        unrealized_color = "GREEN"
+    else:
+        unrealized_color = "MUTED"
+
     return {
         "ticker": "MASTER",
         "display_ticker": "吳大師",
         "display_name": "展開持股前50大",
         "subtitle": (
             f"淨值 {_fmt_money(snapshot['total_liq'])}｜"
-            f"未實 {_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:+.2f}%)｜"
-            f"持股 {snapshot['holding_count']} 檔"
+            f"未實 {unrealized_text}｜"
+            f"展開後 {snapshot['holding_count']} 檔"
         ),
+        "subtitle_parts": [
+            {"text": f"淨值 {_fmt_money(snapshot['total_liq'])}｜未實 ", "color": "MUTED"},
+            {"text": unrealized_text, "color": unrealized_color},
+            {"text": f"｜展開後 {snapshot['holding_count']} 檔", "color": "MUTED"},
+        ],
         "sort_note": "依展開後權重排序",
         "holdings_date": datetime.now(timezone.utc).date().isoformat(),
         "generated_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),

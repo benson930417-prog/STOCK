@@ -385,7 +385,17 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     title = cache.get("display_ticker") or ticker
     _text(draw, (82, 68), title, FONTS["title"], INK)
     _text(draw, (82, 140), etf_name, FONTS["title_small"], INK)
-    _text(draw, (84, 218), cache.get("subtitle") or f"持股日期：{cache.get('holdings_date', '----')}", FONTS["body_bold"], MUTED)
+    if cache.get("subtitle_parts"):
+        cx = 84
+        for part in cache["subtitle_parts"]:
+            text = part["text"]
+            color_name = part.get("color", "MUTED")
+            color = RED if color_name == "RED" else (GREEN if color_name == "GREEN" else MUTED)
+            _text(draw, (cx, 218), text, FONTS["body_bold"], color)
+            w, _ = _measure(draw, text, FONTS["body_bold"])
+            cx += w
+    else:
+        _text(draw, (84, 218), cache.get("subtitle") or f"持股日期：{cache.get('holdings_date', '----')}", FONTS["body_bold"], MUTED)
     _text(draw, (width - 92, 76), f"{page_no}/{total_pages}", FONTS["title"], MUTED, anchor="ra")
     counts = cache.get("counts", {})
     up = counts.get("up", 0)
