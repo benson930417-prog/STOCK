@@ -85,6 +85,7 @@ def load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
 
 
 def draw_rounded_rect(draw, x0, y0, x1, y1, r, fill):
+    r = min(r, (x1 - x0) // 2, (y1 - y0) // 2)
     draw.rectangle([x0 + r, y0, x1 - r, y1], fill=fill)
     draw.rectangle([x0, y0 + r, x1, y1 - r], fill=fill)
     for cx, cy in [(x0 + r, y0 + r), (x1 - r, y0 + r), (x0 + r, y1 - r), (x1 - r, y1 - r)]:
