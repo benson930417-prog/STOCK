@@ -306,7 +306,7 @@ def get_yahoo_data_dict(symbol, precision=2):
 
 def get_oil_price():
     parts = []
-    parts.append(get_yahoo_data_text('CL=F', '西德州輕原油', '🛢️', precision=2))
+    parts.append(get_yahoo_data_text('CL=F', '輕原油', '🛢️', precision=2))
     parts.append(get_yahoo_data_text('BZ=F', '布蘭特原油', '🛢️', precision=2))
     return "\n\n".join(parts)
 
