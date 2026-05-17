@@ -1,7 +1,7 @@
 from flask import Flask, request, send_from_directory
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent, JoinEvent, ImageSendMessage
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent, JoinEvent, ImageSendMessage, PostbackEvent
 import time
 import os
 import sys
@@ -503,6 +503,23 @@ def handle_message(event):
         except Exception as e:
             print("Forex Chart generation failed:", e)
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_msg))
+    elif user_msg.lower() == "admin":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=(
+                "🔑 Admin 指令清單\n"
+                "━━━━━━━━━━━━━━\n\n"
+                "📊 一般隱藏指令\n"
+                "• id — 查詢 LINE User / Group ID\n\n"
+                "📢 管理員廣播（需手動輸入）\n"
+                "• 操作日報 981 — 重新渲染並廣播 00981A 操作日報\n"
+                "• 操作日報 997 — 重新渲染並廣播 00997A 操作日報\n\n"
+                "🥚 彩蛋\n"
+                "• 欸嘿 — ( ͡° ͜ʖ ͡°)\n\n"
+                "ℹ️ 以上指令均需手動輸入，不在選單中顯示。"
+            ))
+        )
+
     elif user_msg.lower() == "id":
         reply_parts = [f"User ID: {event.source.user_id}"]
         if event.source.type == "group":
@@ -531,6 +548,11 @@ def handle_follow(event):
         event.reply_token,
         TextSendMessage(text="歡迎加入！🤖\n請在對話框輸入「油價」、「匯率」或「債券」來隨時查詢最新報價，或輸入「id」來取得您的 LINE User ID 與群組 ID。")
     )
+
+@line_handler.add(PostbackEvent)
+def handle_postback(event):
+    # Rich menu page-switch events — no action needed, switch happens client-side
+    pass
 
 @line_handler.add(JoinEvent)
 def handle_join(event):
