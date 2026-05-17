@@ -258,17 +258,19 @@ def get_yahoo_data_text(symbol, title, emoji, precision=2):
                 
                 return f"{label} {direction_emoji}{sign}{change_pct:.2f}%"
 
+            currency_zh = {"USD": "美元", "TWD": "台幣", "CHF": "瑞郎", "JPY": "日圓",
+                           "GBP": "英鎊", "EUR": "歐元", "HKD": "港幣"}.get(currency, currency)
             price_str = f"{price:.{precision}f}"
             lines = [
                 f"{emoji} {title}",
                 f"──────────",
-                f"🕒 最新: {price_str} {currency}",
+                f"🕒 最新報價：{price_str} {currency_zh}",
                 f"",
-                f"📊 近期漲跌幅:",
-                get_change_str(1, "1日:"),
-                get_change_str(5, "1週:"),
-                get_change_str(21, "1月:"),
-                get_change_str(len(valid_data)-1, "6月:")
+                f"📊 近期漲跌幅：",
+                get_change_str(1,  "1日："),
+                get_change_str(5,  "1週："),
+                get_change_str(21, "1月："),
+                get_change_str(len(valid_data)-1, "6月："),
             ]
             
             return "\n".join(lines)
@@ -304,12 +306,12 @@ def get_yahoo_data_dict(symbol, precision=2):
 
 def get_oil_price():
     parts = []
-    parts.append(get_yahoo_data_text('CL=F', 'WTI 輕原油', '🛢️', precision=2))
+    parts.append(get_yahoo_data_text('CL=F', '西德州輕原油', '🛢️', precision=2))
     parts.append(get_yahoo_data_text('BZ=F', '布蘭特原油', '🛢️', precision=2))
     return "\n\n".join(parts)
 
 def get_10yf_price():
-    return get_yahoo_data_text('^TNX', '10年期公債殖利率', '📈', precision=3)
+    return get_yahoo_data_text('^TNX', '美國10年期公債殖利率', '📈', precision=3)
 
 def get_exchange_rates():
     parts = []
@@ -439,7 +441,7 @@ def handle_message(event):
                 timeout=20,
             )
             res.raise_for_status()
-            status_text = "已重新渲染、推送 GitHub 並廣播。" if pushed else "圖片無變更，已用 GitHub 最新版本廣播。"
+            status_text = "已重新渲染並廣播。" if pushed else "圖片無變更，已廣播最新版本。"
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{ticker} 操作日報{status_text}"))
         except Exception as e:
             print("ETF operation report broadcast failed:", e)
@@ -507,10 +509,10 @@ def handle_message(event):
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=(
-                "🔑 Admin 指令清單\n"
+                "🔑 隱藏指令清單\n"
                 "━━━━━━━━━━━━━━\n\n"
                 "📊 一般隱藏指令\n"
-                "• id — 查詢 LINE User / Group ID\n\n"
+                "• id — 查詢 LINE 使用者 ID 及群組 ID\n\n"
                 "📢 管理員廣播（需手動輸入）\n"
                 "• 操作日報 981 — 重新渲染並廣播 00981A 操作日報\n"
                 "• 操作日報 997 — 重新渲染並廣播 00997A 操作日報\n\n"
@@ -521,11 +523,11 @@ def handle_message(event):
         )
 
     elif user_msg.lower() == "id":
-        reply_parts = [f"User ID: {event.source.user_id}"]
+        reply_parts = [f"使用者 ID：{event.source.user_id}"]
         if event.source.type == "group":
-            reply_parts.append(f"Group ID: {event.source.group_id}")
+            reply_parts.append(f"群組 ID：{event.source.group_id}")
         elif event.source.type == "room":
-            reply_parts.append(f"Room ID: {event.source.room_id}")
+            reply_parts.append(f"聊天室 ID：{event.source.room_id}")
             
         line_bot_api.reply_message(
             event.reply_token,
@@ -539,14 +541,25 @@ def handle_message(event):
     else:
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="可用關鍵字：\n油價：查詢 WTI 與 Brent 原油價格\n匯率：查詢美元兌台幣、瑞郎、日圓\n債券：查詢美國 10 年期公債殖利率\n981：查詢 00981A 持股即時表\n997：查詢 00997A 持股即時表\n0050：查詢 0050 持股即時表\n830：查詢 00830 持股即時表\n吳大師：查詢目前投資組合與展開持股\nid：查詢 LINE 使用者或群組 ID")
+            TextSendMessage(text=(
+            "可用關鍵字：\n"
+            "• 油價 — 西德州輕原油與布蘭特原油報價\n"
+            "• 匯率 — 美元兌台幣、瑞郎、日圓\n"
+            "• 債券 — 美國10年期公債殖利率\n"
+            "• 981 — 00981A 持股即時表\n"
+            "• 997 — 00997A 持股即時表\n"
+            "• 0050 — 元大台灣50 持股即時表\n"
+            "• 830 — 00830 持股即時表\n"
+            "• 吳大師 — 投資組合與展開持股\n"
+            "• id — 取得使用者或群組 ID"
+        ))
         )
 
 @line_handler.add(FollowEvent)
 def handle_follow(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="歡迎加入！🤖\n請在對話框輸入「油價」、「匯率」或「債券」來隨時查詢最新報價，或輸入「id」來取得您的 LINE User ID 與群組 ID。")
+        TextSendMessage(text="歡迎加入！🤖\n請點選下方選單查詢報價與財經資訊，或直接在對話框輸入關鍵字。\n輸入「id」可取得您的 LINE 使用者 ID 與群組 ID。")
     )
 
 @line_handler.add(PostbackEvent)
@@ -558,7 +571,7 @@ def handle_postback(event):
 def handle_join(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="大家好！🤖\n我已經加入這個群組了。輸入「油價」、「匯率」或「債券」來隨時查詢最新報價，輸入「id」來取得目前的使用者與群組 ID。")
+        TextSendMessage(text="大家好！🤖\n我已加入這個群組。請點選下方選單查詢報價與財經資訊，或直接輸入關鍵字。\n輸入「id」可取得目前的使用者 ID 與群組 ID。")
     )
 
 # Local deployment entrypoint
