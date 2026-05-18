@@ -1247,5 +1247,322 @@
         "shares": 9067
       }
     ]
+  },
+  "2026-05-15": {
+    "date": "2026-05-15",
+    "meta": {
+      "fund_size": 12308221681.0,
+      "nav": 12.3,
+      "closing_price": 12.369999885559082,
+      "closing_price_date": "2026-05-15"
+    },
+    "holdings": [
+      {
+        "id": "STX US",
+        "name": "希捷科技控股公開有限公司",
+        "weight_pct": 6.11,
+        "shares": 29967
+      },
+      {
+        "id": "WDC US",
+        "name": "威騰電子公司",
+        "weight_pct": 5.8,
+        "shares": 46940
+      },
+      {
+        "id": "MU US",
+        "name": "美光科技公司",
+        "weight_pct": 5.61,
+        "shares": 30231
+      },
+      {
+        "id": "LITE US",
+        "name": "魯門特姆控股公司",
+        "weight_pct": 5.01,
+        "shares": 20155
+      },
+      {
+        "id": "GOOGL US",
+        "name": "ALPHABET INC-CL A",
+        "weight_pct": 4.78,
+        "shares": 47024
+      },
+      {
+        "id": "SNDK US",
+        "name": "晟碟公司（德拉瓦州）",
+        "weight_pct": 4.2,
+        "shares": 11652
+      },
+      {
+        "id": "4062 JP",
+        "name": "揖斐電有限公司",
+        "weight_pct": 3.44,
+        "shares": 135868
+      },
+      {
+        "id": "AMD US",
+        "name": "超微半導體公司",
+        "weight_pct": 3.24,
+        "shares": 29807
+      },
+      {
+        "id": "CIEN US",
+        "name": "喜雅納公司",
+        "weight_pct": 3.0,
+        "shares": 21093
+      },
+      {
+        "id": "NVDA US",
+        "name": "輝達公司",
+        "weight_pct": 2.99,
+        "shares": 51763
+      },
+      {
+        "id": "LRCX US",
+        "name": "科林研發股份有限公司",
+        "weight_pct": 2.78,
+        "shares": 38116
+      },
+      {
+        "id": "AVGO US",
+        "name": "博通公司",
+        "weight_pct": 2.5,
+        "shares": 22928
+      },
+      {
+        "id": "2330",
+        "name": "台積電",
+        "weight_pct": 2.48,
+        "shares": 135000
+      },
+      {
+        "id": "TER US",
+        "name": "泰瑞達公司",
+        "weight_pct": 2.45,
+        "shares": 28257
+      },
+      {
+        "id": "GLW US",
+        "name": "康寧公司",
+        "weight_pct": 2.44,
+        "shares": 49715
+      },
+      {
+        "id": "2308",
+        "name": "台達電",
+        "weight_pct": 2.38,
+        "shares": 141000
+      },
+      {
+        "id": "COHR US",
+        "name": "連貫公司",
+        "weight_pct": 2.34,
+        "shares": 23886
+      },
+      {
+        "id": "2345",
+        "name": "智邦",
+        "weight_pct": 2.2,
+        "shares": 108000
+      },
+      {
+        "id": "2383",
+        "name": "台光電",
+        "weight_pct": 2.14,
+        "shares": 57000
+      },
+      {
+        "id": "3110 JP",
+        "name": "日東紡織",
+        "weight_pct": 2.04,
+        "shares": 52773
+      },
+      {
+        "id": "INTC US",
+        "name": "英特爾",
+        "weight_pct": 1.94,
+        "shares": 69520
+      },
+      {
+        "id": "MRVL US",
+        "name": "Marvell Technology Inc",
+        "weight_pct": 1.73,
+        "shares": 38237
+      },
+      {
+        "id": "AMAT US",
+        "name": "應用材料",
+        "weight_pct": 1.51,
+        "shares": 13500
+      },
+      {
+        "id": "GEV US",
+        "name": "奇異維諾瓦公司",
+        "weight_pct": 1.48,
+        "shares": 5489
+      },
+      {
+        "id": "AMZN US",
+        "name": "亞馬遜公司",
+        "weight_pct": 1.35,
+        "shares": 19919
+      },
+      {
+        "id": "HWM US",
+        "name": "Howmet航太公司",
+        "weight_pct": 1.16,
+        "shares": 17425
+      },
+      {
+        "id": "TSLA US",
+        "name": "特斯拉公司",
+        "weight_pct": 1.14,
+        "shares": 10491
+      },
+      {
+        "id": "FIX US",
+        "name": "Comfort系統美國公司",
+        "weight_pct": 1.05,
+        "shares": 2050
+      },
+      {
+        "id": "EBAY US",
+        "name": "電子灣拍賣網站公司",
+        "weight_pct": 0.99,
+        "shares": 33326
+      },
+      {
+        "id": "BE US",
+        "name": "BLOOM ENERGY",
+        "weight_pct": 0.99,
+        "shares": 14000
+      },
+      {
+        "id": "VIAV US",
+        "name": "Viavi解決方案公司",
+        "weight_pct": 0.95,
+        "shares": 71983
+      },
+      {
+        "id": "AAPL US",
+        "name": "蘋果公司",
+        "weight_pct": 0.91,
+        "shares": 11807
+      },
+      {
+        "id": "APH US",
+        "name": "安費諾",
+        "weight_pct": 0.87,
+        "shares": 27207
+      },
+      {
+        "id": "6515",
+        "name": "穎崴",
+        "weight_pct": 0.79,
+        "shares": 10000
+      },
+      {
+        "id": "YOU US",
+        "name": "克里保全公司",
+        "weight_pct": 0.79,
+        "shares": 52461
+      },
+      {
+        "id": "CRDO US",
+        "name": "Credo科技集團控股有限公司",
+        "weight_pct": 0.78,
+        "shares": 17655
+      },
+      {
+        "id": "KLAC US",
+        "name": "科磊公司",
+        "weight_pct": 0.77,
+        "shares": 1671
+      },
+      {
+        "id": "5801 JP",
+        "name": "古河電氣工業有限公司",
+        "weight_pct": 0.7,
+        "shares": 7951
+      },
+      {
+        "id": "MSFT US",
+        "name": "微軟",
+        "weight_pct": 0.69,
+        "shares": 6428
+      },
+      {
+        "id": "ANET US",
+        "name": "Arista網路公司",
+        "weight_pct": 0.68,
+        "shares": 18815
+      },
+      {
+        "id": "META US",
+        "name": "Meta平台公司",
+        "weight_pct": 0.64,
+        "shares": 4057
+      },
+      {
+        "id": "QCOM US",
+        "name": "高通公司",
+        "weight_pct": 0.57,
+        "shares": 11000
+      },
+      {
+        "id": "PL US",
+        "name": "Planet Labs PBC",
+        "weight_pct": 0.5,
+        "shares": 47144
+      },
+      {
+        "id": "GE US",
+        "name": "奇異公司",
+        "weight_pct": 0.45,
+        "shares": 6185
+      },
+      {
+        "id": "APP US",
+        "name": "AppLovin公司",
+        "weight_pct": 0.42,
+        "shares": 3300
+      },
+      {
+        "id": "TXN US",
+        "name": "德州儀器公司",
+        "weight_pct": 0.4,
+        "shares": 5111
+      },
+      {
+        "id": "IDCC US",
+        "name": "InterDigital, Inc.",
+        "weight_pct": 0.34,
+        "shares": 5140
+      },
+      {
+        "id": "TDC US",
+        "name": "天睿資訊",
+        "weight_pct": 0.34,
+        "shares": 39406
+      },
+      {
+        "id": "CDNS US",
+        "name": "Cadence設計系統公司",
+        "weight_pct": 0.34,
+        "shares": 3823
+      },
+      {
+        "id": "ADSK US",
+        "name": "歐特克",
+        "weight_pct": 0.32,
+        "shares": 5303
+      },
+      {
+        "id": "PLTR US",
+        "name": "帕蘭提爾科技公司",
+        "weight_pct": 0.31,
+        "shares": 9067
+      }
+    ]
   }
 }
