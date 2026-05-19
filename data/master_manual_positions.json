@@ -1,5 +1,18 @@
 {
-  "cash_twd": 1580000,
-  "positions": [],
-  "updated_at_utc": "2026-05-19T00:00:00Z"
+  "cash_twd": 800000,
+  "positions": [
+    {
+      "code": "00635U",
+      "name": "期街口S&P黃金",
+      "shares": 8000,
+      "cost": 381000.0
+    },
+    {
+      "code": "00865B",
+      "name": "國泰US短期公債",
+      "shares": 41500,
+      "cost": 2000000.0
+    }
+  ],
+  "updated_at_utc": "2026-05-19T05:27:04.141852Z"
 }
