@@ -47,6 +47,7 @@ ETF_QUOTE_NAMES = {
     "00997A": "主動群益美國增長",
     "0050": "元大台灣50",
     "00830": "國泰費城半導體",
+    "00878": "國泰永續高股息",
 }
 
 def parse_etf_quote_command(text):
@@ -60,6 +61,8 @@ def parse_etf_quote_command(text):
         return "0050"
     if "00830" in compact or compact in {"830", "0830"}:
         return "00830"
+    if "00878" in compact or compact in {"878", "0878"}:
+        return "00878"
     return None
 
 def is_master_holding_command(text):
@@ -550,6 +553,7 @@ def handle_message(event):
             "• 997 — 00997A 持股即時表\n"
             "• 0050 — 元大台灣50 持股即時表\n"
             "• 830 — 00830 持股即時表\n"
+            "• 878 — 00878 持股即時表\n"
             "• 吳大師 — 投資組合與展開持股\n"
             "• id — 取得使用者或群組 ID"
         ))

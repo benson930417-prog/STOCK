@@ -448,7 +448,7 @@ def render_passive_etf_tab(
 
     etf_ticker = st.selectbox(
         T(lang, "Select ETF", "選擇 ETF"),
-        ["0050", "00830"],
+        ["0050", "00830", "00878"],
         key="passive_etf_ticker",
     )
 
@@ -521,7 +521,29 @@ def render_passive_etf_tab(
 
         nav_history = meta.get("nav_history", {})
         latest_nav = nav_history.get("latest", {})
-        deltas = latest_nav.get("deltas", {})
+
+        # Compute day-over-day deltas from the previous available history entry.
+        # The fetcher only stores meta-level scalars, so deltas live in the UI layer.
+        curr_idx = dates.index(selected_date)
+        prev_meta = {}
+        if curr_idx + 1 < len(dates):
+            prev_meta = history_data.get(dates[curr_idx + 1], {}).get("meta", {})
+
+        def _pct_change(curr, prev):
+            try:
+                curr_v = float(curr)
+                prev_v = float(prev)
+            except (TypeError, ValueError):
+                return None
+            if not prev_v:
+                return None
+            return (curr_v - prev_v) / prev_v * 100.0
+
+        deltas = dict(latest_nav.get("deltas") or {})
+        deltas.setdefault("fund_net_assets_pct", _pct_change(meta.get("fund_size"), prev_meta.get("fund_size")))
+        deltas.setdefault("nav_pct", _pct_change(meta.get("nav"), prev_meta.get("nav")))
+        deltas.setdefault("closing_price_pct", _pct_change(meta.get("closing_price"), prev_meta.get("closing_price")))
+        deltas.setdefault("outstanding_units_pct", _pct_change(meta.get("outstanding_units"), prev_meta.get("outstanding_units")))
 
         def _fmt_pct(value):
             return "N/A" if value is None else f"{value:+.2f}%"

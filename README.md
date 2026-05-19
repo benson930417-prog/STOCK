@@ -67,7 +67,7 @@ journalctl -u stock-webhook.service -n 100 --no-pager
   - HK: 09:30 - 12:00 and 13:00 - 16:00
   - US: Tracks Pre-market, Regular, Post-market, and After-close.
 - **TSMC Futures (QFF1!):** Acts solely as a proxy for 2330.TW during Taiwan's night session. It is explicitly labeled as "期" (Futures) and does not double-count in weighted calculations.
-- **Official Data Enforcement (00830):** The 00830 fetcher strictly uses the official Cathay JSON API (`cwapi.cathaysite.com.tw`). Unofficial fallbacks (like Yahoo) are deliberately excluded.
+- **Official Data Enforcement (Cathay ETFs):** The 00830 and 00878 fetchers strictly use the official Cathay JSON API (`cwapi.cathaysite.com.tw`). Unofficial fallbacks (like Yahoo) are deliberately excluded.
 
 ### Data Storage (`data/`)
 - **Holdings/Logs:** `etf_{TICKER}_history.json`, `passive_{TICKER}_log.json`.
@@ -78,7 +78,7 @@ journalctl -u stock-webhook.service -n 100 --no-pager
 
 ### `scripts/` (Pipeline & Processors)
 - **`fetch_etf_*.py`**: Fetchers for actively managed ETFs.
-- **`fetch_passive_*.py`**: Fetchers for passive ETFs (e.g., 0050, 00830).
+- **`fetch_passive_*.py`**: Fetchers for passive ETFs (e.g., 0050, 00830, 00878).
 - **`monitor_etf_quotes.py`**: The main daemon script for building the quote cache. Handles Yahoo pricing and TSMC futures.
 - **`generate_quote_card.py`**: The shared image-rendering engine for ETF and Master Quote cards.
 - **`master_holding_quote_card.py`**: Data adapter that expands ETF holdings into granular underlying exposure for the "吳大師" composite.
@@ -112,7 +112,8 @@ sudo systemctl restart stock-webhook.service \
                        stock-quote-monitor-0050.service \
                        stock-quote-monitor-00981a.service \
                        stock-quote-monitor-00997a.service \
-                       stock-quote-monitor-00830.service
+                       stock-quote-monitor-00830.service \
+                       stock-quote-monitor-00878.service
 ```
 
 ### Manual Triggering

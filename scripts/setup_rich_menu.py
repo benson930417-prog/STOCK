@@ -3,7 +3,7 @@
 Two-page LINE Bot Rich Menu setup.
 
 Page 1: 00981A | 00997A | 吳大師 / 油價 | 匯率 | 債券 | 更多▶
-Page 2: 0050   | 00830  | id     / ◀返回 | [coming soon]
+Page 2: 0050   | 00830  | 00878  / ◀返回 | id | [coming soon]
 
 Usage:
     cd /home/ubuntu/STOCK && source venv/bin/activate
@@ -56,13 +56,14 @@ PAGE1 = [
 ]
 
 PAGE2 = [
-    # Row 1 — 3 equal columns
+    # Row 1 — 3 ETFs
     (0,    0,   833, 843, "萬", "0050",    "元大台灣50",      ( 37,  99, 235), "message",        "0050",   False),
     (833,  0,   834, 843, "半", "00830",   "費城半導體",      (109,  40, 217), "message",        "830",    False),
-    (1667, 0,   833, 843, "碼", "查詢 ID", "使用者／群組",    ( 71,  85, 105), "message",        "id",     False),
-    # Row 2 — nav button + wide decorative cell
+    (1667, 0,   833, 843, "息", "00878",   "永續高股息",      ( 21, 128,  61), "message",        "878",    False),
+    # Row 2 — nav + utility + placeholder
     (0,    843, 625, 843, "◀", "返  回",  "第一頁",          ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),
-    (625,  843,1875, 843, "⋯", "更多功能", "即將推出",        ( 18,  26,  42), "none",           None,     True),
+    (625,  843, 625, 843, "碼", "查詢 ID", "使用者／群組",    ( 71,  85, 105), "message",        "id",     False),
+    (1250, 843,1250, 843, "⋯", "更多功能", "即將推出",        ( 18,  26,  42), "none",           None,     True),
 ]
 
 

@@ -1,5 +1,5 @@
 [Unit]
-Description=00981A/00997A/0050/00830 ETF 17:30 Taiwan Fetch and Notify Service
+Description=00981A/00997A/0050/00830/00878 ETF 17:30 Taiwan Fetch and Notify Service
 After=network-online.target
 Wants=network-online.target
 
@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=oneshot
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK
-ExecStart=/usr/bin/bash /home/ubuntu/STOCK/scripts/update_and_notify.sh 00981A 00997A 0050 00830
+ExecStart=/usr/bin/bash /home/ubuntu/STOCK/scripts/update_and_notify.sh 00981A 00997A 0050 00830 00878
 StandardOutput=append:/home/ubuntu/STOCK/daily_fetch_1800_tw.log
 StandardError=append:/home/ubuntu/STOCK/daily_fetch_1800_tw.log
 
