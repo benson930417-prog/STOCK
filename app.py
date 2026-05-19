@@ -1832,6 +1832,64 @@ try:
         st.markdown(f"## {T(lang,'Admin','管理者')}")
         admin_login_ui(lang)
 
+        # Cash editor — admin-only, persists data/master_manual_positions.json
+        if is_admin_authed():
+            with st.expander(T(lang, "💰 Cash settings", "💰 現金設定"), expanded=False):
+                st.caption(
+                    T(
+                        lang,
+                        "Tradeable holdings come from master_trades.csv. This only stores idle cash, which doesn't appear in broker statements.",
+                        "ETF、股票等可交易標的由 master_trades.csv 自動帶出。此處僅維護閒置現金（不會出現在券商對帳單）。",
+                    )
+                )
+                _cur_manual = load_manual_positions()
+                cash_input = st.number_input(
+                    T(lang, "Cash (TWD)", "現金 (TWD)"),
+                    min_value=0,
+                    step=1000,
+                    value=int(_cur_manual.get("cash_twd") or 0),
+                    key="manual_cash_twd",
+                    format="%d",
+                )
+
+                _bcol1, _bcol2 = st.columns(2)
+                with _bcol1:
+                    _save_local = st.button(T(lang, "💾 Save (local)", "💾 儲存（本機）"), key="btn_save_manual_local")
+                with _bcol2:
+                    _save_push = st.button(T(lang, "☁️ Save + Push", "☁️ 儲存並推送"), key="btn_save_manual_push")
+
+                if _save_local or _save_push:
+                    try:
+                        payload = save_manual_positions(cash_input, _cur_manual.get("positions") or [])
+                        st.success(
+                            T(
+                                lang,
+                                f"Saved: cash {payload['cash_twd']:,} TWD.",
+                                f"已儲存：現金 {payload['cash_twd']:,} TWD。",
+                            )
+                        )
+                        if _save_push:
+                            try:
+                                push_result = github_put_file(
+                                    repo=GITHUB_REPO,
+                                    path="data/master_manual_positions.json",
+                                    ref=GITHUB_BRANCH,
+                                    content_bytes=MANUAL_POSITIONS_PATH.read_bytes(),
+                                    message="Update master_manual_positions.json (cash)",
+                                )
+                                st.success(
+                                    f"GitHub commit `{(push_result.get('commit_sha') or '')[:7]}`."
+                                )
+                                sync_result = _sync_local_git_after_github_push()
+                                if not sync_result.get("skipped") and sync_result.get("returncode") != 0:
+                                    st.warning(f"Local git pull failed: {sync_result}")
+                            except Exception as push_exc:
+                                st.error(f"GitHub push failed: {push_exc}")
+                        fetch_portfolio_quotes.clear()
+                        st.rerun()
+                    except Exception as exc:
+                        st.error(f"Save failed: {exc}")
+
         # Admin upload area (FORM to stop infinite reruns)
         if is_admin_authed():
             st.markdown(f"**{T(lang,'Upload monthly CSV → merge into master','上傳當月 CSV → 合併進 master')}**")
@@ -2108,8 +2166,15 @@ try:
                 portfolio_positions["market_value"] / portfolio_positions["market_value"].sum() * 100.0
             )
 
-    unrealized_pnl = float(portfolio_positions["unrealized_pnl"].dropna().sum()) if not portfolio_positions.empty and "unrealized_pnl" in portfolio_positions else 0.0
-    unrealized_cost = float(portfolio_positions["cost"].sum()) if not portfolio_positions.empty and "cost" in portfolio_positions else 0.0
+    # P/L metrics use only TRADEABLE positions — cash has zero P/L and no
+    # cost basis, so including it would dilute the percentage.
+    _non_cash_positions = (
+        portfolio_positions[portfolio_positions["stock"] != MANUAL_CASH_LABEL]
+        if not portfolio_positions.empty and "stock" in portfolio_positions
+        else portfolio_positions
+    )
+    unrealized_pnl = float(_non_cash_positions["unrealized_pnl"].dropna().sum()) if not _non_cash_positions.empty and "unrealized_pnl" in _non_cash_positions else 0.0
+    unrealized_cost = float(_non_cash_positions["cost"].sum()) if not _non_cash_positions.empty and "cost" in _non_cash_positions else 0.0
     unrealized_pct = (unrealized_pnl / unrealized_cost * 100.0) if unrealized_cost else 0.0
 
     total_color = PROFIT_COLOR if total_pnl > 0 else (LOSS_COLOR if total_pnl < 0 else "#FFFFFF")
@@ -3295,56 +3360,6 @@ try:
     with tab_master_holding:
         st.subheader("吳大師持股")
 
-        with st.expander("💰 現金設定", expanded=False):
-            st.caption(
-                "ETF、股票等可交易標的皆由 `data/master_trades.csv` 自動帶出，"
-                "上傳新的對帳單即可更新。此處僅維護「閒置現金」，因為現金不會出現在券商對帳單。"
-            )
-            cur_manual = load_manual_positions()
-            cash_input = st.number_input(
-                "現金 (TWD)",
-                min_value=0,
-                step=1000,
-                value=int(cur_manual.get("cash_twd") or 0),
-                key="manual_cash_twd",
-                format="%d",
-                help="只用於計算權重，不計入未實損益、不嘗試估價、不扣手續費。",
-            )
-
-            colb1, colb2, _ = st.columns([1, 1, 2])
-            with colb1:
-                save_local_clicked = st.button("💾 儲存（本機）", key="btn_save_manual_local")
-            with colb2:
-                save_push_clicked = st.button("☁️ 儲存並推送 GitHub", key="btn_save_manual_push")
-
-            if save_local_clicked or save_push_clicked:
-                try:
-                    # Preserve the escape-hatch positions list untouched —
-                    # this UI only edits cash.
-                    payload = save_manual_positions(cash_input, cur_manual.get("positions") or [])
-                    st.success(f"已儲存：現金 {payload['cash_twd']:,} TWD。")
-                    if save_push_clicked:
-                        try:
-                            push_result = github_put_file(
-                                repo=GITHUB_REPO,
-                                path="data/master_manual_positions.json",
-                                ref=GITHUB_BRANCH,
-                                content_bytes=MANUAL_POSITIONS_PATH.read_bytes(),
-                                message="Update master_manual_positions.json (cash)",
-                            )
-                            st.success(
-                                f"已推送 GitHub commit `{(push_result.get('commit_sha') or '')[:7]}`。"
-                            )
-                            sync_result = _sync_local_git_after_github_push()
-                            if not sync_result.get("skipped") and sync_result.get("returncode") != 0:
-                                st.warning(f"GitHub 推送成功但本地 git pull 失敗：{sync_result}")
-                        except Exception as push_exc:
-                            st.error(f"GitHub 推送失敗：{push_exc}")
-                    fetch_portfolio_quotes.clear()
-                    st.rerun()
-                except Exception as exc:
-                    st.error(f"儲存失敗：{exc}")
-
         if portfolio_positions.empty:
             st.info("目前沒有可計算的庫存持股。")
         else:
@@ -3359,21 +3374,29 @@ try:
             if missing_etfs:
                 st.warning(f"🚨 **警告**：無法載入以下 ETF 的成分股資料，展開權重圖表將不包含其權重 (請檢查伺服器排程是否運行)：**{', '.join(missing_etfs)}**")
 
-            total_market_value = float(portfolio_positions["market_value"].dropna().sum())
-            total_liquidation_value = float(portfolio_positions["liquidation_value"].dropna().sum())
-            total_cost_open = float(portfolio_positions["cost"].sum())
+            # Split cash out of the KPI math — it's reported as its own metric.
+            non_cash = portfolio_positions[portfolio_positions["stock"] != MANUAL_CASH_LABEL]
+            cash_amount = float(
+                portfolio_positions.loc[
+                    portfolio_positions["stock"] == MANUAL_CASH_LABEL, "market_value"
+                ].sum()
+            )
+
+            total_market_value = float(non_cash["market_value"].dropna().sum())
+            total_liquidation_value = float(non_cash["liquidation_value"].dropna().sum())
+            total_cost_open = float(non_cash["cost"].sum())
             today_pnl = float(
                 (
-                    portfolio_positions["market_value"]
-                    * portfolio_positions["day_change_pct"].fillna(0)
-                    / (100 + portfolio_positions["day_change_pct"].fillna(0)).replace(0, np.nan)
+                    non_cash["market_value"]
+                    * non_cash["day_change_pct"].fillna(0)
+                    / (100 + non_cash["day_change_pct"].fillna(0)).replace(0, np.nan)
                 ).fillna(0).sum()
             )
             today_pct = (today_pnl / (total_market_value - today_pnl) * 100.0) if total_market_value != today_pnl else 0.0
             reinvested_realized_pnl = float(total_pnl)
             deployed_principal = total_cost_open - reinvested_realized_pnl
 
-            m1, m2, m3, m4 = st.columns(4)
+            m1, m2, m3, m4, m5 = st.columns(5)
             with m1:
                 st.metric("目前淨值 (扣費稅)", fmt_money(total_liquidation_value))
             with m2:
@@ -3393,7 +3416,9 @@ try:
             with m3:
                 st.metric("未實現損益 (扣費稅後)", fmt_signed_money(unrealized_pnl), delta=fmt_signed_pct(unrealized_pct), delta_color=delta_color_param)
             with m4:
-                st.metric("持股檔數", f"{len(portfolio_positions)}")
+                st.metric("現金", fmt_money(cash_amount))
+            with m5:
+                st.metric("持股檔數", f"{len(non_cash)}")
 
             mh_tabs = st.tabs(["投資組合摘要", "展開後絕對權重", "ETF 展開權重圖", "今日貢獻圖"])
 
