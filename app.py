@@ -442,6 +442,13 @@ ETF_NAME_TO_TICKER = {
     "元大台灣50": "0050",
     "國泰費城半導體": "00830",
     "國泰永續高股息": "00878",
+    # Held without composition expansion (priced via Yahoo only):
+    "期街口S&P黃金": "00635U",
+    "國泰US短期公債": "00865B",
+    # Other Cathay-broker names that appear in past trade exports:
+    "元大S&P500": "00646",
+    "元大納斯達克精選": "00662",
+    "主動統一升級50": "00966",
 }
 
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
@@ -2020,10 +2027,16 @@ try:
     trade_volume = float(f_sorted["allocated_cost"].sum()) * CURRENCY_RATE
     open_positions = calculate_open_positions(raw_df)
 
-    # Merge in manually-declared positions (gold/bond ETFs not yet in trade
-    # history, etc.) BEFORE enrichment so they receive live Yahoo quotes.
+    # Merge in manually-declared positions (escape hatch for ETFs not yet
+    # in the trades CSV) BEFORE enrichment so they receive live Yahoo
+    # quotes. Any code already present in the trades-derived positions is
+    # dropped — the CSV is always authoritative.
     _manual_payload = load_manual_positions()
-    _manual_rows = manual_positions_as_open_position_rows(_manual_payload)
+    _existing_tickers = (
+        set(open_positions["ticker"].dropna().astype(str).str.upper().tolist())
+        if not open_positions.empty and "ticker" in open_positions else set()
+    )
+    _manual_rows = manual_positions_as_open_position_rows(_manual_payload, existing_tickers=_existing_tickers)
     if _manual_rows:
         _manual_df = pd.DataFrame(_manual_rows)
         open_positions = (
@@ -3235,10 +3248,10 @@ try:
     with tab_master_holding:
         st.subheader("吳大師持股")
 
-        with st.expander("💰 現金 / 額外持股設定", expanded=False):
+        with st.expander("💰 現金設定", expanded=False):
             st.caption(
-                "現金與不在交易紀錄中的標的（例如黃金 00635U、短債 00865B）"
-                "可在此手動維護。儲存後立即反映於下方權重圖與 LINE Bot 吳大師卡片。"
+                "ETF、股票等可交易標的皆由 `data/master_trades.csv` 自動帶出，"
+                "上傳新的對帳單即可更新。此處僅維護「閒置現金」，因為現金不會出現在券商對帳單。"
             )
             cur_manual = load_manual_positions()
             cash_input = st.number_input(
@@ -3248,24 +3261,7 @@ try:
                 value=int(cur_manual.get("cash_twd") or 0),
                 key="manual_cash_twd",
                 format="%d",
-                help="只會用於計算權重，不會嘗試估價或扣手續費。",
-            )
-            positions_df_in = pd.DataFrame(
-                cur_manual.get("positions") or [],
-                columns=["code", "name", "shares", "cost"],
-            )
-            edited_positions = st.data_editor(
-                positions_df_in,
-                key="manual_positions_editor",
-                num_rows="dynamic",
-                hide_index=True,
-                use_container_width=True,
-                column_config={
-                    "code":   st.column_config.TextColumn("代號", help="台股代號，例如 00635U", required=True),
-                    "name":   st.column_config.TextColumn("名稱"),
-                    "shares": st.column_config.NumberColumn("股數", step=1, min_value=0, format="%d", required=True),
-                    "cost":   st.column_config.NumberColumn("成本 (TWD)", step=100, min_value=0, format="%d"),
-                },
+                help="只用於計算權重，不計入未實損益、不嘗試估價、不扣手續費。",
             )
 
             colb1, colb2, _ = st.columns([1, 1, 2])
@@ -3276,15 +3272,10 @@ try:
 
             if save_local_clicked or save_push_clicked:
                 try:
-                    rows_to_save = (
-                        edited_positions.replace({np.nan: None}).to_dict(orient="records")
-                        if isinstance(edited_positions, pd.DataFrame)
-                        else list(edited_positions or [])
-                    )
-                    payload = save_manual_positions(cash_input, rows_to_save)
-                    st.success(
-                        f"已儲存：現金 {payload['cash_twd']:,} TWD、{len(payload['positions'])} 筆額外持股。"
-                    )
+                    # Preserve the escape-hatch positions list untouched —
+                    # this UI only edits cash.
+                    payload = save_manual_positions(cash_input, cur_manual.get("positions") or [])
+                    st.success(f"已儲存：現金 {payload['cash_twd']:,} TWD。")
                     if save_push_clicked:
                         try:
                             push_result = github_put_file(
@@ -3292,7 +3283,7 @@ try:
                                 path="data/master_manual_positions.json",
                                 ref=GITHUB_BRANCH,
                                 content_bytes=MANUAL_POSITIONS_PATH.read_bytes(),
-                                message="Update master_manual_positions.json (cash + extra holdings)",
+                                message="Update master_manual_positions.json (cash)",
                             )
                             st.success(
                                 f"已推送 GitHub commit `{(push_result.get('commit_sha') or '')[:7]}`。"

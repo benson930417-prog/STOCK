@@ -1,30 +1,26 @@
-"""Manual (non-trade-derived) holdings for the 吳大師 master view.
+"""Cash holdings for the 吳大師 master view.
 
-The master holding pipeline is fed by `data/master_trades.csv` (FIFO derived).
-Some assets are not natural fits for that pipeline:
+`data/master_trades.csv` is the authoritative source for every tradeable
+holding (the broker statement covers ETFs, stocks, everything). The one
+thing the broker CSV cannot give us is **free cash sitting in the account**
+— that's the gap this module fills.
 
-- Cash (TWD)            — not a "trade", just a value to track for % weighting.
-- ETFs without trade history available yet, or ones the user wants to
-  declare as a position without uploading a broker CSV (e.g. 00635U gold,
-  00865B short-term US treasuries).
-
-This module owns `data/master_manual_positions.json`, which has the shape:
+`data/master_manual_positions.json` has the shape:
 
     {
         "cash_twd": 1580000,
-        "positions": [
-            {"code": "00635U", "name": "期街口S&P黃金", "shares": 5000, "cost": 381000},
-            {"code": "00865B", "name": "國泰US短期公債", "shares": 50000, "cost": 2000000}
-        ],
+        "positions": [],
         "updated_at_utc": "2026-05-19T..."
     }
 
 - `cash_twd` materialises as a synthetic post-enrich position row labelled
   "現金" with `market_value = cash_twd`, zero P/L, and no Yahoo lookup.
-- Each `positions` entry materialises as a pre-enrich row identical in
-  shape to FIFO output — `enrich_positions_with_quotes` then fetches the
-  TW Yahoo quote for `{code}.TW` and fills in `price`, `market_value`,
-  `day_change_pct`, etc.
+- `positions` is an **escape hatch** for declaring a holding that isn't yet
+  in the trades CSV (e.g. you bought 00635U but haven't uploaded that
+  month's broker export). Any entry whose code already appears in the
+  trades-derived positions is dropped — CSV wins. The Streamlit UI no
+  longer exposes this list; edit the JSON directly when you really need it,
+  and remove the row once the matching CSV upload lands.
 """
 from __future__ import annotations
 
@@ -95,17 +91,24 @@ def save_manual_positions(cash_twd: float, positions: Iterable[dict]) -> dict:
     return payload
 
 
-def manual_positions_as_open_position_rows(manual: dict | None = None) -> list[dict]:
+def manual_positions_as_open_position_rows(
+    manual: dict | None = None,
+    existing_tickers: set[str] | None = None,
+) -> list[dict]:
     """Convert manual ETF positions into rows matching FIFO open-positions schema.
 
-    These rows go in BEFORE `enrich_positions_with_quotes`, so they receive
-    live Yahoo prices like any other position.
+    Any entry whose code is already in `existing_tickers` (i.e. derived from
+    the trades CSV) is silently dropped — CSV trades always win.
+
+    Surviving rows go in BEFORE `enrich_positions_with_quotes`, so they
+    receive live Yahoo prices like any other position.
     """
     manual = manual if manual is not None else load_manual_positions()
+    existing = {str(t).upper() for t in (existing_tickers or set()) if t}
     rows = []
     for entry in manual.get("positions") or []:
         code = str(entry.get("code") or "").strip().upper()
-        if not code:
+        if not code or code in existing:
             continue
         shares = int(entry.get("shares") or 0)
         if shares <= 0:

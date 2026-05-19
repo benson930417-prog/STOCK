@@ -43,6 +43,13 @@ ETF_NAME_TO_TICKER = {
     "元大台灣50": "0050",
     "國泰費城半導體": "00830",
     "國泰永續高股息": "00878",
+    # Held without composition expansion (priced via Yahoo only):
+    "期街口S&P黃金": "00635U",
+    "國泰US短期公債": "00865B",
+    # Other Cathay-broker names that appear in past trade exports:
+    "元大S&P500": "00646",
+    "元大納斯達克精選": "00662",
+    "主動統一升級50": "00966",
 }
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
 
@@ -405,7 +412,11 @@ def build_expanded_exposure(position_quotes):
 def load_master_snapshot():
     manual = load_manual_positions()
     base = calculate_open_positions(load_master_trades())
-    extra_rows = manual_positions_as_open_position_rows(manual)
+    existing_tickers = (
+        set(base["ticker"].dropna().astype(str).str.upper().tolist())
+        if not base.empty and "ticker" in base else set()
+    )
+    extra_rows = manual_positions_as_open_position_rows(manual, existing_tickers=existing_tickers)
     if extra_rows:
         base = pd.concat([base, pd.DataFrame(extra_rows)], ignore_index=True) if not base.empty else pd.DataFrame(extra_rows)
     positions = enrich_positions_with_quotes(base) if not base.empty else base
