@@ -41,6 +41,14 @@ import plotly.graph_objects as go
 import requests
 import streamlit as st
 from src.ui.etf_tab import render_etf_tab, render_passive_etf_tab
+from scripts.master_manual_positions import (
+    CASH_LABEL as MANUAL_CASH_LABEL,
+    MANUAL_PATH as MANUAL_POSITIONS_PATH,
+    cash_row as build_cash_row,
+    load_manual_positions,
+    manual_positions_as_open_position_rows,
+    save_manual_positions,
+)
 
 
 # -------------------- page --------------------
@@ -2011,7 +2019,35 @@ try:
     total_pl_pct = final_twr # Use TWR for the headline percentage
     trade_volume = float(f_sorted["allocated_cost"].sum()) * CURRENCY_RATE
     open_positions = calculate_open_positions(raw_df)
+
+    # Merge in manually-declared positions (gold/bond ETFs not yet in trade
+    # history, etc.) BEFORE enrichment so they receive live Yahoo quotes.
+    _manual_payload = load_manual_positions()
+    _manual_rows = manual_positions_as_open_position_rows(_manual_payload)
+    if _manual_rows:
+        _manual_df = pd.DataFrame(_manual_rows)
+        open_positions = (
+            pd.concat([open_positions, _manual_df], ignore_index=True)
+            if not open_positions.empty
+            else _manual_df
+        )
+
     portfolio_positions = enrich_positions_with_quotes(open_positions) if not open_positions.empty else pd.DataFrame()
+
+    # Append the synthetic cash row AFTER enrichment so it bypasses Yahoo
+    # and lands with deterministic market_value / zero P&L.
+    _cash_row = build_cash_row(_manual_payload.get("cash_twd"))
+    if _cash_row is not None:
+        portfolio_positions = (
+            pd.concat([portfolio_positions, pd.DataFrame([_cash_row])], ignore_index=True)
+            if not portfolio_positions.empty
+            else pd.DataFrame([_cash_row])
+        )
+        if "market_value" in portfolio_positions and portfolio_positions["market_value"].dropna().sum():
+            portfolio_positions["weight_pct"] = (
+                portfolio_positions["market_value"] / portfolio_positions["market_value"].sum() * 100.0
+            )
+
     unrealized_pnl = float(portfolio_positions["unrealized_pnl"].dropna().sum()) if not portfolio_positions.empty and "unrealized_pnl" in portfolio_positions else 0.0
     unrealized_cost = float(portfolio_positions["cost"].sum()) if not portfolio_positions.empty and "cost" in portfolio_positions else 0.0
     unrealized_pct = (unrealized_pnl / unrealized_cost * 100.0) if unrealized_cost else 0.0
@@ -3198,6 +3234,78 @@ try:
     # -------------------- Master Holdings --------------------
     with tab_master_holding:
         st.subheader("吳大師持股")
+
+        with st.expander("💰 現金 / 額外持股設定", expanded=False):
+            st.caption(
+                "現金與不在交易紀錄中的標的（例如黃金 00635U、短債 00865B）"
+                "可在此手動維護。儲存後立即反映於下方權重圖與 LINE Bot 吳大師卡片。"
+            )
+            cur_manual = load_manual_positions()
+            cash_input = st.number_input(
+                "現金 (TWD)",
+                min_value=0,
+                step=1000,
+                value=int(cur_manual.get("cash_twd") or 0),
+                key="manual_cash_twd",
+                format="%d",
+                help="只會用於計算權重，不會嘗試估價或扣手續費。",
+            )
+            positions_df_in = pd.DataFrame(
+                cur_manual.get("positions") or [],
+                columns=["code", "name", "shares", "cost"],
+            )
+            edited_positions = st.data_editor(
+                positions_df_in,
+                key="manual_positions_editor",
+                num_rows="dynamic",
+                hide_index=True,
+                use_container_width=True,
+                column_config={
+                    "code":   st.column_config.TextColumn("代號", help="台股代號，例如 00635U", required=True),
+                    "name":   st.column_config.TextColumn("名稱"),
+                    "shares": st.column_config.NumberColumn("股數", step=1, min_value=0, format="%d", required=True),
+                    "cost":   st.column_config.NumberColumn("成本 (TWD)", step=100, min_value=0, format="%d"),
+                },
+            )
+
+            colb1, colb2, _ = st.columns([1, 1, 2])
+            with colb1:
+                save_local_clicked = st.button("💾 儲存（本機）", key="btn_save_manual_local")
+            with colb2:
+                save_push_clicked = st.button("☁️ 儲存並推送 GitHub", key="btn_save_manual_push")
+
+            if save_local_clicked or save_push_clicked:
+                try:
+                    rows_to_save = (
+                        edited_positions.replace({np.nan: None}).to_dict(orient="records")
+                        if isinstance(edited_positions, pd.DataFrame)
+                        else list(edited_positions or [])
+                    )
+                    payload = save_manual_positions(cash_input, rows_to_save)
+                    st.success(
+                        f"已儲存：現金 {payload['cash_twd']:,} TWD、{len(payload['positions'])} 筆額外持股。"
+                    )
+                    if save_push_clicked:
+                        try:
+                            push_result = github_put_file(
+                                repo=GITHUB_REPO,
+                                path="data/master_manual_positions.json",
+                                ref=GITHUB_BRANCH,
+                                content_bytes=MANUAL_POSITIONS_PATH.read_bytes(),
+                                message="Update master_manual_positions.json (cash + extra holdings)",
+                            )
+                            st.success(
+                                f"已推送 GitHub commit `{(push_result.get('commit_sha') or '')[:7]}`。"
+                            )
+                            sync_result = _sync_local_git_after_github_push()
+                            if not sync_result.get("skipped") and sync_result.get("returncode") != 0:
+                                st.warning(f"GitHub 推送成功但本地 git pull 失敗：{sync_result}")
+                        except Exception as push_exc:
+                            st.error(f"GitHub 推送失敗：{push_exc}")
+                    fetch_portfolio_quotes.clear()
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f"儲存失敗：{exc}")
 
         if portfolio_positions.empty:
             st.info("目前沒有可計算的庫存持股。")

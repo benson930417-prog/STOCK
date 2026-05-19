@@ -22,6 +22,11 @@ from scripts.monitor_etf_quotes import (
     fetch_yahoo_quotes,
 )
 from scripts.generate_quote_card import generate_quote_card_from_cache
+from scripts.master_manual_positions import (
+    cash_row,
+    load_manual_positions,
+    manual_positions_as_open_position_rows,
+)
 
 DATA_DIR = ROOT_DIR / "data"
 IMAGE_DIR = DATA_DIR / "images"
@@ -398,8 +403,24 @@ def build_expanded_exposure(position_quotes):
 
 
 def load_master_snapshot():
-    positions = calculate_open_positions(load_master_trades())
-    positions = enrich_positions_with_quotes(positions)
+    manual = load_manual_positions()
+    base = calculate_open_positions(load_master_trades())
+    extra_rows = manual_positions_as_open_position_rows(manual)
+    if extra_rows:
+        base = pd.concat([base, pd.DataFrame(extra_rows)], ignore_index=True) if not base.empty else pd.DataFrame(extra_rows)
+    positions = enrich_positions_with_quotes(base) if not base.empty else base
+
+    # Append cash AFTER enrichment so it bypasses Yahoo lookups.
+    cash = cash_row(manual.get("cash_twd"))
+    if cash is not None:
+        if positions.empty:
+            positions = pd.DataFrame([cash])
+        else:
+            positions = pd.concat([positions, pd.DataFrame([cash])], ignore_index=True)
+        # Re-normalise weights with the cash row included.
+        if "market_value" in positions and positions["market_value"].dropna().sum():
+            positions["weight_pct"] = positions["market_value"] / positions["market_value"].sum() * 100.0
+
     total_market = float(positions["market_value"].dropna().sum()) if not positions.empty else 0.0
     total_liq = float(positions["liquidation_value"].dropna().sum()) if not positions.empty else 0.0
     total_cost = float(positions["cost"].sum()) if not positions.empty else 0.0
@@ -416,8 +437,8 @@ def load_master_snapshot():
         "unrealized_pct": unrealized_pct,
         "holding_count": len(all_exposures),
         "exposures": exposures,
-        "tsmc_proxy": positions.attrs.get("tsmc_proxy"),
-        "tsmc_data_mode": positions.attrs.get("tsmc_data_mode"),
+        "tsmc_proxy": positions.attrs.get("tsmc_proxy") if hasattr(positions, "attrs") else None,
+        "tsmc_data_mode": positions.attrs.get("tsmc_data_mode") if hasattr(positions, "attrs") else None,
     }
 
 
