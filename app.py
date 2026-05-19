@@ -1254,10 +1254,28 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
     # emit ONE consolidated warning at the end instead of one per lot.
     inventory_shortfalls = defaultdict(lambda: {"qty": 0, "first_date": None})
 
+    def _take_from_lot(lot, take, fields):
+        """Integer-precise proportional allocation from a remaining lot.
+
+        For each field (e.g. 'cash', 'fee'), allocate `round(remaining * take /
+        remaining_qty)` and subtract from the lot. The last take from a lot
+        naturally absorbs any rounding residual so total allocations sum to
+        the original integer amounts — no float drift.
+        """
+        out = {}
+        for f in fields:
+            if lot["qty"] == take:
+                # Last take from this lot: give it whatever's left exactly.
+                out[f] = int(lot[f])
+            else:
+                out[f] = int(round(lot[f] * take / lot["qty"]))
+            lot[f] -= out[f]
+        return out
+
     def sell_against_inventory(stock, pool, date, qty, cash_in, sell_fee_tot, sell_tax_tot):
         remaining = int(qty)
-        allocated_cost = 0.0
-        allocated_buy_fee = 0.0
+        allocated_cost = 0
+        allocated_buy_fee = 0
 
         while remaining > 0:
             if not inventory[stock]:
@@ -1270,15 +1288,15 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
 
             lot = inventory[stock][0]
             take = min(remaining, lot["qty"])
-            allocated_cost += take * lot["cps"]
-            allocated_buy_fee += take * lot["fee_per_share"]
-
+            parts = _take_from_lot(lot, take, ("cash", "fee"))
+            allocated_cost += parts["cash"]
+            allocated_buy_fee += parts["fee"]
             lot["qty"] -= take
             remaining -= take
             if lot["qty"] == 0:
                 inventory[stock].popleft()
 
-        pnl = float(cash_in) - allocated_cost
+        pnl = int(round(cash_in)) - allocated_cost
         ret_pct = (pnl / allocated_cost * 100.0) if allocated_cost else 0.0
 
         realized_rows.append(
@@ -1317,35 +1335,30 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
             day_buy_cash = deque()  # 現買
             for _, r in buys.iterrows():
                 qty = int(r["成交股數"])
-                cash_out = -float(r["淨收付金額"])
-                fee = float(r["手續費"])
-                cps = cash_out / qty
-                fps = fee / qty
-                lot = {"qty": qty, "cps": cps, "fee_per_share": fps}
+                cash_out = int(round(-float(r["淨收付金額"])))  # integer NTD
+                fee = int(round(float(r["手續費"])))
+                lot = {"qty": qty, "cash": cash_out, "fee": fee}
                 (day_buy_dt if _is_day(r["買賣別"]) else day_buy_cash).append(lot)
 
             day_sell_dt = deque()
             day_sell_cash = deque()
             for _, r in sells.iterrows():
                 qty = int(r["成交股數"])
-                cash_in = float(r["淨收付金額"])
-                fee = float(r["手續費"])
-                tax = float(r["交易稅"])
-                pps = cash_in / qty
-                fps = fee / qty
-                tps = tax / qty
-                lot = {"qty": qty, "pps": pps, "fee_per_share": fps, "tax_per_share": tps}
+                cash_in = int(round(float(r["淨收付金額"])))
+                fee = int(round(float(r["手續費"])))
+                tax = int(round(float(r["交易稅"])))
+                lot = {"qty": qty, "cash": cash_in, "fee": fee, "tax": tax}
                 (day_sell_dt if _is_day(r["買賣別"]) else day_sell_cash).append(lot)
 
             # 1) Same-day match — prefer 沖↔沖 first, then any remaining buys
             #    fall through to match 現賣 (covers brokers reporting a day-
             #    trade buy without its 沖賣 sibling, etc).
             intraday_qty = 0
-            intraday_cost = 0.0
-            intraday_cash = 0.0
-            intraday_buy_fee = 0.0
-            intraday_sell_fee = 0.0
-            intraday_sell_tax = 0.0
+            intraday_cost = 0
+            intraday_cash = 0
+            intraday_buy_fee = 0
+            intraday_sell_fee = 0
+            intraday_sell_tax = 0
 
             def _pair(buy_q, sell_q):
                 nonlocal intraday_qty, intraday_cost, intraday_cash
@@ -1354,12 +1367,14 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                     b = buy_q[0]
                     s = sell_q[0]
                     take = min(b["qty"], s["qty"])
+                    b_parts = _take_from_lot(b, take, ("cash", "fee"))
+                    s_parts = _take_from_lot(s, take, ("cash", "fee", "tax"))
                     intraday_qty += take
-                    intraday_cost += take * b["cps"]
-                    intraday_cash += take * s["pps"]
-                    intraday_buy_fee += take * b["fee_per_share"]
-                    intraday_sell_fee += take * s["fee_per_share"]
-                    intraday_sell_tax += take * s["tax_per_share"]
+                    intraday_cost += b_parts["cash"]
+                    intraday_buy_fee += b_parts["fee"]
+                    intraday_cash += s_parts["cash"]
+                    intraday_sell_fee += s_parts["fee"]
+                    intraday_sell_tax += s_parts["tax"]
                     b["qty"] -= take
                     s["qty"] -= take
                     if b["qty"] == 0:
@@ -1397,23 +1412,22 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                     )
                 )
 
-            # 2) Remaining buys -> inventory
+            # 2) Remaining buys -> inventory (keep integer cash/fee remainders)
             for lot in list(day_buy_lots):
                 if lot["qty"] > 0:
                     inventory[stock].append({
-                        "qty": int(lot["qty"]), 
-                        "cps": float(lot["cps"]),
-                        "fee_per_share": float(lot["fee_per_share"])
+                        "qty": int(lot["qty"]),
+                        "cash": int(lot["cash"]),
+                        "fee": int(lot["fee"]),
                     })
 
-            # 3) Remaining sells -> inventory
+            # 3) Remaining sells -> FIFO against inventory
             for lot in list(day_sell_lots):
                 if lot["qty"] > 0:
-                    qty = int(lot["qty"])
-                    cash_in = float(lot["pps"] * qty)
-                    s_fee = float(lot["fee_per_share"] * qty)
-                    s_tax = float(lot["tax_per_share"] * qty)
-                    sell_against_inventory(stock, pool_of(qty), date, qty, cash_in, s_fee, s_tax)
+                    sell_against_inventory(
+                        stock, pool_of(lot["qty"]), date,
+                        int(lot["qty"]), int(lot["cash"]), int(lot["fee"]), int(lot["tax"])
+                    )
 
     if inventory_shortfalls:
         import streamlit as st
@@ -2209,7 +2223,7 @@ try:
         # User request: include Base Capital (Dynamic Max Drawdown) on total PL kpi
         base_cap_converted = float(peak_base) * CURRENCY_RATE
         base_cap_str = fmt_money(base_cap_converted, 1.0, CURRENCY_SYMBOL)
-        base_lbl = T(lang, "Base", "累計投入本金")
+        base_lbl = T(lang, "Peak deployed", "最高投入本金")
         KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), total_color, f"{base_lbl}: {base_cap_str}")
     with k2:
         # Percentage is invariant to currency
