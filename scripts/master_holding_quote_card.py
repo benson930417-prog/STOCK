@@ -43,13 +43,8 @@ ETF_NAME_TO_TICKER = {
     "元大台灣50": "0050",
     "國泰費城半導體": "00830",
     "國泰永續高股息": "00878",
-    # Held without composition expansion (priced via Yahoo only):
-    "期街口S&P黃金": "00635U",
-    "國泰US短期公債": "00865B",
-    # Other Cathay-broker names that appear in past trade exports:
-    "元大S&P500": "00646",
-    "元大納斯達克精選": "00662",
-    "主動統一升級50": "00966",
+    # Verified from broker CSV (期元大 issuer, not 期街口):
+    "期元大S&P黃金": "00635U",
 }
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
 

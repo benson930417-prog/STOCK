@@ -442,13 +442,8 @@ ETF_NAME_TO_TICKER = {
     "元大台灣50": "0050",
     "國泰費城半導體": "00830",
     "國泰永續高股息": "00878",
-    # Held without composition expansion (priced via Yahoo only):
-    "期街口S&P黃金": "00635U",
-    "國泰US短期公債": "00865B",
-    # Other Cathay-broker names that appear in past trade exports:
-    "元大S&P500": "00646",
-    "元大納斯達克精選": "00662",
-    "主動統一升級50": "00966",
+    # Verified from broker CSV (期元大 issuer, not 期街口):
+    "期元大S&P黃金": "00635U",
 }
 
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
@@ -1240,6 +1235,9 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
 
     inventory = defaultdict(deque)  # stock -> deque lots {qty, cps}
     realized_rows = []
+    # Accumulate "sell without inventory" shortfalls per stock so we can
+    # emit ONE consolidated warning at the end instead of one per lot.
+    inventory_shortfalls = defaultdict(lambda: {"qty": 0, "first_date": None})
 
     def sell_against_inventory(stock, pool, date, qty, cash_in, sell_fee_tot, sell_tax_tot):
         remaining = int(qty)
@@ -1248,13 +1246,13 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
 
         while remaining > 0:
             if not inventory[stock]:
-                import streamlit as st
-                st.warning(
-                    f"Sell without inventory: {stock} on {pd.to_datetime(date).date()} sell_qty={remaining}. "
-                    "Master may be missing older BUYs. Assuming zero cost basis for remaining shares."
-                )
+                short = inventory_shortfalls[stock]
+                short["qty"] += remaining
+                d = pd.to_datetime(date).date()
+                if short["first_date"] is None or d < short["first_date"]:
+                    short["first_date"] = d
                 break
-                
+
             lot = inventory[stock][0]
             take = min(remaining, lot["qty"])
             allocated_cost += take * lot["cps"]
@@ -1294,16 +1292,25 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
             buys = ddf[ddf["淨收付金額"] < 0].copy()
             sells = ddf[ddf["淨收付金額"] > 0].copy()
 
-            day_buy_lots = deque()
+            def _is_day(label):
+                # 沖買 / 沖賣 are explicit day-trade legs; pair them with each
+                # other first so a real intraday round-trip doesn't accidentally
+                # consume inventory.
+                return str(label or "").startswith("沖")
+
+            day_buy_dt = deque()    # 沖買
+            day_buy_cash = deque()  # 現買
             for _, r in buys.iterrows():
                 qty = int(r["成交股數"])
                 cash_out = -float(r["淨收付金額"])
                 fee = float(r["手續費"])
                 cps = cash_out / qty
                 fps = fee / qty
-                day_buy_lots.append({"qty": qty, "cps": cps, "fee_per_share": fps})
+                lot = {"qty": qty, "cps": cps, "fee_per_share": fps}
+                (day_buy_dt if _is_day(r["買賣別"]) else day_buy_cash).append(lot)
 
-            day_sell_lots = deque()
+            day_sell_dt = deque()
+            day_sell_cash = deque()
             for _, r in sells.iterrows():
                 qty = int(r["成交股數"])
                 cash_in = float(r["淨收付金額"])
@@ -1312,9 +1319,12 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                 pps = cash_in / qty
                 fps = fee / qty
                 tps = tax / qty
-                day_sell_lots.append({"qty": qty, "pps": pps, "fee_per_share": fps, "tax_per_share": tps})
+                lot = {"qty": qty, "pps": pps, "fee_per_share": fps, "tax_per_share": tps}
+                (day_sell_dt if _is_day(r["買賣別"]) else day_sell_cash).append(lot)
 
-            # 1) Same-day match
+            # 1) Same-day match — prefer 沖↔沖 first, then any remaining buys
+            #    fall through to match 現賣 (covers brokers reporting a day-
+            #    trade buy without its 沖賣 sibling, etc).
             intraday_qty = 0
             intraday_cost = 0.0
             intraday_cash = 0.0
@@ -1322,24 +1332,33 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
             intraday_sell_fee = 0.0
             intraday_sell_tax = 0.0
 
-            while day_buy_lots and day_sell_lots:
-                b = day_buy_lots[0]
-                s = day_sell_lots[0]
-                take = min(b["qty"], s["qty"])
+            def _pair(buy_q, sell_q):
+                nonlocal intraday_qty, intraday_cost, intraday_cash
+                nonlocal intraday_buy_fee, intraday_sell_fee, intraday_sell_tax
+                while buy_q and sell_q:
+                    b = buy_q[0]
+                    s = sell_q[0]
+                    take = min(b["qty"], s["qty"])
+                    intraday_qty += take
+                    intraday_cost += take * b["cps"]
+                    intraday_cash += take * s["pps"]
+                    intraday_buy_fee += take * b["fee_per_share"]
+                    intraday_sell_fee += take * s["fee_per_share"]
+                    intraday_sell_tax += take * s["tax_per_share"]
+                    b["qty"] -= take
+                    s["qty"] -= take
+                    if b["qty"] == 0:
+                        buy_q.popleft()
+                    if s["qty"] == 0:
+                        sell_q.popleft()
 
-                intraday_qty += take
-                intraday_cost += take * b["cps"]
-                intraday_cash += take * s["pps"]
-                intraday_buy_fee += take * b["fee_per_share"]
-                intraday_sell_fee += take * s["fee_per_share"]
-                intraday_sell_tax += take * s["tax_per_share"]
+            _pair(day_buy_dt, day_sell_dt)      # 沖↔沖
+            _pair(day_buy_dt, day_sell_cash)    # leftover 沖買 against 現賣
+            _pair(day_buy_cash, day_sell_dt)    # 現買 against leftover 沖賣
 
-                b["qty"] -= take
-                s["qty"] -= take
-                if b["qty"] == 0:
-                    day_buy_lots.popleft()
-                if s["qty"] == 0:
-                    day_sell_lots.popleft()
+            # Merge any remaining buy/sell lots for downstream handling.
+            day_buy_lots = deque(list(day_buy_dt) + list(day_buy_cash))
+            day_sell_lots = deque(list(day_sell_dt) + list(day_sell_cash))
 
             if intraday_qty > 0:
                 pnl = intraday_cash - intraday_cost
@@ -1380,6 +1399,19 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                     s_fee = float(lot["fee_per_share"] * qty)
                     s_tax = float(lot["tax_per_share"] * qty)
                     sell_against_inventory(stock, pool_of(qty), date, qty, cash_in, s_fee, s_tax)
+
+    if inventory_shortfalls:
+        import streamlit as st
+        msgs = [
+            f"**{stock}** — {info['qty']:,} 股自 {info['first_date']} 起無對應買進，採零成本基準"
+            for stock, info in sorted(inventory_shortfalls.items(), key=lambda kv: -kv[1]["qty"])
+            if info["qty"] > 0
+        ]
+        if msgs:
+            st.warning(
+                "⚠️ 以下標的賣出股數多於買進紀錄（通常代表 CSV 缺少更早的買進交易）：\n\n"
+                + "\n\n".join(msgs)
+            )
 
     realized = pd.DataFrame(realized_rows).sort_values(["date", "stock"]).reset_index(drop=True)
     return df, realized
