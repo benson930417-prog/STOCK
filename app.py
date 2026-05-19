@@ -442,8 +442,9 @@ ETF_NAME_TO_TICKER = {
     "元大台灣50": "0050",
     "國泰費城半導體": "00830",
     "國泰永續高股息": "00878",
-    # Verified from broker CSV (期元大 issuer, not 期街口):
+    # Verified from broker CSV:
     "期元大S&P黃金": "00635U",
+    "國泰US短期公債": "00865B",
 }
 
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
@@ -1132,6 +1133,20 @@ def merge_into_master(new_month_df: pd.DataFrame, upload_filename: str):
 
     before = len(combined)
     combined = combined.drop_duplicates(subset=["_key"], keep="last")
+
+    # Robust second-pass dedup: drop rows that look identical except for a
+    # NT$1 rounding wobble in 淨收付金額. The broker can re-export the same
+    # trade later with cash off-by-one, which previously slipped through.
+    stable_key = (
+        combined["股名"].astype(str) + "|"
+        + combined["日期"].astype(str).str[:10] + "|"
+        + combined["成交股數"].astype(str) + "|"
+        + combined["買賣別"].astype(str) + "|"
+        + combined["成交價"].map(lambda v: f"{v:.4f}") + "|"
+        + combined["委託書號"].astype(str)
+    )
+    combined = combined.assign(_stable_key=stable_key).drop_duplicates(subset=["_stable_key"], keep="last").drop(columns=["_stable_key"])
+
     n_after = len(combined)
 
     dup_skipped = before - n_after
