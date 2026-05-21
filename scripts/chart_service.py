@@ -12,7 +12,7 @@ app = FastAPI()
 
 # Configuration
 CHART_TABS = {
-    "oil": "https://www.tradingview.com/symbols/USOIL/?exchange=TVC&timeframe=5D",
+    "oil": "https://www.tradingview.com/symbols/USOIL/?exchange=FXCM&timeframe=5D",
     "brent": "https://www.tradingview.com/symbols/RUS-BR1!/?timeframe=5D",
     "bond": "https://www.tradingview.com/symbols/TVC-US10Y/?timeframe=5D",
     "gold": "https://www.tradingview.com/symbols/GOLD/?timeframe=5D",
