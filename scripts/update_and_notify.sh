@@ -27,13 +27,16 @@ fi
 
 echo "Running ETF fetch for: ${ETFS[*]}"
 
+RUN_STARTED_UTC="$(python -c 'from datetime import datetime, timezone; print(datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))')"
+FAILED_ETFS=()
+
 for ETF in "${ETFS[@]}"; do
     case "$ETF" in
         00981A|00997A)
-            python "scripts/fetch_etf_${ETF}.py"
+            python "scripts/fetch_etf_${ETF}.py" || FAILED_ETFS+=("$ETF")
             ;;
         0050|00830|00878|009805)
-            python "scripts/fetch_passive_${ETF}.py"
+            python "scripts/fetch_passive_${ETF}.py" || FAILED_ETFS+=("$ETF")
             ;;
         *)
             echo "Skipping unknown ETF: $ETF"
@@ -43,22 +46,41 @@ done
 
 CHANGED_ETFS=()
 ACTIVE_NEW_ETFS=()
-for ETF in "${ETFS[@]}"; do
-    if [ "$ETF" = "0050" ] || [ "$ETF" = "00830" ] || [ "$ETF" = "00878" ] || [ "$ETF" = "009805" ]; then
-        LOG_FILE="data/passive_${ETF}_log.json"
-    else
-        LOG_FILE="data/etf_${ETF}_log.json"
-    fi
+while IFS= read -r ETF; do
+    [ -n "$ETF" ] && CHANGED_ETFS+=("$ETF")
+done < <(RUN_STARTED_UTC="$RUN_STARTED_UTC" ETFS="${ETFS[*]}" python - <<'PY'
+import json
+import os
+from datetime import datetime, timezone
+from pathlib import Path
 
-    if grep -q "NEW DATA FOUND" "$LOG_FILE" 2>/dev/null; then
-        CHANGED_ETFS+=("$ETF")
-        case "$ETF" in
-            00981A|00997A)
-                ACTIVE_NEW_ETFS+=("$ETF")
-                ;;
-        esac
-    fi
+run_started = datetime.fromisoformat(os.environ["RUN_STARTED_UTC"].replace("Z", "+00:00"))
+for etf in os.environ["ETFS"].split():
+    prefix = "passive" if etf in {"0050", "00830", "00878", "009805"} else "etf"
+    path = Path(f"data/{prefix}_{etf}_log.json")
+    try:
+        log = json.loads(path.read_text(encoding="utf-8"))
+        checked = datetime.fromisoformat(str(log.get("last_checked_utc", "")).replace("Z", "+00:00"))
+    except Exception:
+        continue
+    if checked.tzinfo is None:
+        checked = checked.replace(tzinfo=timezone.utc)
+    if checked >= run_started and log.get("status") == "NEW DATA FOUND":
+        print(etf)
+PY
+)
+
+for ETF in "${CHANGED_ETFS[@]}"; do
+    case "$ETF" in
+        00981A|00997A)
+            ACTIVE_NEW_ETFS+=("$ETF")
+            ;;
+    esac
 done
+
+if [ "${#FAILED_ETFS[@]}" -gt 0 ]; then
+    echo "Fetch failed for: ${FAILED_ETFS[*]}"
+fi
 
 git config --global user.name "OCI Server Bot"
 git config --global user.email "oci-bot@localhost"

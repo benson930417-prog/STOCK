@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime, timezone
 
+import requests
 from playwright.sync_api import sync_playwright
 
 
@@ -130,6 +131,22 @@ def _pct_change(curr, prev):
     return ((curr - prev) / prev) * 100.0
 
 
+def _get_yahoo_closing_price(ticker, date_str):
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        period1 = int(dt.timestamp())
+        period2 = period1 + 86400
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&period1={period1}&period2={period2}"
+        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+        data = r.json()
+        closes = data["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+        if closes and closes[0] is not None:
+            return round(float(closes[0]), 2)
+        return None
+    except Exception:
+        return None
+
+
 def _extract_nav_history(page):
     text = page.locator("body").inner_text(timeout=10000)
     table_start = text.find("淨值日期")
@@ -195,21 +212,30 @@ def fetch_and_update_0050():
         page.goto(URL, wait_until="networkidle", timeout=60000)
         date_key, payload = _extract_page_data(page)
         page.goto(NAV_HISTORY_URL, wait_until="networkidle", timeout=60000)
-        nav_history = _extract_nav_history(page)
+        try:
+            nav_history = _extract_nav_history(page)
+        except Exception as exc:
+            nav_history = None
+            payload["meta"]["nav_history_error"] = str(exc)
+            closing_price = _get_yahoo_closing_price("0050.TW", date_key)
+            if closing_price is not None:
+                payload["meta"]["closing_price"] = closing_price
+            print(f"Warning: 0050 NAV history unavailable; keeping holdings update. {exc}")
         browser.close()
 
-    latest_nav = nav_history["latest"]
-    payload["meta"].update(
-        {
-            "fund_size": latest_nav["fund_net_assets"],
-            "nav": latest_nav["nav"],
-            "closing_price": latest_nav["closing_price"],
-            "outstanding_units": latest_nav["outstanding_units"],
-            "premium_discount": latest_nav["premium_discount"],
-            "premium_discount_pct": latest_nav["premium_discount_pct"],
-            "nav_history": nav_history,
-        }
-    )
+    if nav_history:
+        latest_nav = nav_history["latest"]
+        payload["meta"].update(
+            {
+                "fund_size": latest_nav["fund_net_assets"],
+                "nav": latest_nav["nav"],
+                "closing_price": latest_nav["closing_price"],
+                "outstanding_units": latest_nav["outstanding_units"],
+                "premium_discount": latest_nav["premium_discount"],
+                "premium_discount_pct": latest_nav["premium_discount_pct"],
+                "nav_history": nav_history,
+            }
+        )
 
     previous = history.get(date_key)
     changed = previous != payload
