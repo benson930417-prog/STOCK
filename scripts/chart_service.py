@@ -144,13 +144,16 @@ def _parse_performance_from_text(text):
 
 def _parse_market_text(text):
     compact_match = re.search(
-        r"([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s+([A-Z%]{1,5})\s+([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s+([-+−]?[0-9][0-9,.]*%)",
+        r"([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*(?:R)?\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD|[A-Z%]{1,5})\s*(?:R)?\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*([-+−]?[0-9][0-9,.]*%)",
         str(text or ""),
     )
     if compact_match:
+        currency = compact_match.group(2)
+        if len(currency) > 3 and currency.endswith("R"):
+            currency = currency[:-1]
         return {
             "price": _num(compact_match.group(1)),
-            "currency": compact_match.group(2),
+            "currency": currency,
             "change_abs": _num(compact_match.group(3)),
             "change_pct": _num(compact_match.group(4)),
             "as_of_text": None,
@@ -239,10 +242,10 @@ async def _extract_market_quote(page):
 
         if (!price || !changePct) {
             const text = rawText(document.body);
-            const compactMatch = text.match(/([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s+([A-Z%]{1,5})\\s+([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s+([-+−]?[0-9][0-9,.]*%)/);
+            const compactMatch = text.match(/([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*(?:R)?\\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD|[A-Z%]{1,5})\\s*(?:R)?\\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*([-+−]?[0-9][0-9,.]*%)/);
             if (compactMatch) {
                 price = compactMatch[1];
-                currency = compactMatch[2];
+                currency = compactMatch[2].length > 3 && compactMatch[2].endsWith("R") ? compactMatch[2].slice(0, -1) : compactMatch[2];
                 changeAbs = compactMatch[3];
                 changePct = compactMatch[4];
             }
