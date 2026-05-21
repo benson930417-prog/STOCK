@@ -136,6 +136,8 @@ def calculate_open_positions(raw_trades):
     df["成交股數"] = df["成交股數"].apply(_to_int)
     df["淨收付金額"] = df["淨收付金額"].apply(_to_float)
     df["股名"] = df["股名"].astype(str).str.strip()
+    if "買賣別" in df.columns:
+        df = df[~df["買賣別"].isin(["沖買", "沖賣"])]
     df = df.sort_values(["股名", "日期"]).reset_index(drop=True)
     bank_stock_tax_rates, bank_class_tax_rates = _infer_bank_sell_tax_rates(raw_trades)
 
@@ -428,9 +430,10 @@ def load_master_snapshot():
         if "market_value" in positions and positions["market_value"].dropna().sum():
             positions["weight_pct"] = positions["market_value"] / positions["market_value"].sum() * 100.0
 
-    total_market = float(positions["market_value"].dropna().sum()) if not positions.empty else 0.0
-    total_liq = float(positions["liquidation_value"].dropna().sum()) if not positions.empty else 0.0
-    total_cost = float(positions["cost"].sum()) if not positions.empty else 0.0
+    non_cash = positions[positions["stock"] != "現金"] if not positions.empty else positions
+    total_market = float(non_cash["market_value"].dropna().sum()) if not non_cash.empty else 0.0
+    total_liq = float(non_cash["liquidation_value"].dropna().sum()) if not non_cash.empty else 0.0
+    total_cost = float(non_cash["cost"].sum()) if not non_cash.empty else 0.0
     unrealized = total_liq - total_cost
     unrealized_pct = unrealized / total_cost * 100.0 if total_cost else 0.0
     all_exposures = build_expanded_exposure(positions)
