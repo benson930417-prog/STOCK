@@ -23,6 +23,7 @@ from scripts.monitor_etf_quotes import (
 )
 from scripts.generate_quote_card import generate_quote_card_from_cache
 from scripts.master_manual_positions import (
+    CASH_LABEL,
     cash_row,
     load_manual_positions,
     manual_positions_as_open_position_rows,
@@ -421,6 +422,7 @@ def load_master_snapshot():
 
     # Append cash AFTER enrichment so it bypasses Yahoo lookups.
     cash = cash_row(manual.get("cash_twd"))
+    cash_amount = float(cash.get("market_value", 0.0)) if cash is not None else 0.0
     if cash is not None:
         if positions.empty:
             positions = pd.DataFrame([cash])
@@ -430,7 +432,7 @@ def load_master_snapshot():
         if "market_value" in positions and positions["market_value"].dropna().sum():
             positions["weight_pct"] = positions["market_value"] / positions["market_value"].sum() * 100.0
 
-    non_cash = positions[positions["stock"] != "現金"] if not positions.empty else positions
+    non_cash = positions[positions["stock"] != CASH_LABEL] if not positions.empty else positions
     total_market = float(non_cash["market_value"].dropna().sum()) if not non_cash.empty else 0.0
     total_liq = float(non_cash["liquidation_value"].dropna().sum()) if not non_cash.empty else 0.0
     total_cost = float(non_cash["cost"].sum()) if not non_cash.empty else 0.0
@@ -442,6 +444,7 @@ def load_master_snapshot():
         "positions": positions,
         "total_market": total_market,
         "total_liq": total_liq,
+        "cash_twd": cash_amount,
         "total_cost": total_cost,
         "unrealized": unrealized,
         "unrealized_pct": unrealized_pct,
@@ -456,6 +459,7 @@ def build_master_text(snapshot, quote_cache=None):
     lines = [
         "吳大師持股",
         f"目前淨值(扣費稅)：{_fmt_money(snapshot['total_liq'])}",
+        f"現金：{_fmt_money(snapshot.get('cash_twd', 0))}",
         f"總成本：{_fmt_money(snapshot['total_cost'])}",
         f"未實損益：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:+.2f}%)",
         f"展開後庫存：{snapshot['holding_count']} 檔"
@@ -576,6 +580,7 @@ def generate_master_quote_card(limit=50):
         "quote_card_cache": quote_cache,
         "summary": {
             "total_liq": snapshot["total_liq"],
+            "cash_twd": snapshot["cash_twd"],
             "total_cost": snapshot["total_cost"],
             "unrealized": snapshot["unrealized"],
             "unrealized_pct": snapshot["unrealized_pct"],
