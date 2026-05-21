@@ -103,11 +103,27 @@ source venv/bin/activate
 pip install -r requirements.txt -q
 ```
 
-### Restarting Services after Updates
-If you update the webhook logic or the image generation code, restart the relevant services:
+### Updating the LINE Rich Menu
+If you added or modified buttons in the LINE Bot Rich Menu, run the setup script within the virtual environment to deploy the changes to LINE:
 
 ```bash
+cd /home/ubuntu/STOCK
+source venv/bin/activate
+python scripts/setup_rich_menu.py
+```
+
+### Restarting Services after Updates
+If you add new services, update the webhook logic, or modify the image generation code, restart the relevant systemd services. Note that new `.service` files must be copied to `/etc/systemd/system/` first:
+
+```bash
+# Example: Copying a new service (only needed once for new services)
+sudo cp services/stock-quote-monitor-009805.service /etc/systemd/system/
+
 sudo systemctl daemon-reload
+
+# Example: Enabling a new service to start on boot
+sudo systemctl enable stock-quote-monitor-009805.service
+
 sudo systemctl restart stock-webhook.service \
                        stock-master-holding-monitor.service \
                        stock-quote-monitor-0050.service \
