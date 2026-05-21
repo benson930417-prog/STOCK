@@ -244,10 +244,12 @@ def _market_text_payload(key, quote):
     ]
     for perf_key, label in labels:
         value = performance.get(perf_key)
-        if value is not None:
+        if value is None and perf_key == "1d":
+            value = quote.get("change_pct")
+        if value is None:
+            lines.append(f"{label} 無資料")
+        else:
             lines.append(_format_change(float(value), label))
-    if len(lines) == 5 and quote.get("change_pct") is not None:
-        lines.append(_format_change(float(quote["change_pct"]), "今日："))
     return {
         "key": key,
         "text": "\n".join(lines),
