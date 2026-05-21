@@ -80,6 +80,31 @@ done
 
 if [ "${#FAILED_ETFS[@]}" -gt 0 ]; then
     echo "Fetch failed for: ${FAILED_ETFS[*]}"
+    FAILED_ETFS_STR="${FAILED_ETFS[*]}" RUN_STARTED_UTC="$RUN_STARTED_UTC" python - <<'PY'
+import json
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+
+now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+run_started = os.environ.get("RUN_STARTED_UTC") or now
+for etf in os.environ.get("FAILED_ETFS_STR", "").split():
+    prefix = "passive" if etf in {"0050", "00830", "00878", "009805"} else "etf"
+    path = Path(f"data/{prefix}_{etf}_log.json")
+    try:
+        previous = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        previous = {}
+    previous.update(
+        {
+            "last_checked_utc": now,
+            "status": "FETCH FAILED",
+            "error": f"{etf} fetch failed during daily job started at {run_started}",
+        }
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(previous, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+PY
 fi
 
 git config --global user.name "OCI Server Bot"
