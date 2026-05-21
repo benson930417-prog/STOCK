@@ -1899,17 +1899,17 @@ try:
                                     st.warning(f"Local git pull failed: {sync_result}")
                             except Exception as push_exc:
                                 st.error(f"GitHub push failed: {push_exc}")
-                    
-                    fetch_portfolio_quotes.clear()
-                    try:
-                        from scripts.master_holding_quote_card import generate_master_quote_card
-                        generate_master_quote_card(limit=50)
-                    except Exception as cache_error:
-                        st.warning(f"Master holding cache refresh failed: {cache_error}")
                         
-                    st.rerun()
-                except Exception as exc:
-                    st.error(f"Save failed: {exc}")
+                        fetch_portfolio_quotes.clear()
+                        try:
+                            from scripts.master_holding_quote_card import generate_master_quote_card
+                            generate_master_quote_card(limit=50)
+                        except Exception as cache_error:
+                            st.warning(f"Master holding cache refresh failed: {cache_error}")
+                            
+                        st.rerun()
+                    except Exception as exc:
+                        st.error(f"Save failed: {exc}")
 
         # Admin upload area (FORM to stop infinite reruns)
         if is_admin_authed():
