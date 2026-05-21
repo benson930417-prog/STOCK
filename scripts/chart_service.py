@@ -119,6 +119,20 @@ def _parse_performance_from_text(text):
 
 
 def _parse_market_text(text):
+    compact_match = re.search(
+        r"([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s+([A-Z%]{1,5})\s+([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s+([-+−]?[0-9][0-9,.]*%)",
+        str(text or ""),
+    )
+    if compact_match:
+        return {
+            "price": _num(compact_match.group(1)),
+            "currency": compact_match.group(2),
+            "change_abs": _num(compact_match.group(3)),
+            "change_pct": _num(compact_match.group(4)),
+            "as_of_text": None,
+            "performance": _parse_performance_from_text(text),
+        }
+
     lines = [line.strip() for line in str(text or "").splitlines() if line.strip()]
     price = change_abs = change_pct = None
     currency = ""
@@ -150,6 +164,84 @@ def _parse_market_text(text):
         "change_pct": change_pct,
         "as_of_text": as_of,
         "performance": _parse_performance_from_text(text),
+    }
+
+
+async def _extract_market_quote(page):
+    data = await page.evaluate("""() => {
+        const rawText = (el) => (el ? (el.innerText || el.textContent || "").trim() : "");
+        const visibleText = (el) => {
+            if (!el) return "";
+            const style = window.getComputedStyle(el);
+            const rect = el.getBoundingClientRect();
+            if (style.display === "none" || style.visibility === "hidden" || rect.width === 0 || rect.height === 0) {
+                return "";
+            }
+            return (el.innerText || el.textContent || "").trim();
+        };
+        const isNumberLike = (text) => /^[-+−]?[0-9][0-9,.]*([kKmM])?$/.test((text || "").trim());
+        const isPercent = (text) => /^[-+−]?[0-9][0-9,.]*%$/.test((text || "").trim());
+        const isCurrency = (text) => /^[A-Z%]{1,5}$/.test((text || "").trim());
+        const root =
+            document.querySelector('[data-name="symbol-header"]') ||
+            document.querySelector('[class*="symbolHeader"]') ||
+            document.querySelector('[class*="symbol-header"]') ||
+            document.querySelector('main') ||
+            document.body;
+        const lines = rawText(root).split(/\\n+/).map((line) => line.trim()).filter(Boolean);
+        let price = null;
+        let currency = "";
+        let changeAbs = null;
+        let changePct = null;
+
+        for (let i = 0; i < lines.length - 1; i += 1) {
+            if (!isNumberLike(lines[i])) continue;
+            for (let j = i + 1; j < Math.min(lines.length, i + 6); j += 1) {
+                if (isCurrency(lines[j])) {
+                    price = lines[i];
+                    currency = lines[j];
+                    for (let k = j + 1; k < Math.min(lines.length, j + 6); k += 1) {
+                        if (changeAbs === null && isNumberLike(lines[k])) changeAbs = lines[k];
+                        if (isPercent(lines[k])) {
+                            changePct = lines[k];
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            if (price && changePct) break;
+        }
+
+        if (!price || !changePct) {
+            const text = rawText(document.body);
+            const compactMatch = text.match(/([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s+([A-Z%]{1,5})\\s+([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s+([-+−]?[0-9][0-9,.]*%)/);
+            if (compactMatch) {
+                price = compactMatch[1];
+                currency = compactMatch[2];
+                changeAbs = compactMatch[3];
+                changePct = compactMatch[4];
+            }
+        }
+
+        return {
+            price,
+            currency,
+            change_abs: changeAbs,
+            change_pct: changePct,
+            body_text: rawText(document.body),
+        };
+    }""")
+    if not data.get("price") or not data.get("change_pct"):
+        raise ValueError("Could not extract TradingView quote from DOM")
+
+    return {
+        "price": _num(data.get("price")),
+        "currency": data.get("currency") or "",
+        "change_abs": _num(data.get("change_abs")),
+        "change_pct": _num(data.get("change_pct")),
+        "as_of_text": None,
+        "performance": _parse_performance_from_text(data.get("body_text") or ""),
     }
 
 
@@ -292,13 +384,33 @@ async def _get_page_for_key(key):
 async def market_text(req: SnapshotRequest):
     page = await _get_page_for_key(req.key)
     try:
-        text = await page.locator("body").inner_text(timeout=10000)
-        quote = _parse_market_text(text)
+        try:
+            quote = await _extract_market_quote(page)
+        except Exception as dom_error:
+            print(f"⚠️ DOM quote extraction failed for {req.key}: {dom_error}")
+            text = await page.evaluate("""() => document.body ? (document.body.innerText || document.body.textContent || "") : """)
+            quote = _parse_market_text(text)
         return _market_text_payload(req.key, quote)
     except Exception as e:
         print(f"❌ Error parsing market text for {req.key}: {e}")
         await init_browser()
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/market-debug")
+async def market_debug(req: SnapshotRequest):
+    page = await _get_page_for_key(req.key)
+    text = await page.evaluate("""() => document.body ? (document.body.innerText || document.body.textContent || "") : """)
+    try:
+        quote = await _extract_market_quote(page)
+    except Exception as exc:
+        quote = {"error": str(exc)}
+    return {
+        "key": req.key,
+        "url": page.url,
+        "title": await page.title(),
+        "quote": quote,
+        "body_text_head": text[:3000],
+    }
 
 @app.post("/snapshot")
 async def take_snapshot(req: SnapshotRequest):
