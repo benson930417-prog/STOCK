@@ -14,7 +14,7 @@ This repository contains the backend services, data pipelines, and frontend appl
 
 ## Architecture Overview
 
-1. **Frontend (Streamlit):** Located in `app.py` and `src/ui/`. Renders dashboards for both Active (00981A, 00997A) and Passive (0050, 00830) ETFs.
+1. **Frontend (Streamlit):** Located in `app.py` and `src/ui/`. Renders dashboards for both Active (00981A, 00997A) and Passive (0050, 00830, 00878, 009805) ETFs.
 2. **LINE Webhook (Flask):** Located in `api/webhook.py`. Listens for user commands, builds ETF quote cards, returns charts (Forex, Oil, Bonds), and broadcasts daily operation reports.
 3. **Data Fetchers:** Scheduled scripts that pull official NAVs and constituent holdings from respective providers (e.g., Cathay JSON APIs, Capital Fund, etc.).
 4. **Quote Cache Monitors:** Persistent daemon services that fetch real-time stock prices (via Yahoo Finance/TradingView) during market hours and build localized JSON caches to serve the frontend and webhook rapidly.
@@ -42,10 +42,11 @@ These services run continuously to update real-time pricing caches.
 - `stock-quote-monitor-0050.service`
 - `stock-quote-monitor-00830.service`
 - `stock-quote-monitor-00981a.service`
-- `stock-quote-monitor-00997a.service`
+- `stock-quote-monitor-00878.service`
+- `stock-quote-monitor-009805.service`
 
 ### Scheduled Fetchers
-- `stock-fetch-1730-tw.timer` / `stock-fetch-1730-tw.service`: Daily job that executes `/usr/bin/bash /home/ubuntu/STOCK/scripts/update_and_notify.sh 00981A 00997A 0050 00830`.
+- `stock-fetch-1730-tw.timer` / `stock-fetch-1730-tw.service`: Daily job that executes `/usr/bin/bash /home/ubuntu/STOCK/scripts/update_and_notify.sh 00981A 00997A 0050 00830 00878 009805`.
 
 **Useful debugging commands:**
 ```bash
@@ -113,7 +114,8 @@ sudo systemctl restart stock-webhook.service \
                        stock-quote-monitor-00981a.service \
                        stock-quote-monitor-00997a.service \
                        stock-quote-monitor-00830.service \
-                       stock-quote-monitor-00878.service
+                       stock-quote-monitor-00878.service \
+                       stock-quote-monitor-009805.service
 ```
 
 ### Manual Triggering

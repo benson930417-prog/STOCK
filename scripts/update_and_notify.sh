@@ -22,7 +22,7 @@ GITHUB_REPO="${GITHUB_REPO:-benson930417-prog/STOCK}"
 if [ "$#" -gt 0 ]; then
     ETFS=("$@")
 else
-    ETFS=("00981A" "00997A" "0050" "00830" "00878")
+    ETFS=("00981A" "00997A" "0050" "00830" "00878" "009805")
 fi
 
 echo "Running ETF fetch for: ${ETFS[*]}"
@@ -32,7 +32,7 @@ for ETF in "${ETFS[@]}"; do
         00981A|00997A)
             python "scripts/fetch_etf_${ETF}.py"
             ;;
-        0050|00830|00878)
+        0050|00830|00878|009805)
             python "scripts/fetch_passive_${ETF}.py"
             ;;
         *)
@@ -44,7 +44,7 @@ done
 CHANGED_ETFS=()
 ACTIVE_NEW_ETFS=()
 for ETF in "${ETFS[@]}"; do
-    if [ "$ETF" = "0050" ] || [ "$ETF" = "00830" ] || [ "$ETF" = "00878" ]; then
+    if [ "$ETF" = "0050" ] || [ "$ETF" = "00830" ] || [ "$ETF" = "00878" ] || [ "$ETF" = "009805" ]; then
         LOG_FILE="data/passive_${ETF}_log.json"
     else
         LOG_FILE="data/etf_${ETF}_log.json"

@@ -448,8 +448,8 @@ def render_passive_etf_tab(
 
     etf_ticker = st.selectbox(
         T(lang, "Select ETF", "選擇 ETF"),
-        ["0050", "00830", "00878"],
-        key="passive_etf_ticker",
+        ["0050", "00830", "00878", "009805"],
+        format_func=lambda x: f"{x} (被動)",
     )
 
     log_file = DATA_DIR / f"passive_{etf_ticker}_log.json"
