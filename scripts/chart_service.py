@@ -145,8 +145,8 @@ def _parse_performance_from_text(text):
 def _parse_market_text(text):
     raw = str(text or "")
     compact_patterns = [
-        r"Market\s+open\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*(?:R)?\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD|[A-Z%]{1,5})?\s*(?:R)?\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*([-+−]?[0-9][0-9,.]*%)",
-        r"([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*(?:R)?\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD|[A-Z%]{1,5})\s*(?:R)?\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*([-+−]?[0-9][0-9,.]*%)",
+        r"Market\s+open\s*([0-9][0-9,.]*(?:[kKmM])?)\s*[A-Z]?\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD)?(?:[\s\u2009\u202f/]*[A-Z]{2,5})?\s*[A-Z]?\s*([-+−][0-9][0-9,.]*(?:[kKmM])?)\s*([-+−][0-9][0-9,.]*%)",
+        r"([0-9][0-9,.]*(?:[kKmM])?)\s*[A-Z]?\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD)(?:[\s\u2009\u202f/]*[A-Z]{2,5})?\s*[A-Z]?\s*([-+−][0-9][0-9,.]*(?:[kKmM])?)\s*([-+−][0-9][0-9,.]*%)",
         r"([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*(?:R)?\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*([-+−]?[0-9][0-9,.]*%)",
     ]
     compact_match = None
@@ -164,6 +164,8 @@ def _parse_market_text(text):
         currency = currency or ""
         if len(currency) > 3 and currency.endswith("R"):
             currency = currency[:-1]
+        if _num(price) is None or _num(price) <= 0:
+            raise ValueError("Could not parse a positive TradingView quote price")
         return {
             "price": _num(price),
             "currency": currency,
@@ -256,8 +258,8 @@ async def _extract_market_quote(page):
         if (!price || !changePct) {
             const text = rawText(document.body);
             const patterns = [
-                /Market\\s+open\\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*(?:R)?\\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD|[A-Z%]{1,5})?\\s*(?:R)?\\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*([-+−]?[0-9][0-9,.]*%)/,
-                /([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*(?:R)?\\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD|[A-Z%]{1,5})\\s*(?:R)?\\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*([-+−]?[0-9][0-9,.]*%)/,
+                /Market\\s+open\\s*([0-9][0-9,.]*(?:[kKmM])?)\\s*[A-Z]?\\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD)?(?:[\\s\\u2009\\u202f/]*[A-Z]{2,5})?\\s*[A-Z]?\\s*([-+−][0-9][0-9,.]*(?:[kKmM])?)\\s*([-+−][0-9][0-9,.]*%)/,
+                /([0-9][0-9,.]*(?:[kKmM])?)\\s*[A-Z]?\\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD)(?:[\\s\\u2009\\u202f/]*[A-Z]{2,5})?\\s*[A-Z]?\\s*([-+−][0-9][0-9,.]*(?:[kKmM])?)\\s*([-+−][0-9][0-9,.]*%)/,
                 /([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*(?:R)?\\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*([-+−]?[0-9][0-9,.]*%)/,
             ];
             for (const pattern of patterns) {
@@ -274,6 +276,12 @@ async def _extract_market_quote(page):
                     changePct = compactMatch[3];
                 }
                 if (currency.length > 3 && currency.endsWith("R")) currency = currency.slice(0, -1);
+                if (Number.parseFloat(price.replace(/,/g, "")) <= 0) {
+                    price = null;
+                    changeAbs = null;
+                    changePct = null;
+                    continue;
+                }
                 break;
             }
         }
