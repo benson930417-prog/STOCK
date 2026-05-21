@@ -234,7 +234,73 @@ def build_etf_quote_text(ticker):
     lines.append(f"- 上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}")
     return "\n".join(lines)
 
-def get_yahoo_data_text(symbol, title, emoji, precision=2):
+def _fetch_intraday_change_pct(symbol, hours=24):
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(
+            f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=5d&interval=1h',
+            headers=headers,
+            timeout=5,
+        )
+        r.raise_for_status()
+        result = r.json()['chart']['result'][0]
+        meta = result['meta']
+        price = float(meta['regularMarketPrice'])
+        timestamps = result.get('timestamp') or []
+        closes = result['indicators']['quote'][0].get('close') or []
+        valid_data = [(int(ts), float(c)) for ts, c in zip(timestamps, closes) if ts is not None and c is not None]
+        if not valid_data:
+            return None
+
+        target = int(meta.get('regularMarketTime') or valid_data[-1][0]) - hours * 3600
+        old_ts, old_price = min(valid_data, key=lambda item: abs(item[0] - target))
+        if old_price <= 0:
+            return None
+        return (price - old_price) / old_price * 100.0
+    except Exception:
+        return None
+
+def _fetch_tradingview_quotes(scanner, tickers):
+    try:
+        payload = {
+            "symbols": {"tickers": tickers, "query": {"types": []}},
+            "columns": [
+                "name",
+                "close",
+                "change",
+                "change_abs",
+                "description",
+                "currency",
+                "update_mode",
+            ],
+        }
+        r = requests.post(
+            f"https://scanner.tradingview.com/{scanner}/scan",
+            json=payload,
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=5,
+        )
+        r.raise_for_status()
+        out = {}
+        for row in r.json().get("data") or []:
+            values = row.get("d") or []
+            if len(values) < 3 or values[1] is None:
+                continue
+            out[row.get("s")] = {
+                "name": values[0] if len(values) > 0 else row.get("s"),
+                "price": float(values[1]),
+                "change_pct": float(values[2]) if values[2] is not None else None,
+                "change_abs": float(values[3]) if len(values) > 3 and values[3] is not None else None,
+                "description": values[4] if len(values) > 4 else None,
+                "currency": values[5] if len(values) > 5 else "",
+                "update_mode": values[6] if len(values) > 6 else None,
+            }
+        return out
+    except Exception as exc:
+        print("TradingView quote fetch failed:", exc)
+        return {}
+
+def get_yahoo_data_text(symbol, title, emoji, precision=2, intraday_1d=False):
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
         r = requests.get(f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=6mo&interval=1d', headers=headers, timeout=5)
@@ -255,6 +321,13 @@ def get_yahoo_data_text(symbol, title, emoji, precision=2):
             if not valid_data:
                 return f"{emoji} {title}\n──────────\n無有效報價資料。"
                 
+            def format_change_pct(change_pct, label):
+                sign = "+" if change_pct > 0 else ""
+                direction_emoji = "🔴" if change_pct > 0 else "🟢"
+                if change_pct == 0:
+                    direction_emoji = "⚪"
+                return f"{label} {direction_emoji}{sign}{change_pct:.2f}%"
+
             def get_change_str(days_ago, label):
                 if len(valid_data) <= days_ago:
                     return f" {label} 無資料"
@@ -262,12 +335,13 @@ def get_yahoo_data_text(symbol, title, emoji, precision=2):
                 old_price = valid_data[-(days_ago + 1)][1]
                 change = price - old_price
                 change_pct = (change / old_price) * 100
-                
-                sign = "+" if change > 0 else ""
-                direction_emoji = "🔴" if change > 0 else "🟢"
-                if change == 0: direction_emoji = "⚪"
-                
-                return f"{label} {direction_emoji}{sign}{change_pct:.2f}%"
+                return format_change_pct(change_pct, label)
+
+            one_day_text = get_change_str(1, "1日：")
+            if intraday_1d:
+                intraday_change = _fetch_intraday_change_pct(symbol, hours=24)
+                if intraday_change is not None:
+                    one_day_text = format_change_pct(intraday_change, "1日：")
 
             currency_zh = {"USD": "美元", "TWD": "台幣", "CHF": "瑞郎", "JPY": "日圓",
                            "GBP": "英鎊", "EUR": "歐元", "HKD": "港幣"}.get(currency, currency)
@@ -278,7 +352,7 @@ def get_yahoo_data_text(symbol, title, emoji, precision=2):
                 f"🕒 最新報價：{price_str} {currency_zh}",
                 f"",
                 f"📊 近期漲跌幅：",
-                get_change_str(1,  "1日："),
+                one_day_text,
                 get_change_str(5,  "1週："),
                 get_change_str(21, "1月："),
                 get_change_str(len(valid_data)-1, "6月："),
@@ -289,6 +363,61 @@ def get_yahoo_data_text(symbol, title, emoji, precision=2):
             return f"{emoji} {title}\n──────────\n報價暫時無法使用。"
     except Exception as e:
         return f"{emoji} {title}\n──────────\n無法取得目前報價資訊，請稍後再試。"
+
+def get_fx_data_text(yahoo_symbol, tradingview_symbol, title, emoji, precision=3):
+    tv_quote = _fetch_tradingview_quotes("forex", [tradingview_symbol]).get(tradingview_symbol)
+    if not tv_quote:
+        return get_yahoo_data_text(yahoo_symbol, title, emoji, precision=precision, intraday_1d=True)
+
+    try:
+        price = float(tv_quote["price"])
+        one_day_change = tv_quote.get("change_pct")
+
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(
+            f'https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_symbol}?range=6mo&interval=1d',
+            headers=headers,
+            timeout=5,
+        )
+        r.raise_for_status()
+        result = r.json()['chart']['result'][0]
+        timestamps = result['timestamp']
+        closes = result['indicators']['quote'][0]['close']
+        valid_data = [(ts, c) for ts, c in zip(timestamps, closes) if c is not None]
+        if not valid_data:
+            raise ValueError("no yahoo history")
+
+        def format_change_pct(change_pct, label):
+            sign = "+" if change_pct > 0 else ""
+            direction_emoji = "🔴" if change_pct > 0 else "🟢"
+            if change_pct == 0:
+                direction_emoji = "⚪"
+            return f"{label} {direction_emoji}{sign}{change_pct:.2f}%"
+
+        def get_change_str(days_ago, label):
+            if len(valid_data) <= days_ago:
+                return f" {label} 無資料"
+            old_price = valid_data[-(days_ago + 1)][1]
+            change_pct = (price - old_price) / old_price * 100
+            return format_change_pct(change_pct, label)
+
+        currency_zh = {"TWD": "台幣", "CHF": "瑞郎", "JPY": "日圓"}.get(tv_quote.get("currency"), tv_quote.get("currency", ""))
+        price_str = f"{price:.{precision}f}"
+        one_day_text = "1日： 無資料" if one_day_change is None else format_change_pct(float(one_day_change), "1日：")
+        return "\n".join([
+            f"{emoji} {title}",
+            "──────────",
+            f"🕒 最新報價：{price_str} {currency_zh}",
+            "",
+            "📊 近期漲跌幅：",
+            one_day_text,
+            get_change_str(5, "1週："),
+            get_change_str(21, "1月："),
+            get_change_str(len(valid_data) - 1, "6月："),
+        ])
+    except Exception as exc:
+        print("FX history text failed:", exc)
+        return get_yahoo_data_text(yahoo_symbol, title, emoji, precision=precision, intraday_1d=True)
 
 def get_yahoo_data_dict(symbol, precision=2):
     """Helper to get raw data for the screenshot overlay."""
@@ -326,9 +455,9 @@ def get_10yf_price():
 
 def get_exchange_rates():
     parts = []
-    parts.append(get_yahoo_data_text('TWD=X', '美元兌台幣', '💵', precision=3))
-    parts.append(get_yahoo_data_text('CHF=X', '美元兌瑞朗', '💷', precision=4))
-    parts.append(get_yahoo_data_text('JPY=X', '美元兌日幣', '💴', precision=2))
+    parts.append(get_fx_data_text('TWD=X', 'FX_IDC:USDTWD', '美元兌台幣', '💵', precision=3))
+    parts.append(get_fx_data_text('CHF=X', 'OANDA:USDCHF', '美元兌瑞朗', '💷', precision=4))
+    parts.append(get_fx_data_text('JPY=X', 'OANDA:USDJPY', '美元兌日幣', '💴', precision=2))
     return "\n\n".join(parts)
 
 def get_gold_text():
