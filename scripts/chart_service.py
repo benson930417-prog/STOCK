@@ -143,19 +143,32 @@ def _parse_performance_from_text(text):
 
 
 def _parse_market_text(text):
-    compact_match = re.search(
+    raw = str(text or "")
+    compact_patterns = [
+        r"Market\s+open\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*(?:R)?\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD|[A-Z%]{1,5})?\s*(?:R)?\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*([-+−]?[0-9][0-9,.]*%)",
         r"([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*(?:R)?\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD|[A-Z%]{1,5})\s*(?:R)?\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*([-+−]?[0-9][0-9,.]*%)",
-        str(text or ""),
-    )
+        r"([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*(?:R)?\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*([-+−]?[0-9][0-9,.]*%)",
+    ]
+    compact_match = None
+    for pattern in compact_patterns:
+        compact_match = re.search(pattern, raw)
+        if compact_match:
+            break
     if compact_match:
-        currency = compact_match.group(2)
+        groups = compact_match.groups()
+        if len(groups) == 4:
+            price, currency, change_abs, change_pct = groups
+        else:
+            price, change_abs, change_pct = groups
+            currency = ""
+        currency = currency or ""
         if len(currency) > 3 and currency.endswith("R"):
             currency = currency[:-1]
         return {
-            "price": _num(compact_match.group(1)),
+            "price": _num(price),
             "currency": currency,
-            "change_abs": _num(compact_match.group(3)),
-            "change_pct": _num(compact_match.group(4)),
+            "change_abs": _num(change_abs),
+            "change_pct": _num(change_pct),
             "as_of_text": None,
             "performance": _parse_performance_from_text(text),
         }
@@ -242,12 +255,26 @@ async def _extract_market_quote(page):
 
         if (!price || !changePct) {
             const text = rawText(document.body);
-            const compactMatch = text.match(/([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*(?:R)?\\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD|[A-Z%]{1,5})\\s*(?:R)?\\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*([-+−]?[0-9][0-9,.]*%)/);
-            if (compactMatch) {
+            const patterns = [
+                /Market\\s+open\\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*(?:R)?\\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD|[A-Z%]{1,5})?\\s*(?:R)?\\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*([-+−]?[0-9][0-9,.]*%)/,
+                /([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*(?:R)?\\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD|[A-Z%]{1,5})\\s*(?:R)?\\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*([-+−]?[0-9][0-9,.]*%)/,
+                /([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*(?:R)?\\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\\s*([-+−]?[0-9][0-9,.]*%)/,
+            ];
+            for (const pattern of patterns) {
+                const compactMatch = text.match(pattern);
+                if (!compactMatch) continue;
                 price = compactMatch[1];
-                currency = compactMatch[2].length > 3 && compactMatch[2].endsWith("R") ? compactMatch[2].slice(0, -1) : compactMatch[2];
-                changeAbs = compactMatch[3];
-                changePct = compactMatch[4];
+                if (compactMatch.length === 5) {
+                    currency = compactMatch[2] || "";
+                    changeAbs = compactMatch[3];
+                    changePct = compactMatch[4];
+                } else {
+                    currency = "";
+                    changeAbs = compactMatch[2];
+                    changePct = compactMatch[3];
+                }
+                if (currency.length > 3 && currency.endsWith("R")) currency = currency.slice(0, -1);
+                break;
             }
         }
 
@@ -312,6 +339,16 @@ def _market_text_payload(key, quote):
         "text": "\n".join(lines),
         "quote": quote,
     }
+
+
+def _debug_text_slice(text):
+    raw = str(text or "")
+    markers = ["Market open", "As of today", "1 day", "Previous close"]
+    positions = [raw.find(marker) for marker in markers if raw.find(marker) >= 0]
+    if not positions:
+        return raw[:3000]
+    start = max(0, min(positions) - 500)
+    return raw[start:start + 4000]
 
 
 def _overlay_title(image_path, title):
@@ -456,6 +493,7 @@ async def market_debug(req: SnapshotRequest):
         "ok": "error" not in quote,
         "quote": quote,
         "body_text_head": text[:3000],
+        "body_text_quote_slice": _debug_text_slice(text),
     })
     return debug
 
