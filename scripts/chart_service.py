@@ -26,7 +26,7 @@ CHART_META = {
     "oil":    {"title": "WTI 輕原油 (5日)", "display_title": "輕原油", "emoji": "🛢️", "precision": 2, "unit": "美元"},
     "brent":  {"title": "布蘭特原油 (5日)", "display_title": "布蘭特原油", "emoji": "🛢️", "precision": 2, "unit": "美元"},
     "bond":   {"title": "10年期公債殖利率 (5日)", "display_title": "美國10年期公債殖利率", "emoji": "📈", "precision": 3, "unit": "%"},
-    "gold":   {"title": "黃金現貨 (5日)", "display_title": "黃金 GOLD", "emoji": "", "precision": 2, "unit": "USD"},
+    "gold":   {"title": "黃金現貨 (5日)", "display_title": "黃金 GOLD", "emoji": "🥇", "precision": 2, "unit": "USD"},
     "usdtwd": {"title": "美元兌台幣 (5日)", "display_title": "美元兌台幣", "emoji": "💵", "precision": 3, "unit": "台幣"},
     "usdjpy": {"title": "美元兌日幣 (5日)", "display_title": "美元兌日幣", "emoji": "💴", "precision": 2, "unit": "日圓"},
     "usdchf": {"title": "美元兌瑞郎 (5日)", "display_title": "美元兌瑞郎", "emoji": "💷", "precision": 4, "unit": "瑞郎"},
@@ -35,6 +35,7 @@ CHART_META = {
 PERFORMANCE_LABELS = {
     "1 day": "1d",
     "5 days": "5d",
+    "1 week": "5d",
     "1 month": "1m",
     "6 months": "6m",
     "Year to date": "ytd",
@@ -170,7 +171,7 @@ def _market_text_payload(key, quote):
     performance = quote.get("performance") or {}
     labels = [
         ("1d", "1日："),
-        ("5d", "5日："),
+        ("5d", "1週："),
         ("1m", "1月："),
         ("6m", "6月："),
     ]
