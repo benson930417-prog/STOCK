@@ -380,6 +380,10 @@ async def _get_page_for_key(key):
     return pages[key]
 
 
+async def _get_body_text(page):
+    return await page.locator("body").evaluate("(body) => body.innerText || body.textContent || ''")
+
+
 @app.post("/market-text")
 async def market_text(req: SnapshotRequest):
     page = await _get_page_for_key(req.key)
@@ -388,7 +392,7 @@ async def market_text(req: SnapshotRequest):
             quote = await _extract_market_quote(page)
         except Exception as dom_error:
             print(f"⚠️ DOM quote extraction failed for {req.key}: {dom_error}")
-            text = await page.evaluate("""() => document.body ? (document.body.innerText || document.body.textContent || "") : """)
+            text = await _get_body_text(page)
             quote = _parse_market_text(text)
         return _market_text_payload(req.key, quote)
     except Exception as e:
@@ -412,7 +416,7 @@ async def market_debug(req: SnapshotRequest):
         debug["title_error"] = str(exc)
 
     try:
-        text = await page.evaluate("""() => document.body ? (document.body.innerText || document.body.textContent || "") : """)
+        text = await _get_body_text(page)
     except Exception as exc:
         debug.update({"stage": "body_text", "error": str(exc)})
         return debug
