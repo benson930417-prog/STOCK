@@ -537,7 +537,7 @@ def _master_quote_cache(snapshot, rows):
         "sort_note": "依展開後權重排序",
         "holdings_date": datetime.now(timezone.utc).date().isoformat(),
         "generated_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "etf_refresh_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "etf_refresh_utc": max(valid_quote_times) if valid_quote_times else datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "tsmc_proxy": snapshot.get("tsmc_proxy"),
         "tsmc_data_mode": snapshot.get("tsmc_data_mode"),
         "newest_quote_utc": max(valid_quote_times) if valid_quote_times else None,
