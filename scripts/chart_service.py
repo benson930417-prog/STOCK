@@ -398,19 +398,35 @@ async def market_text(req: SnapshotRequest):
 
 @app.post("/market-debug")
 async def market_debug(req: SnapshotRequest):
-    page = await _get_page_for_key(req.key)
-    text = await page.evaluate("""() => document.body ? (document.body.innerText || document.body.textContent || "") : """)
+    debug = {"key": req.key, "ok": False}
+    try:
+        page = await _get_page_for_key(req.key)
+    except Exception as exc:
+        debug.update({"stage": "get_page", "error": str(exc), "loaded_keys": sorted(pages.keys())})
+        return debug
+
+    debug["url"] = getattr(page, "url", "")
+    try:
+        debug["title"] = await page.title()
+    except Exception as exc:
+        debug["title_error"] = str(exc)
+
+    try:
+        text = await page.evaluate("""() => document.body ? (document.body.innerText || document.body.textContent || "") : """)
+    except Exception as exc:
+        debug.update({"stage": "body_text", "error": str(exc)})
+        return debug
+
     try:
         quote = await _extract_market_quote(page)
     except Exception as exc:
         quote = {"error": str(exc)}
-    return {
-        "key": req.key,
-        "url": page.url,
-        "title": await page.title(),
+    debug.update({
+        "ok": "error" not in quote,
         "quote": quote,
         "body_text_head": text[:3000],
-    }
+    })
+    return debug
 
 @app.post("/snapshot")
 async def take_snapshot(req: SnapshotRequest):
