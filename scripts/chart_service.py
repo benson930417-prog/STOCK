@@ -15,6 +15,7 @@ CHART_TABS = {
     "oil": "https://www.tradingview.com/symbols/USOIL/?exchange=TVC&timeframe=5D",
     "brent": "https://www.tradingview.com/symbols/RUS-BR1!/?timeframe=5D",
     "bond": "https://www.tradingview.com/symbols/TVC-US10Y/?timeframe=5D",
+    "gold": "https://www.tradingview.com/symbols/GOLD/?timeframe=5D",
     "usdtwd": "https://www.tradingview.com/symbols/USDTWD/?exchange=FX_IDC&timeframe=5D",
     "usdjpy": "https://www.tradingview.com/symbols/USDJPY/?exchange=OANDA&timeframe=5D",
     "usdchf": "https://www.tradingview.com/symbols/USDCHF/?exchange=OANDA&timeframe=5D"
@@ -25,6 +26,7 @@ CHART_META = {
     "oil":    {"title": "WTI 輕原油 (5日)",   "yahoo": "CL=F",  "precision": 2},
     "brent":  {"title": "布蘭特原油 (5日)",    "yahoo": "BZ=F",  "precision": 2},
     "bond":   {"title": "10年期公債殖利率 (5日)", "yahoo": "^TNX", "precision": 3},
+    "gold":   {"title": "黃金現貨 (5日)",          "yahoo": "GC=F", "precision": 2},
     "usdtwd": {"title": "美元兌台幣 (5日)",    "yahoo": "TWD=X", "precision": 3},
     "usdjpy": {"title": "美元兌日幣 (5日)",    "yahoo": "JPY=X", "precision": 2},
     "usdchf": {"title": "美元兌瑞郎 (5日)",    "yahoo": "CHF=X", "precision": 4},

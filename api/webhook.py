@@ -76,6 +76,11 @@ def is_operation_report_command(text):
     normalized = unicodedata.normalize("NFKC", text).strip()
     return "操作日報" in normalized
 
+def is_gold_command(text):
+    normalized = unicodedata.normalize("NFKC", text).strip().lower()
+    compact = re.sub(r"[^0-9a-z\u4e00-\u9fff]", "", normalized)
+    return "黃金" in normalized or "黄金" in normalized or compact in {"gold", "xau", "xauusd"}
+
 def parse_operation_report_ticker(text):
     compact = unicodedata.normalize("NFKC", text).lower()
     compact = re.sub(r"[^0-9a-z]", "", compact)
@@ -326,6 +331,32 @@ def get_exchange_rates():
     parts.append(get_yahoo_data_text('JPY=X', '美元兌日幣', '💴', precision=2))
     return "\n\n".join(parts)
 
+def get_gold_text():
+    try:
+        cache_path = os.path.join(parent_dir, "data", "quote_cache", "gold_quote.json")
+        if not os.path.exists(cache_path):
+            from scripts.monitor_gold_quote import refresh_once
+            quote = refresh_once()
+        else:
+            with open(cache_path, "r", encoding="utf-8") as fh:
+                quote = json.load(fh)
+
+        price = float(quote["price"])
+        change = quote.get("change_pct")
+        change_text = "----" if change is None else f"{float(change):+.2f}%"
+        updated = _ago_zh(quote.get("quote_time_utc"))
+        return "\n".join([
+            "黃金 GOLD",
+            "──────────",
+            f"最新報價：{price:,.2f} {quote.get('currency', 'USD')}",
+            f"今日漲跌：{change_text}",
+            f"更新：{updated}",
+            "來源：TradingView",
+        ])
+    except Exception as exc:
+        print("Gold quote failed:", exc)
+        return "黃金報價暫時無法取得，請稍後再試。"
+
 @app.route('/', methods=['GET'])
 @app.route('/api/webhook', methods=['GET'])
 def home():
@@ -355,7 +386,8 @@ def handle_message(event):
     user_msg = event.message.text.strip()
     is_master_holding = is_master_holding_command(user_msg)
     is_operation_report = is_operation_report_command(user_msg)
-    etf_quote_ticker = None if is_operation_report or is_master_holding else parse_etf_quote_command(user_msg)
+    is_gold = is_gold_command(user_msg)
+    etf_quote_ticker = None if is_operation_report or is_master_holding or is_gold else parse_etf_quote_command(user_msg)
     print(f"LINE text={user_msg!r} parsed_etf={etf_quote_ticker}", flush=True)
     
     if is_master_holding:
@@ -377,6 +409,23 @@ def handle_message(event):
                 event.reply_token,
                 TextSendMessage(text="吳大師持股暫時無法產生，請稍後再試。")
             )
+
+    elif is_gold:
+        reply_msg = get_gold_text()
+        try:
+            snapshot_url = "http://127.0.0.1:5005/snapshot"
+            res = requests.post(snapshot_url, json={"key": "gold"}, timeout=30).json()
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    TextSendMessage(text=reply_msg),
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
+                ],
+            )
+        except Exception as e:
+            print("Gold Chart generation failed:", e)
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_msg))
 
     elif etf_quote_ticker:
         try:
@@ -552,6 +601,7 @@ def handle_message(event):
             "• 油價 — 西德州輕原油與布蘭特原油報價\n"
             "• 匯率 — 美元兌台幣、瑞郎、日圓\n"
             "• 債券 — 美國10年期公債殖利率\n"
+            "• 黃金 — TradingView GOLD 報價與圖\n"
             "• 981 — 00981A 持股即時表\n"
             "• 997 — 00997A 持股即時表\n"
             "• 0050 — 元大台灣50 持股即時表\n"

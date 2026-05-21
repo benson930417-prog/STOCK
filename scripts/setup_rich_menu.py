@@ -69,6 +69,14 @@ PAGE2 = [
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
+PAGE2[-1] = (
+    1875, 843, 625, 843,
+    "金", "黃金", "TradingView GOLD",
+    (202, 138, 4),
+    "message", "黃金", False,
+)
+
+
 def get_secret(key: str) -> str:
     val = os.environ.get(key, "")
     if val:
