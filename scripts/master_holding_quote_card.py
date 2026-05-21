@@ -428,10 +428,9 @@ def load_master_snapshot():
         if "market_value" in positions and positions["market_value"].dropna().sum():
             positions["weight_pct"] = positions["market_value"] / positions["market_value"].sum() * 100.0
 
-    non_cash = positions[positions["stock"] != "現金"] if not positions.empty else positions
-    total_market = float(non_cash["market_value"].dropna().sum()) if not non_cash.empty else 0.0
-    total_liq = float(non_cash["liquidation_value"].dropna().sum()) if not non_cash.empty else 0.0
-    total_cost = float(non_cash["cost"].sum()) if not non_cash.empty else 0.0
+    total_market = float(positions["market_value"].dropna().sum()) if not positions.empty else 0.0
+    total_liq = float(positions["liquidation_value"].dropna().sum()) if not positions.empty else 0.0
+    total_cost = float(positions["cost"].sum()) if not positions.empty else 0.0
     unrealized = total_liq - total_cost
     unrealized_pct = unrealized / total_cost * 100.0 if total_cost else 0.0
     all_exposures = build_expanded_exposure(positions)
