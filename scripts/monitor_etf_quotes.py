@@ -461,7 +461,7 @@ def normalize_yahoo_symbol(raw_id):
     market = parts[1] if len(parts) > 1 else ""
     country = None
 
-    if market in {"US", "USA", "NASDAQ", "NYSE", "AMEX"}:
+    if market in {"US", "USA", "NASDAQ", "NYSE", "AMEX", "UN", "UW", "UQ", "UP", "UR"}:
         country = "US"
     elif market in {"HK", "HKG"}:
         country = "HK"
