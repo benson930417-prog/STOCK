@@ -17,6 +17,7 @@ DATA_DIR = ROOT_DIR / "data"
 QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 
 YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+TWSE_STOCKINFO_URL = "https://mis.twse.com.tw/stock/api/getStockInfo.jsp"
 TRADINGVIEW_SCAN_URL = "https://scanner.tradingview.com/futures/scan"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 LIVE_MARKET_SESSIONS = {"PRE", "REG", "POST", "FUT_NIGHT"}
@@ -512,6 +513,97 @@ def _market_time(meta, key):
         return None
 
 
+def _to_quote_float(value):
+    if value is None:
+        return None
+    text = str(value).replace(",", "").strip()
+    if not text or text in {"-", "--", "NaN"}:
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def _tw_symbol_code(symbol):
+    raw = str(symbol or "").strip().upper()
+    if raw.endswith(".TWO"):
+        return raw[:-4], "otc"
+    if raw.endswith(".TW"):
+        return raw[:-3], "tse"
+    return raw, None
+
+
+def _twse_quote_timestamp(row):
+    date_text = str(row.get("d") or "").strip()
+    time_text = str(row.get("t") or "").strip()
+    if len(date_text) != 8 or not time_text:
+        return None
+    try:
+        dt = datetime.strptime(f"{date_text} {time_text}", "%Y%m%d %H:%M:%S")
+        return int(dt.replace(tzinfo=ZoneInfo("Asia/Taipei")).timestamp())
+    except ValueError:
+        return None
+
+
+def _fetch_twse_realtime_quote(symbol, country=None, timeout=5):
+    if country != "TW":
+        return None
+
+    code, preferred_exchange = _tw_symbol_code(symbol)
+    if not code:
+        return None
+
+    exchanges = [preferred_exchange] if preferred_exchange else ["tse", "otc"]
+    exchanges.extend(exchange for exchange in ["tse", "otc"] if exchange not in exchanges)
+
+    for exchange in exchanges:
+        ex_ch = f"{exchange}_{code}.tw"
+        try:
+            res = requests.get(
+                TWSE_STOCKINFO_URL,
+                params={"ex_ch": ex_ch, "json": "1", "delay": "0", "_": int(time.time() * 1000)},
+                headers={**HEADERS, "Referer": "https://mis.twse.com.tw/stock/fibest.jsp"},
+                timeout=timeout,
+            )
+            res.raise_for_status()
+            payload = res.json()
+        except Exception:
+            continue
+
+        rows = payload.get("msgArray") or []
+        if not rows:
+            continue
+
+        row = rows[0]
+        price = _to_quote_float(row.get("z"))
+        previous = _to_quote_float(row.get("y"))
+        quote_time = _twse_quote_timestamp(row)
+        if price is None and previous is None:
+            continue
+
+        session = _exchange_session("TW")
+        if quote_time and session == "REG" and not _quote_belongs_to_current_regular_session("TW", quote_time):
+            continue
+
+        change_pct = None
+        if price is not None and previous:
+            change_pct = (price - previous) / previous * 100.0
+
+        return {
+            "symbol": symbol,
+            "regularMarketPrice": price,
+            "previousClose": previous,
+            "regularMarketTime": quote_time,
+            "regularMarketChangePercent": change_pct,
+            "marketSession": session or "CLOSE",
+            "currency": "TWD",
+            "source": "twse_mis",
+        }
+
+    return None
+
+
 def _session_for_us_timestamp(timestamp):
     try:
         dt = datetime.fromtimestamp(int(timestamp), ZoneInfo("America/New_York"))
@@ -798,7 +890,26 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
 
 
 def _fetch_yahoo_chart_quote_with_fallback(symbol, country=None, timeout=10):
+    tw_quote = _fetch_twse_realtime_quote(symbol, country=country, timeout=min(timeout, 5))
+    if tw_quote and tw_quote.get("regularMarketPrice") is not None:
+        return tw_quote
+
     quote = _fetch_yahoo_chart_quote(symbol, country=country, timeout=timeout)
+    if (
+        tw_quote
+        and tw_quote.get("previousClose")
+        and quote
+        and not quote.get("error")
+        and quote.get("regularMarketPrice") is not None
+    ):
+        price = float(quote["regularMarketPrice"])
+        previous = float(tw_quote["previousClose"])
+        quote["previousClose"] = previous
+        quote["regularMarketChangePercent"] = (price - previous) / previous * 100.0
+        if tw_quote.get("regularMarketTime"):
+            quote["regularMarketTime"] = tw_quote["regularMarketTime"]
+        quote["source"] = "yahoo_price_twse_previous"
+
     if (
         country == "TW"
         and isinstance(symbol, str)
