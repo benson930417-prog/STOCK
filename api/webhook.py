@@ -502,6 +502,43 @@ def get_gold_text():
         print("Gold quote failed:", exc)
         return "黃金報價暫時無法取得，請稍後再試。"
 
+CHART_SERVICE_URL = os.environ.get("CHART_SERVICE_URL", "http://127.0.0.1:5005")
+MARKET_TEXT_ERROR_LABELS = {
+    "oil": "WTI 輕原油",
+    "brent": "布蘭特原油",
+    "bond": "美國10年期公債殖利率",
+    "gold": "黃金 GOLD",
+    "usdtwd": "美元兌台幣",
+    "usdchf": "美元兌瑞郎",
+    "usdjpy": "美元兌日幣",
+}
+
+def get_market_text(key):
+    try:
+        response = requests.post(
+            f"{CHART_SERVICE_URL}/market-text",
+            json={"key": key},
+            timeout=20,
+        )
+        response.raise_for_status()
+        return response.json()["text"]
+    except Exception as exc:
+        print(f"Chart market text failed for {key}: {exc}")
+        label = MARKET_TEXT_ERROR_LABELS.get(key, key)
+        return f"{label}\n──────────\nTradingView 文字報價暫時無法取得。"
+
+def get_oil_price():
+    return "\n\n".join(get_market_text(key) for key in ["oil", "brent"])
+
+def get_10yf_price():
+    return get_market_text("bond")
+
+def get_exchange_rates():
+    return "\n\n".join(get_market_text(key) for key in ["usdtwd", "usdchf", "usdjpy"])
+
+def get_gold_text():
+    return get_market_text("gold")
+
 @app.route('/', methods=['GET'])
 @app.route('/api/webhook', methods=['GET'])
 def home():

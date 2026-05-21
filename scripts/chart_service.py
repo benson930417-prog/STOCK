@@ -1,7 +1,7 @@
 import os
 import asyncio
 import urllib.request
-import requests as http_requests
+import re
 from io import BytesIO
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -21,15 +21,27 @@ CHART_TABS = {
     "usdchf": "https://www.tradingview.com/symbols/USDCHF/?exchange=OANDA&timeframe=5D"
 }
 
-# Chinese titles + Yahoo symbols for each chart key
+# Chinese titles for each chart key
 CHART_META = {
-    "oil":    {"title": "WTI 輕原油 (5日)",   "yahoo": "CL=F",  "precision": 2},
-    "brent":  {"title": "布蘭特原油 (5日)",    "yahoo": "BZ=F",  "precision": 2},
-    "bond":   {"title": "10年期公債殖利率 (5日)", "yahoo": "^TNX", "precision": 3},
-    "gold":   {"title": "黃金現貨 (5日)",          "yahoo": "GC=F", "precision": 2},
-    "usdtwd": {"title": "美元兌台幣 (5日)",    "yahoo": "TWD=X", "precision": 3},
-    "usdjpy": {"title": "美元兌日幣 (5日)",    "yahoo": "JPY=X", "precision": 2},
-    "usdchf": {"title": "美元兌瑞郎 (5日)",    "yahoo": "CHF=X", "precision": 4},
+    "oil":    {"title": "WTI 輕原油 (5日)", "display_title": "輕原油", "emoji": "🛢️", "precision": 2, "unit": "美元"},
+    "brent":  {"title": "布蘭特原油 (5日)", "display_title": "布蘭特原油", "emoji": "🛢️", "precision": 2, "unit": "美元"},
+    "bond":   {"title": "10年期公債殖利率 (5日)", "display_title": "美國10年期公債殖利率", "emoji": "📈", "precision": 3, "unit": "%"},
+    "gold":   {"title": "黃金現貨 (5日)", "display_title": "黃金 GOLD", "emoji": "", "precision": 2, "unit": "USD"},
+    "usdtwd": {"title": "美元兌台幣 (5日)", "display_title": "美元兌台幣", "emoji": "💵", "precision": 3, "unit": "台幣"},
+    "usdjpy": {"title": "美元兌日幣 (5日)", "display_title": "美元兌日幣", "emoji": "💴", "precision": 2, "unit": "日圓"},
+    "usdchf": {"title": "美元兌瑞郎 (5日)", "display_title": "美元兌瑞郎", "emoji": "💷", "precision": 4, "unit": "瑞郎"},
+}
+
+PERFORMANCE_LABELS = {
+    "1 day": "1d",
+    "5 days": "5d",
+    "1 month": "1m",
+    "6 months": "6m",
+    "Year to date": "ytd",
+    "1 year": "1y",
+    "5 years": "5y",
+    "10 years": "10y",
+    "All time": "all",
 }
 
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')
@@ -72,38 +84,114 @@ HIDE_CSS = """
 """
 
 
-def _fetch_yahoo_price(yahoo_symbol, precision):
-    """Fetch latest price and daily change from Yahoo Finance."""
+def _num(value):
+    text = str(value or "")
+    text = text.replace("−", "-").replace("\u202a", "").replace("\u202c", "")
+    text = text.replace("\u202f", "").replace(",", "").replace("%", "").strip()
+    text = re.sub(r"[^\d.+\-kKmM]", "", text)
+    if not text:
+        return None
+    multiplier = 1.0
+    if text[-1:].lower() == "k":
+        multiplier = 1_000.0
+        text = text[:-1]
+    elif text[-1:].lower() == "m":
+        multiplier = 1_000_000.0
+        text = text[:-1]
     try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        r = http_requests.get(
-            f'https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_symbol}?range=5d&interval=1d',
-            headers=headers, timeout=5
-        )
-        if r.status_code == 200:
-            data = r.json()
-            result = data['chart']['result'][0]
-            meta = result['meta']
-            price = meta['regularMarketPrice']
+        return float(text) * multiplier
+    except ValueError:
+        return None
 
-            timestamps = result['timestamp']
-            closes = result['indicators']['quote'][0]['close']
-            valid = [c for c in closes if c is not None]
 
-            old_price = valid[-2] if len(valid) >= 2 else price
-            change = price - old_price
-            change_pct = (change / old_price) * 100
+def _parse_performance_from_text(text):
+    lines = [line.strip() for line in str(text or "").splitlines() if line.strip()]
+    performance = {}
+    for idx, line in enumerate(lines[:-1]):
+        key = PERFORMANCE_LABELS.get(line)
+        if not key:
+            continue
+        value = _num(lines[idx + 1])
+        if value is not None:
+            performance[key] = value
+    return performance
 
-            fmt = f"{{:.{precision}f}}"
-            sign = "+" if change_pct >= 0 else ""
-            return {
-                "price": fmt.format(price),
-                "change_pct": f"{sign}{change_pct:.2f}%",
-                "is_up": change_pct >= 0,
-            }
-    except Exception as e:
-        print(f"⚠️ Yahoo fetch failed for {yahoo_symbol}: {e}")
-    return None
+
+def _parse_market_text(text):
+    lines = [line.strip() for line in str(text or "").splitlines() if line.strip()]
+    price = change_abs = change_pct = None
+    currency = ""
+    as_of = None
+    for idx, line in enumerate(lines[:-4]):
+        maybe_price = _num(lines[idx + 1])
+        if maybe_price is None:
+            continue
+        maybe_currency = lines[idx + 2].strip()
+        maybe_change_abs = _num(lines[idx + 3])
+        maybe_change_pct = _num(lines[idx + 4])
+        if maybe_change_abs is None or maybe_change_pct is None:
+            continue
+        if not re.fullmatch(r"[A-Z%]{1,5}", maybe_currency):
+            continue
+        price = maybe_price
+        currency = maybe_currency
+        change_abs = maybe_change_abs
+        change_pct = maybe_change_pct
+        if idx + 5 < len(lines) and lines[idx + 5].startswith("As of"):
+            as_of = lines[idx + 5]
+        break
+    if price is None:
+        raise ValueError("Could not parse TradingView market quote text")
+    return {
+        "price": price,
+        "currency": currency,
+        "change_abs": change_abs,
+        "change_pct": change_pct,
+        "as_of_text": as_of,
+        "performance": _parse_performance_from_text(text),
+    }
+
+
+def _format_change(change_pct, label):
+    sign = "+" if change_pct > 0 else ""
+    direction = "🔴" if change_pct > 0 else "🟢"
+    if change_pct == 0:
+        direction = "⚪"
+    return f"{label} {direction}{sign}{change_pct:.2f}%"
+
+
+def _market_text_payload(key, quote):
+    meta = CHART_META[key]
+    price = quote["price"]
+    unit = meta.get("unit") or quote.get("currency", "")
+    title = meta.get("display_title", key)
+    emoji = meta.get("emoji", "")
+    precision = int(meta.get("precision", 2))
+    performance = quote.get("performance") or {}
+    labels = [
+        ("1d", "1日："),
+        ("5d", "5日："),
+        ("1m", "1月："),
+        ("6m", "6月："),
+    ]
+    lines = [
+        f"{emoji} {title}".strip(),
+        "──────────",
+        f"🕒 最新報價：{price:,.{precision}f} {unit}",
+        "",
+        "📊 近期漲跌幅：",
+    ]
+    for perf_key, label in labels:
+        value = performance.get(perf_key)
+        if value is not None:
+            lines.append(_format_change(float(value), label))
+    if len(lines) == 5 and quote.get("change_pct") is not None:
+        lines.append(_format_change(float(quote["change_pct"]), "今日："))
+    return {
+        "key": key,
+        "text": "\n".join(lines),
+        "quote": quote,
+    }
 
 
 def _overlay_title(image_path, title):
@@ -190,14 +278,30 @@ async def shutdown_event():
 class SnapshotRequest(BaseModel):
     key: str
 
+
+async def _get_page_for_key(key):
+    if key not in pages:
+        await init_browser()
+        if key not in pages:
+            raise HTTPException(status_code=404, detail="Tab key not found")
+    return pages[key]
+
+
+@app.post("/market-text")
+async def market_text(req: SnapshotRequest):
+    page = await _get_page_for_key(req.key)
+    try:
+        text = await page.locator("body").inner_text(timeout=10000)
+        quote = _parse_market_text(text)
+        return _market_text_payload(req.key, quote)
+    except Exception as e:
+        print(f"❌ Error parsing market text for {req.key}: {e}")
+        await init_browser()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/snapshot")
 async def take_snapshot(req: SnapshotRequest):
-    if req.key not in pages:
-        await init_browser()
-        if req.key not in pages:
-            raise HTTPException(status_code=404, detail="Tab key not found")
-    
-    page = pages[req.key]
+    page = await _get_page_for_key(req.key)
     filename = f"{req.key}_chart.png"
     filepath = os.path.join(OUTPUT_DIR, filename)
     
