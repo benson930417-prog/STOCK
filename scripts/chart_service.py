@@ -106,8 +106,32 @@ def _num(value):
 
 
 def _parse_performance_from_text(text):
-    lines = [line.strip() for line in str(text or "").splitlines() if line.strip()]
+    raw = str(text or "")
     performance = {}
+    aliases = {
+        "1 day": "1d",
+        "5 days": "5d",
+        "1 week": "5d",
+        "1 month": "1m",
+        "6 months": "6m",
+        "Year to date": "ytd",
+        "1 year": "1y",
+        "5 years": "5y",
+        "10 years": "10y",
+        "All time": "all",
+    }
+    for label, key in aliases.items():
+        match = re.search(
+            rf"{re.escape(label)}\s*([-+−]?[0-9][0-9,.]*%)",
+            raw,
+            flags=re.IGNORECASE,
+        )
+        if match:
+            value = _num(match.group(1))
+            if value is not None:
+                performance[key] = value
+
+    lines = [line.strip() for line in raw.splitlines() if line.strip()]
     for idx, line in enumerate(lines[:-1]):
         key = PERFORMANCE_LABELS.get(line)
         if not key:
@@ -169,7 +193,7 @@ def _parse_market_text(text):
 
 async def _extract_market_quote(page):
     data = await page.evaluate("""() => {
-        const rawText = (el) => (el ? (el.innerText || el.textContent || "").trim() : "");
+        const rawText = (el) => (el ? (el.textContent || el.innerText || "").trim() : "");
         const visibleText = (el) => {
             if (!el) return "";
             const style = window.getComputedStyle(el);
@@ -381,7 +405,7 @@ async def _get_page_for_key(key):
 
 
 async def _get_body_text(page):
-    return await page.locator("body").evaluate("(body) => body.innerText || body.textContent || ''")
+    return await page.locator("body").evaluate("(body) => body.textContent || body.innerText || ''")
 
 
 @app.post("/market-text")
