@@ -487,6 +487,10 @@ def build_master_text(snapshot, quote_cache=None):
     if gold:
         change = gold.get("change_pct")
         change_text = "----" if change is None else f"{float(change):+.2f}%"
+        perf = gold.get("performance") or {}
+        perf_1d = perf.get("1d")
+        if perf_1d is not None:
+            change_text = f"{float(change):+.2f}% / 1日 {float(perf_1d):+.2f}%" if change is not None else f"1日 {float(perf_1d):+.2f}%"
         lines.append(
             f"黃金：{_fmt_gold_price(gold.get('price'))} {gold.get('currency', 'USD')} ({change_text})"
         )

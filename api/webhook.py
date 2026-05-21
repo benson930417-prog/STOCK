@@ -474,14 +474,30 @@ def get_gold_text():
         change = quote.get("change_pct")
         change_text = "----" if change is None else f"{float(change):+.2f}%"
         updated = _ago_zh(quote.get("quote_time_utc"))
-        return "\n".join([
+        performance = quote.get("performance") or {}
+        lines = [
             "黃金 GOLD",
             "──────────",
             f"最新報價：{price:,.2f} {quote.get('currency', 'USD')}",
             f"今日漲跌：{change_text}",
             f"更新：{updated}",
             "來源：TradingView",
-        ])
+        ]
+        if performance:
+            labels = [
+                ("1d", "1日"),
+                ("5d", "5日"),
+                ("1m", "1月"),
+                ("6m", "6月"),
+                ("ytd", "今年"),
+                ("1y", "1年"),
+            ]
+            lines.append("")
+            lines.append("期間績效：")
+            for key, label in labels:
+                if key in performance:
+                    lines.append(f"{label}：{float(performance[key]):+.2f}%")
+        return "\n".join(lines)
     except Exception as exc:
         print("Gold quote failed:", exc)
         return "黃金報價暫時無法取得，請稍後再試。"
