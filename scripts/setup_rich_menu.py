@@ -47,7 +47,7 @@ DIM_TEXT = (55,  70,  95)
 
 PAGE1 = [
     # Row 1 — holdings and Master Wu (625 × 4 = 2500)
-    (0,    0,   625, 843, "萬", "0050",   "元大台灣50",      ( 37,  99, 235), "message",        "0050",   False),
+    (0,    0,   625, 843, "50", "0050",   "元大台灣50",      ( 37,  99, 235), "message",        "0050",   False),
     (625,  0,   625, 843, "電", "009805", "美國電力基建",    (234, 179,   8), "message",        "9805",   False),
     (1250, 0,   625, 843, "航", "009820", "航太防衛科技",    ( 21, 128,  61), "message",        "9820",   False),
     (1875, 0,   625, 843, "師", "吳大師", "主要持股總覽",    (180,  83,   9), "message",        "吳大師", False),
@@ -55,7 +55,7 @@ PAGE1 = [
     (0,    843, 625, 843, "油", "油價",   "輕原油／布蘭特",  (194,  65,  12), "message",        "油價",   False),
     (625,  843, 625, 843, "匯", "匯率",   "美元／日圓／瑞郎",(  3, 105, 161), "message",        "匯率",   False),
     (1250, 843, 625, 843, "債", "債券",   "美10年期公債",    ( 21, 128,  61), "message",        "債券",   False),
-    (1875, 843, 625, 843, "▶", "更多",   "第二頁",          ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
+    (1875, 843, 625, 843, ">", "更多",   "第二頁",          ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
 ]
 
 PAGE2 = [
@@ -65,10 +65,10 @@ PAGE2 = [
     (1250, 0,   625, 843, "半", "00830",  "費城半導體",      (109,  40, 217), "message",        "830",    False),
     (1875, 0,   625, 843, "美", "00997A", "主動美股增長",    (109,  40, 217), "message",        "997",    False),
     # Row 2 — gold, navigation, and reserved space (625 × 4 = 2500)
-    (0,    843, 625, 843, "金", "黃金",   "TradingView GOLD",(202, 138,   4), "message",        "黃金",   False),
-    (625,  843, 625, 843, "◀", "上一頁", "回主選單",        ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),
-    (1250, 843, 625, 843, "⋯", "Coming", "Soon",            ( 18,  26,  42), "none",           None,     True),
-    (1875, 843, 625, 843, "⋯", "Coming", "Soon",            ( 18,  26,  42), "none",           None,     True),
+    (0,    843, 625, 843, "金", "黃金",   "黃金現貨",        (202, 138,   4), "message",        "黃金",   False),
+    (625,  843, 625, 843, "<", "上一頁", "回主選單",        ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),
+    (1250, 843, 625, 843, "待", "即將", "推出",              ( 18,  26,  42), "none",           None,     True),
+    (1875, 843, 625, 843, "待", "即將", "推出",              ( 18,  26,  42), "none",           None,     True),
 ]
 
 
@@ -130,10 +130,10 @@ def build_image(cells: list) -> Image.Image:
     img  = Image.new("RGB", (W, H), BG)
     draw = ImageDraw.Draw(img)
 
-    font_icon  = load_font(145, bold=True)
-    font_label = load_font(82,  bold=True)
-    font_sub   = load_font(46,  bold=False)
-    font_dim   = load_font(52,  bold=False)
+    font_icon  = load_font(230, bold=True)
+    font_label = load_font(86,  bold=True)
+    font_sub   = load_font(68,  bold=False)
+    font_dim   = load_font(72,  bold=False)
 
     for x, y, w, h, char, label, subtitle, accent, action_type, _, is_nav in cells:
         bx0 = x + GAP
@@ -145,10 +145,13 @@ def build_image(cells: list) -> Image.Image:
         bg = DIM_BG if action_type == "none" else (NAV_BG if is_nav else CELL_BG)
         draw_rounded_rect(draw, bx0, by0, bx1, by1, r=28, fill=bg)
 
-        # Decorative "coming soon" cell — just dim text, no circle
         if action_type == "none":
-            draw.text((cx, by0 + (by1 - by0) // 2 - 30), char,     font=font_dim, fill=DIM_TEXT, anchor="mm")
-            draw.text((cx, by0 + (by1 - by0) // 2 + 40), subtitle, font=font_sub, fill=DIM_TEXT, anchor="mm")
+            r_dim = 140 if w < 700 else 160
+            draw.ellipse([cx - r_dim, by0 + 190 - r_dim,
+                          cx + r_dim, by0 + 190 + r_dim], fill=(45, 58, 78))
+            draw.text((cx, by0 + 190), char, font=font_icon, fill=(110, 125, 148), anchor="mm")
+            draw.text((cx, by0 + 455), label, font=font_label, fill=(95, 110, 132), anchor="mt")
+            draw.text((cx, by0 + 565), subtitle, font=font_sub, fill=DIM_TEXT, anchor="mt")
             continue
 
         # Accent bottom strip
@@ -158,9 +161,9 @@ def build_image(cells: list) -> Image.Image:
         draw_rounded_rect(draw, bx0, by0 + 35, bx0 + 6, by1 - 35, r=3, fill=accent)
 
         # Vertically centre the content block
-        r_circle = 110 if w < 700 else 120
-        gap1     = 32
-        gap2     = 14
+        r_circle = 190 if w < 700 else 210
+        gap1     = 36
+        gap2     = 18
         lh = text_h(draw, label,    font_label)
         sh = text_h(draw, subtitle, font_sub)
         block_h  = r_circle * 2 + gap1 + lh + gap2 + sh
