@@ -630,6 +630,20 @@ def generate_master_quote_card(limit=50):
 def load_cached_master_quote_card():
     with MASTER_CACHE_PATH.open("r", encoding="utf-8") as fh:
         cache = json.load(fh)
+    cache_mtime = MASTER_CACHE_PATH.stat().st_mtime
+    source_paths = [
+        MASTER_PATH,
+        DATA_DIR / "quote_cache" / "gold_quote.json",
+        *DATA_DIR.glob("etf_*_history.json"),
+        *DATA_DIR.glob("passive_*_history.json"),
+        *QUOTE_CACHE_DIR.glob("etf_*_quotes.json"),
+    ]
+    newest_source_mtime = max(
+        (path.stat().st_mtime for path in source_paths if path.exists()),
+        default=0,
+    )
+    if newest_source_mtime > cache_mtime:
+        raise FileNotFoundError("Master holding cache is stale")
     image_files = cache.get("image_files") or []
     output_paths = [IMAGE_DIR / filename for filename in image_files]
     if not cache.get("text") or not output_paths or any(not path.exists() for path in output_paths):
