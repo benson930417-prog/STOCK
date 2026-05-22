@@ -2,10 +2,10 @@
 """
 Two-page LINE Bot Rich Menu setup.
 
-Page 1 top:    0050 | 009805 | 009820 | 吳大師
-Page 1 bottom: 更多▶| 油價   | 匯率   | 債券
-Page 2 top:    00878 | 00981A | 00830 | 00997A
-Page 2 bottom: 黃金  | ◀返回  | Coming soon | Coming soon
+Page 1 top:    0050  | 009805 | 009820 | 吳大師
+Page 1 bottom: 油價  | 匯率   | 債券   | ▶更多
+Page 2 top:    00878 | 00981A | 00830  | 00997A
+Page 2 bottom: ◀返回 | 黃金   | Coming soon | Coming soon
 
 Colour convention
   TW stocks  →  blue  (37, 99, 235)
@@ -61,11 +61,11 @@ PAGE1 = [
     (625,  0,   625, 843, "電", "009805", "美國電力基建",    (220,  38,  38), "message",        "9805",   False),  # US red
     (1250, 0,   625, 843, "納", "009820", "元大納斯達克精選",(220,  38,  38), "message",        "9820",   False),  # US red
     (1875, 0,   625, 843, "師", "吳大師", "主要持股總覽",    (180,  83,   9), "message",        "吳大師", False),  # amber
-    # Row 2 — navigation FIRST, then macro (625 × 4 = 2500)
-    (0,    843, 625, 843, ">", "更多",   "第二頁",          ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),   # nav slate
-    (625,  843, 625, 843, "油", "油價",   "輕原油／布蘭特",  (194,  65,  12), "message",        "油價",   False),  # oil orange
-    (1250, 843, 625, 843, "匯", "匯率",   "美元／日圓／瑞郎",( 13, 148, 136), "message",        "匯率",   False),  # FX teal
-    (1875, 843, 625, 843, "債", "債券",   "美10年期公債",    ( 21, 128,  61), "message",        "債券",   False),  # bond green
+    # Row 2 — macro, then navigation at bottom-RIGHT (625 × 4 = 2500)
+    (0,    843, 625, 843, "油", "油價",   "輕原油／布蘭特",  (194,  65,  12), "message",        "油價",   False),  # oil orange
+    (625,  843, 625, 843, "匯", "匯率",   "美元／日圓／瑞郎",( 13, 148, 136), "message",        "匯率",   False),  # FX teal
+    (1250, 843, 625, 843, "債", "債券",   "美10年期公債",    ( 21, 128,  61), "message",        "債券",   False),  # bond green
+    (1875, 843, 625, 843, ">", "更多",   "第二頁",          ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),   # nav slate ▶ RIGHT
 ]
 
 PAGE2 = [
@@ -75,9 +75,9 @@ PAGE2 = [
     (625,  0,   625, 843, "台", "00981A", "主動台股增長",    ( 37,  99, 235), "message",        "981",    False),  # TW blue
     (1250, 0,   625, 843, "半", "00830",  "費城半導體",      (220,  38,  38), "message",        "830",    False),  # US red
     (1875, 0,   625, 843, "美", "00997A", "主動美股增長",    (220,  38,  38), "message",        "997",    False),  # US red
-    # Row 2 — gold, navigation, and reserved space (625 × 4 = 2500)
-    (0,    843, 625, 843, "金", "黃金",   "黃金現貨",        (202, 138,   4), "message",        "黃金",   False),  # gold amber
-    (625,  843, 625, 843, "<", "上一頁", "回主選單",        ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),   # nav slate
+    # Row 2 — navigation at bottom-LEFT, then gold and reserved space (625 × 4 = 2500)
+    (0,    843, 625, 843, "<", "上一頁", "回主選單",        ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),   # nav slate ◀ LEFT
+    (625,  843, 625, 843, "金", "黃金",   "黃金現貨",        (202, 138,   4), "message",        "黃金",   False),  # gold amber
     (1250, 843, 625, 843, "待", "即將", "推出",              ( 18,  26,  42), "none",           None,     True),
     (1875, 843, 625, 843, "待", "即將", "推出",              ( 18,  26,  42), "none",           None,     True),
 ]

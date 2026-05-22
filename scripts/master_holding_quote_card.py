@@ -459,54 +459,81 @@ def load_master_snapshot():
 
 
 def build_master_text(snapshot, quote_cache=None):
-    detail_text = build_master_holding_details_text(quote_cache)
+    """Clean LINE text block — shows DIRECT positions only (no expanded holdings)."""
+    positions  = snapshot.get("positions")
+    total_mv   = snapshot.get("total_market", 0) or 0
+    cash       = snapshot.get("cash_twd", 0) or 0
+    unrealized = snapshot.get("unrealized", 0) or 0
+    unr_pct    = snapshot.get("unrealized_pct", 0) or 0
+
+    unr_sign  = "+" if unrealized >= 0 else ""
+    unr_emoji = "📈" if unrealized >= 0 else "📉"
+
     lines = [
-        "吳大師持股前50大",
-        "━━━━━━━━━━━━━━",
-        "💼 成本 / 損益",
-        f"總成本：{_fmt_money(snapshot['total_cost'])}",
-        f"未實損益：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:+.2f}%)",
+        "📊 吳大師 持股總覽",
+        "━━━━━━━━━━━━━━━",
+        f"💰 市值  {_fmt_money(total_mv + cash)}",
+        f"{unr_emoji} 損益  {unr_sign}{_fmt_money(unrealized)}（{unr_pct:+.2f}%）",
+        f"💵 現金  {_fmt_money(cash)}",
         "",
-        "💰 淨值 / 現金",
-        f"目前淨值(扣費稅)：{_fmt_money(snapshot['total_liq'])}",
-        f"現金：{_fmt_money(snapshot.get('cash_twd', 0))}",
-        "",
+        "持倉",
+        "─────────────────",
     ]
 
-    if detail_text:
-        lines.extend([detail_text, ""])
+    if positions is not None and not positions.empty:
+        # Cash row last; everything else sorted by weight descending
+        df = positions.copy()
+        df["_is_cash"] = df["stock"].astype(str) == CASH_LABEL
+        df = df.sort_values(["_is_cash", "weight_pct"], ascending=[True, False])
 
+        for _, row in df.iterrows():
+            stock  = str(row.get("stock") or "").strip()
+            ticker = str(row.get("ticker") or row.get("code") or stock).strip()
+            weight = row.get("weight_pct")
+            day    = row.get("day_change_pct")
+
+            w_str = f"{float(weight):.1f}%" if (weight is not None and not pd.isna(weight)) else "--"
+
+            # Cash row — no daily change
+            if stock == CASH_LABEL or ticker == CASH_LABEL:
+                lines.append(f"⬜ 現金    {w_str}")
+                continue
+
+            # Daily change dot + text (TW convention: 🔴 = up, 🟢 = down)
+            if day is None or (isinstance(day, float) and pd.isna(day)):
+                dot   = "⬜"
+                d_str = "──"
+            elif float(day) > 0:
+                dot   = "🔴"
+                d_str = f"+{float(day):.2f}%"
+            elif float(day) < 0:
+                dot   = "🟢"
+                d_str = f"{float(day):.2f}%"
+            else:
+                dot   = "⬜"
+                d_str = "+0.00%"
+
+            lines.append(f"{dot} {ticker}  {w_str}  {d_str}")
+
+    lines.append("─────────────────")
+
+    # Quote freshness from the expanded-cache timestamp
     if quote_cache:
-        lines.append("📈 交易中即時狀態")
-        composite = quote_cache.get("composite_move_pct")
-        comp_text = "--" if composite is None else f"{float(composite):+.2f}%"
-        lines.append(f"即時加權：{comp_text}")
-        composite_count = quote_cache.get("composite_holding_count", 0)
-        composite_weight = quote_cache.get("composite_weight_pct")
-        weight_text = "--" if composite_weight is None else f"{float(composite_weight):.1f}%"
-        lines.append(f"交易中：{composite_count}檔（佔總權重{weight_text}）")
-            
-        counts = quote_cache.get("counts", {})
-        lines.append(f"上漲 / 下跌 / 無變動：{counts.get('up', 0)} / {counts.get('down', 0)} / {counts.get('flat', 0)}")
+        newest = quote_cache.get("newest_quote_utc")
+        if newest:
+            try:
+                dt   = datetime.fromisoformat(newest.replace("Z", "+00:00"))
+                secs = max(0, int((datetime.now(timezone.utc) - dt).total_seconds()))
+                if secs < 60:
+                    ago = f"{secs}秒前"
+                elif secs < 3600:
+                    ago = f"{secs // 60}分鐘前"
+                else:
+                    ago = f"{secs // 3600}小時前"
+                lines.append(f"更新：{ago}")
+            except Exception:
+                pass
 
-    return "\n".join(lines)
-
-
-def build_master_holding_details_text(quote_cache, limit=50):
-    holdings = (quote_cache or {}).get("holdings") or []
-    if not holdings:
-        return ""
-
-    lines = [
-        "📋 持股權重明細",
-        "━━━━━━━━━━━━━━",
-    ]
-    for idx, holding in enumerate(holdings[:limit], start=1):
-        weight = holding.get("weight_pct")
-        weight_text = "--" if weight is None or pd.isna(weight) else f"{float(weight):.2f}%"
-        name = holding.get("name") or "--"
-        code = holding.get("id") or "--"
-        lines.append(f"{idx:02d}. {weight_text}｜{name}（{code}）")
     return "\n".join(lines)
 
 
