@@ -459,6 +459,7 @@ def load_master_snapshot():
 
 
 def build_master_text(snapshot, quote_cache=None):
+    detail_text = build_master_holding_details_text(quote_cache)
     lines = [
         "吳大師持股前50大",
         "━━━━━━━━━━━━━━",
@@ -471,6 +472,9 @@ def build_master_text(snapshot, quote_cache=None):
         f"現金：{_fmt_money(snapshot.get('cash_twd', 0))}",
         "",
     ]
+
+    if detail_text:
+        lines.extend([detail_text, ""])
 
     if quote_cache:
         lines.append("📈 交易中即時狀態")
@@ -622,6 +626,7 @@ def load_cached_master_quote_card():
         cache = json.load(fh)
     cache_mtime = MASTER_CACHE_PATH.stat().st_mtime
     source_paths = [
+        Path(__file__),
         MASTER_PATH,
         *DATA_DIR.glob("etf_*_history.json"),
         *DATA_DIR.glob("passive_*_history.json"),

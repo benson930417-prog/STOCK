@@ -578,7 +578,6 @@ def handle_message(event):
     if is_master_holding:
         try:
             from scripts.master_holding_quote_card import (
-                build_master_holding_details_text,
                 generate_master_quote_card,
                 load_cached_master_quote_card,
             )
@@ -587,17 +586,7 @@ def handle_message(event):
                 text, output_paths, cache = load_cached_master_quote_card()
             except Exception:
                 text, output_paths = generate_master_quote_card(limit=50)
-                try:
-                    _, _, cache = load_cached_master_quote_card()
-                except Exception:
-                    cache = {}
             messages = [TextSendMessage(text=text)]
-            detail_text = build_master_holding_details_text(
-                (cache or {}).get("quote_card_cache"),
-                limit=(cache or {}).get("limit", 50),
-            )
-            if detail_text:
-                messages.append(TextSendMessage(text=detail_text))
             image_slots = max(0, 5 - len(messages))
             for output_path in output_paths[:image_slots]:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
