@@ -461,31 +461,29 @@ def load_master_snapshot():
 def build_master_text(snapshot, quote_cache=None):
     lines = [
         "吳大師持股前50大",
-        "---------------------------",
+        "━━━━━━━━━━━━━━",
+        "💼 成本 / 損益",
         f"總成本：{_fmt_money(snapshot['total_cost'])}",
         f"未實損益：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:+.2f}%)",
         "",
+        "💰 淨值 / 現金",
         f"目前淨值(扣費稅)：{_fmt_money(snapshot['total_liq'])}",
         f"現金：{_fmt_money(snapshot.get('cash_twd', 0))}",
-        "--------------------------",
-        "",
-        "",
-        "",
-        "",
         "",
     ]
 
     if quote_cache:
+        lines.append("📈 交易中即時狀態")
         composite = quote_cache.get("composite_move_pct")
         comp_text = "--" if composite is None else f"{float(composite):+.2f}%"
-        lines.append(f"- 交易中即時加權：{comp_text}")
+        lines.append(f"即時加權：{comp_text}")
         composite_count = quote_cache.get("composite_holding_count", 0)
         composite_weight = quote_cache.get("composite_weight_pct")
         weight_text = "--" if composite_weight is None else f"{float(composite_weight):.1f}%"
-        lines.append(f"- 交易中{composite_count}檔（佔總權重{weight_text}）")
+        lines.append(f"交易中：{composite_count}檔（佔總權重{weight_text}）")
             
         counts = quote_cache.get("counts", {})
-        lines.append(f"- 上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}")
+        lines.append(f"上漲 / 下跌 / 無變動：{counts.get('up', 0)} / {counts.get('down', 0)} / {counts.get('flat', 0)}")
 
     return "\n".join(lines)
 
