@@ -630,7 +630,7 @@ def handle_message(event):
             print("ETF quote card generation failed:", e)
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text=f"{etf_quote_ticker} 報價圖暫時無法產生，請稍後再試。")
+                TextSendMessage(text=f"{etf_quote_ticker} 報價圖暫時無法產生：{type(e).__name__}: {e}")
             )
 
     elif is_operation_report:

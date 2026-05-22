@@ -132,6 +132,18 @@ def _fmt_pct(value):
     return f"{sign}{value:.2f}%"
 
 
+def _fmt_weight(value):
+    try:
+        if value is None:
+            return "--"
+        numeric = float(value)
+        if math.isnan(numeric):
+            return "--"
+        return f"{numeric:.2f}%"
+    except (TypeError, ValueError):
+        return "--"
+
+
 def _composite_title(cache):
     if cache.get("composite_mode") != "live":
         return None
@@ -332,7 +344,7 @@ def _draw_row(draw, row, x, y, w, rank, scale):
     age = _ago(row.get("quote_time_utc"))
     pct_text = _fmt_pct(change)
     weight = row.get("weight_pct")
-    weight_text = f"{weight:.2f}%" if weight is not None else "--"
+    weight_text = _fmt_weight(weight)
     ticker = row.get("id") or "--"
     if row.get("proxy"):
         ticker = f"{ticker} / {row['proxy'].get('symbol', 'QFF1!')} 延遲15分"
