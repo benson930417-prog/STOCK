@@ -3,9 +3,9 @@
 Two-page LINE Bot Rich Menu setup.
 
 Page 1 top:    0050 | 009805 | 009820 | 吳大師
-Page 1 bottom: 油價 | 匯率   | 債券   | 黃金 | 更多▶
+Page 1 bottom: 油價 | 匯率   | 債券   | 更多▶
 Page 2 top:    00878 | 00981A | 00830 | 00997A
-Page 2 bottom: ◀返回 | Coming soon
+Page 2 bottom: 黃金  | ◀返回  | Coming soon | Coming soon
 
 Usage:
     cd /home/ubuntu/STOCK && source venv/bin/activate
@@ -51,12 +51,11 @@ PAGE1 = [
     (625,  0,   625, 843, "電", "009805", "美國電力基建",    (234, 179,   8), "message",        "9805",   False),
     (1250, 0,   625, 843, "航", "009820", "航太防衛科技",    ( 21, 128,  61), "message",        "9820",   False),
     (1875, 0,   625, 843, "師", "吳大師", "主要持股總覽",    (180,  83,   9), "message",        "吳大師", False),
-    # Row 2 — macro menu and navigation (500 × 5 = 2500)
-    (0,    843, 500, 843, "油", "油價",   "輕原油／布蘭特",  (194,  65,  12), "message",        "油價",   False),
-    (500,  843, 500, 843, "匯", "匯率",   "美元／日圓／瑞郎",(  3, 105, 161), "message",        "匯率",   False),
-    (1000, 843, 500, 843, "債", "債券",   "美10年期公債",    ( 21, 128,  61), "message",        "債券",   False),
-    (1500, 843, 500, 843, "金", "黃金",   "TradingView GOLD",(202, 138,   4), "message",        "黃金",   False),
-    (2000, 843, 500, 843, "▶", "更多",   "第二頁",          ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
+    # Row 2 — macro menu and navigation (625 × 4 = 2500)
+    (0,    843, 625, 843, "油", "油價",   "輕原油／布蘭特",  (194,  65,  12), "message",        "油價",   False),
+    (625,  843, 625, 843, "匯", "匯率",   "美元／日圓／瑞郎",(  3, 105, 161), "message",        "匯率",   False),
+    (1250, 843, 625, 843, "債", "債券",   "美10年期公債",    ( 21, 128,  61), "message",        "債券",   False),
+    (1875, 843, 625, 843, "▶", "更多",   "第二頁",          ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
 ]
 
 PAGE2 = [
@@ -65,9 +64,11 @@ PAGE2 = [
     (625,  0,   625, 843, "台", "00981A", "主動台股增長",    ( 37,  99, 235), "message",        "981",    False),
     (1250, 0,   625, 843, "半", "00830",  "費城半導體",      (109,  40, 217), "message",        "830",    False),
     (1875, 0,   625, 843, "美", "00997A", "主動美股增長",    (109,  40, 217), "message",        "997",    False),
-    # Row 2 — navigation and reserved space
-    (0,    843, 1250, 843, "◀", "上一頁", "回主選單",        ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),
-    (1250, 843, 1250, 843, "⋯", "Coming Soon", "預留功能",   ( 18,  26,  42), "none",           None,     True),
+    # Row 2 — gold, navigation, and reserved space (625 × 4 = 2500)
+    (0,    843, 625, 843, "金", "黃金",   "TradingView GOLD",(202, 138,   4), "message",        "黃金",   False),
+    (625,  843, 625, 843, "◀", "上一頁", "回主選單",        ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),
+    (1250, 843, 625, 843, "⋯", "Coming", "Soon",            ( 18,  26,  42), "none",           None,     True),
+    (1875, 843, 625, 843, "⋯", "Coming", "Soon",            ( 18,  26,  42), "none",           None,     True),
 ]
 
 
