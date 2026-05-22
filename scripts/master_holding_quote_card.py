@@ -488,6 +488,24 @@ def build_master_text(snapshot, quote_cache=None):
     return "\n".join(lines)
 
 
+def build_master_holding_details_text(quote_cache, limit=50):
+    holdings = (quote_cache or {}).get("holdings") or []
+    if not holdings:
+        return ""
+
+    lines = [
+        "📋 持股權重明細",
+        "━━━━━━━━━━━━━━",
+    ]
+    for idx, holding in enumerate(holdings[:limit], start=1):
+        weight = holding.get("weight_pct")
+        weight_text = "--" if weight is None or pd.isna(weight) else f"{float(weight):.2f}%"
+        name = holding.get("name") or "--"
+        code = holding.get("id") or "--"
+        lines.append(f"{idx:02d}. {weight_text}｜{name}（{code}）")
+    return "\n".join(lines)
+
+
 def _master_quote_cache(snapshot, rows):
     valid_quote_times = [row.get("quote_time_utc") for row in rows if row.get("quote_time_utc")]
     up = down = flat = missing = 0
