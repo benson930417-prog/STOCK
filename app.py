@@ -805,6 +805,8 @@ def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
 
     exposures = {}
     for _, pos in position_quotes.dropna(subset=["market_value"]).iterrows():
+        if pos.get("stock") == MANUAL_CASH_LABEL or pos.get("code") == MANUAL_CASH_LABEL:
+            continue
         ticker = pos.get("ticker")
         if ticker not in {"00981A", "00997A", "0050", "00830", "00878", "009805", "009820"}:
             key, country, code = _normalize_underlying_key(pos.get("code"), pos.get("country"))

@@ -355,6 +355,8 @@ def _normalize_underlying_key(holding_id, country=None):
 def build_expanded_exposure(position_quotes):
     exposures = {}
     for _, pos in position_quotes.dropna(subset=["market_value"]).iterrows():
+        if pos.get("stock") == CASH_LABEL or pos.get("code") == CASH_LABEL:
+            continue
         ticker = pos.get("ticker")
         if ticker not in {"00981A", "00997A", "0050", "00830", "00878", "009805", "009820"}:
             key, country, code = _normalize_underlying_key(pos.get("code"), pos.get("country"))
