@@ -633,7 +633,6 @@ def load_cached_master_quote_card():
         MASTER_PATH,
         *DATA_DIR.glob("etf_*_history.json"),
         *DATA_DIR.glob("passive_*_history.json"),
-        *QUOTE_CACHE_DIR.glob("etf_*_quotes.json"),
     ]
     newest_source_mtime = max(
         (path.stat().st_mtime for path in source_paths if path.exists()),
