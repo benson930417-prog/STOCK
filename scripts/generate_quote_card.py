@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -8,6 +9,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 DATA_DIR = ROOT_DIR / "data"
 IMAGE_DIR = DATA_DIR / "images"
 QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
@@ -22,6 +25,7 @@ ETF_NAMES = {
     "009820": "元大納斯達克精選",
     "MASTER": "吳大師展開持股",
 }
+PASSIVE_TICKERS = {"0050", "00830", "00878", "009805", "009820"}
 
 RED = (198, 36, 0)
 GREEN = (37, 140, 24)
@@ -486,8 +490,23 @@ def generate_quote_card_from_cache(ticker, cache, output_prefix=None):
 def generate_quote_card(ticker="00997A"):
     ticker = ticker.upper()
     cache_path = QUOTE_CACHE_DIR / f"etf_{ticker}_quotes.json"
+    history_prefix = "passive" if ticker in PASSIVE_TICKERS else "etf"
+    history_path = DATA_DIR / f"{history_prefix}_{ticker}_history.json"
+    if not history_path.exists() and ticker == "009820":
+        from scripts.fetch_passive_009820 import yuanta
+
+        yuanta.fetch_and_update_0050()
+    if not cache_path.exists():
+        from scripts.monitor_etf_quotes import atomic_write_json, build_cache
+
+        atomic_write_json(cache_path, build_cache(ticker))
     with cache_path.open("r", encoding="utf-8") as fh:
         cache = json.load(fh)
+    if cache.get("status") == "error" or not cache.get("holdings"):
+        from scripts.monitor_etf_quotes import atomic_write_json, build_cache
+
+        cache = build_cache(ticker, previous_cache=cache)
+        atomic_write_json(cache_path, cache)
     return generate_quote_card_from_cache(ticker, cache)
 
 
