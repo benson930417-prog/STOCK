@@ -49,6 +49,7 @@ ETF_QUOTE_NAMES = {
     "00830": "國泰費城半導體",
     "00878": "國泰永續高股息",
     "009805": "新光美國電力基建",
+    "009820": "元大納斯達克精選",
 }
 
 def parse_etf_quote_command(text):
@@ -66,6 +67,8 @@ def parse_etf_quote_command(text):
         return "00878"
     if "009805" in compact or compact in {"9805", "09805", "9805"}:
         return "009805"
+    if "009820" in compact or compact in {"9820", "09820"}:
+        return "009820"
     return None
 
 def is_master_holding_command(text):
