@@ -7,6 +7,7 @@ from playwright.sync_api import sync_playwright
 
 
 DATA_DIR = "data"
+TICKER = "0050"
 HISTORY_FILE = os.path.join(DATA_DIR, "passive_0050_history.json")
 LOG_FILE = os.path.join(DATA_DIR, "passive_0050_log.json")
 URL = "https://www.yuantaetfs.com/product/detail/0050/ratio"
@@ -26,7 +27,7 @@ def _num(value):
 def _date_to_key(value):
     match = re.search(r"(\d{4})/(\d{2})/(\d{2})", str(value or ""))
     if not match:
-        raise ValueError(f"Could not parse 0050 date from {value!r}")
+        raise ValueError(f"Could not parse {TICKER} date from {value!r}")
     return f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
 
 
@@ -110,7 +111,7 @@ def _extract_page_data(page):
         )
 
     if len(holdings) < 10:
-        raise ValueError(f"Only parsed {len(holdings)} 0050 holdings; expected expanded full table")
+        raise ValueError(f"Only parsed {len(holdings)} {TICKER} holdings; expected expanded full table")
 
     return date_key, {
         "date": date_key,
@@ -134,7 +135,7 @@ def _extract_nav_history(page):
     text = page.locator("body").inner_text(timeout=10000)
     table_start = text.find("淨值日期")
     if table_start < 0:
-        raise ValueError("Missing 0050 NAV history table")
+        raise ValueError(f"Missing {TICKER} NAV history table")
 
     table_text = text[table_start:]
     row_pattern = re.compile(
@@ -162,7 +163,7 @@ def _extract_nav_history(page):
         )
 
     if len(rows) < 2:
-        raise ValueError(f"Only parsed {len(rows)} 0050 NAV rows; expected at least 2")
+        raise ValueError(f"Only parsed {len(rows)} {TICKER} NAV rows; expected at least 2")
 
     latest = rows[0]
     previous = rows[1]
@@ -228,9 +229,9 @@ def fetch_and_update_0050():
     )
 
     if changed:
-        print(f"Successfully updated 0050 holdings for {date_key}. Total stocks: {len(payload['holdings'])}")
+        print(f"Successfully updated {TICKER} holdings for {date_key}. Total stocks: {len(payload['holdings'])}")
     else:
-        print(f"No holding changes detected for 0050. Latest stored date remains {date_key}.")
+        print(f"No holding changes detected for {TICKER}. Latest stored date remains {date_key}.")
 
 
 if __name__ == "__main__":

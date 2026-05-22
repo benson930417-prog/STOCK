@@ -6,6 +6,7 @@ except ImportError:
 
 TICKER = "009820"
 
+yuanta.TICKER = TICKER
 yuanta.HISTORY_FILE = yuanta.os.path.join(yuanta.DATA_DIR, f"passive_{TICKER}_history.json")
 yuanta.LOG_FILE = yuanta.os.path.join(yuanta.DATA_DIR, f"passive_{TICKER}_log.json")
 yuanta.URL = f"https://www.yuantaetfs.com/product/detail/{TICKER}/ratio"
