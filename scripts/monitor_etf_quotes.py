@@ -1085,6 +1085,7 @@ def atomic_write_json(path, data):
         json.dump(data, tmp, ensure_ascii=False, indent=2)
         tmp.write("\n")
         tmp_path = Path(tmp.name)
+    tmp_path.chmod(0o644)
     os.replace(tmp_path, path)
 
 
