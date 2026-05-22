@@ -34,7 +34,6 @@ IMAGE_DIR = DATA_DIR / "images"
 QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 MASTER_PATH = DATA_DIR / "master_trades.csv"
 MASTER_CACHE_PATH = QUOTE_CACHE_DIR / "master_holding.json"
-GOLD_CACHE_PATH = QUOTE_CACHE_DIR / "gold_quote.json"
 
 SELL_FEE_RATE = 0.001425 * 0.28
 SELL_STOCK_TAX_RATE = 0.003
@@ -124,24 +123,6 @@ def _fmt_money(value):
     if value is None:
         return "----"
     return f"{value:,.0f}"
-
-
-def _fmt_gold_price(value):
-    if value is None:
-        return "----"
-    return f"{float(value):,.2f}"
-
-
-def _load_gold_quote():
-    if not GOLD_CACHE_PATH.exists():
-        return None
-    try:
-        quote = json.loads(GOLD_CACHE_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return None
-    if quote.get("price") is None:
-        return None
-    return quote
 
 
 def load_master_trades():
@@ -478,7 +459,6 @@ def load_master_snapshot():
 
 
 def build_master_text(snapshot, quote_cache=None):
-    gold = snapshot.get("gold_quote")
     lines = [
         "吳大師持股",
         f"目前淨值(扣費稅)：{_fmt_money(snapshot['total_liq'])}",
@@ -487,17 +467,7 @@ def build_master_text(snapshot, quote_cache=None):
         f"未實損益：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:+.2f}%)",
         f"展開後庫存：{snapshot['holding_count']} 檔"
     ]
-    if gold:
-        change = gold.get("change_pct")
-        change_text = "----" if change is None else f"{float(change):+.2f}%"
-        perf = gold.get("performance") or {}
-        perf_1d = perf.get("1d")
-        if perf_1d is not None:
-            change_text = f"{float(change):+.2f}% / 1日 {float(perf_1d):+.2f}%" if change is not None else f"1日 {float(perf_1d):+.2f}%"
-        lines.append(
-            f"黃金：{_fmt_gold_price(gold.get('price'))} {gold.get('currency', 'USD')} ({change_text})"
-        )
-    
+
     if quote_cache:
         composite = quote_cache.get("composite_move_pct")
         if quote_cache.get("composite_mode") == "live" and composite is not None:
@@ -580,7 +550,6 @@ def _master_quote_cache(snapshot, rows):
         "etf_refresh_utc": max(valid_quote_times) if valid_quote_times else datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "tsmc_proxy": snapshot.get("tsmc_proxy"),
         "tsmc_data_mode": snapshot.get("tsmc_data_mode"),
-        "gold_quote": snapshot.get("gold_quote"),
         "newest_quote_utc": max(valid_quote_times) if valid_quote_times else None,
         "oldest_quote_utc": min(valid_quote_times) if valid_quote_times else None,
         "composite_move_pct": live_weighted_sum / live_weight_sum if live_weight_sum else None,
@@ -601,7 +570,6 @@ def _master_quote_cache(snapshot, rows):
 
 def generate_master_quote_card(limit=50):
     snapshot = load_master_snapshot()
-    snapshot["gold_quote"] = _load_gold_quote()
     rows = snapshot["exposures"][:limit]
     quote_cache = _master_quote_cache(snapshot, rows)
     output_paths = generate_quote_card_from_cache("MASTER", quote_cache, output_prefix="master_holding_top50")
@@ -635,7 +603,6 @@ def load_cached_master_quote_card():
     cache_mtime = MASTER_CACHE_PATH.stat().st_mtime
     source_paths = [
         MASTER_PATH,
-        DATA_DIR / "quote_cache" / "gold_quote.json",
         *DATA_DIR.glob("etf_*_history.json"),
         *DATA_DIR.glob("passive_*_history.json"),
         *QUOTE_CACHE_DIR.glob("etf_*_quotes.json"),
