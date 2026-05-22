@@ -3526,7 +3526,7 @@ try:
                         na_rep="----",
                     ),
                     width="stretch",
-                    height=240,
+                    height=min(520, max(280, 42 * (len(direct_show) + 1) + 12)),
                 )
 
             expanded_df = build_expanded_etf_exposure(portfolio_positions)
