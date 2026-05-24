@@ -188,11 +188,16 @@ def _section_insight(text: str) -> None:
 
 # ─── per-metric classifiers (value → color, status tag, reference range) ──
 def _classify_day_change(pct: float) -> tuple[str, str, str]:
-    if pct >= 1.5:   return HEALTH_COLORS["red"],    "大漲", "日內 ±1.5% 為正常範圍"
-    if pct >= 0.3:   return HEALTH_COLORS["green"],  "上漲", "日內 ±1.5% 為正常範圍"
-    if pct > -0.3:   return HEALTH_COLORS["gray"],   "持平", "日內 ±1.5% 為正常範圍"
-    if pct > -1.5:   return HEALTH_COLORS["yellow"], "下跌", "日內 ±1.5% 為正常範圍"
-    return HEALTH_COLORS["red"], "大跌", "日內 ±1.5% 為正常範圍"
+    """Calibrated to TAIEX 2y distribution: |daily| ≤ 1% on 50% of days,
+    ±2.5% covers ~p95. Old ±1.5% triggered RED on 1-in-4 days (too noisy)."""
+    ref = "正常 ±1% / 大漲 >+2.5% / 大跌 <-2.5%（基於 TAIEX 2 年分布）"
+    if pct >=  2.5:  return HEALTH_COLORS["red"],     "大漲", ref
+    if pct >=  1.0:  return HEALTH_COLORS["orange"],  "上漲偏大", ref
+    if pct >=  0.3:  return HEALTH_COLORS["green"],   "上漲", ref
+    if pct >  -0.3:  return HEALTH_COLORS["gray"],    "持平", ref
+    if pct >  -1.0:  return HEALTH_COLORS["green"],   "下跌", ref
+    if pct >  -2.5:  return HEALTH_COLORS["yellow"],  "下跌偏大", ref
+    return HEALTH_COLORS["red"], "大跌", ref
 
 
 def _classify_regime(label_zh: str, days: int | None,
@@ -243,15 +248,29 @@ def _classify_distance_from_low(dist_pct: float) -> tuple[str, str, str]:
 
 
 def _classify_return(pct: float, window: str) -> tuple[str, str, str]:
-    """Classify a multi-day return. window='30d' uses tighter thresholds, '60d' wider."""
+    """Calibrated to TAIEX 2y distribution percentiles, not arbitrary round
+    numbers. Red ≈ top/bottom 5% (truly rare), orange ≈ top/bottom 15%
+    (notable), green = middle 70% (normal trend behavior)."""
     if window == "30d":
-        ref = "正常 ±3% / 偏熱 >+8% / 急漲 >+15%"
-        thresholds = [(15, "red", "急漲"), (8, "orange", "大漲"), (3, "green", "穩健上漲"),
-                      (-3, "gray", "盤整"), (-8, "yellow", "下跌"), (-15, "red", "急跌")]
+        # TAIEX 30d: p5=-8.6, p25=-0.3, p75=+9, p95=+18
+        ref = "正常 -5%~+9% / 大漲 >+9% / 急漲 >+18%（基於 TAIEX 2 年分布）"
+        thresholds = [(18, "red",    "急漲"),
+                      ( 9, "orange", "大漲"),
+                      ( 3, "green",  "穩健上漲"),
+                      (-3, "gray",   "盤整"),
+                      (-5, "green",  "小跌"),
+                      (-10, "yellow","下跌"),
+                      (-18, "orange","大跌")]
     else:  # 60d
-        ref = "正常 ±6% / 偏熱 >+15% / 急漲 >+25%"
-        thresholds = [(25, "red", "急漲"), (15, "orange", "大漲"), (6, "green", "穩健上漲"),
-                      (-6, "gray", "盤整"), (-15, "yellow", "下跌"), (-25, "red", "急跌")]
+        # TAIEX 60d: p5=-10, p25=-0.2, p75=+15.6, p95=+24.4
+        ref = "正常 -7%~+16% / 大漲 >+16% / 急漲 >+25%（基於 TAIEX 2 年分布）"
+        thresholds = [(25, "red",    "急漲"),
+                      (16, "orange", "大漲"),
+                      ( 5, "green",  "穩健上漲"),
+                      (-5, "gray",   "盤整"),
+                      (-10, "green", "小跌"),
+                      (-18, "yellow","下跌"),
+                      (-25, "orange","大跌")]
     for thresh, color_key, tag in thresholds:
         if pct >= thresh:
             return HEALTH_COLORS[color_key], tag, ref
@@ -259,19 +278,26 @@ def _classify_return(pct: float, window: str) -> tuple[str, str, str]:
 
 
 def _classify_acceleration(accel: float) -> tuple[str, str, str]:
-    ref = "正常 ±2pp / 加速 >+5pp / 減速 <-5pp"
-    if accel >=  5:  return HEALTH_COLORS["red"],       "加速中",  ref
-    if accel >=  2:  return HEALTH_COLORS["orange"],    "略加速",  ref
-    if accel >= -2:  return HEALTH_COLORS["green"],     "穩定",    ref
-    if accel >= -5:  return HEALTH_COLORS["blue"],      "減速",    ref
+    """Calibrated to TAIEX 2y acceleration distribution:
+        p25=-6, p75=+8.5, p90=+16, p95=+21, p99=+30.
+
+    Old +5pp = RED fired on 60% of days. New +20pp = RED is the actual
+    top ~5% (genuinely rare parabolic move)."""
+    ref = "正常 -8~+9pp / 明顯加速 >+10pp / 強烈加速 >+20pp（基於 TAIEX 2 年分布）"
+    if accel >=  20: return HEALTH_COLORS["red"],       "強烈加速", ref
+    if accel >=  10: return HEALTH_COLORS["orange"],    "明顯加速", ref
+    if accel >=  -9: return HEALTH_COLORS["green"],     "穩定",     ref
+    if accel >= -16: return HEALTH_COLORS["blue"],      "明顯減速", ref
     return HEALTH_COLORS["deep_blue"], "急轉", ref
 
 
 def _classify_volatility(vol_pct: float, vol_percentile: float | None) -> tuple[str, str, str]:
-    ref = "TAIEX 歷史中位 ~15% / 偏高 >25% / 低波動 <12%"
-    if vol_pct >= 30:   return HEALTH_COLORS["red"],    "高波動",     ref
-    if vol_pct >= 20:   return HEALTH_COLORS["orange"], "偏高",       ref
-    if vol_pct >= 12:   return HEALTH_COLORS["green"],  "正常",       ref
+    """Calibrated to TAIEX 2y 20d-vol: p25=15.6, p50=18, p75=24, p95=47.
+    Old 30%=RED fired on 12% of days; new 35%=RED is closer to top 10%."""
+    ref = "TAIEX 中位 ~18% / 偏高 >24% / 高波動 >35%（基於 2 年分布）"
+    if vol_pct >= 35:   return HEALTH_COLORS["red"],    "高波動",     ref
+    if vol_pct >= 24:   return HEALTH_COLORS["orange"], "偏高",       ref
+    if vol_pct >= 13:   return HEALTH_COLORS["green"],  "正常",       ref
     # Low vol — check percentile for "complacent top" warning
     if vol_percentile is not None and vol_percentile < 25:
         return HEALTH_COLORS["yellow"], "低波動（複雜頂風險）", ref
