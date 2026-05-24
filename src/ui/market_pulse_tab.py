@@ -206,6 +206,29 @@ def _render_taiex_timeframes(taiex: pd.Series) -> None:
     st.dataframe(styled, hide_index=True, width="stretch")
 
 
+def _momentum_tag(ret_pct: float | None) -> str:
+    """Tag for a single momentum metric (e.g. 30d / 60d return)."""
+    if ret_pct is None: return "—"
+    if ret_pct >  15:   return "🚨 過熱"
+    if ret_pct >   8:   return "⚠ 偏熱"
+    if ret_pct >   3:   return "🟢 健康"
+    if ret_pct >  -3:   return "⚪ 中性"
+    if ret_pct >  -8:   return "🔵 偏弱"
+    if ret_pct > -15:   return "⚠ 急跌"
+    return "🚨 重挫"
+
+
+def _acceleration_tag(accel_pct: float | None) -> str:
+    """Tag for acceleration (recent-30d return minus prior-30d return).
+    Positive = recent move faster than prior = accelerating."""
+    if accel_pct is None: return "—"
+    if accel_pct >  5:    return "🚨 加速中"
+    if accel_pct >  2:    return "⚠ 略加速"
+    if accel_pct > -2:    return "🟢 穩定"
+    if accel_pct > -5:    return "🔵 減速"
+    return "💔 急轉"
+
+
 def _composite_judgment(pct: float | None, stretch: float | None) -> tuple[str, str]:
     """Combine 1y percentile with MA200 stretch into a meaningful overheat tag.
 
@@ -232,6 +255,88 @@ def _composite_judgment(pct: float | None, stretch: float | None) -> tuple[str, 
     if pct < 20 and stretch <= -15:
         return ("❄️ 嚴重低估", "6")
     return ("⚪ 中性",        "4")
+
+
+def _render_momentum(taiex: pd.Series) -> None:
+    """Slope-based view: how fast is TAIEX moving, and is it accelerating?
+
+    Level metrics (percentile, MA stretch) tell you WHERE we are. They
+    can't distinguish "3-year steady climb to +40% above MA200" from
+    "2-month parabolic surge to +40% above MA200". This panel adds the
+    missing dimension — rate of change and its second derivative.
+    """
+    st.markdown("### 🚀 動能與加速度（TAIEX）")
+    st.caption(
+        "**動能** = 最近 N 天的累積報酬。**加速度** = 近 30 天比前 30 天快多少。"
+        "同樣的「距 MA200 +40%」可能是 3 年慢慢爬上去，"
+        "也可能是 2 個月衝上來——這個區塊把後者識別出來。"
+    )
+
+    if taiex is None or len(taiex) < 61:
+        st.info("資料不足計算動能（需 60 個交易日以上）。")
+        return
+
+    current     = float(taiex.iloc[-1])
+    price_30    = float(taiex.iloc[-31])   # 30 trading days ago
+    price_60    = float(taiex.iloc[-61])   # 60 trading days ago
+
+    ret_30      = (current / price_30  - 1) * 100   # last 30d
+    ret_60      = (current / price_60  - 1) * 100   # last 60d (context)
+    ret_old_30  = (price_30 / price_60 - 1) * 100   # the prior 30d (60→30 ago)
+    accel       = ret_30 - ret_old_30                # rate of change of rate
+
+    # Current ZigZag leg's cumulative magnitude — "how much have we moved
+    # since the last regime change" gives a sense of swing size
+    regimes_df = _compute_regimes_live(threshold_pct=4.0)
+    regime_cum_pct = None
+    regime_label_zh = "—"
+    if not regimes_df.empty:
+        today_ts = taiex.index[-1]
+        ongoing = regimes_df[
+            (regimes_df["start_date"] <= today_ts) & (regimes_df["end_date"] >= today_ts)
+        ]
+        leg = ongoing.iloc[-1] if not ongoing.empty else regimes_df.iloc[-1]
+        regime_cum_pct  = float(leg["severity"])
+        regime_label_zh = REGIME_LABELS_ZH.get(leg["regime"], leg["regime"])
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("30 日報酬",  f"{ret_30:+.2f}%",  _momentum_tag(ret_30),       delta_color="off")
+    c2.metric("60 日報酬",  f"{ret_60:+.2f}%",  _momentum_tag(ret_60),       delta_color="off")
+    c3.metric("加速度",     f"{accel:+.2f}%",   _acceleration_tag(accel),     delta_color="off")
+    c4.metric(
+        f"本波累計（{regime_label_zh}）",
+        f"{regime_cum_pct:+.2f}%" if regime_cum_pct is not None else "—",
+        "規制起點至今",
+        delta_color="off",
+    )
+
+    # Composite warnings — fire only when multiple slope signals align
+    if ret_30 > 8 and ret_60 > 15 and accel > 2:
+        st.error(
+            f"🚨 **拋物線型上漲警示**：30 日 ({ret_30:+.1f}%) 與 60 日 ({ret_60:+.1f}%) 都偏熱，"
+            f"且加速度 +{accel:.1f}%（近 30 天比前 30 天更快）。"
+            "歷史上這種同時「高漲 + 加速」常領先均值回歸。"
+        )
+    elif ret_30 < -8 and accel < -5:
+        st.error(
+            f"🚨 **跌勢加速警示**：30 日 {ret_30:+.1f}% 大跌且加速度 {accel:+.1f}%"
+            "（近期跌得比前期還快）。"
+        )
+    elif ret_30 > 8 and accel < -2:
+        st.warning(
+            f"⚠ **動能轉弱**：30 日 +{ret_30:.1f}% 仍偏熱，但加速度 {accel:+.1f}% 顯示"
+            "近期漲勢慢於前期 — 留意是否形成頭部。"
+        )
+    elif ret_30 < -8 and accel > 2:
+        st.info(
+            f"ℹ️ **跌勢趨緩**：30 日 {ret_30:+.1f}% 仍偏弱，但加速度 +{accel:.1f}% 顯示"
+            "近期跌得比前期慢 — 可能築底中。"
+        )
+    elif accel > 5:
+        st.warning(
+            f"⚠ **加速中**：30 日 +{ret_30:.1f}% 比前 30 日 +{ret_old_30:.1f}% 快了 "
+            f"+{accel:.1f}% — 警惕拋物線。"
+        )
 
 
 def _render_cross_asset(lookback_days: int = 252) -> None:
@@ -447,10 +552,13 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
 
     st.markdown("---")
 
-    # 2. TAIEX percentile across timeframes
+    # 2. TAIEX percentile across timeframes  (LEVEL view — "where we are")
     _render_taiex_timeframes(taiex)
 
-    # 3. Cross-asset overheat
+    # 3. TAIEX momentum + acceleration       (SLOPE view — "how fast / accelerating")
+    _render_momentum(taiex)
+
+    # 4. Cross-asset overheat
     _render_cross_asset()
 
     st.markdown("---")
