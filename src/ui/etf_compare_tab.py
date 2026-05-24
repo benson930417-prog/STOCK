@@ -31,6 +31,8 @@ FUND_TYPE_LABELS = {
 CORPORATE_ACTION_WARNINGS = {
     "0052": "曾有分割 / 資本事件，圖表保留，但該段期間的報酬線請視為需要人工解讀。",
 }
+COMMON_PRICE_ADJUSTMENT_RATIOS = (2, 3, 4, 5, 6, 7, 10)
+PRICE_ADJUSTMENT_TOLERANCE = 0.08
 
 
 def _group_consecutive_missing(missing_dates: list, ref_dates: list) -> list[tuple]:
@@ -83,11 +85,48 @@ def _humanize_db_mtime(summary: dict) -> str:
     return f"{sec // 86400} 天前"
 
 
-def _corporate_action_warning(ticker: str, name: str) -> str | None:
-    warning = CORPORATE_ACTION_WARNINGS.get(ticker)
-    if not warning:
+def _nearest_price_adjustment_ratio(close_ratio: float) -> float | None:
+    if close_ratio <= 0:
         return None
-    return f"**{ticker} {name}**：{warning}"
+    candidates = list(COMMON_PRICE_ADJUSTMENT_RATIOS) + [
+        1.0 / ratio for ratio in COMMON_PRICE_ADJUSTMENT_RATIOS
+    ]
+    nearest = min(candidates, key=lambda ratio: abs(close_ratio / ratio - 1.0))
+    if abs(close_ratio / nearest - 1.0) <= PRICE_ADJUSTMENT_TOLERANCE:
+        return nearest
+    return None
+
+
+def _format_adjustment_ratio(ratio: float) -> str:
+    if ratio >= 1:
+        return f"{ratio:.0f}:1"
+    return f"1:{1.0 / ratio:.0f}"
+
+
+def _corporate_action_warnings(ticker: str, name: str, prices: pd.DataFrame) -> list[str]:
+    warnings: list[str] = []
+    warning = CORPORATE_ACTION_WARNINGS.get(ticker)
+    if warning:
+        warnings.append(f"**{ticker} {name}**：{warning}")
+
+    if len(prices) < 2:
+        return warnings
+
+    prev_close = prices["close"].shift(1)
+    for row in prices.assign(prev_close=prev_close).itertuples(index=False):
+        if pd.isna(row.prev_close) or row.prev_close <= 0 or row.close <= 0:
+            continue
+        matched_ratio = _nearest_price_adjustment_ratio(float(row.close) / float(row.prev_close))
+        if matched_ratio is None:
+            continue
+        event_date = pd.Timestamp(row.date).date().isoformat()
+        warnings.append(
+            f"**{ticker} {name}**：{event_date} 偵測到約 "
+            f"{_format_adjustment_ratio(matched_ratio)} 的價格調整"
+            f"（收盤 {float(row.prev_close):.2f} → {float(row.close):.2f}）。"
+        )
+
+    return list(dict.fromkeys(warnings))
 
 
 def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
@@ -301,9 +340,9 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     # User-selected ETFs
     for i, t in enumerate(selected_tickers):
         urow = etf_universe[etf_universe["ticker"] == t].iloc[0]
-        warning = _corporate_action_warning(t, urow["name"])
-        if warning:
-            corporate_action_warnings.append(warning)
+        corporate_action_warnings.extend(
+            _corporate_action_warnings(t, urow["name"], db.get_prices(t))
+        )
         _add_line(t, urow["name"], palette[i % len(palette)], dash="solid")
 
     # TAIEX — always fetched in background as gap-reference; chart-drawn only if opted-in

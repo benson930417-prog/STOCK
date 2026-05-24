@@ -44,8 +44,10 @@ DUPLICATE_DIVIDEND_WINDOW_DAYS = 5
 # Keep known corporate-action caveats in the audit without trying to infer
 # events from Yahoo's price stream.
 CORPORATE_ACTION_CAVEATS = {
-    "0052": "known corporate action; keep audited but interpret the affected period manually",
+    "0052": "known corporate action; interpret affected period manually",
 }
+COMMON_PRICE_ADJUSTMENT_RATIOS = (2, 3, 4, 5, 6, 7, 10)
+PRICE_ADJUSTMENT_TOLERANCE = 0.08
 
 
 def _load_prices(conn: sqlite3.Connection, ticker: str) -> pd.DataFrame:
@@ -70,6 +72,44 @@ def _load_dividends(conn: sqlite3.Connection, ticker: str) -> pd.DataFrame:
         return df
     df["ex_date"] = pd.to_datetime(df["ex_date"])
     return df
+
+
+def _nearest_price_adjustment_ratio(close_ratio: float) -> float | None:
+    if close_ratio <= 0:
+        return None
+    candidates = list(COMMON_PRICE_ADJUSTMENT_RATIOS) + [
+        1.0 / ratio for ratio in COMMON_PRICE_ADJUSTMENT_RATIOS
+    ]
+    nearest = min(candidates, key=lambda ratio: abs(close_ratio / ratio - 1.0))
+    if abs(close_ratio / nearest - 1.0) <= PRICE_ADJUSTMENT_TOLERANCE:
+        return nearest
+    return None
+
+
+def _format_adjustment_ratio(ratio: float) -> str:
+    if ratio >= 1:
+        return f"{ratio:.0f}:1"
+    return f"1:{1.0 / ratio:.0f}"
+
+
+def detect_price_adjustment_caveats(prices: pd.DataFrame) -> list[str]:
+    if len(prices) < 2:
+        return []
+
+    caveats: list[str] = []
+    prev_close = prices["close"].shift(1)
+    for row in prices.assign(prev_close=prev_close).itertuples(index=False):
+        if pd.isna(row.prev_close) or row.prev_close <= 0 or row.close <= 0:
+            continue
+        matched_ratio = _nearest_price_adjustment_ratio(float(row.close) / float(row.prev_close))
+        if matched_ratio is None:
+            continue
+        event_date = pd.Timestamp(row.date).date().isoformat()
+        caveats.append(
+            f"{event_date} approx {_format_adjustment_ratio(matched_ratio)} price adjustment "
+            f"from close {row.prev_close:.2f} to {row.close:.2f}"
+        )
+    return caveats
 
 
 def duplicate_dividend_baseline_dates(prices: pd.DataFrame, dividends: pd.DataFrame) -> set[pd.Timestamp]:
@@ -167,7 +207,12 @@ def verify_ticker(conn: sqlite3.Connection, ticker: str) -> dict:
 
     dividends = _load_dividends(conn, ticker)
     duplicate_baselines = duplicate_dividend_baseline_dates(prices, dividends)
-    caveat = CORPORATE_ACTION_CAVEATS.get(ticker, "")
+    caveats = []
+    manual_caveat = CORPORATE_ACTION_CAVEATS.get(ticker)
+    if manual_caveat:
+        caveats.append(manual_caveat)
+    caveats.extend(detect_price_adjustment_caveats(prices))
+    caveat = "; ".join(dict.fromkeys(caveats))
     transparent_index = build_cash_reinvested_index(prices, dividends)
     if transparent_index.empty:
         return {"ticker": ticker, "status": "skip", "reason": "cannot build total return index"}
