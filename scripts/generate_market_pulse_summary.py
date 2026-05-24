@@ -18,6 +18,11 @@ from playwright.sync_api import sync_playwright
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from scripts.etf_benchmark.step6_regimes import classify_leg, zigzag_pivots
+
 SUMMARY_DIR = ROOT_DIR / "data" / "summaries"
 DB_PATH = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
 
@@ -102,22 +107,37 @@ def stretch_zscore(series: pd.Series, ma_window: int = 200, lookback: int = 504)
     return cur, (cur - float(hist.mean())) / std
 
 
-def latest_regime(date: pd.Timestamp) -> tuple[str, int | None]:
-    with sqlite3.connect(DB_PATH) as conn:
-        df = pd.read_sql_query(
-            """
-            SELECT start_date, end_date, regime
-            FROM regimes
-            WHERE reference_index = '^TWII'
-              AND source = 'auto_zigzag'
-            ORDER BY start_date
-            """,
-            conn,
-        )
-    if df.empty:
+def latest_regime(series: pd.Series, threshold_pct: float = 4.0) -> tuple[str, int | None]:
+    """Match the 市場脈動 tab: compute the current ZigZag regime live at 4%.
+
+    The persisted regimes table is produced by step6 and may use a different
+    threshold/history snapshot, so using it here can drift from the web tab.
+    """
+    if series is None or len(series) < 2:
         return "—", None
-    df["start_date"] = pd.to_datetime(df["start_date"])
-    df["end_date"] = pd.to_datetime(df["end_date"])
+
+    prices = series.to_numpy(dtype=float)
+    dates = pd.to_datetime(series.index).tolist()
+    pivot_idxs = zigzag_pivots(prices, threshold_pct)
+    rows = []
+    for start_idx, end_idx in zip(pivot_idxs[:-1], pivot_idxs[1:]):
+        p0 = float(prices[start_idx])
+        p1 = float(prices[end_idx])
+        if p0 <= 0:
+            continue
+        mag = (p1 - p0) / p0 * 100.0
+        rows.append(
+            {
+                "start_date": pd.Timestamp(dates[start_idx]),
+                "end_date": pd.Timestamp(dates[end_idx]),
+                "regime": classify_leg(mag, threshold_pct),
+            }
+        )
+    if not rows:
+        return "—", None
+
+    df = pd.DataFrame(rows)
+    date = pd.Timestamp(series.index[-1])
     active = df[(df["start_date"] <= date) & (df["end_date"] >= date)]
     row = active.iloc[-1] if not active.empty else df.iloc[-1]
     label = REGIME_LABELS.get(str(row["regime"]), str(row["regime"]))
@@ -254,7 +274,7 @@ def build_snapshot() -> dict:
     current = float(taiex.iloc[-1])
     prev = float(taiex.iloc[-2])
     day_pct = (current / prev - 1.0) * 100.0
-    regime, regime_days = latest_regime(taiex.index[-1])
+    regime, regime_days = latest_regime(taiex, threshold_pct=4.0)
 
     high_1y = float(taiex.iloc[-252:].max()) if len(taiex) >= 252 else float(taiex.max())
     low_60 = float(taiex.iloc[-60:].min()) if len(taiex) >= 60 else float(taiex.min())
