@@ -450,7 +450,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
             show_taiex   = st.checkbox("顯示加權指數", value=True,  key="etfc_show_taiex")
             show_otc     = st.checkbox("顯示櫃買指數", value=False, key="etfc_show_otc")
             show_regimes = st.checkbox("顯示市場區間", value=True,  key="etfc_show_regimes",
-                                       help="在圖上疊加多頭 / 小熊 / 中熊 / 大熊色塊（以加權指數 ZigZag 擺動計算）。")
+                                       help="在圖上疊加多頭 / 小熊 / 中熊 / 大熊色塊（以加權指數擺動偵測計算）。")
             use_adj      = st.checkbox("配息還原 (adj close)", value=True,
                                        key="etfc_use_adj",
                                        help="勾起：用 Yahoo 的 adj_close 算報酬率（公平比較高股息）。"
@@ -459,10 +459,10 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     if show_regimes:
         with st.container(border=True):
             zigzag_threshold = st.slider(
-                "市場區間敏感度（ZigZag 反轉門檻 %）",
+                "市場區間敏感度（擺動反轉門檻 %）",
                 min_value=3.0, max_value=10.0, value=4.0, step=0.5,
                 key="etfc_zigzag_threshold",
-                help="ZigZag 演算法用這個百分比認定一次「擺動轉折」。"
+                help="擺動偵測演算法用這個百分比認定一次「擺動轉折」。"
                      "門檻越小越敏感（小波動也算一段），越大越乾淨（只看大方向）。"
                      "預設 4%；學術慣例為 5%。",
             )
@@ -652,7 +652,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         )
 
         with st.expander(
-            f"📊 市場區間績效（ZigZag 門檻 {zigzag_threshold:g}%）",
+            f"📊 市場區間績效（擺動門檻 {zigzag_threshold:g}%）",
             expanded=True,
         ):
             # Benchmark caption — what we're comparing against

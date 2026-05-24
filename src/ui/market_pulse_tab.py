@@ -58,8 +58,8 @@ from src.ui.etf_compare_tab import (
 CROSS_ASSET_INDICES: list[tuple[str, str]] = [
     ("^TWII", "加權指數"),
     ("^SOX",  "費城半導體"),
-    ("^IXIC", "NASDAQ"),
-    ("^GSPC", "S&P 500"),
+    ("^IXIC", "那斯達克"),
+    ("^GSPC", "S&P 500"),       # user-preference: keep S&P 500 in English
     ("^DJI",  "道瓊"),
 ]
 
@@ -190,7 +190,7 @@ def _section_insight(text: str) -> None:
 def _classify_day_change(pct: float) -> tuple[str, str, str]:
     """Calibrated to TAIEX 2y distribution: |daily| ≤ 1% on 50% of days,
     ±2.5% covers ~p95. Old ±1.5% triggered RED on 1-in-4 days (too noisy)."""
-    ref = "正常 ±1% / 大漲 >+2.5% / 大跌 <-2.5%（基於 TAIEX 2 年分布）"
+    ref = "正常 ±1% / 大漲 >+2.5% / 大跌 <-2.5%（基於加權指數 2 年分布）"
     if pct >=  2.5:  return HEALTH_COLORS["red"],     "大漲", ref
     if pct >=  1.0:  return HEALTH_COLORS["orange"],  "上漲偏大", ref
     if pct >=  0.3:  return HEALTH_COLORS["green"],   "上漲", ref
@@ -253,7 +253,7 @@ def _classify_return(pct: float, window: str) -> tuple[str, str, str]:
     (notable), green = middle 70% (normal trend behavior)."""
     if window == "30d":
         # TAIEX 30d: p5=-8.6, p25=-0.3, p75=+9, p95=+18
-        ref = "正常 -5%~+9% / 大漲 >+9% / 急漲 >+18%（基於 TAIEX 2 年分布）"
+        ref = "正常 -5%~+9% / 大漲 >+9% / 急漲 >+18%（基於加權指數 2 年分布）"
         thresholds = [(18, "red",    "急漲"),
                       ( 9, "orange", "大漲"),
                       ( 3, "green",  "穩健上漲"),
@@ -263,7 +263,7 @@ def _classify_return(pct: float, window: str) -> tuple[str, str, str]:
                       (-18, "orange","大跌")]
     else:  # 60d
         # TAIEX 60d: p5=-10, p25=-0.2, p75=+15.6, p95=+24.4
-        ref = "正常 -7%~+16% / 大漲 >+16% / 急漲 >+25%（基於 TAIEX 2 年分布）"
+        ref = "正常 -7%~+16% / 大漲 >+16% / 急漲 >+25%（基於加權指數 2 年分布）"
         thresholds = [(25, "red",    "急漲"),
                       (16, "orange", "大漲"),
                       ( 5, "green",  "穩健上漲"),
@@ -283,7 +283,7 @@ def _classify_acceleration(accel: float) -> tuple[str, str, str]:
 
     Old +5pp = RED fired on 60% of days. New +20pp = RED is the actual
     top ~5% (genuinely rare parabolic move)."""
-    ref = "正常 -8~+9pp / 明顯加速 >+10pp / 強烈加速 >+20pp（基於 TAIEX 2 年分布）"
+    ref = "正常 -8~+9pp / 明顯加速 >+10pp / 強烈加速 >+20pp（基於加權指數 2 年分布）"
     if accel >=  20: return HEALTH_COLORS["red"],       "強烈加速", ref
     if accel >=  10: return HEALTH_COLORS["orange"],    "明顯加速", ref
     if accel >=  -9: return HEALTH_COLORS["green"],     "穩定",     ref
@@ -294,7 +294,7 @@ def _classify_acceleration(accel: float) -> tuple[str, str, str]:
 def _classify_volatility(vol_pct: float, vol_percentile: float | None) -> tuple[str, str, str]:
     """Calibrated to TAIEX 2y 20d-vol: p25=15.6, p50=18, p75=24, p95=47.
     Old 30%=RED fired on 12% of days; new 35%=RED is closer to top 10%."""
-    ref = "TAIEX 中位 ~18% / 偏高 >24% / 高波動 >35%（基於 2 年分布）"
+    ref = "加權指數中位 ~18% / 偏高 >24% / 高波動 >35%（基於 2 年分布）"
     if vol_pct >= 35:   return HEALTH_COLORS["red"],    "高波動",     ref
     if vol_pct >= 24:   return HEALTH_COLORS["orange"], "偏高",       ref
     if vol_pct >= 13:   return HEALTH_COLORS["green"],  "正常",       ref
@@ -335,7 +335,7 @@ def _render_headline(taiex: pd.Series) -> dict:
     """Market Level — colored lab-report metrics + end-of-section insight.
     Returns a dict so the summary card can reuse the computed values."""
     if taiex is None or len(taiex) < 2:
-        st.warning("TAIEX 資料不足，無法顯示。")
+        st.warning("加權指數資料不足，無法顯示。")
         return {}
 
     current = float(taiex.iloc[-1])
@@ -369,14 +369,14 @@ def _render_headline(taiex: pd.Series) -> dict:
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         _render_health_metric(
-            "加權指數 (TAIEX)",
+            "加權指數",
             f"{current:,.0f}　<span style='font-size:1.0rem'>{day_pct:+.2f}%</span>",
             c_day, s_day, r_day,
         )
     with c2:
         days_str = f"已 {cur_regime_days} 天" if cur_regime_days is not None else "—"
         _render_health_metric(
-            "當前規制 (ZigZag 4%)",
+            "當前規制（擺動 4%）",
             f"{cur_regime_label}　<span style='font-size:1.0rem'>{days_str}</span>",
             c_reg, s_reg, r_reg,
         )
@@ -396,11 +396,11 @@ def _render_headline(taiex: pd.Series) -> dict:
     # End-of-section insight — synthesize what these 4 numbers mean together
     insight_parts = []
     if dist_1y_hi >= -0.5:
-        insight_parts.append("TAIEX 正在創 1 年新高")
+        insight_parts.append("加權指數正在創 1 年新高")
     elif dist_1y_hi >= -5:
-        insight_parts.append(f"TAIEX 距 1 年高點僅 {abs(dist_1y_hi):.1f}%")
+        insight_parts.append(f"加權指數距 1 年高點僅 {abs(dist_1y_hi):.1f}%")
     elif dist_1y_hi <= -20:
-        insight_parts.append(f"TAIEX 較高點回落 {abs(dist_1y_hi):.0f}%（已進入熊市區間）")
+        insight_parts.append(f"加權指數較高點回落 {abs(dist_1y_hi):.0f}%（已進入熊市區間）")
     if cur_regime_label == "多頭" and cur_regime_days and cur_regime_days >= 30:
         insight_parts.append(f"處於多頭第 {cur_regime_days} 天，趨勢延續中")
     elif cur_regime_label in ("中熊", "大熊"):
@@ -554,7 +554,7 @@ def _render_speed_panel(taiex: pd.Series) -> dict:
 
     Returns a dict summary so the summary card can use it.
     """
-    st.markdown("### 🚀 動能與波動（TAIEX）")
+    st.markdown("### 🚀 動能與波動（加權指數）")
     st.caption(
         "**動能**：最近 N 天的累積報酬。**加速度** = 近 30 天比前 30 天快多少。"
         "**20 日波動率**：年化的最近 20 天標準差。"
@@ -588,7 +588,7 @@ def _render_speed_panel(taiex: pd.Series) -> dict:
     if cur_vol is not None:
         c_vol, s_vol, r_vol = _classify_volatility(cur_vol, vol_pct)
     else:
-        c_vol, s_vol, r_vol = HEALTH_COLORS["gray"], "—", "TAIEX 歷史中位 ~15%"
+        c_vol, s_vol, r_vol = HEALTH_COLORS["gray"], "—", "加權指數歷史中位 ~18%"
 
     c1, c2, c3, c4 = st.columns(4)
     with c1: _render_health_metric("30 日報酬",  f"{ret_30:+.2f}%", c_30, s_30, r_30)
@@ -641,7 +641,7 @@ def _render_speed_panel(taiex: pd.Series) -> dict:
 
 
 def _render_chart_with_regimes(taiex: pd.Series) -> None:
-    st.markdown("### 📊 TAIEX 2 年走勢（含規制色塊）")
+    st.markdown("### 📊 加權指數 2 年走勢（含規制色塊）")
     regimes_df = _compute_regimes_live(threshold_pct=4.0)
 
     # End-of-chart insight — describe what the regime breakdown shows
@@ -701,7 +701,7 @@ def _render_chart_with_regimes(taiex: pd.Series) -> None:
     # End-of-chart insight — describe the regime breakdown
     if not regimes_df.empty:
         _section_insight(
-            f"過去 2 年 TAIEX 共經歷 **{n_bull} 段多頭 / {n_corr} 段小熊 / "
+            f"過去 2 年加權指數共經歷 **{n_bull} 段多頭 / {n_corr} 段小熊 / "
             f"{n_minib} 段中熊 / {n_bigb} 段大熊**。"
             f"目前處於最新的 **{cur_label}** 段（已 {days} 天，振幅 {cur_mag:+.1f}%）。"
         )
@@ -750,13 +750,13 @@ def _render_summary_card(taiex: pd.Series,
     # TAIEX stretch descriptor
     if tw_z is not None:
         if tw_z >= 2:
-            parts.append(f"TAIEX 拉伸 z={tw_z:+.1f}（自身高位）")
+            parts.append(f"加權指數拉伸 z={tw_z:+.1f}（自身高位）")
         elif tw_z >= 1:
-            parts.append(f"TAIEX 拉伸 z={tw_z:+.1f}（自身偏高）")
+            parts.append(f"加權指數拉伸 z={tw_z:+.1f}（自身偏高）")
         elif tw_z >= -1:
-            parts.append(f"TAIEX 拉伸 z={tw_z:+.1f}（中性）")
+            parts.append(f"加權指數拉伸 z={tw_z:+.1f}（中性）")
         else:
-            parts.append(f"TAIEX 拉伸 z={tw_z:+.1f}（偏低）")
+            parts.append(f"加權指數拉伸 z={tw_z:+.1f}（偏低）")
 
     # Breadth descriptor — use the same data-driven names as the section above
     stretched = stretch_info.get("stretched_names", [])
@@ -798,12 +798,12 @@ def _render_summary_card(taiex: pd.Series,
         )
     elif high_stretch and breadth_ok:
         interp = (
-            "**解讀**：TAIEX 偏高且多市場同步拉伸，"
+            "**解讀**：加權指數偏高且多市場同步拉伸，"
             "但動能未顯著加速。屬於成熟趨勢階段，**非賣出訊號**。"
         )
     elif high_stretch:
         interp = (
-            "**解讀**：TAIEX 處於自身歷史偏高位，但**廣度未確認全球同步**，"
+            "**解讀**：加權指數處於自身歷史偏高位，但**廣度未確認全球同步**，"
             "可能為單一市場現象。**非賣出訊號**。"
         )
     elif low_stretch and declining_fast:
@@ -813,7 +813,7 @@ def _render_summary_card(taiex: pd.Series,
         )
     elif low_stretch:
         interp = (
-            "**解讀**：TAIEX 處於自身歷史低位，逢低布局的歷史回報通常較高，"
+            "**解讀**：加權指數處於自身歷史低位，逢低布局的歷史回報通常較高，"
             "但**並非單一買入訊號**——趨勢方向仍需個別判斷。"
         )
     else:
@@ -839,7 +839,7 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
 
     taiex_df = db.get_prices("^TWII")
     if taiex_df.empty:
-        st.error("資料庫無 TAIEX (^TWII) 價格。請先執行 step3_backfill。")
+        st.error("資料庫無加權指數 (^TWII) 價格。請先執行 step3_backfill。")
         return
     taiex = taiex_df.set_index("date")["close"].dropna()
 
