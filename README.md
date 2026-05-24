@@ -79,9 +79,9 @@ journalctl -u stock-webhook.service -n 100 --no-pager
 
 ## ETF Benchmark Database
 
-A local-first, dividend-correct SQLite database covering every TWSE-listed ETF
-plus key reference indices. Built from `yfinance` and triple-validated against
-issuer NAVs. Powers the **ETF 比較** tab (replaces per-request Yahoo calls
+A local-first, dividend-aware SQLite database covering every TWSE-listed ETF
+plus key reference indices. Built from `yfinance` and verified with a transparent
+cash-dividend total-return model. Powers the **ETF 比較** tab (replaces per-request Yahoo calls
 with sub-second SQLite reads).
 
 **Location:** `data/etf_bench/etf_bench.sqlite` (gitignored — built per host)
@@ -109,14 +109,14 @@ with sub-second SQLite reads).
 | `step1_universe.py` | Builds `data/etf_bench/universe.csv` from TWSE OpenAPI + TPEx seed |
 | `step2_schema.py` | Creates / resets SQLite schema (`--reset` drops tables first) |
 | `step3_backfill.py` | yfinance batch download → prices/dividends/splits. `--incremental` = last 5 trading days only |
-| `step4_verify.py` | Reconstructs adj_close from raw close + dividends, compares to Yahoo's stored adj_close (>0.5% diff = FAIL) |
-| `step5_verify_nav.py` | Cross-checks Yahoo close vs the official NAVs already collected by the existing per-ETF fetchers (`data/passive_*.json` / `data/etf_*.json`) |
+| `step4_verify.py` | Compares Yahoo `adj_close` baseline-to-latest returns against a transparent raw-close + cash-dividend reinvested total-return model |
+| `step5_verify_nav.py` | Optional/manual diagnostic only: cross-checks Yahoo close vs issuer NAV snapshots. This is intentionally noisy for US/TW-listed ETFs because close, NAV, FX, and market timing differ. |
 | `db.py` | Streamlit-cached read helpers (`get_universe`, `get_prices`, `get_dividends`, `get_avg_turnover_map`) |
 
-**Three-way verification chain** (last full run, 2024-05-24 → today):
-1. **step4** — 275/278 PASS (adj_close formula matches Yahoo within 0.5%; 3 outliers are 收益平準金 or Yahoo duplicate-dividend records, not bugs)
-2. **step5** — TW-equity ETFs (0050, 00878) match issuer NAV within 1%; US-tracking ETFs (00830, 00997A) show 2-4% structural diff due to cross-timezone FX pricing
-3. **Top 28 high-dividend ETFs** (including 18×/yr monthly bond distributors) — 0.00000% diff vs Yahoo
+**Verification model** (last full run, 2024-05-24 → today):
+1. **Required freshness:** `step3_backfill --incremental` keeps prices, dividends, and splits current for the comparison tab.
+2. **Fairness audit:** `step4_verify` builds an independent total-return series from raw close + reinvested cash dividends, then compares every possible baseline-to-latest return against Yahoo `adj_close`.
+3. **Manual NAV diagnostic:** `step5_verify_nav` is useful when investigating a specific issuer snapshot, but it is not a daily pass/fail check. US-tracking ETFs can naturally differ from issuer NAV due to cross-timezone market closes and FX timing.
 
 **First-time setup on a new host:**
 ```bash
@@ -125,8 +125,9 @@ source venv/bin/activate
 python -m scripts.etf_benchmark.step1_universe       # build universe.csv
 python -m scripts.etf_benchmark.step2_schema --reset # create schema
 python -m scripts.etf_benchmark.step3_backfill       # ~12 sec, full 2-year backfill
-python -m scripts.etf_benchmark.step4_verify         # ~3 sec, validate
-python -m scripts.etf_benchmark.step5_verify_nav     # ~1 sec, NAV cross-check
+python -m scripts.etf_benchmark.step4_verify         # ~3 sec, total-return fairness audit
+# Optional only when debugging NAV snapshots:
+# python -m scripts.etf_benchmark.step5_verify_nav
 ```
 
 After that the daily 17:30 timer keeps it fresh via `--incremental` mode.
@@ -224,8 +225,7 @@ captures each step's status, and emails a summary to the admin:
 3. **Per-ETF fetchers** (the 7 active/passive scripts) — write `data/*_history.json`
 4. **etf_benchmark refresh** —
    - `step3_backfill --incremental` (yfinance → SQLite, last 5 trading days)
-   - `step4_verify` (re-validate adj_close)
-   - `step5_verify_nav` (cross-check vs the NAVs from step 3)
+   - `step4_verify` (audit Yahoo `adj_close` vs transparent total-return model)
 5. **Git commit + push** if any tracked data changed
 6. **LINE broadcast** of active ETF reports if new data found
 7. **Admin email summary** — sent every run, success or partial-fail
@@ -233,8 +233,8 @@ captures each step's status, and emails a summary to the admin:
 ### Email format
 
 Subject: `[STOCK] daily run — SUCCESS (2026-05-24 17:30) TPE`
-Body: per-step OK/FAIL lines with key metrics (`step3` row counts, `step4` pass/fail
-totals, `step5` per-ETF status). If any step failed, a `FAILURE DETAILS` section
+Body: per-step OK/FAIL lines with key metrics (`step3` row counts and `step4` pass/fail
+totals). If any step failed, a `FAILURE DETAILS` section
 appends the last 30 lines of that step's full log.
 
 ### Gmail App Password setup (one-time)
@@ -308,7 +308,8 @@ python -m scripts.etf_benchmark.step1_universe
 python -m scripts.etf_benchmark.step2_schema --reset
 python -m scripts.etf_benchmark.step3_backfill
 python -m scripts.etf_benchmark.step4_verify
-python -m scripts.etf_benchmark.step5_verify_nav
+# Optional NAV diagnostic only:
+# python -m scripts.etf_benchmark.step5_verify_nav
 
 # 3. Add Gmail App Password to /home/ubuntu/.stock_secrets
 #    (see "Daily Run & Admin Email" section above)

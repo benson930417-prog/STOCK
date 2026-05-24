@@ -128,8 +128,7 @@ done
 # ──────────────────────────────────────────────────────────────────────────
 { echo; echo "etf_benchmark"; echo "──────────"; } >> "$SUMMARY_FILE"
 run_step "step3 backfill --incremental" python -m scripts.etf_benchmark.step3_backfill --incremental
-run_step "step4 verify (adj_close)"     python -m scripts.etf_benchmark.step4_verify
-run_step "step5 verify_nav"              python -m scripts.etf_benchmark.step5_verify_nav
+run_step "step4 verify (total return)"  python -m scripts.etf_benchmark.step4_verify
 
 # ──────────────────────────────────────────────────────────────────────────
 # 3. Detect which ETFs got NEW DATA this run

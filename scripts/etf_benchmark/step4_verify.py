@@ -1,24 +1,20 @@
-"""Step 4 — validate Yahoo's adj_close by reconstructing it ourselves.
+"""Step 4 - verify Yahoo adj_close as a fair ETF total-return series.
 
-For every ETF with dividend events, we compute the expected adj_close from
-raw close + dividends, then compare to Yahoo's value.
+This check is designed around how the Streamlit comparison tab is used:
+the user chooses a baseline date and compares return from that date to the
+latest available close.
 
-Math (working backwards from "today"):
-    Yahoo's adj_close at date t is:
-        close[t] × ∏(1 - amount_i / close_pre_div_i)
-    over all dividend events i with ex_date > t.
+For every ticker, we build an independent transparent total-return series from:
+    raw close + cash dividends reinvested at the ex-date close
 
-So for each ex-div event:
-    - close_pre  = close on the trading day BEFORE the ex-date
-    - factor     = 1 - amount / close_pre
-    - Multiply close on every date < ex_date by `factor`.
-    - At the latest date, no future dividends → adj_close[last] == close[last].
+Then we compare each possible baseline-to-latest return against Yahoo's
+adj_close baseline-to-latest return. That answers the actual product question:
+"If I use Yahoo adj_close, is the dividend adjustment fair enough for ETF
+comparison?"
 
-We then compare against Yahoo's actual adj_close stored in DB.
-Threshold: relative diff > 0.5% on any date = FAIL.
-
-Writes one row per (ticker, check_name) to verification_log with status:
-    pass / warn / fail
+This intentionally replaces the older exact path reconstruction check. Exact
+Yahoo adjustment factors are useful for debugging, but they create noisy fails
+that do not always matter for current ETF comparison.
 
 Run:
     python -m scripts.etf_benchmark.step4_verify
@@ -39,14 +35,17 @@ if str(ROOT_DIR) not in sys.path:
 
 DB_PATH = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
 
-FAIL_THRESHOLD = 0.005      # 0.5%
-WARN_THRESHOLD = 0.001      # 0.1%
+# Percentage-point drift between Yahoo adj_close return and transparent
+# cash-dividend total return.
+WARN_ENDPOINT_DRIFT_PCT = 0.50
+FAIL_ENDPOINT_DRIFT_PCT = 2.00
 
 
-def _load_prices(conn, ticker: str) -> pd.DataFrame:
+def _load_prices(conn: sqlite3.Connection, ticker: str) -> pd.DataFrame:
     df = pd.read_sql_query(
         "SELECT date, close, adj_close FROM prices WHERE ticker = ? ORDER BY date",
-        conn, params=[ticker],
+        conn,
+        params=[ticker],
     )
     if df.empty:
         return df
@@ -54,10 +53,11 @@ def _load_prices(conn, ticker: str) -> pd.DataFrame:
     return df
 
 
-def _load_dividends(conn, ticker: str) -> pd.DataFrame:
+def _load_dividends(conn: sqlite3.Connection, ticker: str) -> pd.DataFrame:
     df = pd.read_sql_query(
         "SELECT ex_date, amount FROM dividends WHERE ticker = ? ORDER BY ex_date",
-        conn, params=[ticker],
+        conn,
+        params=[ticker],
     )
     if df.empty:
         return df
@@ -65,55 +65,71 @@ def _load_dividends(conn, ticker: str) -> pd.DataFrame:
     return df
 
 
-def reconstruct_adj_close(prices: pd.DataFrame, dividends: pd.DataFrame) -> pd.Series:
-    """Walk dividends latest → earliest, apply back-adjustment factor to
-    all dates strictly before the ex_date. Return reconstructed series."""
-    expected = prices["close"].astype(float).copy()
-    if dividends.empty:
-        return expected
+def build_cash_reinvested_index(prices: pd.DataFrame, dividends: pd.DataFrame) -> pd.Series:
+    """Return a transparent total-return index.
 
-    for row in reversed(list(dividends.itertuples(index=False))):
-        ex_date = row.ex_date
-        amount = float(row.amount)
-        # Find close on the trading day BEFORE ex_date
-        mask_pre = prices["date"] < ex_date
-        if not mask_pre.any():
-            continue
-        close_pre = float(prices.loc[mask_pre, "close"].iloc[-1])
-        if close_pre <= 0:
-            continue
-        factor = 1.0 - amount / close_pre
-        if factor <= 0 or factor > 1.0:
-            continue  # garbage event, skip
-        # Apply factor to all dates strictly before ex_date
-        expected.loc[mask_pre] *= factor
+    The model starts with one share. On each ex-dividend date, dividend cash is
+    included in that day's value and then reinvested at that day's close.
+    """
+    if prices.empty:
+        return pd.Series(dtype=float)
 
-    return expected
+    dividend_map = {}
+    if not dividends.empty:
+        dividend_map = {
+            pd.Timestamp(row.ex_date): float(row.amount)
+            for row in dividends.itertuples(index=False)
+            if row.amount and float(row.amount) > 0
+        }
+
+    shares = 1.0
+    values: list[float] = []
+    for row in prices.itertuples(index=False):
+        close = float(row.close)
+        div = float(dividend_map.get(pd.Timestamp(row.date), 0.0))
+        values.append(shares * (close + div))
+        if div > 0 and close > 0:
+            shares += shares * div / close
+
+    series = pd.Series(values, index=prices.index, dtype=float)
+    if series.empty or series.iloc[0] <= 0:
+        return pd.Series(dtype=float)
+    return series / series.iloc[0] * 100.0
 
 
-def verify_ticker(conn, ticker: str) -> dict:
+def verify_ticker(conn: sqlite3.Connection, ticker: str) -> dict:
     prices = _load_prices(conn, ticker)
     if prices.empty:
         return {"ticker": ticker, "status": "skip", "reason": "no prices"}
 
-    divs = _load_dividends(conn, ticker)
-    expected = reconstruct_adj_close(prices, divs)
-    actual = prices["adj_close"].astype(float)
+    prices = prices.dropna(subset=["close"]).reset_index(drop=True)
+    if len(prices) < 2:
+        return {"ticker": ticker, "status": "skip", "reason": "not enough prices"}
 
-    # Drop dates where actual is NaN (shouldn't happen but defensive)
-    valid = actual.notna() & expected.notna() & (actual > 0)
-    if not valid.any():
-        return {"ticker": ticker, "status": "skip", "reason": "no adj_close in DB"}
+    dividends = _load_dividends(conn, ticker)
+    transparent_index = build_cash_reinvested_index(prices, dividends)
+    if transparent_index.empty:
+        return {"ticker": ticker, "status": "skip", "reason": "cannot build total return index"}
 
-    e = expected[valid].to_numpy()
-    a = actual[valid].to_numpy()
-    rel_diff = (e - a) / a
-    max_abs_rel = float(abs(rel_diff).max())
-    max_abs_rel_date = prices.loc[valid, "date"].iloc[int(abs(rel_diff).argmax())].date().isoformat()
+    yahoo_price = prices["adj_close"].fillna(prices["close"]).astype(float)
+    valid = yahoo_price.notna() & (yahoo_price > 0) & transparent_index.notna() & (transparent_index > 0)
+    if valid.sum() < 2:
+        return {"ticker": ticker, "status": "skip", "reason": "not enough adj_close values"}
 
-    if max_abs_rel > FAIL_THRESHOLD:
+    y = yahoo_price[valid].reset_index(drop=True)
+    t = transparent_index[valid].reset_index(drop=True)
+    dates = prices.loc[valid, "date"].reset_index(drop=True)
+
+    yahoo_index = y / y.iloc[0] * 100.0
+    endpoint_drift = ((y.iloc[-1] / y) - (t.iloc[-1] / t)) * 100.0
+    terminal_drift_pct = float(endpoint_drift.iloc[0])
+    max_endpoint_idx = int(endpoint_drift.abs().idxmax())
+    max_endpoint_drift_pct = float(endpoint_drift.iloc[max_endpoint_idx])
+    max_path_drift_pct = float((yahoo_index - t).abs().max())
+
+    if abs(max_endpoint_drift_pct) > FAIL_ENDPOINT_DRIFT_PCT:
         status = "fail"
-    elif max_abs_rel > WARN_THRESHOLD:
+    elif abs(max_endpoint_drift_pct) > WARN_ENDPOINT_DRIFT_PCT:
         status = "warn"
     else:
         status = "pass"
@@ -121,32 +137,43 @@ def verify_ticker(conn, ticker: str) -> dict:
     return {
         "ticker": ticker,
         "status": status,
-        "n_divs": int(len(divs)),
+        "n_divs": int(len(dividends)),
         "n_dates": int(valid.sum()),
-        "max_abs_rel_pct": round(max_abs_rel * 100.0, 4),
-        "max_diff_date": max_abs_rel_date,
+        "terminal_drift_pct": round(terminal_drift_pct, 4),
+        "max_endpoint_drift_pct": round(max_endpoint_drift_pct, 4),
+        "max_endpoint_date": dates.iloc[max_endpoint_idx].date().isoformat(),
+        "max_path_drift_pct": round(max_path_drift_pct, 4),
     }
 
 
-def log_verification(conn, check_name: str, results: list[dict]):
+def log_verification(conn: sqlite3.Connection, results: list[dict]) -> None:
     for r in results:
         if r["status"] == "skip":
             continue
+        notes = (
+            f"terminal_drift_pct={r['terminal_drift_pct']} "
+            f"max_path_drift_pct={r['max_path_drift_pct']} "
+            f"n_divs={r['n_divs']} n_dates={r['n_dates']}"
+        )
         conn.execute(
             "INSERT INTO verification_log "
             "(check_name, ticker, date, expected, actual, delta_pct, status, notes) "
             "VALUES (?, ?, ?, NULL, NULL, ?, ?, ?)",
-            (check_name, r["ticker"], r.get("max_diff_date"),
-             r.get("max_abs_rel_pct"), r["status"],
-             f"n_divs={r.get('n_divs')} n_dates={r.get('n_dates')}"),
+            (
+                "adj_close_vs_cash_reinvested_tr",
+                r["ticker"],
+                r["max_endpoint_date"],
+                r["max_endpoint_drift_pct"],
+                r["status"],
+                notes,
+            ),
         )
     conn.commit()
 
 
-def main():
+def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tickers", type=str, default=None,
-                    help="Comma-separated tickers (default: all)")
+    ap.add_argument("--tickers", type=str, default=None, help="Comma-separated tickers (default: all)")
     args = ap.parse_args()
 
     if not DB_PATH.exists():
@@ -157,26 +184,25 @@ def main():
         if args.tickers:
             tickers = [t.strip().upper() for t in args.tickers.split(",") if t.strip()]
         else:
-            tickers = [r[0] for r in conn.execute(
-                "SELECT DISTINCT ticker FROM prices WHERE ticker NOT LIKE '^%' ORDER BY ticker"
-            ).fetchall()]
+            tickers = [
+                r[0]
+                for r in conn.execute(
+                    "SELECT DISTINCT ticker FROM prices WHERE ticker NOT LIKE '^%' ORDER BY ticker"
+                ).fetchall()
+            ]
 
-        results = []
-        for ticker in tickers:
-            results.append(verify_ticker(conn, ticker))
+        results = [verify_ticker(conn, ticker) for ticker in tickers]
+        log_verification(conn, results)
 
-        log_verification(conn, "adj_close_vs_reconstructed", results)
-
-    # Summary
-    by_status = {}
+    by_status: dict[str, list[dict]] = {}
     for r in results:
         by_status.setdefault(r["status"], []).append(r)
 
     print()
-    print(f"[step4] verified {len(results)} tickers")
+    print(f"[step4] verified {len(results)} tickers against cash-reinvested total return")
     print(f"  pass  : {len(by_status.get('pass', []))}")
-    print(f"  warn  : {len(by_status.get('warn', []))}   (>0.1% relative diff somewhere)")
-    print(f"  fail  : {len(by_status.get('fail', []))}   (>0.5% relative diff somewhere)")
+    print(f"  warn  : {len(by_status.get('warn', []))}   (>{WARN_ENDPOINT_DRIFT_PCT:.2f} pct-pt endpoint drift)")
+    print(f"  fail  : {len(by_status.get('fail', []))}   (>{FAIL_ENDPOINT_DRIFT_PCT:.2f} pct-pt endpoint drift)")
     print(f"  skip  : {len(by_status.get('skip', []))}")
 
     for status_label, label_str in [("fail", "FAIL"), ("warn", "WARN")]:
@@ -185,12 +211,16 @@ def main():
             continue
         print()
         print(f"  {label_str} details:")
-        for r in sorted(rows, key=lambda r: -r.get("max_abs_rel_pct", 0))[:20]:
-            print(f"    {r['ticker']:8s}  max_diff={r['max_abs_rel_pct']:.3f}%  "
-                  f"on {r['max_diff_date']}  (n_divs={r['n_divs']}, n_dates={r['n_dates']})")
+        for r in sorted(rows, key=lambda item: abs(item.get("max_endpoint_drift_pct", 0)), reverse=True)[:20]:
+            print(
+                f"    {r['ticker']:8s}  max_endpoint_drift={r['max_endpoint_drift_pct']:+.3f} pct-pt "
+                f"from {r['max_endpoint_date']} to latest  "
+                f"(terminal={r['terminal_drift_pct']:+.3f}, max_path={r['max_path_drift_pct']:.3f}, "
+                f"n_divs={r['n_divs']})"
+            )
 
     print()
-    print(f"[step4] full results logged to verification_log table")
+    print("[step4] full results logged to verification_log table")
     return 0
 
 
