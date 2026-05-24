@@ -7,10 +7,18 @@ latest image quickly instead of driving Streamlit on every tap.
 from __future__ import annotations
 
 import os
+import hashlib
 import shutil
 import sqlite3
 import sys
+import time
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    tomllib = None
 
 from PIL import Image
 from playwright.sync_api import sync_playwright
@@ -21,6 +29,46 @@ SUMMARY_DIR = ROOT_DIR / "data" / "summaries"
 DB_PATH = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
 MARKET_PULSE_URL = os.environ.get("MARKET_PULSE_URL", "http://127.0.0.1:8501")
 MARKET_PULSE_LABEL = "\u5e02\u5834\u8108\u52d5"  # 市場脈動
+
+
+def get_secret(key: str) -> str:
+    value = os.environ.get(key)
+    if value:
+        return value.strip().strip("\"'")
+
+    for path in (Path("/home/ubuntu/.stock_secrets"), ROOT_DIR / ".streamlit" / "secrets.toml"):
+        try:
+            if not path.exists():
+                continue
+            if path.suffix == ".toml" and tomllib is not None:
+                data = tomllib.loads(path.read_text(encoding="utf-8"))
+                value = data.get(key)
+                if value:
+                    return str(value).strip()
+            else:
+                for line in path.read_text(encoding="utf-8").splitlines():
+                    if "=" not in line or line.lstrip().startswith("#"):
+                        continue
+                    k, v = line.split("=", 1)
+                    if k.strip() == key:
+                        return v.strip().strip("\"'")
+        except Exception:
+            continue
+    return ""
+
+
+def auth_url(url: str) -> str:
+    password = get_secret("VIEW_PASSWORD")
+    if not password:
+        return url
+
+    ts = int(time.time())
+    sig = hashlib.sha256(f"{password}_stock_{ts}".encode()).hexdigest()[:16]
+    session = f"{ts}-{sig}"
+    parts = urlsplit(url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query["session"] = session
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
 
 
 def latest_taiex_date() -> str:
@@ -81,7 +129,7 @@ def generate() -> tuple[str, Path, Path]:
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1400, "height": 1800}, device_scale_factor=1)
-        page.goto(MARKET_PULSE_URL, wait_until="domcontentloaded", timeout=60_000)
+        page.goto(auth_url(MARKET_PULSE_URL), wait_until="domcontentloaded", timeout=60_000)
         click_market_pulse_tab(page)
         page.wait_for_timeout(4_000)
         page.add_style_tag(content="""
