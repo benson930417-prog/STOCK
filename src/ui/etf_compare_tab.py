@@ -41,9 +41,9 @@ REGIME_COLORS = {
 }
 REGIME_LABELS_ZH = {
     "bull":       "多頭",
-    "correction": "修正",
-    "mini_bear":  "小熊市",
-    "bear":       "熊市",
+    "correction": "小熊",
+    "mini_bear":  "中熊",
+    "bear":       "大熊",
 }
 COMMON_PRICE_ADJUSTMENT_RATIOS = (2, 3, 4, 5, 6, 7, 10)
 PRICE_ADJUSTMENT_TOLERANCE = 0.08
@@ -246,10 +246,10 @@ def _build_capture_table(
         rows.append({
             "代號": ticker,
             "名稱": name,
-            "多頭平均 %":   _weighted_avg(per_regime["bull"]["rets"],      per_regime["bull"]["days"]),
-            "修正平均 %":   _weighted_avg(per_regime["correction"]["rets"], per_regime["correction"]["days"]),
-            "小熊平均 %":   _weighted_avg(per_regime["mini_bear"]["rets"], per_regime["mini_bear"]["days"]),
-            "熊市平均 %":   _weighted_avg(per_regime["bear"]["rets"],      per_regime["bear"]["days"]),
+            "多頭平均 %": _weighted_avg(per_regime["bull"]["rets"],       per_regime["bull"]["days"]),
+            "小熊平均 %": _weighted_avg(per_regime["correction"]["rets"], per_regime["correction"]["days"]),
+            "中熊平均 %": _weighted_avg(per_regime["mini_bear"]["rets"],  per_regime["mini_bear"]["days"]),
+            "大熊平均 %": _weighted_avg(per_regime["bear"]["rets"],       per_regime["bear"]["days"]),
             "上漲捕獲 %":   up_capture,
             "下跌捕獲 %":   down_capture,
             "捕獲比":       capture_ratio,
@@ -429,9 +429,6 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     def _set_ytd():
         st.session_state["etfc_baseline"] = _clamp_baseline(pd.Timestamp(year=max_d.year, month=1, day=1))
 
-    def _set_max():
-        st.session_state["etfc_baseline"] = min_d
-
     with st.container(border=True):
         st.markdown("**起始點設定**")
         c_date, c_fast, c_ref = st.columns([2, 4, 2])
@@ -440,20 +437,20 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                           key="etfc_baseline", label_visibility="collapsed")
         with c_fast:
             r1 = st.columns(4)
-            r1[0].button("1D",  on_click=_set_bday,   args=(1,),                 key="etfc_b1d",  use_container_width=True)
-            r1[1].button("5D",  on_click=_set_bday,   args=(5,),                 key="etfc_b5d",  use_container_width=True)
-            r1[2].button("1M",  on_click=_set_offset, kwargs={"months": 1},      key="etfc_b1m",  use_container_width=True)
-            r1[3].button("6M",  on_click=_set_offset, kwargs={"months": 6},      key="etfc_b6m",  use_container_width=True)
+            r1[0].button("1D", on_click=_set_bday,   args=(1,),             key="etfc_b1d",  use_container_width=True)
+            r1[1].button("5D", on_click=_set_bday,   args=(5,),             key="etfc_b5d",  use_container_width=True)
+            r1[2].button("1M", on_click=_set_offset, kwargs={"months": 1},  key="etfc_b1m",  use_container_width=True)
+            r1[3].button("3M", on_click=_set_offset, kwargs={"months": 3},  key="etfc_b3m",  use_container_width=True)
             r2 = st.columns(4)
-            r2[0].button("YTD", on_click=_set_ytd,                                key="etfc_bytd", use_container_width=True)
-            r2[1].button("1Y",  on_click=_set_offset, kwargs={"years": 1},       key="etfc_b1y",  use_container_width=True)
-            r2[2].button("2Y",  on_click=_set_offset, kwargs={"years": 2},       key="etfc_b2y",  use_container_width=True)
-            r2[3].button("MAX", on_click=_set_max,                                key="etfc_bmax", use_container_width=True)
+            r2[0].button("6M",  on_click=_set_offset, kwargs={"months": 6}, key="etfc_b6m",  use_container_width=True)
+            r2[1].button("YTD", on_click=_set_ytd,                          key="etfc_bytd", use_container_width=True)
+            r2[2].button("1Y",  on_click=_set_offset, kwargs={"years": 1},  key="etfc_b1y",  use_container_width=True)
+            r2[3].button("2Y",  on_click=_set_offset, kwargs={"years": 2},  key="etfc_b2y",  use_container_width=True)
         with c_ref:
             show_taiex   = st.checkbox("顯示加權指數", value=True,  key="etfc_show_taiex")
             show_otc     = st.checkbox("顯示櫃買指數", value=False, key="etfc_show_otc")
             show_regimes = st.checkbox("顯示市場區間", value=True,  key="etfc_show_regimes",
-                                       help="在圖上疊加多頭 / 修正 / 小熊市 / 熊市色塊（以加權指數 ZigZag 擺動計算）。")
+                                       help="在圖上疊加多頭 / 小熊 / 中熊 / 大熊色塊（以加權指數 ZigZag 擺動計算）。")
             use_adj      = st.checkbox("配息還原 (adj close)", value=True,
                                        key="etfc_use_adj",
                                        help="勾起：用 Yahoo 的 adj_close 算報酬率（公平比較高股息）。"
@@ -474,6 +471,15 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
     baseline_date = pd.Timestamp(st.session_state["etfc_baseline"])
     today_ts = pd.Timestamp(summary["date_max"])
+
+    # Warn if the selected window is shorter than 3 months — too few regime
+    # legs for capture ratios to be statistically meaningful.
+    _three_months_ago = today_ts - pd.DateOffset(months=3)
+    if baseline_date > _three_months_ago:
+        st.warning(
+            "⚠️ **樣本太短**：選擇的區間不足 3 個月，市場區間擺動段數過少，"
+            "**捕獲比僅供參考、勿過度解讀**。建議至少選 3M 以上。"
+        )
 
     # ─────────── 抓 DB + 畫圖 ───────────
     fig = go.Figure()
@@ -657,9 +663,9 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
             st.caption(
                 f"🏛️ **基準：加權指數（每段交易日加權平均）**　"
                 f"多頭 {_fmt_pct(br.get('bull'))} ({np_.get('bull', 0)} 段)　·　"
-                f"修正 {_fmt_pct(br.get('correction'))} ({np_.get('correction', 0)})　·　"
-                f"小熊市 {_fmt_pct(br.get('mini_bear'))} ({np_.get('mini_bear', 0)})　·　"
-                f"熊市 {_fmt_pct(br.get('bear'))} ({np_.get('bear', 0)})"
+                f"小熊 {_fmt_pct(br.get('correction'))} ({np_.get('correction', 0)})　·　"
+                f"中熊 {_fmt_pct(br.get('mini_bear'))} ({np_.get('mini_bear', 0)})　·　"
+                f"大熊 {_fmt_pct(br.get('bear'))} ({np_.get('bear', 0)})"
             )
 
             if capture_df.empty:
@@ -710,26 +716,26 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                     sorted_df.style
                     .format({
                         "多頭平均 %":  lambda v: f"{v:+.2f}" if pd.notna(v) else "—",
-                        "修正平均 %":  lambda v: f"{v:+.2f}" if pd.notna(v) else "—",
                         "小熊平均 %":  lambda v: f"{v:+.2f}" if pd.notna(v) else "—",
-                        "熊市平均 %":  lambda v: f"{v:+.2f}" if pd.notna(v) else "—",
+                        "中熊平均 %":  lambda v: f"{v:+.2f}" if pd.notna(v) else "—",
+                        "大熊平均 %":  lambda v: f"{v:+.2f}" if pd.notna(v) else "—",
                         "上漲捕獲 %":  lambda v: f"{v:.0f}"  if pd.notna(v) else "—",
                         "下跌捕獲 %":  lambda v: f"{v:.0f}"  if pd.notna(v) else "—",
                         "捕獲比":      lambda v: f"{v:.2f}"  if pd.notna(v) else "—",
                     })
-                    .map(_color_pct,           subset=["多頭平均 %", "修正平均 %", "小熊平均 %", "熊市平均 %"])
+                    .map(_color_pct,           subset=["多頭平均 %", "小熊平均 %", "中熊平均 %", "大熊平均 %"])
                     .map(_color_up_capture,    subset=["上漲捕獲 %"])
                     .map(_color_down_capture,  subset=["下跌捕獲 %"])
                     .map(_color_capture_ratio, subset=["捕獲比"])
                 )
                 st.dataframe(styled, hide_index=True, width="stretch")
 
-                st.caption(
-                    "**讀法**　"
-                    "**多頭/修正/小熊/熊市平均 %** = 該 ETF 在同類型擺動期間的「每段交易日加權平均報酬率」。　"
-                    "**上漲捕獲 %** = ETF 多頭平均 ÷ 加權指數多頭平均 × 100。>100 表示比大盤更會漲。　"
-                    "**下跌捕獲 %** = ETF 下跌平均 ÷ 加權指數下跌平均 × 100（下跌 = 修正 + 小熊 + 熊市）。**越小越好**（90 表示下跌只跌大盤的九成）。　"
-                    "**捕獲比 = 上漲捕獲 ÷ 下跌捕獲**。**>1.0 為防禦型優勢**；>1.10 是不錯的防禦型 ETF。"
+                st.markdown(
+                    "**📖 讀法**\n\n"
+                    "- 📊 **多頭 / 小熊 / 中熊 / 大熊平均 %**：該 ETF 在同類擺動期間，每段交易日加權平均報酬率\n"
+                    "- 🚀 **上漲捕獲 %**：ETF 多頭平均 ÷ 大盤 × 100 →  **越大越會漲**（>100 = 跑贏大盤）\n"
+                    "- 🛡️ **下跌捕獲 %**：ETF 下跌平均 ÷ 大盤 × 100 →  **越小越抗跌**（90 = 只跌大盤的九成）\n"
+                    "- 🏆 **捕獲比 = 上漲 ÷ 下跌** →  **>1.0 = 防禦型優勢**，>1.10 = 優秀防禦"
                 )
 
             # ── Detail expander: per-leg breakdown ─────────────────────────
@@ -760,7 +766,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         })
                 if detail_rows:
                     ddf = pd.DataFrame(detail_rows)
-                    regime_order = ["多頭", "修正", "小熊市", "熊市"]
+                    regime_order = ["多頭", "小熊", "中熊", "大熊"]
                     ddf["_sort"] = ddf["區間類型"].map(
                         {r: i for i, r in enumerate(regime_order)}
                     ).fillna(99)
