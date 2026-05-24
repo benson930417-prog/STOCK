@@ -181,57 +181,113 @@ def _render_taiex_timeframes(taiex: pd.Series) -> None:
     st.plotly_chart(fig, width="stretch")
 
 
-def _render_cross_asset(lookback_days: int = 252) -> None:
-    """Cross-asset overheat panel — same percentile math across global indices."""
-    st.markdown("### 🌍 跨資產過熱檢查（1 年分位數）")
-    st.caption("如果只有 TAIEX 偏熱 → 台股獨秀。多個指數同時 90+ → 全球都在歷史高位，"
-               "典型「全球週期頂部」訊號。")
+def _composite_judgment(pct: float | None, stretch: float | None) -> tuple[str, str]:
+    """Combine 1y percentile with MA200 stretch into a meaningful overheat tag.
 
-    rows = []
+    Percentile alone is misleading in a trending market — every day of a
+    steady uptrend reads as 100%. Pairing it with MA200 stretch
+    distinguishes "trending up healthily" from "parabolic / bubble."
+
+    Returns (tag, severity_for_sort) where lower severity = more overheated.
+    """
+    if pct is None or stretch is None:
+        return ("— 無資料", "9")
+    if pct >= 90 and stretch >= 25:
+        return ("🚨 嚴重過熱", "0")
+    if pct >= 90 and stretch >= 15:
+        return ("⚠ 偏熱",     "1")
+    if pct >= 90 and stretch >= 5:
+        return ("🟡 溫和上揚", "2")
+    if pct >= 80:
+        return ("🟢 接近趨勢", "3")
+    if pct >= 40:
+        return ("⚪ 中性",     "4")
+    if pct >= 20 and stretch <= -5:
+        return ("🔵 偏冷",     "5")
+    if pct < 20 and stretch <= -15:
+        return ("❄️ 嚴重低估", "6")
+    return ("⚪ 中性",        "4")
+
+
+def _render_cross_asset(lookback_days: int = 252) -> None:
+    """Cross-asset overheat panel — TWO metrics so percentile-in-a-trend
+    doesn't fool you. Price percentile says "where in range." MA200 stretch
+    says "how far from trend." Both needed to identify real overheat."""
+    st.markdown("### 🌍 跨資產過熱檢查")
+    st.caption(
+        "**分位數** = 當前價格在 1 年區間的位置（高 = 接近年內高點）。　"
+        "**距 MA200** = 與 200 日均線的距離（>+25% = 拋物線型過熱）。　"
+        "**單看分位數會在趨勢市中失真**：S&P 平穩走多時每天都是 100%，但離 MA200 只有 +10% "
+        "就不算泡沫；TAIEX 100% 但離 MA200 +40% 才是真的高位。"
+    )
+
+    rows: list[dict] = []
     for ticker, name in CROSS_ASSET_INDICES:
         df = db.get_prices(ticker)
-        if df.empty:
-            rows.append({"label": f"{name} ({ticker})", "pct": None,
-                         "color": _heat_color(None), "tag": "無資料"})
+        if df.empty or len(df) < 200:
+            rows.append({
+                "指數": f"{name} ({ticker})",
+                "1年分位": None, "距 MA200": None,
+                "綜合判斷": "— 無資料", "_sort": "9",
+            })
             continue
         prices = df["close"].dropna()
         pct = _percentile_in_window(prices, lookback_days)
+        cur = float(prices.iloc[-1])
+        ma200 = float(prices.iloc[-200:].mean())
+        stretch = (cur - ma200) / ma200 * 100.0
+        tag, severity = _composite_judgment(pct, stretch)
         rows.append({
-            "label": f"{name} ({ticker})",
-            "pct":   pct or 0.0,
-            "color": _heat_color(pct),
-            "tag":   _heat_label(pct),
+            "指數": f"{name} ({ticker})",
+            "1年分位": pct, "距 MA200": stretch,
+            "綜合判斷": tag, "_sort": severity,
         })
 
-    fig = go.Figure()
-    fig.add_trace(go.Bar(
-        y=[r["label"] for r in rows],
-        x=[r["pct"]   for r in rows],
-        marker=dict(color=[r["color"] for r in rows]),
-        text=[f"{r['pct']:.0f}  {r['tag']}" for r in rows],
-        textposition="outside",
-        cliponaxis=False,
-        orientation="h",
-    ))
-    fig.update_layout(
-        xaxis=dict(range=[0, 110], showticklabels=True, tickformat=".0f",
-                   ticksuffix=" pct", showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
-        yaxis=dict(showgrid=False, autorange="reversed"),
-        height=220, margin=dict(l=10, r=80, t=10, b=10),
-        showlegend=False,
-        plot_bgcolor="rgba(0,0,0,0)",
-    )
-    fig.add_vline(x=20, line=dict(color="rgba(14,165,233,0.4)",  width=1, dash="dot"))
-    fig.add_vline(x=80, line=dict(color="rgba(249,115,22,0.4)",  width=1, dash="dot"))
-    st.plotly_chart(fig, width="stretch")
+    df_show = pd.DataFrame(rows).sort_values("_sort").drop(columns="_sort")
 
-    # Overheat tally — quick alert at the bottom
-    n_extreme = sum(1 for r in rows if r["pct"] is not None and r["pct"] >= 90)
-    if n_extreme >= 3:
-        st.error(f"🚨 {n_extreme} 個指數同時在 90+ 分位 — 全球高位警示，"
-                 "歷史上這種狀態通常領先重大修正。")
-    elif n_extreme >= 1:
-        st.warning(f"⚠ {n_extreme} 個指數在 90+ 分位。檢查是否為單一市場現象。")
+    def _color_pct(v):
+        if v is None or pd.isna(v): return ""
+        if v >= 95: return "color: #dc2626; font-weight: 700"
+        if v >= 80: return "color: #f97316"
+        if v >= 60: return "color: #facc15"
+        if v <  20: return "color: #1e40af"
+        return ""
+
+    def _color_stretch(v):
+        if v is None or pd.isna(v): return ""
+        if v >=  25: return "background-color: rgba(220, 38, 38, 0.25); font-weight: 700"
+        if v >=  15: return "background-color: rgba(249, 115, 22, 0.20)"
+        if v >=   5: return "background-color: rgba(250, 204, 21, 0.15)"
+        if v <= -15: return "background-color: rgba(30, 64, 175, 0.20); color: #93c5fd"
+        if v <=  -5: return "background-color: rgba(14, 165, 233, 0.15)"
+        return ""
+
+    styled = (
+        df_show.style
+        .format({
+            "1年分位": lambda v: f"{v:.0f}"  if pd.notna(v) else "—",
+            "距 MA200": lambda v: f"{v:+.1f}%" if pd.notna(v) else "—",
+        })
+        .map(_color_pct,     subset=["1年分位"])
+        .map(_color_stretch, subset=["距 MA200"])
+    )
+    st.dataframe(styled, hide_index=True, width="stretch")
+
+    # Composite alert — only fires on TRUE overheat (high pct + high stretch),
+    # not on "trending up but normal stretch"
+    n_severe = sum(1 for r in rows if r["_sort"] == "0")
+    n_hot    = sum(1 for r in rows if r["_sort"] in ("0", "1"))
+    if n_severe >= 2:
+        st.error(
+            f"🚨 {n_severe} 個指數同時嚴重過熱（>+25% above MA200 且 90+ 分位）— "
+            "**真正的全球高位警示**，不是普通上升趨勢。歷史上這種組合常領先重大修正。"
+        )
+    elif n_hot >= 2:
+        st.warning(
+            f"⚠ {n_hot} 個指數偏熱。注意是否惡化為嚴重過熱（距 MA200 >25%）。"
+        )
+    elif n_hot == 1:
+        st.info(f"ℹ️ {n_hot} 個指數偏熱，其他大致正常 — 局部市場現象。")
 
 
 def _render_technicals(taiex: pd.Series) -> None:
