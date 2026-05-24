@@ -85,8 +85,40 @@ COOLDOWN_DAYS = [3, 5, 7]
 LOOKBACKS     = [60, 90]
 
 # ── data loaders ────────────────────────────────────────────────────────────
-def load_close(ticker: str, use_adj: bool = True) -> pd.Series:
-    """Daily close (or adj_close) for one ticker from the SQLite, sorted by date."""
+def _to_yahoo_symbol(ticker: str) -> str:
+    """Map our universe ticker to Yahoo's symbol convention."""
+    if ticker.startswith("^"):
+        return ticker
+    return f"{ticker}.TW"
+
+
+def load_close_yf(ticker: str, years: float, use_adj: bool = True) -> pd.Series:
+    """Daily close from yfinance directly, going back `years` years from today.
+
+    Used for the optimizer because the SQLite DB only stores a rolling 2-year
+    window — for a longer backtest we need to fetch fresh.
+    """
+    import yfinance as yf
+    symbol = _to_yahoo_symbol(ticker)
+    start = (pd.Timestamp.today() - pd.DateOffset(years=int(years))).strftime("%Y-%m-%d")
+    df = yf.download(
+        symbol, start=start, interval="1d",
+        progress=False, auto_adjust=False, actions=True,
+    )
+    if df is None or df.empty:
+        raise ValueError(f"yfinance returned no data for {symbol}")
+    # Handle multi-index columns from yfinance batch downloads
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+    col = "Adj Close" if use_adj and "Adj Close" in df.columns else "Close"
+    out = df[col].dropna()
+    out.index = pd.to_datetime(out.index)
+    out.name = ticker
+    return out
+
+
+def load_close_db(ticker: str, use_adj: bool = True) -> pd.Series:
+    """Daily close from the local SQLite (2-year window). Kept as a fallback."""
     col = "adj_close" if use_adj else "close"
     with sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True) as conn:
         df = pd.read_sql_query(
@@ -475,21 +507,39 @@ def main() -> int:
                     help="Defensive bullet ETF (default 00865B US short bonds)")
     ap.add_argument("--core-pct", type=float, default=TARGET_CORE_PCT,
                     help=f"Baseline core % (default {TARGET_CORE_PCT})")
+    ap.add_argument("--years", type=float, default=5.0,
+                    help="Lookback years for the backtest (default 5). "
+                         "≥3 fetches fresh from yfinance, otherwise uses the local DB.")
     args = ap.parse_args()
 
-    if not DB_PATH.exists():
-        print(f"DB not found at {DB_PATH}. Run step2 + step3 first.")
-        return 1
+    print(f"[backtest] Core:    {args.core_ticker}")
+    print(f"[backtest] Bullet:  {args.bullet_ticker}")
+    print(f"[backtest] Window:  {args.years} years")
 
-    print(f"[backtest] Core:   {args.core_ticker}")
-    print(f"[backtest] Bullet: {args.bullet_ticker}")
-    print(f"[backtest] Loading TAIEX + price series …")
-    taiex   = load_close("^TWII",            use_adj=False)
-    core    = load_close(args.core_ticker,   use_adj=True)
-    bullet  = load_close(args.bullet_ticker, use_adj=True)
+    if args.years > 2.0:
+        print(f"[backtest] Fetching fresh from yfinance (DB only covers 2y) …")
+        taiex  = load_close_yf("^TWII",            args.years, use_adj=False)
+        core   = load_close_yf(args.core_ticker,   args.years, use_adj=True)
+        bullet = load_close_yf(args.bullet_ticker, args.years, use_adj=True)
+    else:
+        if not DB_PATH.exists():
+            print(f"DB not found at {DB_PATH}. Run step2 + step3 first.")
+            return 1
+        print(f"[backtest] Loading TAIEX + price series from local DB …")
+        taiex  = load_close_db("^TWII",            use_adj=False)
+        core   = load_close_db(args.core_ticker,   use_adj=True)
+        bullet = load_close_db(args.bullet_ticker, use_adj=True)
+
     taiex, core, bullet = align_series(taiex, core, bullet)
     print(f"[backtest] Aligned window: {taiex.index[0].date()} → {taiex.index[-1].date()} "
           f"({len(taiex)} trading days)")
+    # Warn if any series got truncated by a younger ticker
+    if args.years > 2.0:
+        target_start = pd.Timestamp.today() - pd.DateOffset(years=int(args.years))
+        if taiex.index[0] > target_start + pd.Timedelta(days=30):
+            short_by_yrs = (taiex.index[0] - target_start).days / 365.25
+            print(f"[backtest] ⚠ Aligned start trails target by {short_by_yrs:.1f}y — "
+                  f"one of the tickers ({args.bullet_ticker}?) has limited history.")
 
     total = len(FIRE_CONFIGS) * len(RETRIEVE_CONFIGS) * len(COOLDOWN_DAYS) * len(LOOKBACKS)
     print(f"[backtest] Running {total} tactical configurations …")
