@@ -458,15 +458,13 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                 )
         if not_listed_warnings:
             with st.container(border=True):
-                ref_label = "加權指數" if ref_ticker == "^TWII" else ref_ticker
-                st.markdown(f"ℹ️ **新上市資料不足**（參考：{ref_label}）")
+                st.markdown("ℹ️ **新上市資料不足**")
                 st.caption("這不是資料缺漏，而是 ETF 在比較起始日之後才上市；圖表會從該 ETF 第一筆可用價格開始。")
                 for w in not_listed_warnings:
                     st.markdown(f"- {w}")
         if gap_warnings:
             with st.container(border=True):
-                ref_label = "加權指數" if ref_ticker == "^TWII" else ref_ticker
-                st.markdown(f"⚠️ **缺漏交易日警示**（參考：{ref_label}，共 {ref_n} 個交易日）")
+                st.markdown("⚠️ **缺漏交易日警示**")
                 st.caption("可能原因：除權息暫停交易、分割暫停交易、Yahoo 資料缺失。"
                            "Bull/Bear 壓力測試時這些缺漏期間會自動排除。")
                 for w in gap_warnings:
