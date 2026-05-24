@@ -42,6 +42,7 @@ import requests
 import streamlit as st
 from src.ui.etf_tab import render_etf_tab, render_passive_etf_tab
 from src.ui.etf_compare_tab import render_etf_compare_tab
+from src.ui.market_pulse_tab import render_market_pulse_tab
 from scripts.master_manual_positions import (
     CASH_LABEL as MANUAL_CASH_LABEL,
     MANUAL_PATH as MANUAL_POSITIONS_PATH,
@@ -2300,7 +2301,8 @@ try:
 
     hr()
 
-    tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf, tab_passive_etf, tab_master_holding, tab_etf_compare = st.tabs(
+    (tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf, tab_passive_etf,
+     tab_master_holding, tab_etf_compare, tab_market_pulse) = st.tabs(
         [
             T(lang, "Overview", "總覽"),
             T(lang, "Leaderboard", "排行"),
@@ -2310,6 +2312,7 @@ try:
             T(lang, "Passive ETFs", "被動式 ETF"),
             "吳大師持股",
             T(lang, "ETF Comparison", "ETF 比較"),
+            "市場脈動",
         ]
     )
 
@@ -3784,6 +3787,13 @@ try:
             hex_to_rgba=hex_to_rgba,
             PROFIT_COLOR=PROFIT_COLOR,
             LOSS_COLOR=LOSS_COLOR,
+        )
+
+    with tab_market_pulse:
+        render_market_pulse_tab(
+            lang=lang,
+            T=T,
+            DATA_DIR=DATA_DIR,
         )
 
 except Exception:
