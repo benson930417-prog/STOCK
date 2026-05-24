@@ -41,7 +41,13 @@ def compress_image(path: Path) -> None:
 
 
 def click_market_pulse_tab(page) -> None:
-    page.wait_for_selector("body", timeout=30_000)
+    page.wait_for_selector("body", state="attached", timeout=60_000)
+    page.wait_for_function("document.readyState !== 'loading'", timeout=30_000)
+    try:
+        page.wait_for_selector('[data-testid="stAppViewContainer"], .stApp, [role="tab"]', state="attached", timeout=60_000)
+    except Exception as app_exc:
+        print(f"Streamlit app shell not detected yet, trying tab click anyway: {app_exc}", flush=True)
+
     try:
         page.get_by_role("tab", name=MARKET_PULSE_LABEL).click(timeout=15_000)
         return
@@ -79,6 +85,10 @@ def generate() -> tuple[str, Path, Path]:
         click_market_pulse_tab(page)
         page.wait_for_timeout(4_000)
         page.add_style_tag(content="""
+            html, body, [data-testid="stAppViewContainer"] {
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
             header, [data-testid="stToolbar"], [data-testid="stDecoration"],
             [data-testid="stStatusWidget"], #MainMenu, footer {
                 display: none !important;
