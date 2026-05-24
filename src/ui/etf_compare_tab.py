@@ -471,38 +471,45 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                     "區間類型": REGIME_LABELS_ZH.get(rrow["regime"], rrow["regime"]),
                     "起":      rrow["start_date"].date().isoformat(),
                     "訖":      rrow["end_date"].date().isoformat(),
-                    "最嚴重回撤 %": round(float(rrow["severity"]), 1) if not pd.isna(rrow["severity"]) else None,
+                    "指數變動 %": round(float(rrow["severity"]), 1) if not pd.isna(rrow["severity"]) else None,
                     "ETF 報酬 %":  round((p1 - p0) / p0 * 100.0, 2),
+                    "交易日數":    int(len(sub)),
                 })
 
         if stat_rows:
             sdf = pd.DataFrame(stat_rows)
-            with st.expander("📊 市場區間績效", expanded=False):
+            with st.expander("📊 市場區間績效（以加權指數 ZigZag 5% 擺動劃分）", expanded=False):
                 st.caption(
-                    "各 ETF 在每段多頭 / 修正 / 小熊市 / 熊市期間的報酬率。"
-                    "顏色：多頭=綠、修正=黃、小熊=橙、熊市=紅。"
+                    "彙整：各 ETF 在「多頭 / 修正 / 小熊市 / 熊市」期間的"
+                    "**交易日加權平均報酬率**（每期報酬以該期交易日數為權重）。"
+                    "明細：每一段擺動的逐筆表現。"
                 )
 
-                # Summary pivot: average return per (ticker, regime_type)
-                pivot = (
-                    sdf.groupby(["代號", "名稱", "區間類型"])["ETF 報酬 %"]
-                    .agg(平均報酬="mean", 期數="count")
-                    .round({"平均報酬": 2})
+                # Trading-day-weighted average return per (ticker, regime_type).
+                # Formula: Σ(return_i × n_days_i) / Σ(n_days_i)
+                sdf["_weighted"] = sdf["ETF 報酬 %"] * sdf["交易日數"]
+                agg = (
+                    sdf.groupby(["代號", "名稱", "區間類型"])
+                    .agg(
+                        加權總和=("_weighted", "sum"),
+                        總交易日=("交易日數", "sum"),
+                        期數=("ETF 報酬 %", "count"),
+                    )
                     .reset_index()
                 )
-                pivot.columns = ["代號", "名稱", "區間類型", "平均報酬 %", "期數"]
+                agg["加權平均報酬 %"] = (agg["加權總和"] / agg["總交易日"]).round(2)
+                pivot = agg[["代號", "名稱", "區間類型", "加權平均報酬 %", "期數", "總交易日"]]
 
                 regime_order = ["多頭", "修正", "小熊市", "熊市"]
-                pivot["_sort"] = pivot["區間類型"].map(
-                    {r: i for i, r in enumerate(regime_order)}
-                ).fillna(99)
-                pivot = pivot.sort_values(["代號", "_sort"]).drop(columns="_sort")
+                pivot = pivot.assign(
+                    _sort=pivot["區間類型"].map({r: i for i, r in enumerate(regime_order)}).fillna(99)
+                ).sort_values(["代號", "_sort"]).drop(columns="_sort")
                 st.dataframe(pivot, hide_index=True, width="stretch")
 
                 # Detail table in a nested expander
                 with st.expander("展開逐期明細"):
                     detail = sdf[["代號", "名稱", "區間類型", "起", "訖",
-                                  "最嚴重回撤 %", "ETF 報酬 %"]].copy()
+                                  "指數變動 %", "ETF 報酬 %", "交易日數"]].copy()
                     detail["_sort"] = detail["區間類型"].map(
                         {r: i for i, r in enumerate(regime_order)}
                     ).fillna(99)

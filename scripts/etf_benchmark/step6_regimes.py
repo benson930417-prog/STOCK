@@ -1,28 +1,35 @@
-"""Step 6 — tag TAIEX market-regime periods (bull / correction / mini_bear / bear).
+"""Step 6 — tag market regimes via ZigZag swing detection on a reference index.
 
-Uses a rolling drawdown-from-peak approach on ^TWII (加權指數).
-Each trading day is assigned a regime label; consecutive same-label days are
-grouped into period rows written to the `regimes` table.
+Why ZigZag (vs rolling drawdown):
+    Drawdown-from-cummax over a 2-year window anchors to a stale absolute
+    peak, so multi-percent intra-trend swings get classified as "bull" even
+    when the market actually corrected 7-10% recently.  ZigZag identifies
+    LOCAL peaks and troughs and classifies the leg between them, which is
+    what a human reads off a chart.
 
-Thresholds (drawdown from expanding ATH since window start):
-    bull        :    0% to   -5%   (market is healthy)
-    correction  :   -5% to  -10%   (normal pullback)
-    mini_bear   :  -10% to  -20%   (significant decline)
-    bear        : < -20%           (bear market)
+Algorithm (single-pass, confirmation-based):
+    1. Walk forward through closes
+    2. Track running extreme since last confirmed pivot
+    3. The moment price reverses ≥ SWING_THRESHOLD_PCT from running extreme,
+       confirm the prior extreme as a pivot and flip direction
+    4. Each segment between adjacent pivots is one "leg"
 
-A minimum run of MIN_TRADING_DAYS is enforced before committing a regime
-change, preventing single-session noise from fragmenting the timeline.
-Short periods that survive the initial pass are absorbed by their neighbours
-in an iterative merge step.
+Classification of each leg:
+    bull        : up-leg of any magnitude
+    correction  : down-leg  5%  ≤ |mag| < 10%
+    mini_bear   : down-leg 10%  ≤ |mag| < 20%
+    bear        : down-leg       |mag| ≥ 20%
 
-Idempotent — clears all previous auto_drawdown rows for the reference ticker
-before reinserting, so it is safe to re-run daily.
+Trading days are taken straight from the prices table (n = number of
+observations in the leg) — these are the weights the compare tab uses.
+
+Idempotent — clears all auto_zigzag rows for the reference ticker before
+reinserting, safe to re-run daily.
 
 Run:
     python -m scripts.etf_benchmark.step6_regimes
     python -m scripts.etf_benchmark.step6_regimes --reference ^TWII
-    python -m scripts.etf_benchmark.step6_regimes --thresholds 5,10,20
-    python -m scripts.etf_benchmark.step6_regimes --min-days 3
+    python -m scripts.etf_benchmark.step6_regimes --threshold 5.0
 """
 from __future__ import annotations
 
@@ -31,6 +38,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -39,238 +47,200 @@ if str(ROOT_DIR) not in sys.path:
 
 DB_PATH = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
 
-# ── defaults ────────────────────────────────────────────────────────────────
-DEFAULT_REFERENCE   = "^TWII"
-# thresholds: drawdown from ATH beyond which the next regime begins (all positive)
-DEFAULT_THRESHOLDS  = (5.0, 10.0, 20.0)   # correction / mini_bear / bear
-MIN_TRADING_DAYS    = 5                    # short periods shorter than this get merged
+DEFAULT_REFERENCE      = "^TWII"
+DEFAULT_THRESHOLD_PCT  = 5.0        # ≥ this % reversal confirms a pivot
+SOURCE_TAG             = "auto_zigzag"
 
 
-# ── regime assignment ────────────────────────────────────────────────────────
-def _assign_label(dd_pct: float, thresholds: tuple[float, float, float]) -> str:
-    t1, t2, t3 = thresholds
-    if dd_pct >= -t1:
+# ── ZigZag pivot detection ──────────────────────────────────────────────────
+def zigzag_pivots(prices: np.ndarray, threshold_pct: float) -> list[int]:
+    """Return indices of confirmed swing pivots, including endpoints.
+
+    Pivots alternate high/low. The final pivot is "tentative" (the current
+    open leg's extreme), included so the most-recent partial leg is captured.
+    """
+    n = len(prices)
+    if n < 2:
+        return list(range(n))
+
+    pivot_indices: list[int] = [0]
+    last_pivot_idx   = 0
+    last_pivot_price = float(prices[0])
+
+    # Extreme since last_pivot in the current trend direction
+    cur_ext_idx   = 0
+    cur_ext_price = float(prices[0])
+    cur_trend: str | None = None        # 'up' / 'down' / None
+
+    for i in range(1, n):
+        p = float(prices[i])
+
+        if cur_trend is None:
+            # Trend not yet established. Track most extreme deviation from start.
+            move_pct = (p - last_pivot_price) / last_pivot_price * 100.0
+            if abs(move_pct) >= threshold_pct:
+                cur_trend     = "up" if move_pct > 0 else "down"
+                cur_ext_idx   = i
+                cur_ext_price = p
+            elif abs(p - last_pivot_price) > abs(cur_ext_price - last_pivot_price):
+                cur_ext_idx   = i
+                cur_ext_price = p
+            continue
+
+        if cur_trend == "up":
+            if p > cur_ext_price:
+                cur_ext_idx, cur_ext_price = i, p
+            elif (cur_ext_price - p) / cur_ext_price * 100.0 >= threshold_pct:
+                # Confirm cur_ext as a high pivot; flip to downtrend
+                pivot_indices.append(cur_ext_idx)
+                last_pivot_idx, last_pivot_price = cur_ext_idx, cur_ext_price
+                cur_trend = "down"
+                cur_ext_idx, cur_ext_price = i, p
+        else:  # 'down'
+            if p < cur_ext_price:
+                cur_ext_idx, cur_ext_price = i, p
+            elif (p - cur_ext_price) / cur_ext_price * 100.0 >= threshold_pct:
+                pivot_indices.append(cur_ext_idx)
+                last_pivot_idx, last_pivot_price = cur_ext_idx, cur_ext_price
+                cur_trend = "up"
+                cur_ext_idx, cur_ext_price = i, p
+
+    # Tentative final pivot at the current open leg's extreme
+    if cur_trend is None:
+        pivot_indices.append(n - 1)
+    else:
+        if cur_ext_idx > pivot_indices[-1]:
+            pivot_indices.append(cur_ext_idx)
+        # If the current price has moved further than cur_ext since the extreme
+        # was recorded, also include the endpoint so the open leg covers to today.
+        if (n - 1) > pivot_indices[-1]:
+            pivot_indices.append(n - 1)
+
+    return pivot_indices
+
+
+# ── leg classification ──────────────────────────────────────────────────────
+def classify_leg(magnitude_pct: float, threshold_pct: float) -> str:
+    """Magnitude is signed: positive = up-leg, negative = down-leg.
+
+    Down-leg buckets:
+        threshold ≤ |mag| < 10%   → correction
+        10%       ≤ |mag| < 20%   → mini_bear
+        |mag|     ≥ 20%           → bear
+    Sub-threshold down moves (only possible on the open last leg) → bull.
+    """
+    if magnitude_pct >= 0:
         return "bull"
-    if dd_pct >= -t2:
+    mag = abs(magnitude_pct)
+    if mag < threshold_pct:
+        return "bull"
+    if mag < 10.0:
         return "correction"
-    if dd_pct >= -t3:
+    if mag < 20.0:
         return "mini_bear"
     return "bear"
 
 
-# ── period grouping + short-period merge ─────────────────────────────────────
-def _group_periods(df: pd.DataFrame) -> list[dict]:
-    """Convert a date-indexed regime series into a list of period dicts."""
-    periods: list[dict] = []
-    rows = df.itertuples(index=False)
-    cur = next(rows)
-    start = cur.date
-    label = cur.regime
-    dd    = cur.dd_pct
-
-    for row in rows:
-        if row.regime == label:
-            dd = min(dd, row.dd_pct)
-        else:
-            periods.append({
-                "start_date": start,
-                "end_date":   cur.date,
-                "regime":     label,
-                "severity":   round(dd, 2),
-                "n_days":     0,           # filled below
-            })
-            start = row.date
-            label = row.regime
-            dd    = row.dd_pct
-        cur = row
-
-    periods.append({
-        "start_date": start,
-        "end_date":   cur.date,
-        "regime":     label,
-        "severity":   round(dd, 2),
-        "n_days":     0,
-    })
-    return periods
-
-
-def _fill_ndays(periods: list[dict], date_set: set) -> None:
-    """Count trading days (from the prices calendar) inside each period."""
-    sorted_dates = sorted(date_set)
-    date_pos = {d: i for i, d in enumerate(sorted_dates)}
-    for p in periods:
-        s = date_pos.get(p["start_date"], 0)
-        e = date_pos.get(p["end_date"],   0)
-        p["n_days"] = e - s + 1
-
-
-def _merge_short_periods(periods: list[dict], min_days: int) -> list[dict]:
-    """Iteratively absorb any period shorter than min_days into an adjacent one.
-
-    Preference: merge into a neighbour with the same regime; otherwise into
-    the longer neighbour.  The last/first period is always merged backward/forward.
-    Runs until no short periods remain.
-    """
-    changed = True
-    while changed and len(periods) > 1:
-        changed = False
-        new: list[dict] = []
-        i = 0
-        while i < len(periods):
-            p = periods[i]
-            if p["n_days"] >= min_days:
-                new.append(p)
-                i += 1
-                continue
-
-            changed = True
-            is_first = (i == 0)
-            is_last  = (i == len(periods) - 1)
-
-            if is_first:
-                # Prepend into next
-                nxt = periods[i + 1]
-                periods[i + 1] = {
-                    **nxt,
-                    "start_date": p["start_date"],
-                    "n_days":     p["n_days"] + nxt["n_days"],
-                    "severity":   min(p["severity"], nxt["severity"]),
-                }
-            elif is_last:
-                # Append into previous (already in new)
-                prev = new[-1]
-                new[-1] = {
-                    **prev,
-                    "end_date": p["end_date"],
-                    "n_days":   prev["n_days"] + p["n_days"],
-                    "severity": min(p["severity"], prev["severity"]),
-                }
-            else:
-                prev = new[-1]
-                nxt  = periods[i + 1]
-                prefer_prev = (
-                    prev["regime"] == p["regime"]
-                    or (nxt["regime"] != p["regime"] and prev["n_days"] >= nxt["n_days"])
-                )
-                if prefer_prev:
-                    new[-1] = {
-                        **prev,
-                        "end_date": p["end_date"],
-                        "n_days":   prev["n_days"] + p["n_days"],
-                        "severity": min(p["severity"], prev["severity"]),
-                    }
-                else:
-                    periods[i + 1] = {
-                        **nxt,
-                        "start_date": p["start_date"],
-                        "n_days":     p["n_days"] + nxt["n_days"],
-                        "severity":   min(p["severity"], nxt["severity"]),
-                    }
-            i += 1
-        periods = new
-    return periods
-
-
-# ── main ─────────────────────────────────────────────────────────────────────
-def run_regimes(
-    reference:  str   = DEFAULT_REFERENCE,
-    thresholds: tuple = DEFAULT_THRESHOLDS,
-    min_days:   int   = MIN_TRADING_DAYS,
-) -> int:
+# ── main ────────────────────────────────────────────────────────────────────
+def run_regimes(reference: str = DEFAULT_REFERENCE,
+                threshold_pct: float = DEFAULT_THRESHOLD_PCT) -> int:
     if not DB_PATH.exists():
         print(f"[step6] DB not found at {DB_PATH}. Run step2 + step3 first.")
         return 1
 
     with sqlite3.connect(DB_PATH) as conn:
         df = pd.read_sql_query(
-            "SELECT date, close FROM prices WHERE ticker = ? ORDER BY date",
+            "SELECT date, close FROM prices WHERE ticker = ? AND close IS NOT NULL "
+            "ORDER BY date",
             conn, params=[reference],
         )
 
-    if df.empty:
+    if df.empty or len(df) < 2:
         print(f"[step6] No prices found for {reference}. Run step3 first.")
         return 1
 
-    df["date"] = pd.to_datetime(df["date"]).dt.date
-    df = df.dropna(subset=["close"]).copy()
-    df["ath"]    = df["close"].cummax()
-    df["dd_pct"] = (df["close"] - df["ath"]) / df["ath"] * 100.0
-    df["regime"] = df["dd_pct"].apply(_assign_label, args=(thresholds,))
+    df["date"]   = pd.to_datetime(df["date"]).dt.date
+    prices       = df["close"].to_numpy(dtype=float)
+    dates        = df["date"].tolist()
 
-    periods = _group_periods(df)
-    _fill_ndays(periods, set(df["date"].tolist()))
-    periods = _merge_short_periods(periods, min_days)
+    pivot_idxs   = zigzag_pivots(prices, threshold_pct)
 
-    # Write to DB — idempotent: clear auto_drawdown rows for this reference first
+    # Build leg rows from consecutive pivots
+    legs: list[dict] = []
+    for a, b in zip(pivot_idxs[:-1], pivot_idxs[1:]):
+        start_price = float(prices[a])
+        end_price   = float(prices[b])
+        if start_price <= 0:
+            continue
+        mag = (end_price - start_price) / start_price * 100.0
+        leg = {
+            "start_date": dates[a],
+            "end_date":   dates[b],
+            "regime":     classify_leg(mag, threshold_pct),
+            "severity":   round(mag, 2),                # signed magnitude
+            "n_days":     b - a + 1,                    # trading days inclusive
+        }
+        legs.append(leg)
+
+    # Write to DB — idempotent: clear existing auto_zigzag rows for this reference
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
-            "DELETE FROM regimes WHERE reference_index = ? AND source = 'auto_drawdown'",
-            (reference,),
+            "DELETE FROM regimes WHERE reference_index = ? AND source = ?",
+            (reference, SOURCE_TAG),
         )
-        for p in periods:
+        for leg in legs:
             conn.execute(
                 "INSERT INTO regimes "
                 "(start_date, end_date, regime, severity, reference_index, notes, source) "
-                "VALUES (?, ?, ?, ?, ?, ?, 'auto_drawdown')",
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
-                    p["start_date"].isoformat(),
-                    p["end_date"].isoformat(),
-                    p["regime"],
-                    p["severity"],
+                    leg["start_date"].isoformat(),
+                    leg["end_date"].isoformat(),
+                    leg["regime"],
+                    leg["severity"],
                     reference,
-                    f"{p['n_days']} trading days",
+                    f"{leg['n_days']} trading days",
+                    SOURCE_TAG,
                 ),
             )
         conn.commit()
 
-    print(f"[step6] {reference}: {len(df)} trading days → {len(periods)} regime periods")
+    # Print summary
+    label_zh = {"bull": "多頭", "correction": "修正", "mini_bear": "小熊市", "bear": "熊市"}
+    print(f"[step6] {reference}: {len(df)} trading days  "
+          f"→ {len(legs)} ZigZag legs (threshold {threshold_pct}%)")
     print()
-    t_map = {"bull": "多頭", "correction": "修正", "mini_bear": "小熊", "bear": "熊市"}
-    for p in periods:
-        label = t_map.get(p["regime"], p["regime"])
-        print(
-            f"  {p['start_date']} → {p['end_date']}  "
-            f"{p['regime']:12s}({label})  "
-            f"worst DD {p['severity']:+.1f}%  "
-            f"({p['n_days']} trading days)"
-        )
+    for leg in legs:
+        label = label_zh.get(leg["regime"], leg["regime"])
+        sign  = "+" if leg["severity"] >= 0 else ""
+        print(f"  {leg['start_date']} → {leg['end_date']}  "
+              f"{leg['regime']:11s}({label})  "
+              f"{sign}{leg['severity']:6.2f}%  "
+              f"({leg['n_days']} trading days)")
     print()
-
     by_regime: dict[str, int] = {}
-    for p in periods:
-        by_regime[p["regime"]] = by_regime.get(p["regime"], 0) + 1
+    days_by:   dict[str, int] = {}
+    for leg in legs:
+        by_regime[leg["regime"]] = by_regime.get(leg["regime"], 0) + 1
+        days_by[leg["regime"]]   = days_by.get(leg["regime"], 0) + leg["n_days"]
     print("  Summary by regime:")
-    for regime, count in sorted(by_regime.items()):
-        print(f"    {regime:12s}: {count} period(s)")
+    for regime in ("bull", "correction", "mini_bear", "bear"):
+        if regime in by_regime:
+            print(f"    {regime:11s}: {by_regime[regime]:2d} legs, "
+                  f"{days_by[regime]:4d} trading days")
     print()
-    print("[step6] written to regimes table")
+    print(f"[step6] written to regimes table (source={SOURCE_TAG})")
     return 0
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--reference",  default=DEFAULT_REFERENCE,
+    ap.add_argument("--reference", default=DEFAULT_REFERENCE,
                     help=f"Reference ticker in prices table (default: {DEFAULT_REFERENCE})")
-    ap.add_argument("--thresholds", default=",".join(str(t) for t in DEFAULT_THRESHOLDS),
-                    help="Comma-separated drawdown thresholds in %% for correction,mini_bear,bear "
-                         f"(default: {','.join(str(t) for t in DEFAULT_THRESHOLDS)})")
-    ap.add_argument("--min-days",   type=int, default=MIN_TRADING_DAYS,
-                    help=f"Minimum trading days before a regime change is committed (default: {MIN_TRADING_DAYS})")
+    ap.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD_PCT,
+                    help=f"ZigZag reversal threshold in %% (default: {DEFAULT_THRESHOLD_PCT})")
     args = ap.parse_args()
-
-    try:
-        thresholds = tuple(float(t) for t in args.thresholds.split(","))
-        if len(thresholds) != 3:
-            raise ValueError
-    except (ValueError, AttributeError):
-        print("--thresholds must be three comma-separated numbers, e.g. 5,10,20")
-        return 1
-
-    return run_regimes(
-        reference=args.reference,
-        thresholds=thresholds,
-        min_days=args.min_days,
-    )
+    return run_regimes(reference=args.reference, threshold_pct=args.threshold)
 
 
 if __name__ == "__main__":

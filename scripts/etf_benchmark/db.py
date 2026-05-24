@@ -153,7 +153,7 @@ def get_regimes(
         df = pd.read_sql_query(
             "SELECT start_date, end_date, regime, severity, notes "
             "FROM regimes "
-            "WHERE reference_index = ? AND source = 'auto_drawdown' "
+            "WHERE reference_index = ? AND source = 'auto_zigzag' "
             "ORDER BY start_date",
             conn,
             params=[reference_index],
