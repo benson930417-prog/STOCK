@@ -115,7 +115,7 @@ with sub-second SQLite reads).
 
 **Verification model** (last full run, 2024-05-24 → today):
 1. **Required freshness:** `step3_backfill --incremental` keeps prices, dividends, and splits current for the comparison tab.
-2. **Fairness audit:** `step4_verify` ignores duplicate-event baseline dates, builds an independent total-return series from raw close + reinvested cash dividends, then compares every possible baseline-to-latest return against Yahoo `adj_close`.
+2. **Fairness audit:** `step4_verify` ignores duplicate-event baseline dates, builds an independent total-return series from raw close + reinvested cash dividends, then compares every possible baseline-to-latest return against Yahoo `adj_close`. Known split/corporate-action caveats, such as `0052`, are surfaced as warnings even when Yahoo's adjusted price series appears usable.
 3. **NAV diagnostic:** `step5_verify_nav` checks issuer NAV snapshots. US-tracking ETFs are reported as `INFO` because market close, NAV, and FX timing naturally differ; domestic ETF mismatches remain actionable `WARN`/`FAIL`.
 
 **First-time setup on a new host:**

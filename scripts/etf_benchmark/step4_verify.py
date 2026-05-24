@@ -41,6 +41,13 @@ WARN_ENDPOINT_DRIFT_PCT = 0.50
 FAIL_ENDPOINT_DRIFT_PCT = 2.00
 DUPLICATE_DIVIDEND_WINDOW_DAYS = 5
 
+# Some ETF splits/capital actions are already reflected in Yahoo's OHLCV series
+# but are not exposed as clean Stock Splits events. Keep these tickers in the
+# audit, but always surface the caveat in the daily check.
+MANUAL_CORPORATE_ACTION_CAVEATS = {
+    "0052": "known split/corporate action; Yahoo OHLCV appears adjusted, but split event is not stored in DB",
+}
+
 
 def _load_prices(conn: sqlite3.Connection, ticker: str) -> pd.DataFrame:
     df = pd.read_sql_query(
@@ -190,9 +197,14 @@ def verify_ticker(conn: sqlite3.Connection, ticker: str) -> dict:
     else:
         status = "pass"
 
+    split_caveat = MANUAL_CORPORATE_ACTION_CAVEATS.get(ticker)
+    if split_caveat and status == "pass":
+        status = "warn"
+
     return {
         "ticker": ticker,
         "status": status,
+        "split_caveat": split_caveat,
         "n_divs": int(len(dividends)),
         "ignored_duplicate_baselines": int(dates.isin(duplicate_baselines).sum()),
         "n_dates": int(valid.sum()),
@@ -213,6 +225,7 @@ def log_verification(conn: sqlite3.Connection, results: list[dict]) -> None:
             f"n_divs={r['n_divs']} "
             f"ignored_duplicate_baselines={r.get('ignored_duplicate_baselines', 0)} "
             f"n_dates={r['n_dates']}"
+            + (f" caveat={r['split_caveat']}" if r.get("split_caveat") else "")
         )
         conn.execute(
             "INSERT INTO verification_log "
@@ -276,6 +289,7 @@ def main() -> int:
                 f"from {r['max_endpoint_date']} to latest  "
                 f"(terminal={r['terminal_drift_pct']:+.3f}, max_path={r['max_path_drift_pct']:.3f}, "
                 f"n_divs={r['n_divs']}, ignored_dup_baselines={r.get('ignored_duplicate_baselines', 0)})"
+                + (f"  NOTE: {r['split_caveat']}" if r.get("split_caveat") else "")
             )
 
     print()
