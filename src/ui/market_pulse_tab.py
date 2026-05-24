@@ -136,6 +136,128 @@ def _rolling_vol(prices: pd.Series, window: int = 20) -> pd.Series:
     return rets.rolling(window).std() * (252 ** 0.5) * 100.0
 
 
+# ─── "lab report" health-metric helper ────────────────────────────────────
+HEALTH_COLORS = {
+    "red":         "#dc2626",   # 高位/急漲/急跌
+    "orange":      "#f97316",   # 偏高/偏熱
+    "yellow":      "#facc15",   # 注意/略偏
+    "green":       "#22c55e",   # 正常
+    "blue":        "#0ea5e9",   # 偏冷/減速
+    "deep_blue":   "#1e40af",   # 低位/嚴重偏冷
+    "gray":        "#9ca3af",   # 中性
+}
+
+
+def _render_health_metric(label: str, value: str, color: str,
+                          status: str, ref_range: str) -> None:
+    """Lab-report style metric block: colored value, 2-character tag, ref range.
+
+    Layout (vertical, ~85px tall):
+        Label              (gray, small)
+        Value              (colored, large bold)
+        ● Status           (colored, small)
+        範圍：ref_range    (gray, tiny)
+
+    Left border in the metric's color for instant glanceability.
+    """
+    st.markdown(
+        f"""<div style="border-left:3px solid {color}; padding:0.55rem 0.85rem;
+                       margin-bottom:0.4rem; background:rgba(255,255,255,0.025);
+                       border-radius:3px;">
+              <div style="color:#9ca3af; font-size:0.82rem; line-height:1.2">{label}</div>
+              <div style="color:{color}; font-size:1.45rem; font-weight:650; line-height:1.25;
+                          margin-top:0.15rem">{value}</div>
+              <div style="color:{color}; font-size:0.85rem; margin-top:0.15rem">● {status}</div>
+              <div style="color:#6b7280; font-size:0.72rem; margin-top:0.3rem">範圍：{ref_range}</div>
+            </div>""",
+        unsafe_allow_html=True,
+    )
+
+
+def _section_insight(text: str) -> None:
+    """End-of-section interpretation paragraph — the 'doctor's summary'."""
+    st.markdown(
+        f"""<div style="margin-top:0.5rem; padding:0.7rem 1rem;
+                       border-left:3px solid #6366f1; background:rgba(99,102,241,0.06);
+                       border-radius:3px; font-size:0.93rem; line-height:1.5">
+              <span style="color:#a5b4fc; font-weight:600">💡 解讀：</span>{text}
+            </div>""",
+        unsafe_allow_html=True,
+    )
+
+
+# ─── per-metric classifiers (value → color, status tag, reference range) ──
+def _classify_day_change(pct: float) -> tuple[str, str, str]:
+    if pct >= 1.5:   return HEALTH_COLORS["red"],    "大漲", "日內 ±1.5% 為正常範圍"
+    if pct >= 0.3:   return HEALTH_COLORS["green"],  "上漲", "日內 ±1.5% 為正常範圍"
+    if pct > -0.3:   return HEALTH_COLORS["gray"],   "持平", "日內 ±1.5% 為正常範圍"
+    if pct > -1.5:   return HEALTH_COLORS["yellow"], "下跌", "日內 ±1.5% 為正常範圍"
+    return HEALTH_COLORS["red"], "大跌", "日內 ±1.5% 為正常範圍"
+
+
+def _classify_regime(label_zh: str, days: int | None) -> tuple[str, str, str]:
+    color_by_regime = {
+        "多頭": (HEALTH_COLORS["green"],  "上升趨勢"),
+        "小熊": (HEALTH_COLORS["yellow"], "短期修正"),
+        "中熊": (HEALTH_COLORS["orange"], "中期回檔"),
+        "大熊": (HEALTH_COLORS["red"],    "深度熊市"),
+    }
+    color, status = color_by_regime.get(label_zh, (HEALTH_COLORS["gray"], label_zh))
+    return color, status, "多頭通常持續 50~200 個交易日"
+
+
+def _classify_distance_from_high(dist_pct: float) -> tuple[str, str, str]:
+    if dist_pct >= -0.5:   return HEALTH_COLORS["red"],    "持平高點", "與 1 年高點 -5%~-15% 屬正常波動"
+    if dist_pct >= -5:     return HEALTH_COLORS["orange"], "高位區",   "與 1 年高點 -5%~-15% 屬正常波動"
+    if dist_pct >= -15:    return HEALTH_COLORS["green"],  "正常回檔", "與 1 年高點 -5%~-15% 屬正常波動"
+    if dist_pct >= -25:    return HEALTH_COLORS["yellow"], "深度回檔", "與 1 年高點 -5%~-15% 屬正常波動"
+    return HEALTH_COLORS["blue"], "熊市區間", "與 1 年高點 -5%~-15% 屬正常波動"
+
+
+def _classify_distance_from_low(dist_pct: float) -> tuple[str, str, str]:
+    if dist_pct >= 30:     return HEALTH_COLORS["red"],    "急漲",   "近 60 日反彈 +10%~+25% 為健康範圍"
+    if dist_pct >= 15:     return HEALTH_COLORS["orange"], "強漲",   "近 60 日反彈 +10%~+25% 為健康範圍"
+    if dist_pct >= 5:      return HEALTH_COLORS["green"],  "穩健反彈", "近 60 日反彈 +10%~+25% 為健康範圍"
+    if dist_pct >= 0:      return HEALTH_COLORS["blue"],   "築底中", "近 60 日反彈 +10%~+25% 為健康範圍"
+    return HEALTH_COLORS["deep_blue"], "破底", "近 60 日反彈 +10%~+25% 為健康範圍"
+
+
+def _classify_return(pct: float, window: str) -> tuple[str, str, str]:
+    """Classify a multi-day return. window='30d' uses tighter thresholds, '60d' wider."""
+    if window == "30d":
+        ref = "正常 ±3% / 偏熱 >+8% / 急漲 >+15%"
+        thresholds = [(15, "red", "急漲"), (8, "orange", "大漲"), (3, "green", "穩健上漲"),
+                      (-3, "gray", "盤整"), (-8, "yellow", "下跌"), (-15, "red", "急跌")]
+    else:  # 60d
+        ref = "正常 ±6% / 偏熱 >+15% / 急漲 >+25%"
+        thresholds = [(25, "red", "急漲"), (15, "orange", "大漲"), (6, "green", "穩健上漲"),
+                      (-6, "gray", "盤整"), (-15, "yellow", "下跌"), (-25, "red", "急跌")]
+    for thresh, color_key, tag in thresholds:
+        if pct >= thresh:
+            return HEALTH_COLORS[color_key], tag, ref
+    return HEALTH_COLORS["red"], "重挫", ref
+
+
+def _classify_acceleration(accel: float) -> tuple[str, str, str]:
+    ref = "正常 ±2pp / 加速 >+5pp / 減速 <-5pp"
+    if accel >=  5:  return HEALTH_COLORS["red"],       "加速中",  ref
+    if accel >=  2:  return HEALTH_COLORS["orange"],    "略加速",  ref
+    if accel >= -2:  return HEALTH_COLORS["green"],     "穩定",    ref
+    if accel >= -5:  return HEALTH_COLORS["blue"],      "減速",    ref
+    return HEALTH_COLORS["deep_blue"], "急轉", ref
+
+
+def _classify_volatility(vol_pct: float, vol_percentile: float | None) -> tuple[str, str, str]:
+    ref = "TAIEX 歷史中位 ~15% / 偏高 >25% / 低波動 <12%"
+    if vol_pct >= 30:   return HEALTH_COLORS["red"],    "高波動",     ref
+    if vol_pct >= 20:   return HEALTH_COLORS["orange"], "偏高",       ref
+    if vol_pct >= 12:   return HEALTH_COLORS["green"],  "正常",       ref
+    # Low vol — check percentile for "complacent top" warning
+    if vol_percentile is not None and vol_percentile < 25:
+        return HEALTH_COLORS["yellow"], "低波動（複雜頂風險）", ref
+    return HEALTH_COLORS["blue"], "低波動", ref
+
+
 # ─── composite tags ────────────────────────────────────────────────────────
 def _momentum_composite(ret_30: float, ret_60: float, accel: float) -> tuple[str, str]:
     """Collapse three momentum numbers into one descriptive tag.
@@ -163,11 +285,12 @@ def _momentum_composite(ret_30: float, ret_60: float, accel: float) -> tuple[str
 
 
 # ─── rendering blocks ─────────────────────────────────────────────────────
-def _render_headline(taiex: pd.Series) -> None:
-    """Market Level — current price, regime, distance from recent extremes."""
+def _render_headline(taiex: pd.Series) -> dict:
+    """Market Level — colored lab-report metrics + end-of-section insight.
+    Returns a dict so the summary card can reuse the computed values."""
     if taiex is None or len(taiex) < 2:
         st.warning("TAIEX 資料不足，無法顯示。")
-        return
+        return {}
 
     current = float(taiex.iloc[-1])
     prev    = float(taiex.iloc[-2])
@@ -187,32 +310,65 @@ def _render_headline(taiex: pd.Series) -> None:
 
     h_252 = float(taiex.iloc[-252:].max()) if len(taiex) >= 252 else float(taiex.max())
     l_60  = float(taiex.iloc[-60:].min())  if len(taiex) >=  60 else float(taiex.min())
-    dist_1y_hi  = (current - h_252) / h_252 * 100.0 if h_252 > 0 else None
-    dist_60_lo  = (current - l_60)  / l_60  * 100.0 if l_60  > 0 else None
+    dist_1y_hi = (current - h_252) / h_252 * 100.0 if h_252 > 0 else 0.0
+    dist_60_lo = (current - l_60)  / l_60  * 100.0 if l_60  > 0 else 0.0
+
+    # Per-metric classification
+    c_day,    s_day,    r_day    = _classify_day_change(day_pct)
+    c_reg,    s_reg,    r_reg    = _classify_regime(cur_regime_label, cur_regime_days)
+    c_hi,     s_hi,     r_hi     = _classify_distance_from_high(dist_1y_hi)
+    c_lo,     s_lo,     r_lo     = _classify_distance_from_low(dist_60_lo)
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric(
-        "加權指數 (TAIEX)",
-        f"{current:,.2f}",
-        f"{day_pct:+.2f}%",
-        delta_color="normal" if day_pct >= 0 else "inverse",
-    )
-    c2.metric(
-        "當前規制 (ZigZag 4%)",
-        cur_regime_label,
-        f"已 {cur_regime_days} 天" if cur_regime_days is not None else "—",
-        delta_color="off",
-    )
-    c3.metric(
-        "距 1 年高點",
-        _format_distance_from_high(dist_1y_hi),
-        delta_color="off",
-    )
-    c4.metric(
-        "距 60 日低點",
-        _format_distance_from_low(dist_60_lo),
-        delta_color="off",
-    )
+    with c1:
+        _render_health_metric(
+            "加權指數 (TAIEX)",
+            f"{current:,.0f}　<span style='font-size:1.0rem'>{day_pct:+.2f}%</span>",
+            c_day, s_day, r_day,
+        )
+    with c2:
+        days_str = f"已 {cur_regime_days} 天" if cur_regime_days is not None else "—"
+        _render_health_metric(
+            "當前規制 (ZigZag 4%)",
+            f"{cur_regime_label}　<span style='font-size:1.0rem'>{days_str}</span>",
+            c_reg, s_reg, r_reg,
+        )
+    with c3:
+        _render_health_metric(
+            "距 1 年高點",
+            _format_distance_from_high(dist_1y_hi),
+            c_hi, s_hi, r_hi,
+        )
+    with c4:
+        _render_health_metric(
+            "距 60 日低點",
+            _format_distance_from_low(dist_60_lo),
+            c_lo, s_lo, r_lo,
+        )
+
+    # End-of-section insight — synthesize what these 4 numbers mean together
+    insight_parts = []
+    if dist_1y_hi >= -0.5:
+        insight_parts.append("TAIEX 正在創 1 年新高")
+    elif dist_1y_hi >= -5:
+        insight_parts.append(f"TAIEX 距 1 年高點僅 {abs(dist_1y_hi):.1f}%")
+    elif dist_1y_hi <= -20:
+        insight_parts.append(f"TAIEX 較高點回落 {abs(dist_1y_hi):.0f}%（已進入熊市區間）")
+    if cur_regime_label == "多頭" and cur_regime_days and cur_regime_days >= 30:
+        insight_parts.append(f"處於多頭第 {cur_regime_days} 天，趨勢延續中")
+    elif cur_regime_label in ("中熊", "大熊"):
+        insight_parts.append(f"處於{cur_regime_label}規制，趨勢偏空")
+    if dist_60_lo >= 25:
+        insight_parts.append(f"近 60 日已反彈 {dist_60_lo:.0f}%（漲幅偏大）")
+
+    if insight_parts:
+        _section_insight("，".join(insight_parts) + "。")
+
+    return {
+        "current": current, "day_pct": day_pct,
+        "regime_label": cur_regime_label, "regime_days": cur_regime_days,
+        "dist_1y_hi": dist_1y_hi, "dist_60_lo": dist_60_lo,
+    }
 
 
 def _breadth_narrative(stretched_names: list[str],
@@ -313,6 +469,28 @@ def _render_stretch_normalized() -> dict:
     narrative = _breadth_narrative(stretched_names, neutral_names, compressed_names)
     st.markdown(f"📊 **廣度**：{narrative}")
 
+    # End-of-section insight — what does the cross-asset picture say?
+    n_str = len(stretched_names)
+    n_tot = len(stretched_names) + len(neutral_names) + len(compressed_names)
+    if n_str == 0:
+        _section_insight("全球指數普遍處於各自的歷史中性區間，**並無系統性過熱**。")
+    elif n_str == n_tot:
+        _section_insight(
+            "**全球同步進入自身歷史高位區**——這在歷史上非常罕見，"
+            "通常領先系統性風險事件。資產配置應降低風險偏好。"
+        )
+    elif n_str == 1:
+        _section_insight(
+            f"僅 **{stretched_names[0]}** 偏熱，全球其他指數仍正常。"
+            "屬單一市場的局部過熱，**不構成全球週期頂部訊號**。"
+        )
+    else:
+        _section_insight(
+            f"**{'、'.join(stretched_names)}** 處於自身歷史高位，"
+            f"但 **{'、'.join(neutral_names)}** 仍中性——"
+            "屬局部過熱（區域或產業集中），尚未蔓延為全球同步偏熱。"
+        )
+
     return {
         "n_stretched":      len(stretched_names),
         "n_compressed":     len(compressed_names),
@@ -355,31 +533,62 @@ def _render_speed_panel(taiex: pd.Series) -> dict:
         vol_window = vol_series.dropna().iloc[-252:] if len(vol_series.dropna()) > 252 else vol_series.dropna()
         vol_pct = float((vol_window <= cur_vol).sum()) / len(vol_window) * 100
 
-    tag, color = _momentum_composite(ret_30, ret_60, accel)
+    tag, _composite_color = _momentum_composite(ret_30, ret_60, accel)
+
+    c_30,   s_30,   r_30   = _classify_return(ret_30, "30d")
+    c_60,   s_60,   r_60   = _classify_return(ret_60, "60d")
+    c_acc,  s_acc,  r_acc  = _classify_acceleration(accel)
+    if cur_vol is not None:
+        c_vol, s_vol, r_vol = _classify_volatility(cur_vol, vol_pct)
+    else:
+        c_vol, s_vol, r_vol = HEALTH_COLORS["gray"], "—", "TAIEX 歷史中位 ~15%"
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("30 日報酬",  f"{ret_30:+.2f}%",  delta_color="off")
-    c2.metric("60 日報酬",  f"{ret_60:+.2f}%",  delta_color="off")
-    c3.metric("加速度",     f"{accel:+.2f}%",   "近30天 vs 前30天", delta_color="off")
-    if cur_vol is not None:
-        c4.metric("20 日年化波動",
-                  f"{cur_vol:.1f}%",
-                  f"1年內 {vol_pct:.0f} 分位",
-                  delta_color="off")
-    else:
-        c4.metric("20 日年化波動", "—", delta_color="off")
+    with c1: _render_health_metric("30 日報酬",  f"{ret_30:+.2f}%", c_30, s_30, r_30)
+    with c2: _render_health_metric("60 日報酬",  f"{ret_60:+.2f}%", c_60, s_60, r_60)
+    with c3: _render_health_metric("加速度（近30天 vs 前30天）", f"{accel:+.2f}pp", c_acc, s_acc, r_acc)
+    with c4:
+        if cur_vol is not None:
+            _render_health_metric(
+                "20 日年化波動",
+                f"{cur_vol:.1f}%　<span style='font-size:1.0rem'>(1年內 {vol_pct:.0f} 分位)</span>",
+                c_vol, s_vol, r_vol,
+            )
+        else:
+            _render_health_metric("20 日年化波動", "—", c_vol, s_vol, r_vol)
 
-    # Single composite tag — replaces the four separate emoji alarms
+    # One-glance composite tag — kept because it's a useful synthesis line
     st.markdown(
-        f"<div style='margin-top:0.5rem; padding:0.6rem 1rem; "
-        f"border-left:4px solid {color}; background:rgba(255,255,255,0.03); "
-        f"border-radius:4px;'>"
-        f"<span style='color:#aaa; font-size:0.9rem'>綜合動能標籤：</span>"
-        f"<span style='color:{color}; font-weight:600; font-size:1.1rem'>{tag}</span>"
+        f"<div style='margin-top:0.5rem; padding:0.5rem 1rem; "
+        f"border-left:3px solid {_composite_color}; background:rgba(255,255,255,0.025); "
+        f"border-radius:3px;'>"
+        f"<span style='color:#9ca3af; font-size:0.85rem'>綜合動能標籤：</span>"
+        f"<span style='color:{_composite_color}; font-weight:650; font-size:1.05rem'>{tag}</span>"
         f"</div>",
         unsafe_allow_html=True,
     )
 
+    # End-of-section insight — synthesize the four momentum metrics
+    speed_parts = []
+    if ret_30 > 15:
+        speed_parts.append(f"近 30 天 +{ret_30:.1f}% 屬急漲區間")
+    elif ret_30 > 8:
+        speed_parts.append(f"近 30 天 +{ret_30:.1f}% 漲幅偏大")
+    elif ret_30 < -8:
+        speed_parts.append(f"近 30 天 {ret_30:+.1f}% 跌幅偏大")
+    if accel > 5:
+        speed_parts.append(f"加速度 +{accel:.1f}pp 顯示拋物線型上漲（近期比前期更快）")
+    elif accel < -5:
+        speed_parts.append(f"加速度 {accel:+.1f}pp 顯示動能急速轉弱")
+    if cur_vol is not None and vol_pct is not None and cur_vol < 12 and vol_pct < 25:
+        speed_parts.append("波動率位於 1 年低位，市場集體鬆懈（複雜頂風險）")
+    elif cur_vol is not None and cur_vol > 25:
+        speed_parts.append(f"波動率 {cur_vol:.0f}% 偏高，市場意見分歧")
+
+    if speed_parts:
+        _section_insight("；".join(speed_parts) + "。")
+    else:
+        _section_insight("動能與波動皆處於中性區間，無特殊型態。")
     return {"ret_30": ret_30, "ret_60": ret_60, "accel": accel,
             "vol": cur_vol, "vol_pct": vol_pct, "tag": tag}
 
@@ -387,6 +596,18 @@ def _render_speed_panel(taiex: pd.Series) -> dict:
 def _render_chart_with_regimes(taiex: pd.Series) -> None:
     st.markdown("### 📊 TAIEX 2 年走勢（含規制色塊）")
     regimes_df = _compute_regimes_live(threshold_pct=4.0)
+
+    # End-of-chart insight — describe what the regime breakdown shows
+    if not regimes_df.empty:
+        n_bull   = (regimes_df["regime"] == "bull").sum()
+        n_corr   = (regimes_df["regime"] == "correction").sum()
+        n_minib  = (regimes_df["regime"] == "mini_bear").sum()
+        n_bigb   = (regimes_df["regime"] == "bear").sum()
+        # Find current (last) leg
+        last = regimes_df.iloc[-1]
+        cur_label = REGIME_LABELS_ZH.get(last["regime"], last["regime"])
+        cur_mag   = float(last["severity"])
+        days = (pd.Timestamp(last["end_date"]) - pd.Timestamp(last["start_date"])).days
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -429,6 +650,14 @@ def _render_chart_with_regimes(taiex: pd.Series) -> None:
         hovermode="x unified",
     )
     st.plotly_chart(fig, width="stretch")
+
+    # End-of-chart insight — describe the regime breakdown
+    if not regimes_df.empty:
+        _section_insight(
+            f"過去 2 年 TAIEX 共經歷 **{n_bull} 段多頭 / {n_corr} 段小熊 / "
+            f"{n_minib} 段中熊 / {n_bigb} 段大熊**。"
+            f"目前處於最新的 **{cur_label}** 段（已 {days} 天，振幅 {cur_mag:+.1f}%）。"
+        )
 
 
 def _render_summary_card(taiex: pd.Series,
