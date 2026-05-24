@@ -123,6 +123,148 @@ def _format_adjustment_ratio(ratio: float) -> str:
     return f"1:{1.0 / ratio:.0f}"
 
 
+def _period_return_pct(series: pd.Series, start: pd.Timestamp, end: pd.Timestamp) -> tuple[float | None, int]:
+    """Return (return_pct, n_trading_days) for a price series between start and end inclusive."""
+    if series is None or series.empty:
+        return None, 0
+    mask = (series.index >= start) & (series.index <= end)
+    sub = series[mask]
+    if len(sub) < 2:
+        return None, len(sub)
+    p0, p1 = float(sub.iloc[0]), float(sub.iloc[-1])
+    if p0 <= 0:
+        return None, len(sub)
+    return (p1 - p0) / p0 * 100.0, len(sub)
+
+
+def _weighted_avg(values: list[float], weights: list[int]) -> float | None:
+    """Trading-day-weighted average: Σ(v_i × w_i) / Σ(w_i). None if no weight."""
+    if not values or not weights:
+        return None
+    total_w = sum(weights)
+    if total_w <= 0:
+        return None
+    return sum(v * w for v, w in zip(values, weights)) / total_w
+
+
+def _build_capture_table(
+    per_ticker_prices: dict[str, pd.Series],
+    bench_series: pd.Series,
+    regimes_df: pd.DataFrame,
+    baseline_date: pd.Timestamp,
+    today_ts: pd.Timestamp,
+    etf_universe: pd.DataFrame,
+    bench_label: str = "加權指數",
+    exclude_tickers: tuple[str, ...] = ("^TWII", "^TWOII"),
+) -> tuple[pd.DataFrame, dict]:
+    """Per-ETF benchmark table — one row per ETF, columns are regime cumulative
+    returns + up/down capture vs the benchmark. Returns (df, benchmark_summary).
+    """
+    # Benchmark return per regime period (compute once, reused for every ETF)
+    bench_per_period: dict[tuple, dict] = {}
+    bench_by_regime: dict[str, dict[str, list]] = {
+        r: {"rets": [], "days": []} for r in ("bull", "correction", "mini_bear", "bear")
+    }
+    for _, rrow in regimes_df.iterrows():
+        s = pd.Timestamp(rrow["start_date"])
+        e = pd.Timestamp(rrow["end_date"])
+        if e < baseline_date or s > today_ts:
+            continue
+        bret, n_days = _period_return_pct(bench_series, s, e)
+        if bret is None:
+            continue
+        regime = rrow["regime"]
+        bench_per_period[(s, e)] = {"ret": bret, "regime": regime, "n_days": n_days}
+        if regime in bench_by_regime:
+            bench_by_regime[regime]["rets"].append(bret)
+            bench_by_regime[regime]["days"].append(n_days)
+
+    bench_avg_by_regime = {
+        r: _weighted_avg(v["rets"], v["days"]) for r, v in bench_by_regime.items()
+    }
+
+    rows: list[dict] = []
+    for ticker, price_series in per_ticker_prices.items():
+        if ticker in exclude_tickers or price_series is None or price_series.empty:
+            continue
+        urow = etf_universe[etf_universe["ticker"] == ticker]
+        name = urow.iloc[0]["name"] if not urow.empty else ticker
+
+        # Per-regime: collect (return, n_days) for weighted average
+        per_regime: dict[str, dict[str, list]] = {
+            r: {"rets": [], "days": []} for r in ("bull", "correction", "mini_bear", "bear")
+        }
+        # Aligned lists for capture math — only periods where this ETF has data
+        bull_fund_r:  list[float] = []
+        bull_bench_r: list[float] = []
+        bull_days:    list[int]   = []
+        down_fund_r:  list[float] = []
+        down_bench_r: list[float] = []
+        down_days:    list[int]   = []
+
+        for (s, e), bench_info in bench_per_period.items():
+            fund_ret, n_days = _period_return_pct(price_series, s, e)
+            if fund_ret is None:
+                continue
+            regime = bench_info["regime"]
+            if regime in per_regime:
+                per_regime[regime]["rets"].append(fund_ret)
+                per_regime[regime]["days"].append(n_days)
+            if regime == "bull":
+                bull_fund_r.append(fund_ret)
+                bull_bench_r.append(bench_info["ret"])
+                bull_days.append(n_days)
+            else:
+                down_fund_r.append(fund_ret)
+                down_bench_r.append(bench_info["ret"])
+                down_days.append(n_days)
+
+        bull_fund_avg  = _weighted_avg(bull_fund_r,  bull_days)
+        bull_bench_avg = _weighted_avg(bull_bench_r, bull_days)
+        down_fund_avg  = _weighted_avg(down_fund_r,  down_days)
+        down_bench_avg = _weighted_avg(down_bench_r, down_days)
+
+        up_capture = (
+            bull_fund_avg / bull_bench_avg * 100.0
+            if bull_fund_avg is not None and bull_bench_avg is not None
+               and abs(bull_bench_avg) > 0.01
+            else None
+        )
+        down_capture = (
+            down_fund_avg / down_bench_avg * 100.0
+            if down_fund_avg is not None and down_bench_avg is not None
+               and abs(down_bench_avg) > 0.01
+            else None
+        )
+        capture_ratio = (
+            up_capture / down_capture
+            if up_capture is not None and down_capture is not None
+               and abs(down_capture) > 0.01
+            else None
+        )
+
+        rows.append({
+            "代號": ticker,
+            "名稱": name,
+            "多頭平均 %":   _weighted_avg(per_regime["bull"]["rets"],      per_regime["bull"]["days"]),
+            "修正平均 %":   _weighted_avg(per_regime["correction"]["rets"], per_regime["correction"]["days"]),
+            "小熊平均 %":   _weighted_avg(per_regime["mini_bear"]["rets"], per_regime["mini_bear"]["days"]),
+            "熊市平均 %":   _weighted_avg(per_regime["bear"]["rets"],      per_regime["bear"]["days"]),
+            "上漲捕獲 %":   up_capture,
+            "下跌捕獲 %":   down_capture,
+            "捕獲比":       capture_ratio,
+        })
+
+    df = pd.DataFrame(rows)
+    bench_summary = {
+        "label":      bench_label,
+        "by_regime":  bench_avg_by_regime,
+        "n_periods":  {r: len(v["rets"]) for r, v in bench_by_regime.items()},
+        "total_days": {r: sum(v["days"]) for r, v in bench_by_regime.items()},
+    }
+    return df, bench_summary
+
+
 def _compute_regimes_live(threshold_pct: float) -> pd.DataFrame:
     """Run ZigZag on the latest TAIEX prices in the DB. Returns the same
     schema as db.get_regimes() so the rest of the tab is agnostic."""
@@ -486,77 +628,144 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
     # ─────────── 市場區間績效摘要 ───────────
     if show_regimes and not regimes_df.empty and per_ticker_prices:
-        stat_rows: list[dict] = []
-        for ticker, price_series in per_ticker_prices.items():
-            if price_series.empty:
-                continue
-            urow = etf_universe[etf_universe["ticker"] == ticker]
-            t_name = urow.iloc[0]["name"] if not urow.empty else ticker
-            for _, rrow in regimes_df.iterrows():
-                s = pd.Timestamp(rrow["start_date"])
-                e = pd.Timestamp(rrow["end_date"])
-                if e < baseline_date or s > today_ts:
-                    continue
-                mask = (price_series.index >= s) & (price_series.index <= e)
-                sub = price_series[mask]
-                if len(sub) < 2:
-                    continue
-                p0, p1 = float(sub.iloc[0]), float(sub.iloc[-1])
-                if p0 <= 0:
-                    continue
-                stat_rows.append({
-                    "代號":   ticker,
-                    "名稱":   t_name,
-                    "區間類型": REGIME_LABELS_ZH.get(rrow["regime"], rrow["regime"]),
-                    "起":      rrow["start_date"].date().isoformat(),
-                    "訖":      rrow["end_date"].date().isoformat(),
-                    "指數變動 %": round(float(rrow["severity"]), 1) if not pd.isna(rrow["severity"]) else None,
-                    "ETF 報酬 %":  round((p1 - p0) / p0 * 100.0, 2),
-                    "交易日數":    int(len(sub)),
-                })
+        # Always need TAIEX prices for the benchmark math, whether it's on the chart or not
+        bench_series = per_ticker_prices.get("^TWII")
+        if bench_series is None or bench_series.empty:
+            _btmp = db.get_prices("^TWII", start=baseline_date)
+            if not _btmp.empty:
+                bench_series = _btmp["close"].copy()
+                bench_series.index = pd.to_datetime(_btmp["date"])
 
-        if stat_rows:
-            sdf = pd.DataFrame(stat_rows)
-            with st.expander(
-                f"📊 市場區間績效（ZigZag 門檻 {zigzag_threshold:g}%，以加權指數擺動劃分）",
-                expanded=False,
-            ):
+        capture_df, bench_summary = _build_capture_table(
+            per_ticker_prices=per_ticker_prices,
+            bench_series=bench_series,
+            regimes_df=regimes_df,
+            baseline_date=baseline_date,
+            today_ts=today_ts,
+            etf_universe=etf_universe,
+        )
+
+        with st.expander(
+            f"📊 市場區間績效（ZigZag 門檻 {zigzag_threshold:g}%）",
+            expanded=True,
+        ):
+            # Benchmark caption — what we're comparing against
+            br = bench_summary["by_regime"]
+            np_ = bench_summary["n_periods"]
+            def _fmt_pct(v):
+                return f"{v:+.1f}%" if v is not None else "—"
+            st.caption(
+                f"🏛️ **基準：加權指數（每段交易日加權平均）**　"
+                f"多頭 {_fmt_pct(br.get('bull'))} ({np_.get('bull', 0)} 段)　·　"
+                f"修正 {_fmt_pct(br.get('correction'))} ({np_.get('correction', 0)})　·　"
+                f"小熊市 {_fmt_pct(br.get('mini_bear'))} ({np_.get('mini_bear', 0)})　·　"
+                f"熊市 {_fmt_pct(br.get('bear'))} ({np_.get('bear', 0)})"
+            )
+
+            if capture_df.empty:
+                st.info("請選擇至少一檔 ETF（不含參考指數）以計算捕獲指標。")
+            else:
+                # Sort by capture ratio desc (best defensive ETF first), put N/A last
+                sorted_df = capture_df.assign(
+                    _sort=capture_df["捕獲比"].fillna(-9999)
+                ).sort_values("_sort", ascending=False).drop(columns="_sort").reset_index(drop=True)
+
+                # Render with Styler — color cells, format numbers
+                def _color_pct(v):
+                    if v is None or pd.isna(v):
+                        return ""
+                    return "color: #4ade80" if v > 0 else "color: #f87171"
+
+                def _color_capture_ratio(v):
+                    if v is None or pd.isna(v):
+                        return ""
+                    if v >= 1.10:
+                        return "background-color: rgba(74, 222, 128, 0.20); font-weight: 700"
+                    if v >= 1.00:
+                        return "background-color: rgba(74, 222, 128, 0.08); font-weight: 600"
+                    if v <= 0.90:
+                        return "background-color: rgba(248, 113, 113, 0.15)"
+                    return ""
+
+                def _color_up_capture(v):
+                    if v is None or pd.isna(v):
+                        return ""
+                    if v >= 100:
+                        return "color: #4ade80"
+                    if v < 80:
+                        return "color: #f87171"
+                    return ""
+
+                def _color_down_capture(v):
+                    if v is None or pd.isna(v):
+                        return ""
+                    # For down capture, LOWER is better (loses less)
+                    if v <= 80:
+                        return "color: #4ade80"
+                    if v > 110:
+                        return "color: #f87171"
+                    return ""
+
+                styled = (
+                    sorted_df.style
+                    .format({
+                        "多頭平均 %":  lambda v: f"{v:+.2f}" if pd.notna(v) else "—",
+                        "修正平均 %":  lambda v: f"{v:+.2f}" if pd.notna(v) else "—",
+                        "小熊平均 %":  lambda v: f"{v:+.2f}" if pd.notna(v) else "—",
+                        "熊市平均 %":  lambda v: f"{v:+.2f}" if pd.notna(v) else "—",
+                        "上漲捕獲 %":  lambda v: f"{v:.0f}"  if pd.notna(v) else "—",
+                        "下跌捕獲 %":  lambda v: f"{v:.0f}"  if pd.notna(v) else "—",
+                        "捕獲比":      lambda v: f"{v:.2f}"  if pd.notna(v) else "—",
+                    })
+                    .map(_color_pct,           subset=["多頭平均 %", "修正平均 %", "小熊平均 %", "熊市平均 %"])
+                    .map(_color_up_capture,    subset=["上漲捕獲 %"])
+                    .map(_color_down_capture,  subset=["下跌捕獲 %"])
+                    .map(_color_capture_ratio, subset=["捕獲比"])
+                )
+                st.dataframe(styled, hide_index=True, width="stretch")
+
                 st.caption(
-                    "彙整：各 ETF 在「多頭 / 修正 / 小熊市 / 熊市」期間的"
-                    "**交易日加權平均報酬率**（每期報酬以該期交易日數為權重）。"
-                    "明細：每一段擺動的逐筆表現。"
+                    "**讀法**　"
+                    "**多頭/修正/小熊/熊市平均 %** = 該 ETF 在同類型擺動期間的「每段交易日加權平均報酬率」。　"
+                    "**上漲捕獲 %** = ETF 多頭平均 ÷ 加權指數多頭平均 × 100。>100 表示比大盤更會漲。　"
+                    "**下跌捕獲 %** = ETF 下跌平均 ÷ 加權指數下跌平均 × 100（下跌 = 修正 + 小熊 + 熊市）。**越小越好**（90 表示下跌只跌大盤的九成）。　"
+                    "**捕獲比 = 上漲捕獲 ÷ 下跌捕獲**。**>1.0 為防禦型優勢**；>1.10 是不錯的防禦型 ETF。"
                 )
 
-                # Trading-day-weighted average return per (ticker, regime_type).
-                # Formula: Σ(return_i × n_days_i) / Σ(n_days_i)
-                sdf["_weighted"] = sdf["ETF 報酬 %"] * sdf["交易日數"]
-                agg = (
-                    sdf.groupby(["代號", "名稱", "區間類型"])
-                    .agg(
-                        加權總和=("_weighted", "sum"),
-                        總交易日=("交易日數", "sum"),
-                        期數=("ETF 報酬 %", "count"),
-                    )
-                    .reset_index()
-                )
-                agg["加權平均報酬 %"] = (agg["加權總和"] / agg["總交易日"]).round(2)
-                pivot = agg[["代號", "名稱", "區間類型", "加權平均報酬 %", "期數", "總交易日"]]
-
-                regime_order = ["多頭", "修正", "小熊市", "熊市"]
-                pivot = pivot.assign(
-                    _sort=pivot["區間類型"].map({r: i for i, r in enumerate(regime_order)}).fillna(99)
-                ).sort_values(["代號", "_sort"]).drop(columns="_sort")
-                st.dataframe(pivot, hide_index=True, width="stretch")
-
-                # Detail table in a nested expander
-                with st.expander("展開逐期明細"):
-                    detail = sdf[["代號", "名稱", "區間類型", "起", "訖",
-                                  "指數變動 %", "ETF 報酬 %", "交易日數"]].copy()
-                    detail["_sort"] = detail["區間類型"].map(
+            # ── Detail expander: per-leg breakdown ─────────────────────────
+            with st.expander("展開逐期明細（每段擺動）"):
+                detail_rows = []
+                for ticker, price_series in per_ticker_prices.items():
+                    if price_series is None or price_series.empty:
+                        continue
+                    urow = etf_universe[etf_universe["ticker"] == ticker]
+                    t_name = urow.iloc[0]["name"] if not urow.empty else ticker
+                    for _, rrow in regimes_df.iterrows():
+                        s = pd.Timestamp(rrow["start_date"])
+                        e = pd.Timestamp(rrow["end_date"])
+                        if e < baseline_date or s > today_ts:
+                            continue
+                        fret, ndays = _period_return_pct(price_series, s, e)
+                        if fret is None:
+                            continue
+                        detail_rows.append({
+                            "代號":        ticker,
+                            "名稱":        t_name,
+                            "區間類型":    REGIME_LABELS_ZH.get(rrow["regime"], rrow["regime"]),
+                            "起":          rrow["start_date"].date().isoformat(),
+                            "訖":          rrow["end_date"].date().isoformat(),
+                            "指數變動 %":  round(float(rrow["severity"]), 1) if not pd.isna(rrow["severity"]) else None,
+                            "ETF 報酬 %":  round(fret, 2),
+                            "交易日數":    ndays,
+                        })
+                if detail_rows:
+                    ddf = pd.DataFrame(detail_rows)
+                    regime_order = ["多頭", "修正", "小熊市", "熊市"]
+                    ddf["_sort"] = ddf["區間類型"].map(
                         {r: i for i, r in enumerate(regime_order)}
                     ).fillna(99)
-                    detail = detail.sort_values(["代號", "_sort", "起"]).drop(columns="_sort")
-                    st.dataframe(detail, hide_index=True, width="stretch")
+                    ddf = ddf.sort_values(["代號", "_sort", "起"]).drop(columns="_sort")
+                    st.dataframe(ddf, hide_index=True, width="stretch")
 
     if corporate_action_warnings:
         with st.container(border=True):
