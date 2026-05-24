@@ -34,10 +34,10 @@ CORPORATE_ACTION_WARNINGS = {
 }
 
 REGIME_COLORS = {
-    "bull":       "rgba(40,  167,  69, 0.07)",
-    "correction": "rgba(255, 193,   7, 0.13)",
-    "mini_bear":  "rgba(253, 126,  20, 0.16)",
-    "bear":       "rgba(220,  53,  69, 0.20)",
+    "bull":       "rgba(40,  167,  69, 0.22)",
+    "correction": "rgba(255, 193,   7, 0.32)",
+    "mini_bear":  "rgba(253, 126,  20, 0.40)",
+    "bear":       "rgba(220,  53,  69, 0.48)",
 }
 REGIME_LABELS_ZH = {
     "bull":       "多頭",
@@ -595,7 +595,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                 fillcolor=color, layer="below", line_width=0,
                 annotation_text=label if show_label else "",
                 annotation_position="top left",
-                annotation_font=dict(size=9, color="rgba(200,200,200,0.55)"),
+                annotation_font=dict(size=11, color="rgba(240,240,240,0.95)"),
             )
 
     if not fig.data:
