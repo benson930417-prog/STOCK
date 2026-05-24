@@ -1,21 +1,45 @@
-"""市場脈動 tab — pure market-state dashboard. No buy/sell signals.
+"""市場脈動 tab — pure market-state dashboard.
 
-Philosophy
-──────────
-After running 1080-config tactical backtests across 2y and 5y windows
-on multiple core ETFs, we found tactical timing rules add NO Sharpe
-alpha vs simple DCA or static rebalancing. So this tab does not pretend
-to give signals.
+Design after code-review refactor (06-2026)
+───────────────────────────────────────────
+Earlier versions had 6+ overlapping panels that all measured the same
+underlying trend through different lenses (percentile, MA stretch, 30d
+return, 60d return, acceleration, distance from high). Clustered together
+they created false confidence — the eye reads five red bars as five
+independent confirmations when they're really one signal in costume.
 
-It gives you OBJECTIVE DATA about where the market sits right now:
-    • TAIEX percentile in 60d / 1y / 2y windows
-    • Cross-asset overheat panel (TAIEX + SOX + NASDAQ + S&P 500)
-    • Distance from MA20 / MA50 / MA200 + recent extremes
-    • Realised volatility regime
-    • Chart with regime overlay marking today
+This version groups metrics by what they ACTUALLY MEASURE, normalises
+cross-asset comparisons, and ends with a single plain-text interpretation
+instead of stacked emoji alerts.
 
-You make the call. The dashboard surfaces the questions; it doesn't
-answer them.
+Sections
+────────
+    1. 市場水平 Market Level
+       Headline: current price, day change, ZigZag regime, distance from
+       1y high, distance from 60d low. No percentile (covered in §2).
+
+    2. 趨勢拉伸 Stretch (normalised across assets)
+       Each index's MA200 distance + its OWN 2y z-score of historical
+       stretches. Apples-to-apples: SOX +59% might be only z=1.2 (normal
+       for SOX), TAIEX +40% might be z=2.3 (unusual for TAIEX). Includes
+       breadth tally — how many indices are simultaneously stretched.
+
+    3. 動能與波動 Speed & Volatility
+       Single combined card with 30d return, 60d return, acceleration,
+       and 20d realised volatility. One composite tag, not four.
+
+    4. TAIEX 2y chart with ZigZag regime overlay (today marked).
+
+    5. 📋 綜合解讀 Summary card
+       Plain text combining all four section signals into one neutral
+       interpretation. No 🚨, no "warning" language — this page is
+       context, not call.
+
+Philosophy unchanged
+────────────────────
+Tactical backtests (strategy_experiment/) proved no rule combo beats DCA
+or static rebalance on Sharpe across 5y of data. So this tab gives no
+buy/sell signals — only context to suppress emotional trading decisions.
 """
 from __future__ import annotations
 
@@ -30,8 +54,7 @@ from src.ui.etf_compare_tab import (
     _compute_regimes_live,
 )
 
-# Indices that show up in the cross-asset overheat panel. All present in
-# the etf_bench DB via step3_backfill REFERENCE_INDICES.
+
 CROSS_ASSET_INDICES: list[tuple[str, str]] = [
     ("^TWII", "加權指數"),
     ("^SOX",  "費城半導體"),
@@ -42,52 +65,106 @@ CROSS_ASSET_INDICES: list[tuple[str, str]] = [
 
 
 # ─── helpers ──────────────────────────────────────────────────────────────
-def _percentile_in_window(prices: pd.Series, lookback: int) -> float | None:
-    """Where does the latest price sit in the last `lookback` days?
-    0 = lowest in window, 100 = highest."""
-    if prices is None or len(prices) < 2:
-        return None
-    window = prices.iloc[-lookback:] if len(prices) > lookback else prices
-    current = float(prices.iloc[-1])
-    return float((window <= current).sum()) / len(window) * 100.0
+def _format_distance_from_high(dist_pct: float | None) -> str:
+    """Distance-from-high is naturally ≤ 0. Render 0 as 'at the high' to
+    avoid the semantically-odd '+0.0%' display."""
+    if dist_pct is None:
+        return "—"
+    if dist_pct >= -0.05:    # essentially at the high
+        return "持平高點"
+    return f"低 {abs(dist_pct):.1f}%"
 
 
-def _heat_color(pct: float | None) -> str:
-    """Cold-to-hot color for percentile values."""
-    if pct is None:
-        return "rgba(150,150,150,0.5)"
-    if pct >= 95: return "#dc2626"   # extreme heat (red)
-    if pct >= 80: return "#f97316"   # hot (orange)
-    if pct >= 60: return "#facc15"   # warm (yellow)
-    if pct >= 40: return "#22c55e"   # neutral (green)
-    if pct >= 20: return "#0ea5e9"   # cool (light blue)
-    return "#1e40af"                 # cold (deep blue)
+def _format_distance_from_low(dist_pct: float | None) -> str:
+    if dist_pct is None:
+        return "—"
+    if dist_pct <= 0.05:
+        return "持平低點"
+    return f"高 {dist_pct:.1f}%"
 
 
-def _heat_label(pct: float | None) -> str:
-    if pct is None:    return "—"
-    if pct >= 95:      return "🚨 極熱"
-    if pct >= 80:      return "⚠ 偏熱"
-    if pct >= 60:      return "🟡 偏高"
-    if pct >= 40:      return "🟢 中性"
-    if pct >= 20:      return "🔵 偏低"
-    return "❄️ 極冷"
+def _stretch_zscore(prices: pd.Series,
+                    ma_window: int = 200,
+                    lookback: int = 504) -> tuple[float | None, float | None]:
+    """Returns (current_stretch_pct, z_score_of_current_stretch_vs_history).
+
+    Normalises by the asset's OWN historical stretch distribution so SOX
+    (naturally high-vol) and DJI (low-vol) live on the same emotional
+    scale. A z of +2 means "current stretch is 2 standard deviations
+    above this asset's typical stretch" — genuinely unusual regardless
+    of the raw percentage.
+    """
+    if prices is None or len(prices) < ma_window + 30:
+        return None, None
+    ma     = prices.rolling(ma_window).mean()
+    stretch = (prices - ma) / ma * 100.0
+    cur_stretch = float(stretch.iloc[-1])
+
+    hist = stretch.iloc[-lookback:].dropna() if len(stretch) > lookback else stretch.dropna()
+    if len(hist) < 30:
+        return cur_stretch, None
+    mean = float(hist.mean())
+    std  = float(hist.std())
+    if std <= 0:
+        return cur_stretch, None
+    return cur_stretch, (cur_stretch - mean) / std
 
 
-def _pct_distance(price_now: float, reference: float) -> float | None:
-    if reference is None or reference <= 0:
-        return None
-    return (price_now - reference) / reference * 100.0
+def _zscore_label(z: float | None) -> str:
+    """Soft descriptive label — no emoji, no alarm."""
+    if z is None: return "—"
+    if z >=  2.0: return "高位"
+    if z >=  1.0: return "偏高"
+    if z >= -1.0: return "中性"
+    if z >= -2.0: return "偏低"
+    return "低位"
+
+
+def _zscore_style(z: float | None) -> str:
+    """Subtle pandas Styler color — softer than the old red/green walls."""
+    if z is None or pd.isna(z): return ""
+    if z >=  2.0: return "background-color: rgba(220,38,38,0.18); font-weight: 600"
+    if z >=  1.0: return "background-color: rgba(249,115,22,0.13)"
+    if z >= -1.0: return ""
+    if z >= -2.0: return "background-color: rgba(14,165,233,0.12)"
+    return "background-color: rgba(30,64,175,0.18)"
 
 
 def _rolling_vol(prices: pd.Series, window: int = 20) -> pd.Series:
-    """Annualised realised volatility from daily log returns."""
+    """Annualised realised volatility from daily returns."""
     rets = prices.pct_change().dropna()
     return rets.rolling(window).std() * (252 ** 0.5) * 100.0
 
 
+# ─── composite tags ────────────────────────────────────────────────────────
+def _momentum_composite(ret_30: float, ret_60: float, accel: float) -> tuple[str, str]:
+    """Collapse three momentum numbers into one descriptive tag.
+
+    Returns (tag, color_hex). Tone is descriptive, not alarming —
+    'high speed + accelerating' instead of '🚨 parabolic warning'.
+    """
+    if ret_30 > 8 and accel > 2:
+        return ("高速且加速", "#dc2626")
+    if ret_30 > 8 and accel < -2:
+        return ("高速但減速",  "#f97316")
+    if ret_30 > 8:
+        return ("穩定高速",   "#facc15")
+    if ret_30 < -8 and accel < -5:
+        return ("急跌且加速",  "#dc2626")
+    if ret_30 < -8 and accel > 2:
+        return ("急跌但減速",  "#0ea5e9")
+    if ret_30 < -8:
+        return ("穩定下行",   "#0ea5e9")
+    if accel > 5:
+        return ("加速中",      "#f97316")
+    if accel < -5:
+        return ("減速中",      "#0ea5e9")
+    return ("穩定",            "#22c55e")
+
+
 # ─── rendering blocks ─────────────────────────────────────────────────────
 def _render_headline(taiex: pd.Series) -> None:
+    """Market Level — current price, regime, distance from recent extremes."""
     if taiex is None or len(taiex) < 2:
         st.warning("TAIEX 資料不足，無法顯示。")
         return
@@ -96,13 +173,11 @@ def _render_headline(taiex: pd.Series) -> None:
     prev    = float(taiex.iloc[-2])
     day_pct = (current - prev) / prev * 100.0
 
-    # Regime context — reuse the same ZigZag engine the compare tab uses
     regimes_df = _compute_regimes_live(threshold_pct=4.0)
     cur_regime_label = "—"
     cur_regime_days  = None
     if not regimes_df.empty:
         today_ts = taiex.index[-1]
-        # Find the leg that contains today (or the latest leg if open)
         ongoing = regimes_df[
             (regimes_df["start_date"] <= today_ts) & (regimes_df["end_date"] >= today_ts)
         ]
@@ -110,11 +185,10 @@ def _render_headline(taiex: pd.Series) -> None:
         cur_regime_label = REGIME_LABELS_ZH.get(leg["regime"], leg["regime"])
         cur_regime_days  = (today_ts - pd.Timestamp(leg["start_date"])).days
 
-    # Distance from 60d / 1y high
-    h_60d  = float(taiex.iloc[-60:].max()) if len(taiex) >= 60  else float(taiex.max())
-    h_252  = float(taiex.iloc[-252:].max()) if len(taiex) >= 252 else float(taiex.max())
-    dist_60_hi  = _pct_distance(current, h_60d)
-    dist_252_hi = _pct_distance(current, h_252)
+    h_252 = float(taiex.iloc[-252:].max()) if len(taiex) >= 252 else float(taiex.max())
+    l_60  = float(taiex.iloc[-60:].min())  if len(taiex) >=  60 else float(taiex.min())
+    dist_1y_hi  = (current - h_252) / h_252 * 100.0 if h_252 > 0 else None
+    dist_60_lo  = (current - l_60)  / l_60  * 100.0 if l_60  > 0 else None
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric(
@@ -130,353 +204,141 @@ def _render_headline(taiex: pd.Series) -> None:
         delta_color="off",
     )
     c3.metric(
-        "距 60 日高點",
-        f"{dist_60_hi:+.1f}%" if dist_60_hi is not None else "—",
+        "距 1 年高點",
+        _format_distance_from_high(dist_1y_hi),
         delta_color="off",
     )
     c4.metric(
-        "距 1 年高點",
-        f"{dist_252_hi:+.1f}%" if dist_252_hi is not None else "—",
+        "距 60 日低點",
+        _format_distance_from_low(dist_60_lo),
         delta_color="off",
     )
 
 
-def _render_taiex_timeframes(taiex: pd.Series) -> None:
-    """TAIEX multi-window check — price percentile AND stretch from that
-    window's own moving average. Stretch matters because in a strong
-    trending market, every day is at percentile 100 — that alone is not
-    bubble, it's just an uptrend. Bubble = high percentile + parabolic
-    distance from longer-term mean."""
-    st.markdown("### 🌡️ TAIEX 多視窗檢查")
+def _render_stretch_normalized() -> dict:
+    """Cross-asset stretch table normalised by each asset's own 2y history.
+
+    Returns a dict summary {n_stretched, n_compressed, n_total} so the
+    summary card downstream can build a breadth statement without
+    re-running the math.
+    """
+    st.markdown("### 🌍 趨勢拉伸（跨資產，自身分布標準化）")
     st.caption(
-        "**分位數**：當前價格在該視窗內的位置（趨勢市中經常 100，本身不算過熱）。　"
-        "**距視窗均線**：與該視窗均線的距離，反映「離趨勢有多遠」。　"
-        "兩個都偏高才是真正過熱（不只是處於上升趨勢）。"
+        "**距 MA200** = 與 200 日均線的距離。"
+        "**z-score** = 該距離在自身過去 2 年分布中的標準差位置。"
+        "因為 SOX 天生比道瓊波動大，比較原始百分比不公平 — "
+        "z-score 把它們放在同一個量尺：**>+2 = 該資產自己歷史上的高位**。"
     )
 
-    if taiex is None or len(taiex) < 60:
-        st.info("TAIEX 資料不足。")
-        return
-
-    current = float(taiex.iloc[-1])
-    windows = [("60 日 (~3M)", 60), ("1 年 (252d)", 252), ("2 年 (504d)", 504)]
     rows: list[dict] = []
-    for label, lb in windows:
-        win = taiex.iloc[-lb:] if len(taiex) >= lb else taiex
-        pct = _percentile_in_window(taiex, lb)
-        win_ma = float(win.mean())
-        stretch = (current - win_ma) / win_ma * 100.0 if win_ma > 0 else None
-        tag, severity = _composite_judgment(pct, stretch)
+    z_values: list[float] = []
+    for ticker, name in CROSS_ASSET_INDICES:
+        df = db.get_prices(ticker)
+        if df.empty:
+            rows.append({"指數": f"{name} ({ticker})",
+                         "距 MA200": None, "z-score": None, "判斷": "—"})
+            continue
+        prices = df.set_index("date")["close"].dropna()
+        stretch, z = _stretch_zscore(prices, ma_window=200, lookback=504)
         rows.append({
-            "視窗":      label,
-            "分位數":    pct,
-            "距視窗均線": stretch,
-            "綜合判斷":  tag,
-            "_sort":     severity,
+            "指數":     f"{name} ({ticker})",
+            "距 MA200": stretch,
+            "z-score":  z,
+            "判斷":     _zscore_label(z),
         })
+        if z is not None:
+            z_values.append(z)
 
-    df_show = pd.DataFrame(rows).drop(columns="_sort")
-
-    def _color_pct(v):
-        if v is None or pd.isna(v): return ""
-        if v >= 95: return "color: #dc2626; font-weight: 700"
-        if v >= 80: return "color: #f97316"
-        if v >= 60: return "color: #facc15"
-        if v <  20: return "color: #1e40af"
-        return ""
-
-    def _color_stretch(v):
-        if v is None or pd.isna(v): return ""
-        if v >=  25: return "background-color: rgba(220, 38, 38, 0.25); font-weight: 700"
-        if v >=  15: return "background-color: rgba(249, 115, 22, 0.20)"
-        if v >=   5: return "background-color: rgba(250, 204, 21, 0.15)"
-        if v <= -15: return "background-color: rgba(30, 64, 175, 0.20); color: #93c5fd"
-        if v <=  -5: return "background-color: rgba(14, 165, 233, 0.15)"
-        return ""
+    df_show = pd.DataFrame(rows)
+    # Sort by z-score desc so most-stretched float to the top; nones at bottom
+    df_show["_sort"] = df_show["z-score"].fillna(-9999)
+    df_show = df_show.sort_values("_sort", ascending=False).drop(columns="_sort")
 
     styled = (
         df_show.style
         .format({
-            "分位數":     lambda v: f"{v:.0f}"  if pd.notna(v) else "—",
-            "距視窗均線": lambda v: f"{v:+.1f}%" if pd.notna(v) else "—",
+            "距 MA200": lambda v: f"{v:+.1f}%" if pd.notna(v) else "—",
+            "z-score":  lambda v: f"{v:+.2f}"  if pd.notna(v) else "—",
         })
-        .map(_color_pct,     subset=["分位數"])
-        .map(_color_stretch, subset=["距視窗均線"])
+        .map(_zscore_style, subset=["z-score"])
     )
     st.dataframe(styled, hide_index=True, width="stretch")
 
+    # Breadth tally — embedded in the same panel
+    n_stretched  = sum(1 for z in z_values if z >=  1.5)
+    n_compressed = sum(1 for z in z_values if z <= -1.5)
+    n_total      = len(z_values)
+    if n_stretched == 0:
+        st.caption(f"📊 廣度：{n_total} 個指數中 0 個位於 z≥+1.5 拉伸區間 — 全球普遍正常。")
+    elif n_stretched == 1:
+        st.caption(f"📊 廣度：{n_total} 個中 1 個拉伸 — 局部現象（單一市場），非全球同步。")
+    elif n_stretched <= 3:
+        st.caption(f"📊 廣度：{n_total} 個中 {n_stretched} 個拉伸 — 區域同步，集中於部分市場。")
+    else:
+        st.caption(f"📊 廣度：{n_total} 個中 {n_stretched} 個拉伸 — 全球同步偏熱。")
 
-def _momentum_tag(ret_pct: float | None) -> str:
-    """Tag for a single momentum metric (e.g. 30d / 60d return)."""
-    if ret_pct is None: return "—"
-    if ret_pct >  15:   return "🚨 過熱"
-    if ret_pct >   8:   return "⚠ 偏熱"
-    if ret_pct >   3:   return "🟢 健康"
-    if ret_pct >  -3:   return "⚪ 中性"
-    if ret_pct >  -8:   return "🔵 偏弱"
-    if ret_pct > -15:   return "⚠ 急跌"
-    return "🚨 重挫"
-
-
-def _acceleration_tag(accel_pct: float | None) -> str:
-    """Tag for acceleration (recent-30d return minus prior-30d return).
-    Positive = recent move faster than prior = accelerating."""
-    if accel_pct is None: return "—"
-    if accel_pct >  5:    return "🚨 加速中"
-    if accel_pct >  2:    return "⚠ 略加速"
-    if accel_pct > -2:    return "🟢 穩定"
-    if accel_pct > -5:    return "🔵 減速"
-    return "💔 急轉"
+    return {"n_stretched": n_stretched, "n_compressed": n_compressed, "n_total": n_total,
+            "rows": rows}
 
 
-def _composite_judgment(pct: float | None, stretch: float | None) -> tuple[str, str]:
-    """Combine 1y percentile with MA200 stretch into a meaningful overheat tag.
+def _render_speed_panel(taiex: pd.Series) -> dict:
+    """Single combined card: 30d return, 60d return, acceleration, 20d vol.
 
-    Percentile alone is misleading in a trending market — every day of a
-    steady uptrend reads as 100%. Pairing it with MA200 stretch
-    distinguishes "trending up healthily" from "parabolic / bubble."
-
-    Returns (tag, severity_for_sort) where lower severity = more overheated.
+    Returns a dict summary so the summary card can use it.
     """
-    if pct is None or stretch is None:
-        return ("— 無資料", "9")
-    if pct >= 90 and stretch >= 25:
-        return ("🚨 嚴重過熱", "0")
-    if pct >= 90 and stretch >= 15:
-        return ("⚠ 偏熱",     "1")
-    if pct >= 90 and stretch >= 5:
-        return ("🟡 溫和上揚", "2")
-    if pct >= 80:
-        return ("🟢 接近趨勢", "3")
-    if pct >= 40:
-        return ("⚪ 中性",     "4")
-    if pct >= 20 and stretch <= -5:
-        return ("🔵 偏冷",     "5")
-    if pct < 20 and stretch <= -15:
-        return ("❄️ 嚴重低估", "6")
-    return ("⚪ 中性",        "4")
-
-
-def _render_momentum(taiex: pd.Series) -> None:
-    """Slope-based view: how fast is TAIEX moving, and is it accelerating?
-
-    Level metrics (percentile, MA stretch) tell you WHERE we are. They
-    can't distinguish "3-year steady climb to +40% above MA200" from
-    "2-month parabolic surge to +40% above MA200". This panel adds the
-    missing dimension — rate of change and its second derivative.
-    """
-    st.markdown("### 🚀 動能與加速度（TAIEX）")
+    st.markdown("### 🚀 動能與波動（TAIEX）")
     st.caption(
-        "**動能** = 最近 N 天的累積報酬。**加速度** = 近 30 天比前 30 天快多少。"
-        "同樣的「距 MA200 +40%」可能是 3 年慢慢爬上去，"
-        "也可能是 2 個月衝上來——這個區塊把後者識別出來。"
+        "**動能**：最近 N 天的累積報酬。**加速度** = 近 30 天比前 30 天快多少。"
+        "**20 日波動率**：年化的最近 20 天標準差。"
+        "三者組成一張動能卡片 — 同一個底層趨勢的三個面向，給你一個綜合標籤。"
     )
 
     if taiex is None or len(taiex) < 61:
         st.info("資料不足計算動能（需 60 個交易日以上）。")
-        return
+        return {}
 
-    current     = float(taiex.iloc[-1])
-    price_30    = float(taiex.iloc[-31])   # 30 trading days ago
-    price_60    = float(taiex.iloc[-61])   # 60 trading days ago
+    current  = float(taiex.iloc[-1])
+    p_30     = float(taiex.iloc[-31])
+    p_60     = float(taiex.iloc[-61])
+    ret_30   = (current / p_30  - 1) * 100
+    ret_60   = (current / p_60  - 1) * 100
+    ret_prior_30 = (p_30 / p_60 - 1) * 100
+    accel    = ret_30 - ret_prior_30
 
-    ret_30      = (current / price_30  - 1) * 100   # last 30d
-    ret_60      = (current / price_60  - 1) * 100   # last 60d (context)
-    ret_old_30  = (price_30 / price_60 - 1) * 100   # the prior 30d (60→30 ago)
-    accel       = ret_30 - ret_old_30                # rate of change of rate
-
-    # Current ZigZag leg's cumulative magnitude — "how much have we moved
-    # since the last regime change" gives a sense of swing size
-    regimes_df = _compute_regimes_live(threshold_pct=4.0)
-    regime_cum_pct = None
-    regime_label_zh = "—"
-    if not regimes_df.empty:
-        today_ts = taiex.index[-1]
-        ongoing = regimes_df[
-            (regimes_df["start_date"] <= today_ts) & (regimes_df["end_date"] >= today_ts)
-        ]
-        leg = ongoing.iloc[-1] if not ongoing.empty else regimes_df.iloc[-1]
-        regime_cum_pct  = float(leg["severity"])
-        regime_label_zh = REGIME_LABELS_ZH.get(leg["regime"], leg["regime"])
-
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("30 日報酬",  f"{ret_30:+.2f}%",  _momentum_tag(ret_30),       delta_color="off")
-    c2.metric("60 日報酬",  f"{ret_60:+.2f}%",  _momentum_tag(ret_60),       delta_color="off")
-    c3.metric("加速度",     f"{accel:+.2f}%",   _acceleration_tag(accel),     delta_color="off")
-    c4.metric(
-        f"本波累計（{regime_label_zh}）",
-        f"{regime_cum_pct:+.2f}%" if regime_cum_pct is not None else "—",
-        "規制起點至今",
-        delta_color="off",
-    )
-
-    # Composite warnings — fire only when multiple slope signals align
-    if ret_30 > 8 and ret_60 > 15 and accel > 2:
-        st.error(
-            f"🚨 **拋物線型上漲警示**：30 日 ({ret_30:+.1f}%) 與 60 日 ({ret_60:+.1f}%) 都偏熱，"
-            f"且加速度 +{accel:.1f}%（近 30 天比前 30 天更快）。"
-            "歷史上這種同時「高漲 + 加速」常領先均值回歸。"
-        )
-    elif ret_30 < -8 and accel < -5:
-        st.error(
-            f"🚨 **跌勢加速警示**：30 日 {ret_30:+.1f}% 大跌且加速度 {accel:+.1f}%"
-            "（近期跌得比前期還快）。"
-        )
-    elif ret_30 > 8 and accel < -2:
-        st.warning(
-            f"⚠ **動能轉弱**：30 日 +{ret_30:.1f}% 仍偏熱，但加速度 {accel:+.1f}% 顯示"
-            "近期漲勢慢於前期 — 留意是否形成頭部。"
-        )
-    elif ret_30 < -8 and accel > 2:
-        st.info(
-            f"ℹ️ **跌勢趨緩**：30 日 {ret_30:+.1f}% 仍偏弱，但加速度 +{accel:.1f}% 顯示"
-            "近期跌得比前期慢 — 可能築底中。"
-        )
-    elif accel > 5:
-        st.warning(
-            f"⚠ **加速中**：30 日 +{ret_30:.1f}% 比前 30 日 +{ret_old_30:.1f}% 快了 "
-            f"+{accel:.1f}% — 警惕拋物線。"
-        )
-
-
-def _render_cross_asset(lookback_days: int = 252) -> None:
-    """Cross-asset overheat panel — TWO metrics so percentile-in-a-trend
-    doesn't fool you. Price percentile says "where in range." MA200 stretch
-    says "how far from trend." Both needed to identify real overheat."""
-    st.markdown("### 🌍 跨資產過熱檢查")
-    st.caption(
-        "**分位數** = 當前價格在 1 年區間的位置（高 = 接近年內高點）。　"
-        "**距 MA200** = 與 200 日均線的距離（>+25% = 拋物線型過熱）。　"
-        "**單看分位數會在趨勢市中失真**：S&P 平穩走多時每天都是 100%，但離 MA200 只有 +10% "
-        "就不算泡沫；TAIEX 100% 但離 MA200 +40% 才是真的高位。"
-    )
-
-    rows: list[dict] = []
-    for ticker, name in CROSS_ASSET_INDICES:
-        df = db.get_prices(ticker)
-        if df.empty or len(df) < 200:
-            rows.append({
-                "指數": f"{name} ({ticker})",
-                "1年分位": None, "距 MA200": None,
-                "綜合判斷": "— 無資料", "_sort": "9",
-            })
-            continue
-        prices = df["close"].dropna()
-        pct = _percentile_in_window(prices, lookback_days)
-        cur = float(prices.iloc[-1])
-        ma200 = float(prices.iloc[-200:].mean())
-        stretch = (cur - ma200) / ma200 * 100.0
-        tag, severity = _composite_judgment(pct, stretch)
-        rows.append({
-            "指數": f"{name} ({ticker})",
-            "1年分位": pct, "距 MA200": stretch,
-            "綜合判斷": tag, "_sort": severity,
-        })
-
-    df_show = pd.DataFrame(rows).sort_values("_sort").drop(columns="_sort")
-
-    def _color_pct(v):
-        if v is None or pd.isna(v): return ""
-        if v >= 95: return "color: #dc2626; font-weight: 700"
-        if v >= 80: return "color: #f97316"
-        if v >= 60: return "color: #facc15"
-        if v <  20: return "color: #1e40af"
-        return ""
-
-    def _color_stretch(v):
-        if v is None or pd.isna(v): return ""
-        if v >=  25: return "background-color: rgba(220, 38, 38, 0.25); font-weight: 700"
-        if v >=  15: return "background-color: rgba(249, 115, 22, 0.20)"
-        if v >=   5: return "background-color: rgba(250, 204, 21, 0.15)"
-        if v <= -15: return "background-color: rgba(30, 64, 175, 0.20); color: #93c5fd"
-        if v <=  -5: return "background-color: rgba(14, 165, 233, 0.15)"
-        return ""
-
-    styled = (
-        df_show.style
-        .format({
-            "1年分位": lambda v: f"{v:.0f}"  if pd.notna(v) else "—",
-            "距 MA200": lambda v: f"{v:+.1f}%" if pd.notna(v) else "—",
-        })
-        .map(_color_pct,     subset=["1年分位"])
-        .map(_color_stretch, subset=["距 MA200"])
-    )
-    st.dataframe(styled, hide_index=True, width="stretch")
-
-    # Composite alert — only fires on TRUE overheat (high pct + high stretch),
-    # not on "trending up but normal stretch"
-    n_severe = sum(1 for r in rows if r["_sort"] == "0")
-    n_hot    = sum(1 for r in rows if r["_sort"] in ("0", "1"))
-    if n_severe >= 2:
-        st.error(
-            f"🚨 {n_severe} 個指數同時嚴重過熱（>+25% above MA200 且 90+ 分位）— "
-            "**真正的全球高位警示**，不是普通上升趨勢。歷史上這種組合常領先重大修正。"
-        )
-    elif n_hot >= 2:
-        st.warning(
-            f"⚠ {n_hot} 個指數偏熱。注意是否惡化為嚴重過熱（距 MA200 >25%）。"
-        )
-    elif n_hot == 1:
-        st.info(f"ℹ️ {n_hot} 個指數偏熱，其他大致正常 — 局部市場現象。")
-
-
-def _render_technicals(taiex: pd.Series) -> None:
-    """MA distance + recent extremes + volatility regime."""
-    if taiex is None or len(taiex) < 200:
-        st.info("MA 資料不足（需要至少 200 天）。")
-        return
-
-    current = float(taiex.iloc[-1])
-    ma20  = float(taiex.iloc[-20:].mean())
-    ma50  = float(taiex.iloc[-50:].mean())
-    ma200 = float(taiex.iloc[-200:].mean())
-
-    def _ma_status(price, ma):
-        delta = (price - ma) / ma * 100
-        if   delta >  10: tag, color = "🚨 嚴重乖離", "#dc2626"
-        elif delta >   5: tag, color = "⚠ 偏離",   "#f97316"
-        elif delta >  -5: tag, color = "🟢 接近",   "#22c55e"
-        elif delta > -10: tag, color = "🔵 偏低",   "#0ea5e9"
-        else:             tag, color = "❄️ 嚴重偏低", "#1e40af"
-        return delta, tag, color
-
-    rows_left = []
-    for label, ma in [("MA20",  ma20), ("MA50",  ma50), ("MA200", ma200)]:
-        d, tag, color = _ma_status(current, ma)
-        rows_left.append((label, d, tag, color))
-
-    # Volatility regime
     vol_series = _rolling_vol(taiex, 20)
+    cur_vol = vol_pct = None
     if len(vol_series.dropna()) >= 30:
         cur_vol = float(vol_series.iloc[-1])
         vol_window = vol_series.dropna().iloc[-252:] if len(vol_series.dropna()) > 252 else vol_series.dropna()
         vol_pct = float((vol_window <= cur_vol).sum()) / len(vol_window) * 100
+
+    tag, color = _momentum_composite(ret_30, ret_60, accel)
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("30 日報酬",  f"{ret_30:+.2f}%",  delta_color="off")
+    c2.metric("60 日報酬",  f"{ret_60:+.2f}%",  delta_color="off")
+    c3.metric("加速度",     f"{accel:+.2f}%",   "近30天 vs 前30天", delta_color="off")
+    if cur_vol is not None:
+        c4.metric("20 日年化波動",
+                  f"{cur_vol:.1f}%",
+                  f"1年內 {vol_pct:.0f} 分位",
+                  delta_color="off")
     else:
-        cur_vol = vol_pct = None
+        c4.metric("20 日年化波動", "—", delta_color="off")
 
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("### 🎯 距離技術指標")
-        for label, d, tag, _color in rows_left:
-            sign = "+" if d >= 0 else ""
-            st.markdown(f"- **{label}**：`{sign}{d:.1f}%`　{tag}")
-        st.caption("距離 200 日均線 >+15% 通常代表強趨勢但短線高位；"
-                   "<-15% 則為強趨勢下的短線低位。")
+    # Single composite tag — replaces the four separate emoji alarms
+    st.markdown(
+        f"<div style='margin-top:0.5rem; padding:0.6rem 1rem; "
+        f"border-left:4px solid {color}; background:rgba(255,255,255,0.03); "
+        f"border-radius:4px;'>"
+        f"<span style='color:#aaa; font-size:0.9rem'>綜合動能標籤：</span>"
+        f"<span style='color:{color}; font-weight:600; font-size:1.1rem'>{tag}</span>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
 
-    with c2:
-        st.markdown("### 📈 波動率（20 日年化）")
-        if cur_vol is None:
-            st.info("資料不足計算波動率。")
-        else:
-            tag = _heat_label(vol_pct)
-            st.markdown(f"- **當前波動率**：`{cur_vol:.1f}%`")
-            st.markdown(f"- **位於 1 年範圍**：`{vol_pct:.0f} 分位`　{tag}")
-            if vol_pct < 30:
-                st.caption("⚠ 低波動 + 高分位 = 典型「複雜頂」訊號（市場集體掉以輕心）。")
-            elif vol_pct > 70:
-                st.caption("ℹ️ 高波動代表市場意見分歧，常見於趨勢轉折期。")
-            else:
-                st.caption("波動率處於中性區間。")
+    return {"ret_30": ret_30, "ret_60": ret_60, "accel": accel,
+            "vol": cur_vol, "vol_pct": vol_pct, "tag": tag}
 
 
 def _render_chart_with_regimes(taiex: pd.Series) -> None:
@@ -491,8 +353,6 @@ def _render_chart_with_regimes(taiex: pd.Series) -> None:
         name="加權指數",
         hovertemplate="%{x|%Y-%m-%d}: %{y:,.2f}<extra></extra>",
     ))
-
-    # Regime overlays (same code path as compare tab — single ZigZag source of truth)
     for _, row in regimes_df.iterrows():
         s = pd.Timestamp(row["start_date"])
         e = pd.Timestamp(row["end_date"])
@@ -505,8 +365,6 @@ def _render_chart_with_regimes(taiex: pd.Series) -> None:
             annotation_position="top left",
             annotation_font=dict(size=11, color="rgba(240,240,240,0.95)"),
         )
-
-    # Mark today's price prominently
     if len(taiex) > 0:
         last_x = taiex.index[-1]
         last_y = float(taiex.iloc[-1])
@@ -519,7 +377,6 @@ def _render_chart_with_regimes(taiex: pd.Series) -> None:
             showlegend=False,
             hovertemplate=f"今日：{last_x.date()}<br>%{{y:,.2f}}<extra></extra>",
         ))
-
     fig.update_layout(
         height=380, margin=dict(l=10, r=20, t=10, b=10),
         xaxis=dict(title="", showgrid=True, gridcolor="rgba(255,255,255,0.06)"),
@@ -531,55 +388,153 @@ def _render_chart_with_regimes(taiex: pd.Series) -> None:
     st.plotly_chart(fig, width="stretch")
 
 
+def _render_summary_card(taiex: pd.Series,
+                         stretch_info: dict,
+                         speed_info: dict) -> None:
+    """Single plain-text interpretation combining all section signals.
+
+    No alarms, no 🚨 — descriptive only. The page deliberately stops
+    short of saying "buy" or "sell"; it leaves that to the reader.
+    """
+    st.markdown("### 📋 綜合解讀")
+
+    # Pull TAIEX's own z-score out of the stretch table
+    tw_z = None
+    tw_stretch = None
+    for r in stretch_info.get("rows", []):
+        if "TWII" in r["指數"]:
+            tw_z = r["z-score"]
+            tw_stretch = r["距 MA200"]
+            break
+
+    # Compose state line + interpretation
+    parts: list[str] = []
+
+    # Level descriptor
+    h_252 = float(taiex.iloc[-252:].max()) if len(taiex) >= 252 else float(taiex.max())
+    cur   = float(taiex.iloc[-1])
+    dist_1y = (cur - h_252) / h_252 * 100 if h_252 > 0 else 0
+    if dist_1y >= -0.5:
+        parts.append("接近 1 年高點")
+    elif dist_1y >= -5:
+        parts.append("位於 1 年高位附近")
+    elif dist_1y >= -15:
+        parts.append("距 1 年高點有距離")
+    else:
+        parts.append("遠離 1 年高點")
+
+    # Speed descriptor — pull from the composite tag
+    tag = speed_info.get("tag")
+    if tag:
+        parts.append(tag.lower())
+
+    # TAIEX stretch descriptor
+    if tw_z is not None:
+        if tw_z >= 2:
+            parts.append(f"TAIEX 拉伸 z={tw_z:+.1f}（自身高位）")
+        elif tw_z >= 1:
+            parts.append(f"TAIEX 拉伸 z={tw_z:+.1f}（自身偏高）")
+        elif tw_z >= -1:
+            parts.append(f"TAIEX 拉伸 z={tw_z:+.1f}（中性）")
+        else:
+            parts.append(f"TAIEX 拉伸 z={tw_z:+.1f}（偏低）")
+
+    # Breadth descriptor
+    ns = stretch_info.get("n_stretched", 0)
+    nt = stretch_info.get("n_total", 0)
+    if ns == 0:
+        parts.append(f"全球 {nt} 指數普遍正常")
+    elif ns == 1:
+        parts.append(f"{nt} 個指數中僅 1 個拉伸（局部）")
+    elif ns <= 3:
+        parts.append(f"{nt} 個指數中 {ns} 個拉伸（區域同步）")
+    else:
+        parts.append(f"{nt} 個指數中 {ns} 個拉伸（全球同步）")
+
+    state_line = "**市場狀態**：" + "　·　".join(parts)
+
+    # Interpretation paragraph — graded based on how many signals align
+    accel = speed_info.get("accel", 0) or 0
+    high_stretch    = tw_z is not None and tw_z >=  1.5
+    extreme_stretch = tw_z is not None and tw_z >=  2.0
+    low_stretch     = tw_z is not None and tw_z <= -1.5
+    fast            = accel >  2
+    declining_fast  = accel < -5
+    breadth_ok      = ns >= 2
+
+    if extreme_stretch and fast and breadth_ok:
+        interp = (
+            "**解讀**：拉伸高位 + 加速上漲 + 多市場同步三者俱備。"
+            "歷史上類似情境的拉回風險顯著升高，但**並非單一賣出訊號**，"
+            "拋物線階段通常仍可維持數週至數月。"
+        )
+    elif (extreme_stretch and fast) or (high_stretch and fast and breadth_ok):
+        interp = (
+            "**解讀**：拉伸與動能多項偏熱（廣度亦有支撐）。"
+            "拉回風險偏高，但**並非單一賣出訊號**。"
+        )
+    elif high_stretch and breadth_ok:
+        interp = (
+            "**解讀**：TAIEX 偏高且多市場同步拉伸，"
+            "但動能未顯著加速。屬於成熟趨勢階段，**非賣出訊號**。"
+        )
+    elif high_stretch:
+        interp = (
+            "**解讀**：TAIEX 處於自身歷史偏高位，但**廣度未確認全球同步**，"
+            "可能為單一市場現象。**非賣出訊號**。"
+        )
+    elif low_stretch and declining_fast:
+        interp = (
+            "**解讀**：拉伸低位且仍在加速下行，趨勢尚未止穩。"
+            "歷史上逢低布局時機通常出現在減速之後，**非立即買入訊號**。"
+        )
+    elif low_stretch:
+        interp = (
+            "**解讀**：TAIEX 處於自身歷史低位，逢低布局的歷史回報通常較高，"
+            "但**並非單一買入訊號**——趨勢方向仍需個別判斷。"
+        )
+    else:
+        interp = "**解讀**：當前各項指標處於中性區間，無特別偏多或偏空跡象。"
+
+    with st.container(border=True):
+        st.markdown(state_line)
+        st.markdown(interp)
+        st.caption(
+            "本頁所有分析皆為**歷史資料的客觀描述**，不構成投資建議。"
+            "回測證明戰術擇時規則在此市場史料中無法跑贏 DCA 或固定再平衡。"
+        )
+
+
 # ─── main entry ──────────────────────────────────────────────────────────
 def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> None:
     st.subheader("📊 市場脈動")
     st.caption(
         "即時市場狀態儀表板 — **給你資料，由你判斷**。"
-        "本頁刻意不提供買賣訊號（回測證明戰術規則無法跑贏 DCA），"
-        "而是把當前市場相對歷史的位置擺給你看。"
+        "四個區塊分別測量**水平 / 拉伸 / 速度 / 廣度**，"
+        "最後以一段中性文字綜合解讀。本頁不提供買賣訊號。"
     )
 
-    # Pull TAIEX once (db cache handles repeats)
     taiex_df = db.get_prices("^TWII")
     if taiex_df.empty:
         st.error("資料庫無 TAIEX (^TWII) 價格。請先執行 step3_backfill。")
         return
     taiex = taiex_df.set_index("date")["close"].dropna()
 
-    # 1. Top metric row
+    # 1. Market Level
     _render_headline(taiex)
-
     st.markdown("---")
 
-    # 2. TAIEX percentile across timeframes  (LEVEL view — "where we are")
-    _render_taiex_timeframes(taiex)
-
-    # 3. TAIEX momentum + acceleration       (SLOPE view — "how fast / accelerating")
-    _render_momentum(taiex)
-
-    # 4. Cross-asset overheat
-    _render_cross_asset()
-
+    # 2. Stretch (normalised) + breadth tally
+    stretch_info = _render_stretch_normalized()
     st.markdown("---")
 
-    # 4. Technicals + Volatility
-    _render_technicals(taiex)
-
+    # 3. Speed (momentum + volatility, combined card)
+    speed_info = _render_speed_panel(taiex)
     st.markdown("---")
 
-    # 5. Big chart with regimes
+    # 4. Chart with regime overlay
     _render_chart_with_regimes(taiex)
-
     st.markdown("---")
 
-    # Footer — restate the philosophy so you don't talk yourself into signals
-    with st.container(border=True):
-        st.markdown(
-            "**🧊 冷血提醒**　"
-            "本頁不告訴你「現在該買還是該賣」。它只告訴你**目前的客觀位置**。"
-            "歷史回測顯示：在這個市場史料中，任何 fire/retrieve 規則都跑不贏 "
-            "DCA 或固定再平衡。最佳策略仍是**定期定額**或**固定權重再平衡**。"
-            "這個頁面的價值是讓你避免在 95+ 分位 FOMO 加碼，"
-            "或在 5- 分位恐慌減碼——僅此而已。"
-        )
+    # 5. Summary card — combines all section signals into plain text
+    _render_summary_card(taiex, stretch_info, speed_info)
