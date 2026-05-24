@@ -2,253 +2,253 @@
 00400A,主動國泰動能高息,TWSE,active_equity,False,李偉正,不適用,2026-03-30,2026-04-09,2026-03-30,國內成分證券主動式交易所交易基金(股票),否,1528640000,國泰台股動能高息主動式ETF證券投資信託基金,Cathay High Dividend Momentum Active ETF,twse_opendata
 00401A,主動摩根台灣鑫收,TWSE,active_equity,False,唐德瑜,不適用,2026-03-31,2026-04-10,2026-03-31,國內成分證券主動式交易所交易基金(股票),否,252395000,摩根台灣鑫收益主動式ETF證券投資信託基金,JPMorgan (Taiwan) Taiwan Equity High Income Active ETF,twse_opendata
 00403A,主動統一升級50,TWSE,active_equity,False,鄧潤澤,不適用,2026-04-28,2026-05-12,2026-04-28,國內成分證券主動式交易所交易基金(股票),否,18314519000,統一台股升級50主動式ETF證券投資信託基金,UPAMC Taiwan Elite 50 Active ETF,twse_opendata
-0050,元大台灣50,TWSE,passive_equity,False,劉宗聖,臺灣50指數,2003-06-25,2003-06-30,2024-01-01,國內成分證券指數股票型基金,否,18842500000,元大台灣卓越50證券投資信託基金,Yuanta/P-shares Taiwan Top 50 ETF,twse_opendata
-0051,元大中型100,TWSE,passive_equity,False,劉宗聖,臺灣中型100指數,2006-08-24,2006-08-31,2024-01-01,國內成分證券指數股票型基金,否,24500000,元大台灣中型100證券投資信託基金,Yuanta/P-shares Taiwan Mid-Cap 100 ETF,twse_opendata
-0052,富邦科技,TWSE,passive_equity,False,黃昭棠,臺灣資訊科技指數,2006-08-28,2006-09-12,2024-01-01,國內成分證券指數股票型基金,否,2506000000,富邦台灣科技指數證券投資信託基金,Fubon Taiwan Technology Tracker Fund,twse_opendata
-0053,元大電子,TWSE,passive_equity,False,劉宗聖,電子類加權股價指數,2007-07-04,2007-07-16,2024-01-01,國內成分證券指數股票型基金,否,4988000,元大台灣ETF傘型證券投資信託基金之電子科技證券投資信託基金,Yuanta/P-shares Taiwan Electronics Tech ETF,twse_opendata
-0054,元大台商50,TWSE,passive_equity,False,劉宗聖,S&amp;P台商收成指數,2007-07-04,2007-07-16,2024-01-01,國內成分證券指數股票型基金,否,4124000,元大台灣ETF傘型證券投資信託基金之台商收成證券投資信託基金,Yuanta/P-shares S&amp;P Custom China Play 50 ETF,twse_opendata
-0055,元大MSCI金融,TWSE,passive_equity,False,劉宗聖,MSCI台灣金融指數,2007-07-04,2007-07-16,2024-01-01,國內成分證券指數股票型基金,否,81154000,元大台灣ETF傘型證券投資信託基金之金融證券投資信託基金,Yuanta/P-shares MSCI Taiwan Financials ETF,twse_opendata
-0056,元大高股息,TWSE,passive_equity,False,劉宗聖,臺灣高股息指數,2007-12-13,2007-12-26,2024-01-01,國內成分證券指數股票型基金,否,13724034000,元大台灣高股息證券投資信託基金,Yuanta/P-shares Taiwan Dividend Plus ETF,twse_opendata
-0057,富邦摩台,TWSE,passive_equity,False,黃昭棠,MSCI臺灣指數,2008-02-14,2008-02-27,2024-01-01,國內成分證券指數股票型基金,否,1527000,富邦台灣ETF傘型證券投資信託基金之富邦台灣摩根指數股票型證券投資信託基金,FUBON MSCI  TAIWAN ETF,twse_opendata
-0058,富邦發達,TWSE,passive_equity,False,胡德興,臺灣發達指數,2008-02-14,2008-02-27,2024-01-01,國內成分證券指數股票型基金,否,696000,富邦台灣ETF傘型證券投資信託基金之富邦台灣發達指數股票型證券投資信託基金,FUBON TAIWAN EIGHT INDUSTRIES ETF,twse_opendata
-0059,富邦金融,TWSE,passive_equity,False,胡德興,金融保險類股指數,2008-02-14,2008-02-27,2024-01-01,國內成分證券指數股票型基金,否,973000,富邦台灣ETF傘型證券投資信託基金之富邦台灣金融指數股票型證券投資信託基金,FUBON TAIWAN FINANCE  ETF,twse_opendata
-0060,新台灣,TWSE,passive_equity,False,林武田,未含電子股50指數,2008-08-06,2008-08-18,2024-01-01,國內成分證券指數股票型基金,否,1153000,元大新台灣證券投資信託基金,Yuanta/P-shares TWSE Taiwan Non－Tech 50 ETF,twse_opendata
-0061,元大寶滬深,TWSE,passive_equity,False,劉宗聖,滬深300指數,2009-08-04,2009-08-17,2024-01-01,連結式證券指數股票型基金,是,103116000,元大標智滬深300證券投資信託基金,W.I.S.E. Yuanta/P-shares CSI 300 ETF,twse_opendata
-006203,元大MSCI台灣,TWSE,passive_equity,False,劉宗聖,MSCI&#174;臺灣指數,2011-04-21,2011-05-12,2024-01-01,國內成分證券指數股票型基金,否,10218000,元大摩臺證券投資信託基金,Yuanta/ P-shares MSCI Taiwan ETF,twse_opendata
-006204,永豐臺灣加權,TWSE,passive_equity,False,陳思寬,臺灣證券交易所發行量加權股價指數,2011-09-06,2011-09-28,2024-01-01,國內成分證券指數股票型基金,否,1500000,永豐臺灣加權ETF證券投資信託基金,Sinopac TAIEX ETF,twse_opendata
-006205,富邦上証,TWSE,passive_equity,False,黃昭棠,上証180指數,2011-08-30,2011-09-26,2024-01-01,國外成分證券指數股票型基金,是,101772000,富邦上証180證券投資信託基金,Fubon SSE180 ETF,twse_opendata
-006206,元大上證50,TWSE,passive_equity,False,劉宗聖,上證50指數,2012-04-25,2012-05-11,2024-01-01,國外成分證券指數股票型基金,是,29278000,元大中國傘型證券投資信託基金之上證50證券投資信託基金,Yuanta/P-shares SSE50 ETF,twse_opendata
-006207,復華滬深,TWSE,passive_equity,False,杜俊雄,滬深300指數,2012-06-05,2012-06-22,2024-01-01,國外成分證券指數股票型基金,是,22392000,復華滬深300 A股證券投資信託基金,Fuh Hwa CSI 300 A Shares Exchange Traded Fund,twse_opendata
-006208,富邦台50,TWSE,passive_equity,False,黃昭棠,臺灣50指數,2012-06-22,2012-07-17,2024-01-01,國內成分證券指數股票型基金,否,1837540000,富邦台灣釆吉50 證券投資信託基金,Fubon FTSE TWSE Taiwan 50 ETF,twse_opendata
-00625K,富邦上証+R,TWSE,passive_equity,False,黃昭棠,上証180指數,2016-08-08,2016-08-08,2024-01-01,國外成份/加掛外幣證券指數股票型基金,是,333000,富邦上証180證券投資信託基金-加掛人民幣ETF受益憑證-國外成份/加掛外幣證券指數股票型基金,FUBON SSE 180 ETF RMB,twse_opendata
-00631L,元大台灣50正2,TWSE,leveraged,True,劉宗聖,臺灣50指數,2014-10-23,2014-10-31,2024-01-01,槓桿/反向指數股票型基金,否,4573348000,元大ETF傘型證券投資信託基金之台灣50單日正向2倍證券投資信託基金,Yuanta Daily Taiwan 50 Bull 2X ETF,twse_opendata
-00632R,元大台灣50反1,TWSE,leveraged,True,劉宗聖,臺灣50指數,2014-10-23,2014-10-31,2024-01-01,槓桿/反向指數股票型基金,否,2271207730,元大ETF傘型證券投資信託基金之台灣50單日反向1倍證券投資信託基金,Yuanta Daily Taiwan 50 Bear -1X ETF,twse_opendata
-00633L,富邦上証正2,TWSE,leveraged,True,黃昭棠,上証180兩倍槓桿指數,2014-11-11,2014-11-25,2024-01-01,槓桿/反向指數股票型基金,是,140458000,富邦中國ETF傘型證券投資信託基金之富邦上証180單日正向兩倍證券投資信託基金,Fubon SSE 180 Leveraged 2X Index ETF,twse_opendata
-00634R,富邦上証反1,TWSE,leveraged,True,黃昭棠,上証180反向指數,2014-11-11,2014-11-25,2024-01-01,槓桿/反向指數股票型基金,是,47256000,富邦中國ETF傘型證券投資信託基金之富邦上証180單日反向一倍證券投資信託基金,Fubon SSE 180 Inversed Index ETF,twse_opendata
-00635U,期元大S&amp;P黃金(原名：元大S&amp;P黃金),TWSE,commodity,False,劉宗聖,標普高盛黃金ER指數,2015-04-01,2015-04-15,2024-01-01,指數股票型期貨信託基金,是,292014000,元大標普高盛黃金ER指數股票型期貨信託基金,Yuanta S&amp;P GSCI Gold ER Futures ETF,twse_opendata
-00636,國泰中國A50,TWSE,passive_equity,False,李偉正,富時中國A50指數,2015-03-20,2015-04-01,2024-01-01,國外成分證券指數股票型基金,是,107946000,國泰富時中國A50證券投資信託基金,Cathay FTSE China A50 ETF,twse_opendata
-00636K,國泰富時中國A50+U,TWSE,passive_equity,False,李偉正,富時中國A50指數,2017-10-24,2017-10-24,2024-01-01,國外成份/加掛外幣證券指數股票型基金,是,62100,國泰富時中國A50證券投資信託基金(加掛美元受益憑證)-國外成份/加掛外幣證券指數股票型基金,Cathay FTSE China A50 ETF,twse_opendata
-00637L,元大滬深300正2,TWSE,leveraged,True,劉宗聖,滬深300日報酬正向兩倍指數,2015-05-06,2015-05-18,2024-01-01,槓桿/反向指數股票型基金,是,815606000,元大滬深300傘型證券投資信託基金之滬深300單日正向2倍證券投資信託基金,Yuanta Daily CSI300 Bull 2X ETF,twse_opendata
-00638R,元大滬深300反1,TWSE,leveraged,True,劉宗聖,滬深300日報酬反向一倍指數,2015-05-06,2015-05-18,2024-01-01,槓桿/反向指數股票型基金,是,27448000,元大滬深300傘型證券投資信託基金之滬深300單日反向1倍證券投資信託基金,Yuanta Daily CSI 300 Bear -1X ETF,twse_opendata
-00639,富邦深100,TWSE,passive_equity,False,黃昭棠,深証100指數,2015-05-20,2015-06-09,2024-01-01,國外成分證券指數股票型基金,是,111903000,富邦深証100證券投資信託基金,Fubon SZSE 100 ETF,twse_opendata
-00640L,富邦日本正2,TWSE,leveraged,True,黃昭棠,東証正向二倍指數,2015-08-27,2015-09-10,2024-01-01,槓桿/反向指數股票型基金,是,9419000,富邦日本ETF傘型證券投資信託基金之富邦日本東証單日正向兩倍證券投資信託基金,Fubon TOPIX Leveraged 2X Index ETF,twse_opendata
-00641R,富邦日本反1,TWSE,leveraged,True,黃昭棠,東証反向一倍指數,2015-08-27,2015-09-10,2024-01-01,槓桿/反向指數股票型基金,是,74758000,富邦日本ETF傘型證券投資信託基金之富邦日本東証單日反向一倍證券投資信託基金,Fubon TOPIX Inverse-1X Index ETF,twse_opendata
-00642U,期元大S&amp;P石油(原名：元大S&amp;P石油),TWSE,commodity,False,劉宗聖,標普高盛原油增強超額回報指數,2015-08-27,2015-09-07,2024-01-01,指數股票型期貨信託基金,是,102821000,元大標普高盛原油ER指數股票型期貨信託基金,Yuanta S&amp;P GSCI Crude Oil ER Futures ETF,twse_opendata
-00643,群益深証中小,TWSE,passive_equity,False,賴政昇,中小企業１００指數,2015-11-12,2015-12-02,2024-01-01,國外成分證券指數股票型基金,是,81700000,群益深証中小１００證券投資信託基金,CAPITAL SZSE SME １００ INDEX EXCHANGE TRADED FUND,twse_opendata
-00643K,群益深証中小+R,TWSE,passive_equity,False,賴政昇,中小企業１００指數,2015-11-12,2016-08-26,2024-01-01,國外成份/加掛外幣證券指數股票型基金,是,127000,群益深証中小１００證券投資信託基金加掛—人民幣ETF受益憑證-國外成份/加掛外幣證券指數股票型基金,CAPITAL SZSE SME １００ INDEX EXCHANGE TRADED FUND,twse_opendata
-00645,富邦日本,TWSE,passive_equity,False,黃昭棠,東證股價指數,2015-10-28,2015-11-06,2024-01-01,國外成分證券指數股票型基金,是,50997000,富邦日本東証證券投資信託基金,Fubon TOPIX ETF,twse_opendata
-00646,元大S&amp;P500,TWSE,passive_equity,False,劉宗聖,標普500指數,2015-12-02,2015-12-14,2024-01-01,國外成分證券指數股票型基金,是,549985000,元大標普500傘型證券投資信託基金之標普500證券投資信託基金,Yuanta S&amp;P 500 ETF,twse_opendata
-00647L,元大S&amp;P500正2,TWSE,leveraged,True,劉宗聖,標普500 2倍槓桿指數,2015-12-02,2015-12-14,2024-01-01,槓桿/反向指數股票型基金,是,6416000,元大標普500傘型證券投資信託基金之標普500單日正向2倍證券投資信託基金,Yuanta Daily S&amp;P 500 Bull 2X ETF,twse_opendata
-00648R,元大S&amp;P500反1,TWSE,leveraged,True,劉宗聖,標普500反向指數,2015-12-02,2015-12-14,2024-01-01,槓桿/反向指數股票型基金,是,146688000,元大標普500傘型證券投資信託基金之標普500單日反向1倍證券投資信託基金,Yuanta Daily S&amp;P 500 Bear 1X ETF,twse_opendata
-00649,FH香港,TWSE,passive_equity,False,杜俊雄,恒生指數,2016-01-13,2016-01-27,2024-01-01,國外成分證券指數股票型基金,是,4272000,復華香港ETF傘型證券投資信託基金之復華恒生證券投資信託基金,Fuh Hwa Hang Seng ETF,twse_opendata
-00650L,復華香港正2,TWSE,leveraged,True,杜俊雄,恒指槓桿指數,2016-01-13,2016-01-27,2024-01-01,槓桿/反向指數股票型基金,是,121338000,復華香港ETF傘型證券投資信託基金之復華恒生單日正向二倍證券投資信託基金,Fuh Hwa Daily Hang Seng Leveraged 2X ETF,twse_opendata
-00651R,復華香港反1,TWSE,leveraged,True,杜俊雄,恒指短倉指數,2016-01-13,2016-01-27,2024-01-01,槓桿/反向指數股票型基金,是,33192000,復華香港ETF傘型證券投資信託基金之復華恒生單日反向一倍證券投資信託基金,Fuh Hwa Daily Hang Seng Inversed ETF,twse_opendata
-00652,富邦印度,TWSE,passive_equity,False,黃昭棠,NIFTY指數,2016-03-16,2016-03-29,2024-01-01,國外成分證券指數股票型基金,是,68035000,富邦印度ETF傘型證券投資信託基金之富邦印度NIFTY證券投資信託基金,Fubon NIFTY ETF,twse_opendata
-00653L,富邦印度正2,TWSE,leveraged,True,黃昭棠,NIFTY正向2倍指數,2016-03-16,2016-03-29,2024-01-01,槓桿/反向指數股票型基金,是,18403000,富邦印度ETF傘型證券投資信託基金之富邦印度NIFTY單日正向兩倍證券投資信託基金,Fubon NIFTY 2X Leveraged Index ETF,twse_opendata
-00654R,富邦印度反1,TWSE,leveraged,True,黃昭棠,NIFTY反向1倍指數,2016-03-16,2016-03-29,2024-01-01,槓桿/反向指數股票型基金,是,19466000,富邦印度ETF傘型證券投資信託基金之富邦印度NIFTY單日反向一倍證券投資信託基金,Fubon NIFTY -1 Inverse Index ETF,twse_opendata
-00655L,國泰中國A50正2,TWSE,leveraged,True,李偉正,富時中國A50兩倍槓桿指數,2016-03-08,2016-03-18,2024-01-01,槓桿/反向指數股票型基金,是,72458000,國泰A50傘型證券投資信託基金之富時中國A50單日正向2倍證券投資信託基金,Cathay FTSE China A50 Daily Leveraged 2X ETF,twse_opendata
-00656R,國泰中國A50反1,TWSE,leveraged,True,李偉正,富時中國A50反向指數,2016-03-08,2016-03-18,2024-01-01,槓桿/反向指數股票型基金,是,20357000,國泰A50傘型證券投資信託基金之富時中國A50單日反向1倍證券投資信託基金,Cathay FTSE China A50 Daily Inversed  ETF,twse_opendata
-00657,國泰日經225,TWSE,passive_equity,False,李偉正,日經225,2016-04-25,2016-05-09,2024-01-01,國外成分證券指數股票型基金,是,6613000,國泰日本ETF傘型證券投資信託基金之日經225證券投資信託基金,Cathay Nikkei 225 Currency-hedged ETF Fund,twse_opendata
-00657K,國泰日經225+U,TWSE,passive_equity,False,李偉正,日經225,2017-10-24,2017-10-24,2024-01-01,國外成份/加掛外幣證券指數股票型基金,是,29900,國泰日經225證券投資信託基金(加掛美元受益憑證)-國外成份/加掛外幣證券指數股票型基金,Cathay Nikkei 225 Currency-hedged ETF Fund(USD),twse_opendata
-00658L,國泰日本正2,TWSE,leveraged,True,李偉正,富時日本單日正向2倍指數,2016-04-25,2016-05-09,2024-01-01,槓桿/反向指數股票型基金,是,845000,國泰日本ETF傘型證券投資信託基金之富時日本單日正向2倍證券投資信託基金,Cathay FTSE Japan Daily Leveraged 2X ETF Fund,twse_opendata
-00659R,國泰日本反1,TWSE,leveraged,True,李偉正,富時日本單日反向1倍指數,2016-04-25,2016-05-09,2024-01-01,槓桿/反向指數股票型基金,是,3080000,國泰日本ETF傘型證券投資信託基金之富時日本單日反向1倍證券投資信託基金,Cathay FTSE Japan Daily Inversed ETF Fund,twse_opendata
-00660,元大歐洲50,TWSE,passive_equity,False,劉宗聖,歐洲 STOXX50 指數,2016-06-01,2016-06-15,2024-01-01,國外成分證券指數股票型基金,是,8031000,元大已開發國家傘型證券投資信託基金之元大歐洲50證券投資信託基金,Yuanta EURO STOXX 50 ETF,twse_opendata
-00661,元大日經225,TWSE,passive_equity,False,劉宗聖,日經225指數,2016-06-01,2016-06-15,2024-01-01,國外成分證券指數股票型基金,是,23925000,元大已開發國家傘型證券投資信託基金之元大日經225證券投資信託基金,Yuanta Nikkei 225 ETF,twse_opendata
-00662,富邦NASDAQ,TWSE,passive_equity,False,黃昭棠,NASDAQ-100 指數,2016-06-03,2016-06-17,2024-01-01,國外成分證券指數股票型基金,是,751529000,富邦NASDAQ-100證券投資信託基金,Fubon  NASDAQ-100  ETF,twse_opendata
-00663L,國泰臺灣加權正2,TWSE,leveraged,True,李偉正,臺灣證券交易所發行量加權股價日報酬正向兩倍指數,2016-07-01,2016-07-14,2024-01-01,槓桿/反向指數股票型基金,否,112663000,國泰臺指ETF傘型證券投資信託基金之臺灣加權指數單日正向2倍證券投資信託基金,Cathay TAIEX Daily Leveraged 2X ETF Fund,twse_opendata
-00664R,國泰臺灣加權反1,TWSE,leveraged,True,李偉正,臺灣證券交易所發行量加權股價日報酬反向一倍指數,2016-07-01,2016-07-14,2024-01-01,槓桿/反向指數股票型基金,否,776575000,國泰臺指ETF傘型證券投資信託基金之臺灣加權指數單日反向1倍證券投資信託基金,Cathay TAIEX Daily Inversed ETF,twse_opendata
-00665L,富邦恒生國企正2,TWSE,leveraged,True,黃昭棠,恒生國企槓桿指數,2016-07-21,2016-08-05,2024-01-01,槓桿/反向指數股票型基金,是,467465000,富邦恒生國企ETF傘型證券投資信託基金之富邦恒生國企單日正向兩倍證券投資信託基金,Fubon Hang Seng China Enterprises Leveraged Index ETF,twse_opendata
-00666R,富邦恒生國企反1,TWSE,leveraged,True,黃昭棠,恒生國企短倉指數,2016-07-21,2016-08-05,2024-01-01,槓桿/反向指數股票型基金,是,14624000,富邦恒生國企ETF傘型證券投資信託基金之富邦恒生國企單日反向一倍證券投資信託基金,Fubon Hang Seng China Enterprises Inverse Index ETF,twse_opendata
-00667,元大韓國,TWSE,passive_equity,False,黃古彬,KOSPI 200指數,2016-09-30,2016-10-07,2024-01-01,國外成分證券指數股票型基金,是,929000,元大韓國KOSPI 200證券投資信託基金,Yuanta KOSPI 200 ETF,twse_opendata
-00668,國泰美國道瓊,TWSE,passive_equity,False,李偉正,道瓊斯工業平均指數,2016-10-03,2016-10-17,2024-01-01,國外成分證券指數股票型基金,是,11558000,國泰美國ETF傘型證券投資信託基金之道瓊工業平均指數證券投資信託基金,Cathay DJIA ETF,twse_opendata
-00668K,國泰美國道瓊+U,TWSE,passive_equity,False,李偉正,道瓊斯工業平均指數,2017-10-24,2017-10-24,2024-01-01,國外成份/加掛外幣證券指數股票型基金,是,10500,國泰道瓊工業平均指數證券投資信託基金(加掛美元受益憑證)-國外成份/加掛外幣證券指數股票型基金,Cathay Dow Jones Industrial Average ETF(USD),twse_opendata
-00669R,國泰美國道瓊反1,TWSE,leveraged,True,李偉正,道瓊斯工業平均單日反向指數,2016-10-03,2016-10-17,2024-01-01,槓桿/反向指數股票型基金,是,208617000,國泰美國ETF傘型證券投資信託基金之道瓊工業平均指數單日反向1倍證券投資信託基金,Cathay DJIA Inv 1X ETF,twse_opendata
-00670L,富邦NASDAQ正2,TWSE,leveraged,True,黃昭棠,NASDAQ-100正向2倍指數,2017-02-14,2017-02-21,2024-01-01,槓桿/反向指數股票型基金,是,75145000,富邦NASDAQ-100 ETF 傘型證券投資信託基金之富邦NASDAQ-100單日正向兩倍證券投資信託基金,Fubon NASDAQ-100  2X Leveraged Index ETF,twse_opendata
-00671R,富邦NASDAQ 反1,TWSE,leveraged,True,黃昭棠,NASDAQ-100反向1倍指數,2016-02-14,2017-02-21,2024-01-01,槓桿/反向指數股票型基金,是,546884000,富邦NASDAQ-100 ETF傘型證券投資信託基金之富邦NASDAQ-100 單日反向一倍證券投資信託基金,Fubon NASDAQ-100 -1X  Inverse Index ETF,twse_opendata
-00672L,元大S&amp;P原油正2,TWSE,leveraged,True,劉宗聖,標普高盛原油日報酬正向兩倍ER指數,2016-09-30,2016-10-07,2024-01-01,槓桿/反向指數股票型基金,是,2036187000,元大標普油金傘型期貨信託基金之元大標普高盛原油ER單日正向2倍指數股票型期貨信託基金,Yuanta S&amp;P GSCI Crude Oil 2x Leveraged ER Futures ETF,twse_opendata
-00673R,期元大S&amp;P原油反1(原名：元大S&amp;P原油反1),TWSE,leveraged,True,劉宗聖,標普高盛原油日報酬反向一倍ER指數,2016-09-30,2016-10-07,2024-01-01,槓桿/反向指數股票型基金,是,849050646,元大標普油金傘型期貨信託基金之元大標普高盛原油ER單日反向1倍指數股票型期貨信託基金,Yuanta S&amp;P GSCI Crude Oil 1x Inverse ER Futures ETF,twse_opendata
-00674R,期元大S&amp;P黃金反1(原名：元大S&amp;P黃金反1),TWSE,leveraged,True,劉宗聖,標普高盛黃金日報酬反向一倍ER指數,2016-09-30,2016-10-07,2024-01-01,槓桿/反向指數股票型基金,是,16420555,元大標普油金傘型期貨信託基金之元大標普高盛黃金ER單日反向1倍指數股票型期貨信託基金,Yuanta S&amp;P GSCI Gold 1x Inverse ER FuturesETF,twse_opendata
-00675L,FB臺灣加權正2,TWSE,leveraged,True,黃昭棠,臺灣證券交易所發行量加權股價日報酬正向兩倍指數,2016-09-23,2016-10-05,2024-01-01,槓桿/反向指數股票型基金,否,109786000,富邦臺灣加權ETF傘型證券投資信託基金之富邦臺灣加權單日正向兩倍證券投資信託基金,Fubon TAIEX Daily 2X  Leveraged ETF,twse_opendata
-00676R,富邦臺灣加權反1,TWSE,leveraged,True,黃昭棠,臺灣證券交易所發行量加權股價日報酬反向一倍指數,2016-09-23,2016-10-05,2024-01-01,槓桿/反向指數股票型基金,否,172833683,富邦臺灣加權ETF傘型證券投資信託基金之富邦臺灣加權單日反向一倍證券投資信託基金,Fubon TAIEX Daily-1X Inverse ETF,twse_opendata
-00677U,期富邦VIX,TWSE,commodity,False,史綱,標普500波動率短期期貨ER指數,2016-12-22,2016-12-30,2024-01-01,指數股票型期貨信託基金,是,1486708000,富邦標普500波動率短期期貨ER指數股票型期貨信託基金,Fubon S&amp;P 500 VIX  Short-Term Futures ETF,twse_opendata
-00678,群益那斯達克生技,TWSE,passive_equity,False,賴政昇,那斯達克生技指數(NBI),2017-01-09,2017-01-16,2024-01-01,國外成分證券指數股票型基金,是,7948000,群益那斯達克生技證券投資信託基金,CAPITAL NASDAQ BIOTECHNOLOGY INDEX EXCHANGE,twse_opendata
-00679B,元大美債20年,TPEx,bond,False,元大,ICE 20+年期美國公債指數,2017-01-11,2017-01-17,2024-01-01,債券型,,,元大美債20年,,tpex_seed
-00680L,元大美債20正2,TWSE,leveraged,True,劉宗聖,ICE美國政府20+年期債券2倍槓桿指數,2017-01-11,2017-01-17,2024-01-01,槓桿/反向指數股票型基金,是,1875576000,元大美國政府20年期(以上)債券ETF傘型證券投資信託基金之元大美國政府20年期(以上)債券單日正向2倍證券投資信託基金,Yuanta Daily U.S. Treasury 20+ Year Bond Bull 2X ETF,twse_opendata
-00681R,元大美債20反1,TWSE,leveraged,True,劉宗聖,ICE美國政府20+年期債券1倍反向指數,2017-01-11,2017-01-17,2024-01-01,槓桿/反向指數股票型基金,是,7594000,元大美國政府20年期(以上)債券ETF傘型證券投資信託基金之元大美國政府20年期(以上)債券單日反向1倍證券投資信託基金,Yuanta Daily U.S. Treasury 20+ Year Bond Bear 1X ETF,twse_opendata
-00682U,期元大美元指數(原名：元大美元指數),TWSE,commodity,False,劉宗聖,標普美元ER指數,2017-03-06,2017-03-14,2024-01-01,指數股票型期貨信託基金,是,7644000,元大標普美元指數傘型期貨信託基金之元大標普美元ER指數股票型期貨信託基金,Yuanta S&amp;P US Dollar ER Futures ETF,twse_opendata
-00683L,期元大美元指正2(原名：元大美元指數正2),TWSE,leveraged,True,劉宗聖,標普美元日報酬正向兩倍ER指數,2017-03-06,2017-03-14,2024-01-01,槓桿/反向指數股票型基金,是,11434000,元大標普美元指數傘型期貨信託基金之元大標普美元ER單日正向2倍指數股票型期貨信託基金,Yuanta S&amp;P US Dollar 2x Leverage ER Futures ETF,twse_opendata
-00684R,期元大美元指反1(原名：元大美元指數反1),TWSE,leveraged,True,劉宗聖,標普美元日報酬反向一倍ER指數,2017-03-06,2017-03-14,2024-01-01,槓桿/反向指數股票型基金,是,9688000,元大標普美元指數傘型期貨信託基金之元大標普美元ER單日反向1倍指數股票型期貨信託基金,Yuanta S&amp;P US Dollar 1x Inverse ER Futures ETF,twse_opendata
-00685L,群益臺灣加權正2,TWSE,leveraged,True,賴政昇,臺灣證券交易所發行量加權股價日報酬正向兩倍指數,2017-03-23,2017-03-30,2024-01-01,槓桿/反向指數股票型基金,否,40139000,群益臺灣加權指數ETF傘型證券投資信託基金之群益臺灣加權指數單日正向2倍證券投資信託基金,CAPITAL TAIEX DAILY LEVERAGED 2X ETF,twse_opendata
-00686R,群益臺灣加權反1,TWSE,leveraged,True,賴政昇,臺灣證券交易所發行量加權股價日報酬反向一倍指數,2017-03-23,2017-03-30,2024-01-01,槓桿/反向指數股票型基金,否,178276000,群益臺灣加權指數ETF傘型證券投資信託基金之群益臺灣加權指數單日反向1倍證券投資信託基金,CAPITAL TAIEX DAILY INVERSED -1X ETF,twse_opendata
-00687B,國泰20年美債,TPEx,bond,False,國泰,彭博20年期(以上)美國公債指數,2017-04-13,2017-04-20,2024-01-01,債券型,,,國泰20年美債,,tpex_seed
-00688L,國泰20年美債正2,TWSE,leveraged,True,李偉正,彭博20年期(以上)美國公債單日正向2倍指數,2017-04-06,2017-04-13,2024-01-01,槓桿/反向指數股票型基金,是,785115000,國泰美國債券ETF傘型證券投資信託基金之20年期(以上)美國公債指數單日正向2倍證券投資信託基金,Cathay US Treasury 20+ YR Lev 2X ETF,twse_opendata
-00689R,國泰20年美債反1,TWSE,leveraged,True,李偉正,彭博20年期(以上)美國公債單日反向1倍指數,2017-04-06,2017-04-13,2024-01-01,槓桿/反向指數股票型基金,是,6889000,國泰美國債券ETF傘型證券投資信託基金之20年期(以上)美國公債指數單日反向1倍證券投資信託基金,Cathay US Treasury 20+ YR Inv 1X ETF,twse_opendata
-00690,兆豐藍籌30,TWSE,passive_equity,False,陳佩君,藍籌30指數,2017-03-27,2017-03-31,2024-01-01,國內成分證券指數股票型基金,否,80830000,兆豐臺灣藍籌30ETF傘型證券投資信託基金之兆豐臺灣藍籌30 ETF證券投資信託基金,Mega Taiwan Blue Chip 30 ETF,twse_opendata
-00691R,兆豐藍籌反一,TWSE,leveraged,False,程聰仁,藍籌30反向一倍指數,2017-03-27,2017-03-31,2024-01-01,槓桿/反向指數股票型基金,否,2106000,兆豐國際臺灣藍籌30ETF傘型證券投資信託基金之兆豐國際臺灣藍籌30單日反向一倍ETF證券投資信託基金,Mega Taiwan Blue Chip 30 Daily Inverse ETF,twse_opendata
-00692,富邦公司治理,TWSE,passive_equity,False,黃昭棠,臺灣證券交易所公司治理100指數,2017-05-04,2017-05-17,2024-01-01,國內成分證券指數股票型基金,否,620280000,富邦臺灣公司治理100證券投資信託基金,Fubon TWSE Corporate Governance 100 ETF,twse_opendata
-00693U,期街口S&amp;P黃豆,TWSE,commodity,False,方詳棋,標普高盛黃豆ER指數(S&amp;P GSCI Soybeans ER Index),2017-04-17,2017-04-25,2024-01-01,指數股票型期貨信託基金,是,99166000,街口標普高盛黃豆ER指數股票型期貨信託基金,JKO S&amp;P GSCI Soybeans ER Futures ETF,twse_opendata
-00694B,富邦美債1-3,TPEx,bond,False,富邦,彭博1-3年期美國公債指數,2017-06-08,2017-06-15,2024-01-01,債券型,,,富邦美債1-3,,tpex_seed
-00695B,富邦美債7-10,TPEx,bond,False,富邦,彭博7-10年期美國公債指數,2017-06-08,2017-06-15,2024-01-01,債券型,,,富邦美債7-10,,tpex_seed
-00696B,富邦美債20年,TPEx,bond,False,富邦,彭博20年期(以上)美國公債指數,2017-06-08,2017-06-15,2024-01-01,債券型,,,富邦美債20年,,tpex_seed
-00697B,元大美債7-10,TPEx,bond,False,元大,ICE 7-10年期美國公債指數,2017-06-23,2017-06-29,2024-01-01,債券型,,,元大美債7-10,,tpex_seed
-00698L,元大美債7-10正2,TWSE,leveraged,True,黃古彬,ICE美國政府7-10年期債券2倍槓桿指數,2017-06-15,2017-06-23,2024-01-01,槓桿/反向指數股票型基金,是,1149000,元大美國政府7至10年期債券ETF傘型證券投資信託基金之元大美國政府7至10年期債券單日正向2倍證券投資信託基金,Yuanta Daily U.S. Treasury 7-10 Year Bond Bull 2X ETF,twse_opendata
-00699R,元大美債7-10反1,TWSE,leveraged,True,黃古彬,ICE美國政府7-10年期債券1倍反向指數,2017-06-15,2017-06-23,2024-01-01,槓桿/反向指數股票型基金,是,714000,元大美國政府7至10年期債券ETF傘型證券投資信託基金之元大美國政府7至10年期債券單日反向1倍證券投資信託基金,Yuanta Daily U.S. Treasury 7-10 Year Bond Bear 1X ETF,twse_opendata
-00700,富邦恒生國企,TWSE,passive_equity,False,黃昭棠,恒生中國企業指數,2017-07-21,2017-07-28,2024-01-01,國外成分證券指數股票型基金,是,35983000,富邦恒生國企ETF證券投資信託基金,Fubon Hang Seng China Enterprises  ETF,twse_opendata
-00701,國泰臺灣低波動股利精選30基金,TWSE,passive_equity,False,李偉正,臺灣指數公司低波動精選30指數,2017-08-09,2017-08-17,2024-01-01,國內成分證券指數股票型基金,否,181391000,國泰低波動ETF傘型證券投資信託基金之臺灣低波動股利精選30證券投資信託基金,Cathay TIP TAIEX +Low Volatility Select 30 ETF,twse_opendata
-00702,國泰標普低波高息,TWSE,passive_equity,False,李偉正,標普500低波動高股息指數,2017-08-09,2017-08-17,2024-01-01,國外成分證券指數股票型基金,是,6688000,國泰低波動ETF傘型證券投資信託基金之美國標普500低波動高股息證券投資信託基金,Cathay S&amp;P 500 Low Volatility High,twse_opendata
-00703,台新MSCI中國,TWSE,passive_equity,False,賴昭吟,MSCI中國指數,2017-08-02,2017-08-10,2024-01-01,國外成分證券指數股票型基金,是,10050000,台新MSCI新興市場國家傘型ETF證券投資信託基金之台新MSCI中國證券投資信託基金,Taishin MSCI China ETF,twse_opendata
-00704L,台新MSCI台灣正2,TWSE,leveraged,True,賴昭吟,MSCI台灣正向2倍指數,2017-08-02,2017-08-10,2024-01-01,槓桿/反向指數股票型基金,否,1378000,台新MSCI新興市場國家傘型ETF證券投資信託基金之台新MSCI台灣單日正向2倍證券投資信託基金,Taishin MSCI Taiwan Daily Leveraged 2X ETF,twse_opendata
-00705R,台新MSCI台灣反1,TWSE,leveraged,True,賴昭吟,MSCI台灣反向1倍指數,2017-08-02,2017-08-10,2024-01-01,槓桿/反向指數股票型基金,否,1815000,台新MSCI新興市場國家傘型ETF證券投資信託基金之台新MSCI台灣單日反向1倍證券投資信託基金,Taishin MSCI Taiwan Daily Inverse ETF,twse_opendata
-00706L,期元大S&amp;P日圓正2(原名：元大S&amp;P日圓正2),TWSE,leveraged,True,劉宗聖,標普日圓期貨日報酬正向2倍ER指數,2017-08-23,2017-09-01,2024-01-01,槓桿/反向指數股票型基金,是,158270853,元大標普金日傘型期貨信託基金之元大標普日圓ER單日正向2倍指數股票型期貨信託基金,Yuanta S&amp;P Japanese Yen 2x Leverage ER Futures ETF,twse_opendata
-00707R,期元大S&amp;P日圓反1(原名：元大S&amp;P日圓反1),TWSE,leveraged,True,劉宗聖,標普日圓期貨日報酬反向1倍ER指數,2017-08-23,2017-09-01,2024-01-01,槓桿/反向指數股票型基金,是,5855000,元大標普金日傘型期貨信託基金之元大標普日圓ER單日反向1倍指數股票型期貨信託基金,Yuanta S&amp;P Japanese Yen 1x Inverse ER Futures ETF,twse_opendata
-00708L,期元大S&amp;P黃金正2(原名：元大S&amp;P黃金正2),TWSE,leveraged,True,劉宗聖,標普高盛黃金日報酬正向兩倍ER指數,2017-08-23,2017-09-01,2024-01-01,槓桿/反向指數股票型基金,是,111073000,元大標普金日傘型期貨信託基金之元大標普高盛黃金ER單日正向2倍指數股票型期貨信託基金,Yuanta S&amp;P GSCI Gold 2x Leveraged ER Futures ETF,twse_opendata
-00709,富邦歐洲,TWSE,passive_equity,False,黃昭棠,富時發展歐洲指數,2017-08-07,2017-08-15,2024-01-01,國外成分證券指數股票型基金,是,15960000,富邦富時歐洲ETF證券投資信託基金,Fubon FTSE Developed Europe ETF,twse_opendata
-00710B,復華彭博非投等債,TWSE,bond,False,杜俊雄,彭博1至5年期美元高收益債券(不含中國)發行量五億美元產業10%上限指數,2017-08-09,2017-08-21,2024-01-01,國外成分證券指數股票型基金,是,183261000,復華全球收益ETF傘型證券投資信託基金之復華1至5年期非投資等級債券證券投資信託基金,Fuh Hwa 1-5 Yr High Yield ETF,twse_opendata
-00711B,復華彭博新興債,TWSE,bond,False,杜俊雄,彭博新興市場10年期以上美元投資等級債券(不含中國)國家10%上限指數,2017-08-09,2017-08-21,2024-01-01,國外成分證券指數股票型基金,是,872261000,復華全球收益ETF傘型證券投資信託基金之復華新興市場10年期以上債券證券投資信託基金,Fuh Hwa Emerging Market 10+ Yr Bond ETF,twse_opendata
-00712,復華富時不動產,TWSE,passive_equity,False,杜俊雄,富時NAREIT抵押權型不動產投資信託指數,2017-08-09,2017-08-21,2024-01-01,國外成分證券指數股票型基金,是,4954011000,復華全球收益ETF傘型證券投資信託基金之復華富時不動產證券化證券投資信託基金,Fuh Hwa FTSE Mortgage REITs ETF,twse_opendata
-00713,元大台灣高息低波,TWSE,passive_equity,False,劉宗聖,臺灣指數公司特選高股息低波動指數,2017-09-19,2017-09-27,2024-01-01,國內成分證券指數股票型基金,否,1895512000,元大台灣高股息低波動ETF證券投資信託基金,Yuanta Taiwan High Dividend Low Volatility ETF,twse_opendata
-00714,群益道瓊美國地產,TWSE,passive_equity,False,賴政昇,道瓊美國地產指數(Dow Jones U.S. Real Estate Index),2017-10-20,2017-10-27,2024-01-01,國外成分證券指數股票型基金,是,22067000,群益道瓊美國地產ETF證券投資信託基金,CAPITAL DOW JONES U.S. REAL ESTATE  INDEX EXCHANGE TRADED FUND,twse_opendata
-00715L,期街口布蘭特正2,TWSE,leveraged,True,方詳棋,標普高盛布蘭特原油日報酬正向兩倍ER指數,2017-11-08,2017-11-16,2024-01-01,槓桿/反向指數股票型基金,是,84191793,街口標普高盛布蘭特原油ER單日正向2倍指數股票型期貨信託基金,JKO S&amp;P GSCI Brent Crude 2x Leveraged ER Futures ETF,twse_opendata
-00716R,華頓S&amp;P布蘭特反1,TWSE,leveraged,True,王律傑,標普高盛布蘭特原油日報酬反向一倍ER指數,2017-11-08,2017-11-16,2024-01-01,指數股票型期貨信託基金,是,158000,華頓標普高盛布蘭特原油傘型期貨信託基金之華頓標普高盛布蘭特原油ER單日反向1倍指數股票型期貨信託基金,Paradigm S&amp;P GSCI Brent Crude 1X Inverse ER Futures ETF,twse_opendata
-00717,富邦美國特別股,TWSE,passive_equity,False,黃昭棠,標普美國特別股指數,2017-11-13,2017-11-29,2024-01-01,國外成分證券指數股票型基金,是,139605000,富邦標普美國特別股ETF證券投資信託基金,Fubon S&amp;P US Preferred Stock ETF,twse_opendata
-00719B,元大美債1-3,TPEx,bond,False,元大,ICE 1-3年期美國公債指數,2018-01-12,2018-01-18,2024-01-01,債券型,,,元大美債1-3,,tpex_seed
-00720B,元大投資級公司債,TPEx,bond,False,元大,彭博美國投資級公司債指數,2018-01-12,2018-01-18,2024-01-01,債券型,,,元大投資級公司債,,tpex_seed
-00722B,群益15年IG電信債,TPEx,bond,False,群益,彭博美國電信業15年期以上投資級債券指數,2018-01-23,2018-01-30,2024-01-01,債券型,,,群益15年IG電信債,,tpex_seed
-00724B,群益15年IG金融債,TPEx,bond,False,群益,彭博美國金融業15年期以上投資級債券指數,2018-01-23,2018-01-30,2024-01-01,債券型,,,群益15年IG金融債,,tpex_seed
-00725B,國泰投資級公司債,TPEx,bond,False,國泰,彭博10年期以上(美元計價)投資等級成熟市場大型公司債券指數,2018-01-26,2018-02-02,2024-01-01,債券型,,,國泰投資級公司債,,tpex_seed
-00728,第一金工業30,TWSE,passive_equity,False,尤昭文,臺灣工業菁英30指數,2018-04-10,2018-04-18,2024-01-01,國內成分證券指數股票型基金,否,39423000,第一金臺灣工業菁英30ETF傘型證券投資信託基金之第一金臺灣工業菁英30 ETF證券投資信託基金,FSITC Taiwan Industry Elite 30 ETF,twse_opendata
-00729R,第一金工業30反一,TWSE,leveraged,False,薛淑梅,臺灣工業菁英30日報酬反向一倍指數,2018-04-10,2018-04-18,2024-01-01,槓桿/反向指數股票型基金,否,598000,第一金臺灣工業菁英30ETF傘型證券投資信託基金之第一金臺灣工業菁英30單日反向一倍ETF證券投資信託基金,FSITC Taiwan Industry Elite 30 Daily -1X Inverse ETF,twse_opendata
-00730,富邦臺灣優質高息,TWSE,passive_equity,False,黃昭棠,道瓊斯台灣優質高股息30指數,2018-01-30,2018-02-08,2024-01-01,國內成分證券指數股票型基金,否,74544000,富邦道瓊臺灣優質高息30ETF證券投資信託基金,Fubon Dow Jones Taiwan High-Quality Dividend 30 ETF,twse_opendata
-00731,復華富時高息低波,TWSE,passive_equity,False,杜俊雄,富時台灣高股息低波動指數,2018-04-12,2018-04-20,2024-01-01,國內成分證券指數股票型基金,否,25100000,復華富時台灣高股息低波動證券投資信託基金,Fuh Hwa FTSE Taiwan High Div Low Vol ETF,twse_opendata
-00732,國泰RMB短期報酬,TWSE,bond,False,張錫,富時中國國債及政策性銀行債券0-1 年精選指數,2018-05-04,2018-05-14,2024-01-01,國外成分證券指數股票型基金,是,772000,國泰優勢收益傘型證券投資信託基金之富時人民幣短期報酬ETF 證券投資信託基金,Cathay FTSE Chinese Government and Policy Bank Bond 0-1Year Select ETF,twse_opendata
-00733,臺灣中小A級動能50 ETF基金,TWSE,passive_equity,False,黃昭棠,臺灣指數公司中小型A級動能50指數,2018-05-04,2018-05-17,2024-01-01,國內成分證券指數股票型基金,否,73466000,富邦臺灣中小A級動能50 ETF證券投資信託基金,Fubon Taiwan Small-Mid Cap Alpha Momentum 50 ETF,twse_opendata
-00735,國泰臺韓科技,TWSE,passive_equity,False,李偉正,臺韓資訊科技指數,2018-05-29,2018-06-11,2024-01-01,國外成分證券指數股票型基金,是,68789000,國泰趨勢ETF傘型證券投資信託基金之臺韓科技證券投資信託基金,Cathay Korea/Taiwan IT Premier ETF,twse_opendata
-00736,國泰富時新興市場基金,TWSE,passive_equity,False,李偉正,富時新興市場（納入A股）指數,2018-05-29,2018-06-11,2024-01-01,國外成分證券指數股票型基金,是,6227000,國泰趨勢ETF傘型證券投資信託基金之富時新興市場證券投資信託基金,Cathay FTSE Emerging Markets ETF,twse_opendata
-00737,國泰AI機器人,TWSE,passive_equity,False,李偉正,納斯達克 CTA 全球人工智慧及機器人指數,2018-05-29,2018-06-11,2024-01-01,國外成分證券指數股票型基金,是,22538000,國泰趨勢ETF傘型證券投資信託基金之納斯達克全球人工智慧及機器人證券投資信託基金,Cathay Nasdaq CTA Artificial Inteligence and Robotics ETF,twse_opendata
-00738U,期元大道瓊白銀(原名：元大道瓊白銀),TWSE,commodity,False,劉宗聖,道瓊白銀ER指數,2018-05-23,2018-06-01,2024-01-01,指數股票型期貨信託基金,是,250799000,元大道瓊白銀ER指數股票型期貨信託基金,Yuanta DJCI Silver ER Futures ETF,twse_opendata
-00739,元大MSCI A股,TWSE,passive_equity,False,劉宗聖,MSCI中國A股國際通指數,2018-06-19,2018-06-27,2024-01-01,國外成分證券指數股票型基金,是,25988000,元大MSCI中國A股國際通ETF證券投資信託基金,Yuanta MSCI CHINA  A  ETF,twse_opendata
-00742,新光內需收益,TWSE,passive_equity,False,劉坤錫,臺灣指數公司特選內需高收益指數,2018-06-12,2018-06-22,2024-01-01,國內成分證券指數股票型基金,否,1610000,新光特選內需收益ETF證券投資信託基金,Shin Kong Domestic Demand High Dividend ETF,twse_opendata
-00743,國泰中國A150,TWSE,passive_equity,False,張錫,富時中國A150指數,2018-07-25,2018-08-03,2024-01-01,國外成分證券指數股票型基金,是,2347000,國泰新中國傘型證券投資信託基金之富時中國A150ETF證券投資信託基金,Cathay FTSE China A150 ETF,twse_opendata
-00746B,富邦A級公司債,TPEx,bond,False,富邦,彭博美國10年期以上A級公司債券指數,2018-04-27,2018-05-08,2024-01-01,債券型,,,富邦A級公司債,,tpex_seed
-00751B,元大AAA至A公司債,TPEx,bond,False,元大,彭博10年期以上AAA-A美元公司債流動性指數,2018-06-22,2018-06-28,2024-01-01,債券型,,,元大AAA至A公司債,,tpex_seed
-00752,中信中國50,TWSE,passive_equity,False,陳金榮,MSCI中國外資自由投資50不含A及B股指數,2018-10-24,2018-10-31,2024-01-01,國外成分證券指數股票型基金,是,306216000,中國信託中國外資自由投資50不含A及B股傘型ETF證券投資信託基金之中國信託MSCI中國外資自由50不含A及B股ETF證券投資信託基金,CTBC MSCI China Free 50 ex A and B ETF,twse_opendata
-00753L,中信中國50正2,TWSE,leveraged,True,陳金榮,MSCI中國外資自由投資50不含A及B股單日正向2倍指數,2018-10-24,2018-10-31,2024-01-01,槓桿/反向指數股票型基金,是,721657000,中國信託中國外資自由投資50不含A及B股傘型ETF證券投資信託基金之中國信託MSCI中國外資自由投資50不含A及B股單日正向2倍ETF證券投資信託基金,CTBC MSCI China Free 50 ex A and B Daily Leveraged 2X ETF,twse_opendata
-00757,統一FANG+,TWSE,passive_equity,False,鄧潤澤,NYSE FANG+ Index,2018-11-27,2018-12-06,2024-01-01,國外成分證券指數股票型基金,是,295994000,統一NYSE FANG+ ETF證券投資信託基金,UPAMC NYSE  FANG+ ETF,twse_opendata
-00761B,國泰A級公司債,TPEx,bond,False,國泰,彭博10年期以上特選(AAA-A級)美元公司債指數,2018-08-09,2018-08-16,2024-01-01,債券型,,,國泰A級公司債,,tpex_seed
-00762,元大全球AI,TWSE,passive_equity,False,劉宗聖,STOXX全球人工智慧指數,2019-01-16,2019-01-23,2024-01-01,國外成分證券指數股票型基金,是,48248000,元大全球人工智慧ETF證券投資信託基金,Yuanta  STOXX  Global  Artificial Intelligence  ETF,twse_opendata
-00763U,期街口道瓊銅,TWSE,commodity,False,方詳棋,道瓊銅ER指數 (Dow Jones Commodity Index North American Copper ER),2018-12-12,2018-12-19,2024-01-01,指數股票型期貨信託基金,是,54565000,街口道瓊銅ER指數股票型期貨信託基金,JKO Dow Jones Copper ER Futures ETF,twse_opendata
-00766L,台新MSCI中國正2,TWSE,leveraged,True,賴昭吟,MSCI中國外資自由投資單日正向2倍指數,2019-01-16,2019-01-23,2024-01-01,槓桿/反向指數股票型基金,是,1946000,台新MSCI中國外資自由投資單日正向2倍ETF證券投資信託基金,Taishin MSCI China Free Leveraged 2X Daily ETF,twse_opendata
-00767,FH美國金融股,TWSE,passive_equity,False,杜俊雄,道瓊斯美國金融服務業指數,2019-01-15,2019-01-28,2024-01-01,國外成分證券指數股票型基金,是,4090000,復華多元資產傘型證券投資信託基金之復華美國金融服務業股票ETF證券投資信託基金,Fuh Hwa Dow Jones US Financial Services Equity ETF,twse_opendata
-00770,國泰標普北美科技ETF基金,TWSE,passive_equity,False,李偉正,標普北美科技行業指數,2019-01-22,2019-01-29,2024-01-01,國外成分證券指數股票型基金,是,82958000,國泰標普北美科技ETF證券投資信託基金,Cathay North American Technology ETF,twse_opendata
-00771,元大US高息特別股,TWSE,passive_equity,False,劉宗聖,標普美國高收益特別股指數,2019-04-25,2019-05-16,2024-01-01,國外成分證券指數股票型基金,是,14225000,元大標普美國高息特別股ETF證券投資信託基金,Yuanta S&amp;P U.S. High Yield Preferred Stock ETF,twse_opendata
-00772B,中信高評級公司債,TPEx,bond,False,中信,彭博10年期以上高評級美元公司債指數,2018-12-12,2019-01-31,2024-01-01,債券型,,,中信高評級公司債,,tpex_seed
-00773B,中信優先金融債,TPEx,bond,False,中信,彭博10年期以上美元優先順位金融債券指數,2018-12-12,2019-01-31,2024-01-01,債券型,,,中信優先金融債,,tpex_seed
-00774B,新光中國政金綠債,TWSE,passive_equity,False,劉坤錫,中債-10年期國債及政策銀行債綠色增強指數,2019-01-25,2019-02-27,2024-01-01,國外成分證券指數股票型基金,是,2350000,新光全方位收益ETF傘型證券投資信託基金之新光中國10年期國債及政策金融附加綠債債券ETF 證券投資信託基金,Shin Kong 10 Years China Treasury Policy Bank Green Bond ETF,twse_opendata
-00774C,00774C,TWSE,passive_equity,False,劉坤錫,中債-10年期國債及政策銀行債綠色增強指數,2019-07-01,2019-08-28,2024-01-01,國外成份/加掛外幣證券指數股票型基金,是,1950000,新光全方位收益ETF傘型證券投資信託基金之新光中國10年期國債及政策金融附加綠債債券ETF證券投資信託基金-加掛人民幣ETF受益憑證-國外成份/加掛外幣證券指數股票型基金,Shin Kong 10 Years China Treasury Policy Bank Green Bond ETF RMB,twse_opendata
-00775B,新光投等債15+,TWSE,bond,False,賴昭吟,富時15年期以上投資等級債券指數,2019-01-25,2019-02-15,2024-01-01,國外成分證券指數股票型基金,是,232100000,新光全方位收益ETF傘型證券投資信託基金之新光富時15年以上特選產業美元投資等級債券ETF證券投資信託基金,Shin Kong FTSE 15 Years Investment Grade USD Corporate Bond ETF,twse_opendata
-00776,新光ICE美國權值,TWSE,passive_equity,False,劉坤錫,NYSE 美國核心大型權值股指數,2019-01-25,2019-02-15,2024-01-01,國外成分證券指數股票型基金,是,100000,新光全方位收益ETF傘型證券投資信託基金之新光NYSE美國核心大型權值股ETF證券投資信託基金,Shin Kong NYSE US Core Large Cap ETF,twse_opendata
-00777B,凱基AAA至A公司債,TPEx,bond,False,凱基,彭博10年期以上AAA-A評等美元公司債券指數,2019-01-22,2019-02-15,2024-01-01,債券型,,,凱基AAA至A公司債,,tpex_seed
-00778B,凱基金融債20+,TPEx,bond,False,凱基,彭博20年期以上美元金融債券指數,2019-01-22,2019-02-15,2024-01-01,債券型,,,凱基金融債20+,,tpex_seed
-00779B,凱基美債25+,TPEx,bond,False,凱基,彭博25年期以上美國公債指數,2019-01-22,2019-02-15,2024-01-01,債券型,,,凱基美債25+,,tpex_seed
-00781B,FH富時不動產,TPEx,bond,False,FH,富時EPRA Nareit美國抵押貸款不動產投資信託指數,2019-02-22,2019-03-12,2024-01-01,債券型,,,FH富時不動產,,tpex_seed
-00782B,中信美國公債20年,TPEx,bond,False,中信,彭博美國公債20年期以上指數,2019-02-22,2019-03-12,2024-01-01,債券型,,,中信美國公債20年,,tpex_seed
-00783,富邦中証500,TWSE,passive_equity,False,黃昭棠,中証小盤500指數,2019-03-20,2019-03-27,2024-01-01,國外成分證券指數股票型基金,是,10531000,富邦多元收益ⅡETF傘型證券投資信託基金之富邦中國中証中小500ETF證券投資信託基金,Fubon China CSI 500 Index ETF,twse_opendata
-00784B,富邦中國政策金融債券,TPEx,bond,False,富邦,彭博中國政策性金融債券9-10年期指數,2019-03-14,2019-03-26,2024-01-01,債券型,,,富邦中國政策金融債券,,tpex_seed
-00785B,富邦金融投等債,TPEx,bond,False,富邦,彭博美國金融10年以上投資等級公司債指數,2019-03-14,2019-03-26,2024-01-01,債券型,,,富邦金融投等債,,tpex_seed
-00786B,元大10年IG銀行債,TPEx,bond,False,元大,ICE 10年期以上美元銀行業投資級公司債券指數,2019-03-19,2019-03-26,2024-01-01,債券型,,,元大10年IG銀行債,,tpex_seed
-00787B,群益A級公司債,TPEx,bond,False,群益,彭博10年期以上美元A級公司債券指數,2019-03-19,2019-03-26,2024-01-01,債券型,,,群益A級公司債,,tpex_seed
-00788B,中信高評級公司債,TPEx,bond,False,中信,彭博10年期以上Aa-A美元公司債券指數,2019-03-19,2019-03-26,2024-01-01,債券型,,,中信高評級公司債,,tpex_seed
-00789B,中信新興市場債,TPEx,bond,False,中信,彭博新興市場美元投資等級主權債券指數,2019-03-19,2019-03-26,2024-01-01,債券型,,,中信新興市場債,,tpex_seed
-00790B,復華中國政策債,TPEx,bond,False,復華,彭博中國7-10年政策金融債,2019-03-21,2019-04-08,2024-01-01,債券型,,,復華中國政策債,,tpex_seed
-00791B,復華新興企業債,TPEx,bond,False,復華,彭博新興市場高息企業債券指數,2019-03-21,2019-04-08,2024-01-01,債券型,,,復華新興企業債,,tpex_seed
-00792B,群益25年美債,TPEx,bond,False,群益,ICE 25年期以上美國公債指數,2019-03-21,2019-04-08,2024-01-01,債券型,,,群益25年美債,,tpex_seed
-00793B,群益7-10年IG電能債,TPEx,bond,False,群益,彭博美國電力公用事業7-10年投資等級債券指數,2019-04-17,2019-04-25,2024-01-01,債券型,,,群益7-10年IG電能債,,tpex_seed
-00795B,中信美國政府入息1-7,TPEx,bond,False,中信,彭博美國政府入息1-7年指數,2019-04-17,2019-04-25,2024-01-01,債券型,,,中信美國政府入息1-7,,tpex_seed
-0080,恒中國,TWSE,passive_equity,False,馮孝忠,恒生H股指數,2003-11-19,2009-08-14,2024-01-01,境外指數股票型基金,是,500000,恒生H股指數股票型基金,HANG SENG H-SHARE INDEX ETF,twse_opendata
-0081,恒香港,TWSE,passive_equity,False,馮孝忠,恒生指數,2004-09-13,2009-08-14,2024-01-01,境外指數股票型基金,是,250000,恒生指數股票型基金,HANG SENG INDEX ETF,twse_opendata
-008201,BP上證50,TWSE,passive_equity,False,丁紹曾,上證50指數,2009-04-09,2010-12-08,2024-01-01,境外指數股票型基金,是,349100,標智上證50中國指數基金(本基金配息來源可能為本金),W.I.S.E. - SSE 50 China Tracker,twse_opendata
-00830,國泰費城半導體,TWSE,passive_equity,False,李偉正,美國費城半導體指數,2019-04-23,2019-05-03,2024-01-01,國外成分證券指數股票型基金,是,639465000,國泰大三元ETF傘型證券投資信託基金之美國費城半導體證券投資信託基金,Cathay U.S. PHLX Semiconductor Sector ETF,twse_opendata
-00834B,第一金美債1-3,TPEx,bond,False,第一金,彭博1-3年期美國公債指數,2019-09-26,2019-10-03,2024-01-01,債券型,,,第一金美債1-3,,tpex_seed
-00836B,永豐10年A公司債,TPEx,bond,False,永豐,ICE 10年期以上A評等美元公司債券指數,2019-09-26,2019-10-03,2024-01-01,債券型,,,永豐10年A公司債,,tpex_seed
-00840B,凱基IG精選15+,TPEx,bond,False,凱基,彭博15年期以上美元優選投資等級公司債券指數,2019-12-19,2019-12-27,2024-01-01,債券型,,,凱基IG精選15+,,tpex_seed
-00841B,凱基AAA-A精選公司債,TPEx,bond,False,凱基,彭博10年期以上美元AAA-A精選公司債券指數,2019-12-19,2019-12-27,2024-01-01,債券型,,,凱基AAA-A精選公司債,,tpex_seed
-00844B,新光美債1-3,TPEx,bond,False,新光,彭博美國公債1-3年期指數,2020-01-09,2020-01-17,2024-01-01,債券型,,,新光美債1-3,,tpex_seed
-00845B,富邦新興投等債,TPEx,bond,False,富邦,彭博新興市場主權投資等級債券指數,2020-01-09,2020-01-17,2024-01-01,債券型,,,富邦新興投等債,,tpex_seed
-00846B,中信美國公債0-1,TPEx,bond,False,中信,彭博美國公債0-1年指數,2020-01-09,2020-01-17,2024-01-01,債券型,,,中信美國公債0-1,,tpex_seed
-00847B,中信美國公債1-3,TPEx,bond,False,中信,彭博美國公債1-3年指數,2020-01-09,2020-01-17,2024-01-01,債券型,,,中信美國公債1-3,,tpex_seed
-00848B,中信A-BBB公司債,TPEx,bond,False,中信,彭博10年期以上美元投資等級公司債指數,2020-01-09,2020-01-17,2024-01-01,債券型,,,中信A-BBB公司債,,tpex_seed
-00849B,中信美國公債20+,TPEx,bond,False,中信,彭博美國公債20年期以上指數,2020-01-09,2020-01-17,2024-01-01,債券型,,,中信美國公債20+,,tpex_seed
-00850,元大臺灣ESG永續,TWSE,passive_equity,False,劉宗聖,臺灣永續指數,2019-08-15,2019-08-23,2024-01-01,國內成分證券指數股票型基金,否,416944000,元大臺灣ESG永續ETF證券投資信託基金,Yuanta FTSE4Good TIP Taiwan ESG ETF,twse_opendata
-00851,台新全球AI,TWSE,passive_equity,False,賴昭吟,SG全球AI機器人精選指數,2019-07-30,2019-08-12,2024-01-01,國外成分證券指數股票型基金,是,6025000,台新SG全球AI機器人精選ETF證券投資信託基金,Taishin SG Global AI and Robotics Select ETF,twse_opendata
-00852L,國泰美國道瓊正2,TWSE,leveraged,True,李偉正,道瓊工業平均單日正向2倍指數,2019-08-15,2019-08-22,2024-01-01,槓桿/反向指數股票型基金,是,8865000,國泰道瓊工業平均指數單日正向2倍證券投資信託基金,Cathay DJIA Daily Leveraged 2X ETF,twse_opendata
-00853B,統一美債1-3,TPEx,bond,False,統一,ICE 1-3年期美國公債指數,2020-04-10,2020-04-22,2024-01-01,債券型,,,統一美債1-3,,tpex_seed
-00857B,新光美債20+,TPEx,bond,False,新光,彭博美國公債20年以上指數,2020-04-22,2020-04-30,2024-01-01,債券型,,,新光美債20+,,tpex_seed
-00858,永豐美國500大,TPEx,passive_equity,False,永豐,標普美國500大企業精選指數,2020-04-22,2020-04-30,2024-01-01,股票型,,,永豐美國500大,,tpex_seed
-00859B,群益AAA-AA公司債,TPEx,bond,False,群益,彭博10年期以上AAA-AA美元公司債券指數,2020-05-26,2020-06-03,2024-01-01,債券型,,,群益AAA-AA公司債,,tpex_seed
-00860B,群益1-5年IG債,TPEx,bond,False,群益,彭博1-5年美元投資等級債券指數,2020-05-26,2020-06-03,2024-01-01,債券型,,,群益1-5年IG債,,tpex_seed
-00861,元大全球未來通訊,TWSE,passive_equity,False,劉宗聖,NYSE FactSet全球未來通訊指數,2019-11-11,2019-11-19,2024-01-01,國外成分證券指數股票型基金,是,68912000,元大全球未來通訊ETF證券投資信託基金,Yuanta Global NextGen Communications ETF,twse_opendata
-00862B,中信投資級公司債,TPEx,bond,False,中信,彭博10年期以上美元投資等級公司債指數,2020-06-12,2020-06-22,2024-01-01,債券型,,,中信投資級公司債,,tpex_seed
-00863B,中信全球公司債,TPEx,bond,False,中信,彭博全球公司債(美元計價)指數,2020-06-12,2020-06-22,2024-01-01,債券型,,,中信全球公司債,,tpex_seed
-00865B,國泰US短期公債,TWSE,bond,False,李偉正,彭博美國短期公債收益指數,2019-11-15,2019-11-25,2024-01-01,國外成分證券指數股票型基金,是,235744000,國泰美國收益傘型證券投資信託基金之美國短期公債ETF證券投資信託基金,Cathay US Short Term Treasury ETF,twse_opendata
-00866,新光Shiller CAPE,TWSE,passive_equity,False,劉坤錫,Shiller Barclays CAPE&#174;美國產業價值投資指數,2019-11-08,2019-11-19,2024-01-01,國外成分證券指數股票型基金,是,1229000,新光優質收益ETF傘型證券投資信託基金之新光Shiller Barclays CAPE&#174;美國產業價值投資ETF證券投資信託基金,Shin Kong Shiller Barclays CAPE&#174; US Sector Value ETF,twse_opendata
-00867B,新光投等債15+,TPEx,bond,False,新光,彭博美元美國投資等級15年期以上公司債指數,2020-07-22,2020-07-30,2024-01-01,債券型,,,新光投等債15+,,tpex_seed
-00875,國泰網路資安ETF,TWSE,passive_equity,False,李偉正,納斯達克ISE 全球網路資安指數,2020-03-23,2020-03-30,2024-01-01,國外成分證券指數股票型基金,是,13488000,國泰網路資安ETF證券投資信託基金,Cathay Cyber Security ETF,twse_opendata
-00876,元大全球5G(原名:元大未來關鍵科技),TWSE,passive_equity,False,劉宗聖,iSTOXX全球5G關鍵科技指數,2020-06-22,2020-07-07,2024-01-01,國外成分證券指數股票型基金,是,74024000,元大全球5G關鍵科技ETF證券投資信託基金(原名:元大全球未來關鍵科技ETF證券投資信託基金),Yuanta Global 5G &amp; NexGen Telecommunication Components ETF,twse_opendata
-00878,國泰永續高股息,TWSE,passive_equity,False,李偉正,MSCI臺灣ESG永續高股息精選30指數,2020-07-10,2020-07-20,2024-01-01,國內成分證券指數股票型基金,否,18939290000,國泰台灣高股息傘型證券投資信託基金之台灣ESG永續高股息ETF證券投資信託基金,Cathay MSCI Taiwan ESG Sustainability High Dividend Yield ETF,twse_opendata
-00881,國泰台灣科技龍頭,TWSE,passive_equity,False,李偉正,臺灣指數公司特選臺灣上市上櫃FactSet科技龍頭通訊指數,2020-12-01,2020-12-10,2024-01-01,國內成分證券指數股票型基金,否,2353903000,國泰台灣科技龍頭ETF證券投資信託基金,Cathay Taiwan Technology Leader ETF,twse_opendata
-00882,中信中國高股息,TWSE,passive_equity,False,陳金榮,恒生中國高股息率指數,2021-01-27,2021-02-04,2024-01-01,國外成分證券指數股票型基金,是,2046849000,中國信託全球收益ETF傘型證券投資信託基金之中國信託恒生中國高股息ETF證券投資信託基金,CTBC Hang Seng China High Dividend Yield ETF,twse_opendata
-00885,富邦越南,TWSE,passive_equity,False,黃昭棠,富時越南30指數,2021-03-30,2021-04-19,2024-01-01,國外成分證券指數股票型基金,是,653738000,富邦富時越南ETF證券投資信託基金,Fubon FTSE Vietnam ETF,twse_opendata
-00890B,凱基ESG BBB債15+,TPEx,bond,False,凱基,彭博美元優選15年期以上ESG BBB公司債指數,2021-02-04,2021-02-15,2024-01-01,債券型,,,凱基ESG BBB債15+,,tpex_seed
-00891,中信關鍵半導體,TWSE,passive_equity,False,陳金榮,NYSE FactSet 臺灣ESG永續關鍵半導體指數,2021-05-20,2021-05-28,2024-01-01,國內成分證券指數股票型基金,否,1847090000,中國信託臺灣ESG永續關鍵半導體ETF證券投資信託基金,CTBC Taiwan ESG Leading Semiconductor ETF,twse_opendata
-00892,富邦台灣半導體,TWSE,passive_equity,False,黃昭棠,NYSE FactSet台灣核心半導體指數,2021-06-02,2021-06-10,2024-01-01,國內成分證券指數股票型基金,否,268792000,富邦台灣核心半導體ETF證券投資信託基金,Fubon ICE FactSet Taiwan Core Semiconductor ETF,twse_opendata
-00893,國泰智能電動車,TWSE,passive_equity,False,李偉正,NYSE FactSet 全球智能電動車指數,2021-06-21,2021-07-01,2024-01-01,國外成分證券指數股票型基金,是,375884000,國泰全球智能電動車ETF證券投資信託基金,Cathay Global Autonomous EV ETF,twse_opendata
-00894,中信小資高價30,TWSE,passive_equity,False,陳金榮,臺灣指數公司特選小資高價30指數,2021-08-05,2021-08-13,2024-01-01,國內成分證券指數股票型基金,否,155009000,中國信託特選小資高價30ETF證券投資信託基金,CTBC TIP Customized Investor Movement Aristocrats 30ETF,twse_opendata
-00895,富邦未來車,TWSE,passive_equity,False,黃昭棠,MSCI ACWI IMI 精選未來車30指數,2021-08-02,2021-08-12,2024-01-01,國外成分證券指數股票型基金,是,155416000,富邦未來車ETF證券投資信託基金,Fubon MSCI ACWI IMI Select Future Mobility Top 30 Capped ETF,twse_opendata
-00896,中信綠能及電動車,TWSE,passive_equity,False,陳金榮,臺灣指數公司特選臺灣上市上櫃綠能及電動車指數,2021-09-09,2021-09-16,2024-01-01,國內成分證券指數股票型基金,否,271380000,中國信託臺灣綠能及電動車ETF證券投資信託基金,CTBC TIP Customized Taiwan Green Energy and Electric Vehicles ETF,twse_opendata
-00897,富邦基因免疫生技,TWSE,passive_equity,False,黃昭棠,NYSE FactSet 全球基因免疫生技指數,2021-09-24,2021-10-04,2024-01-01,國外成分證券指數股票型基金,是,153512000,富邦基因免疫生技ETF證券投資信託基金,Fubon NYSE FactSet Global Genomics and Immuno Biopharma ETF,twse_opendata
-00898,國泰全球基因免疫與醫療革命ETF基金,TWSE,passive_equity,False,李偉正,Solactive全球基因免疫與醫療革命指數,2021-11-11,2021-11-22,2024-01-01,國外成分證券指數股票型基金,是,160476000,國泰全球基因免疫與醫療革命ETF證券投資信託基金,Solactive Global Genomics Immunology and medical revolution index,twse_opendata
-00899,FT潔淨能源(原名:富蘭克林潔淨能源),TWSE,passive_equity,False,黃書明,標普全球潔淨能源精選指數,2022-01-12,2022-01-21,2024-01-01,國外成分證券指數股票型基金,是,16135000,富蘭克林華美全球潔淨能源ETF證券投資信託基金,Franklin Templeton SinoAm Global Clean Energy ETF,twse_opendata
-00900,富邦特選高股息30,TWSE,passive_equity,False,黃昭棠,臺灣指數公司特選臺灣上市上櫃高股息30指數,2021-12-14,2021-12-22,2024-01-01,國內成分證券指數股票型基金,否,1805025000,富邦特選台灣高股息30 ETF證券投資信託基金,Fubon Taiwan Index high dividend 30 ETF,twse_opendata
-00901,永豐智能車供應鏈,TWSE,passive_equity,False,陳思寬,臺灣指數公司特選上市上櫃臺灣智能車供應鏈聯盟指數,2021-12-06,2021-12-15,2024-01-01,國內成分證券指數股票型基金,否,65349000,永豐台灣智能車供應鏈ETF證券投資信託基金,SinoPac Taiwan Electric Vehicle Supply Chain ETF,twse_opendata
-00902,中信電池及儲能,TWSE,passive_equity,False,陳金榮,NYSE FactSet 電池與儲能科技指數,2022-01-18,2022-01-25,2024-01-01,國外成分證券指數股票型基金,是,238497000,中國信託電池及儲能科技ETF證券投資信託基金,CTBC Battery and Energy Storage Technology ETF,twse_opendata
-00903,富邦元宇宙,TWSE,passive_equity,False,黃昭棠,Solactive元宇宙指數,2022-01-14,2022-01-24,2024-01-01,國外成分證券指數股票型基金,是,53221000,富邦元宇宙ETF證券投資信託基金,Fubon Solactive Metaverse ETF,twse_opendata
-00904,新光臺灣半導體30,TWSE,passive_equity,False,賴昭吟,臺灣指數公司臺灣全市場半導體精選30指數,2022-02-23,2022-03-07,2024-01-01,國內成分證券指數股票型基金,否,172112000,新光臺灣全市場半導體精選30ETF證券投資信託基金,Shin Kong TIP Taiwan Semiconductor 30 ETF,twse_opendata
-00905,FT臺灣Smart,TWSE,passive_equity,False,黃書明,臺灣指數公司特選Smart多因子指數,2022-04-13,2022-04-21,2024-01-01,國內成分證券指數股票型基金,否,333827000,富蘭克林華美臺灣Smart ETF證券投資信託基金,Franklin Templeton SinoAm Taiwan Smart ETF,twse_opendata
-00906,大華元宇宙科技50,TWSE,passive_equity,False,張文傑,Solactive元宇宙科技與服務指數,2022-05-06,2022-05-17,2024-01-01,國外成分證券指數股票型基金,是,1271000,大華銀元宇宙科技與服務ETF證券投資信託基金,United Metaverse Technology and Services ETF,twse_opendata
-00907,永豐優息存股,TWSE,passive_equity,False,陳思寬,臺灣指數公司特選臺灣優選入息存股指數,2022-05-17,2022-05-24,2024-01-01,國內成分證券指數股票型基金,否,185633000,永豐台灣優選入息存股ETF證券投資信託基金,SinoPac Taiwan Superior Dividend Highlight Stocks ETF,twse_opendata
-00908,富邦入息REITs+,TWSE,passive_equity,False,黃昭棠,全球入息不動產與基礎建設指數,2022-05-10,2022-05-20,2024-01-01,國外成分證券指數股票型基金,是,36916000,富邦全球入息不動產與基礎建設ETF證券投資信託基金,Fubon Global Dividend REITs and Infrastructure ETF,twse_opendata
-00909,國泰全球數位支付服務ETF基金,TWSE,passive_equity,False,李偉正,Solactive全球數位支付服務指數,2022-07-01,2022-07-13,2024-01-01,國外成分證券指數股票型基金,是,142204000,國泰全球數位支付服務ETF證券投資信託基金,Cathay Global Digital Payment Services ETF,twse_opendata
-00910,第一金太空衛星,TWSE,passive_equity,False,尤昭文,太空衛星指數,2022-07-12,2022-07-20,2024-01-01,國外成分證券指數股票型基金,是,91939000,第一金太空衛星ETF證券投資信託基金,FSITC Aerospace and Satellite ETF,twse_opendata
-00911,兆豐洲際半導體,TWSE,passive_equity,False,陳佩君,洲際半導體指數,2022-06-17,2022-06-27,2024-01-01,國外成分證券指數股票型基金,是,18403000,兆豐洲際半導體ETF證券投資信託基金,Mega ICE Semiconductor ETF,twse_opendata
-00912,中信臺灣智慧50,TWSE,passive_equity,False,陳金榮,臺灣指數公司特選臺灣上市上櫃智慧50指數,2022-06-22,2022-06-29,2024-01-01,國內成分證券指數股票型基金,否,59253000,中國信託臺灣智慧50ETF證券投資信託基金,CTBC TIP Customized Taiwan Smart Factor 50 ETF,twse_opendata
-00913,兆豐台灣晶圓製造ETF,TWSE,passive_equity,False,陳佩君,臺灣晶圓製造指數,2022-08-01,2022-08-08,2024-01-01,國內成分證券指數股票型基金,否,20266000,兆豐特選台灣晶圓製造 ETF證券投資信託基金,Mega Taiwan Wafer Manufacture ETF,twse_opendata
-00915,凱基優選高股息30,TWSE,passive_equity,False,丁紹曾,臺灣指數公司特選臺灣上市上櫃多因子優選高股息30指數,2022-08-01,2022-08-09,2024-01-01,國內成分證券指數股票型基金,否,607483000,凱基台灣優選高股息30ETF證券投資信託基金,KGI Taiwan Premium Selection High Dividend 30 ETF,twse_opendata
-00916,國泰全球品牌50,TWSE,passive_equity,False,李偉正,NYSE FactSet 全球品牌50指數,2022-09-16,2022-09-26,2024-01-01,國外成分證券指數股票型基金,是,62419000,國泰全球品牌50ETF證券投資信託基金,Cathay Global Top 50 Brands ETF,twse_opendata
-00917,中信特選金融,TWSE,passive_equity,False,陳金榮,NYSE FactSet 特選金融及數據指數,2022-08-18,2022-08-26,2024-01-01,國外成分證券指數股票型基金,是,63978000,中國信託特選金融及數據ETF證券投資信託基金,CTBC Selected Financials and Data Industry ETF,twse_opendata
-00918,大華優利高填息30 ETF,TWSE,passive_equity,False,張文傑,特選台灣優利高填息30指數,2022-11-15,2022-11-24,2024-01-01,國內成分證券指數股票型基金,否,3111764000,大華銀台灣優選股利高填息30ETF證券投資信託基金,United Taiwan High Dividend Recovery ETF,twse_opendata
-00919,群益台灣精選高息,TWSE,passive_equity,False,賴政昇,臺灣指數公司特選臺灣上市上櫃精選高息指數,2022-10-13,2022-10-20,2024-01-01,國內成分證券指數股票型基金,否,17571635000,群益台灣精選高息ETF證券投資信託基金,CAPITAL TIP CUSTOMIZED TAIWAN SELECT HIGH DIVIDEND EXCHANGE TRADED FUND,twse_opendata
-00920,富邦ESG綠色電力,TWSE,passive_equity,False,黃昭棠,NYSE  FactSet 全球綠能ESG指數,2022-10-12,2022-10-20,2024-01-01,國外成分證券指數股票型基金,是,19780000,富邦全球ESG綠色電力ETF證券投資信託基金,Fubon Global ESG Green Energy ETF,twse_opendata
-00921,兆豐龍頭等權重,TWSE,passive_equity,False,陳佩君,特選臺灣產業龍頭存股等權重指數,2023-01-04,2023-01-13,2024-01-01,國內成分證券指數股票型基金,否,60770000,兆豐台灣產業龍頭存股等權重ETF證券投資信託基金,Mega Taiwan Market Leader EW ETF,twse_opendata
-00922,國泰台灣領袖 50,TWSE,passive_equity,False,李偉正,MSCI台灣領袖50精選指數,2023-03-16,2023-03-27,2024-01-01,國內成分證券指數股票型基金,否,2011686000,國泰台灣領袖 50 ETF 證券投資信託基金,Cathay MSCI Taiwan Leaders 50 Select ETF,twse_opendata
-00923,群益台ESG低碳50,TWSE,passive_equity,False,賴政昇,臺灣指數公司特選臺灣ESG低碳50指數,2023-02-24,2023-03-08,2024-01-01,國內成分證券指數股票型基金,否,849423000,群益台灣ESG低碳50ETF證券投資信託基金,CAPITAL TIP CUSTOMIZED TAIWAN ESG LOW CARBON 50 EXCHANGE TRADED FUND,twse_opendata
-00924,復華S&amp;P500成長,TWSE,passive_equity,False,杜俊雄,標普500成長指數,2023-04-12,2023-04-26,2024-01-01,國外成分證券指數股票型基金,是,455103000,復華美國標普500成長ETF證券投資信託基金,Fuh Hwa US S&amp;P 500 Growth ETF,twse_opendata
-00925,新光標普電動車,TWSE,passive_equity,False,劉坤錫,標普Kensho電動車市值加權指數,2023-03-31,2023-04-18,2024-01-01,國外成分證券指數股票型基金,是,1751000,新光標普電動車ETF證券投資信託基金,Shin Kong S&amp;P Electric Vehicles ETF,twse_opendata
-00926,凱基全球菁英55,TWSE,passive_equity,False,丁紹曾,彭博全球菁英 55 指數,2023-05-26,2023-06-02,2024-01-01,國外成分證券指數股票型基金,是,89482000,凱基全球菁英55 ETF證券投資信託基金,KGI Global Industry Elite 55 ETF,twse_opendata
-00927,群益半導體收益,TWSE,passive_equity,False,賴政昇,臺灣指數公司特選臺灣上市上櫃半導體收益指數,2023-05-29,2023-06-06,2024-01-01,國內成分證券指數股票型基金,否,754897000,群益台灣半導體收益ETF證券投資信託基金,CAPITAL TIP CUSTOMIZED TAIWAN SEMICONDUCTOR DIVIDEND YIELD EXCHANGE TRADED FUND,twse_opendata
-00929,復華台灣科技優息,TWSE,passive_equity,False,杜俊雄,臺灣指數公司特選臺灣上市上櫃科技優息指數,2023-06-01,2023-06-09,2024-01-01,國內成分證券指數股票型基金,否,4692139000,復華台灣科技優息ETF證券投資信託基金,Fuh Hwa Taiwan Technology Dividend Highlight ETF,twse_opendata
-00930,永豐ESG低碳高息,TWSE,passive_equity,False,陳思寬,臺灣指數公司特選臺灣上市上櫃ESG低碳高息40指數,2023-07-07,2023-07-13,2024-01-01,國內成分證券指數股票型基金,否,145779000,永豐台灣ESG低碳高息40ETF證券投資信託基金,SinoPac Taiwan ESG Low Carbon High Dividend ETF,twse_opendata
-00932,兆豐永續高息等權,TWSE,passive_equity,False,陳佩君,臺灣ESG永續高股息等權重指數,2023-08-22,2023-09-01,2024-01-01,國內成分證券指數股票型基金,否,158283000,兆豐台灣ESG永續高股息等權重ETF證券投資信託基金,Mega Taiwan ESG High Dividend Equal Weight ETF,twse_opendata
-00934,中信成長高股息,TWSE,passive_equity,False,陳金榮,臺灣指數公司特選臺灣上市上櫃優選成長高股息指數,2023-10-25,2023-11-01,2024-01-01,國內成分證券指數股票型基金,否,409526000,中國信託臺灣優選成長高股息ETF證券投資信託基金,CTBC TIP Customized Taiwan Growth and High Dividend ETF,twse_opendata
-00935,野村臺灣新科技50,TWSE,passive_equity,False,毛昱文,臺灣指數公司特選臺灣上市上櫃FactSet創新科技50指數,2023-10-23,2023-11-01,2024-01-01,國內成分證券指數股票型基金,否,589004000,野村臺灣創新科技50 ETF證券投資信託基金,NEXT FUNDS – Nomura Taiwan Innovative Technology 50 ETF,twse_opendata
-00936,台新永續高息中小型ETF,TWSE,passive_equity,False,賴昭吟,台灣永續高息中小型指數,2023-10-30,2023-11-08,2024-01-01,國內成分證券指數股票型基金,否,252797000,台新臺灣永續高息中小型ETF證券投資信託基金,Taishin TIP Customized Taiwan ESG High Dividend Small/Mid-Cap ETF,twse_opendata
+0050,元大台灣50,TWSE,passive_equity,False,劉宗聖,臺灣50指數,2003-06-25,2003-06-30,2024-05-24,國內成分證券指數股票型基金,否,18842500000,元大台灣卓越50證券投資信託基金,Yuanta/P-shares Taiwan Top 50 ETF,twse_opendata
+0051,元大中型100,TWSE,passive_equity,False,劉宗聖,臺灣中型100指數,2006-08-24,2006-08-31,2024-05-24,國內成分證券指數股票型基金,否,24500000,元大台灣中型100證券投資信託基金,Yuanta/P-shares Taiwan Mid-Cap 100 ETF,twse_opendata
+0052,富邦科技,TWSE,passive_equity,False,黃昭棠,臺灣資訊科技指數,2006-08-28,2006-09-12,2024-05-24,國內成分證券指數股票型基金,否,2506000000,富邦台灣科技指數證券投資信託基金,Fubon Taiwan Technology Tracker Fund,twse_opendata
+0053,元大電子,TWSE,passive_equity,False,劉宗聖,電子類加權股價指數,2007-07-04,2007-07-16,2024-05-24,國內成分證券指數股票型基金,否,4988000,元大台灣ETF傘型證券投資信託基金之電子科技證券投資信託基金,Yuanta/P-shares Taiwan Electronics Tech ETF,twse_opendata
+0054,元大台商50,TWSE,passive_equity,False,劉宗聖,S&amp;P台商收成指數,2007-07-04,2007-07-16,2024-05-24,國內成分證券指數股票型基金,否,4124000,元大台灣ETF傘型證券投資信託基金之台商收成證券投資信託基金,Yuanta/P-shares S&amp;P Custom China Play 50 ETF,twse_opendata
+0055,元大MSCI金融,TWSE,passive_equity,False,劉宗聖,MSCI台灣金融指數,2007-07-04,2007-07-16,2024-05-24,國內成分證券指數股票型基金,否,81154000,元大台灣ETF傘型證券投資信託基金之金融證券投資信託基金,Yuanta/P-shares MSCI Taiwan Financials ETF,twse_opendata
+0056,元大高股息,TWSE,passive_equity,False,劉宗聖,臺灣高股息指數,2007-12-13,2007-12-26,2024-05-24,國內成分證券指數股票型基金,否,13724034000,元大台灣高股息證券投資信託基金,Yuanta/P-shares Taiwan Dividend Plus ETF,twse_opendata
+0057,富邦摩台,TWSE,passive_equity,False,黃昭棠,MSCI臺灣指數,2008-02-14,2008-02-27,2024-05-24,國內成分證券指數股票型基金,否,1527000,富邦台灣ETF傘型證券投資信託基金之富邦台灣摩根指數股票型證券投資信託基金,FUBON MSCI  TAIWAN ETF,twse_opendata
+0058,富邦發達,TWSE,passive_equity,False,胡德興,臺灣發達指數,2008-02-14,2008-02-27,2024-05-24,國內成分證券指數股票型基金,否,696000,富邦台灣ETF傘型證券投資信託基金之富邦台灣發達指數股票型證券投資信託基金,FUBON TAIWAN EIGHT INDUSTRIES ETF,twse_opendata
+0059,富邦金融,TWSE,passive_equity,False,胡德興,金融保險類股指數,2008-02-14,2008-02-27,2024-05-24,國內成分證券指數股票型基金,否,973000,富邦台灣ETF傘型證券投資信託基金之富邦台灣金融指數股票型證券投資信託基金,FUBON TAIWAN FINANCE  ETF,twse_opendata
+0060,新台灣,TWSE,passive_equity,False,林武田,未含電子股50指數,2008-08-06,2008-08-18,2024-05-24,國內成分證券指數股票型基金,否,1153000,元大新台灣證券投資信託基金,Yuanta/P-shares TWSE Taiwan Non－Tech 50 ETF,twse_opendata
+0061,元大寶滬深,TWSE,passive_equity,False,劉宗聖,滬深300指數,2009-08-04,2009-08-17,2024-05-24,連結式證券指數股票型基金,是,103116000,元大標智滬深300證券投資信託基金,W.I.S.E. Yuanta/P-shares CSI 300 ETF,twse_opendata
+006203,元大MSCI台灣,TWSE,passive_equity,False,劉宗聖,MSCI&#174;臺灣指數,2011-04-21,2011-05-12,2024-05-24,國內成分證券指數股票型基金,否,10218000,元大摩臺證券投資信託基金,Yuanta/ P-shares MSCI Taiwan ETF,twse_opendata
+006204,永豐臺灣加權,TWSE,passive_equity,False,陳思寬,臺灣證券交易所發行量加權股價指數,2011-09-06,2011-09-28,2024-05-24,國內成分證券指數股票型基金,否,1500000,永豐臺灣加權ETF證券投資信託基金,Sinopac TAIEX ETF,twse_opendata
+006205,富邦上証,TWSE,passive_equity,False,黃昭棠,上証180指數,2011-08-30,2011-09-26,2024-05-24,國外成分證券指數股票型基金,是,101772000,富邦上証180證券投資信託基金,Fubon SSE180 ETF,twse_opendata
+006206,元大上證50,TWSE,passive_equity,False,劉宗聖,上證50指數,2012-04-25,2012-05-11,2024-05-24,國外成分證券指數股票型基金,是,29278000,元大中國傘型證券投資信託基金之上證50證券投資信託基金,Yuanta/P-shares SSE50 ETF,twse_opendata
+006207,復華滬深,TWSE,passive_equity,False,杜俊雄,滬深300指數,2012-06-05,2012-06-22,2024-05-24,國外成分證券指數股票型基金,是,22392000,復華滬深300 A股證券投資信託基金,Fuh Hwa CSI 300 A Shares Exchange Traded Fund,twse_opendata
+006208,富邦台50,TWSE,passive_equity,False,黃昭棠,臺灣50指數,2012-06-22,2012-07-17,2024-05-24,國內成分證券指數股票型基金,否,1837540000,富邦台灣釆吉50 證券投資信託基金,Fubon FTSE TWSE Taiwan 50 ETF,twse_opendata
+00625K,富邦上証+R,TWSE,passive_equity,False,黃昭棠,上証180指數,2016-08-08,2016-08-08,2024-05-24,國外成份/加掛外幣證券指數股票型基金,是,333000,富邦上証180證券投資信託基金-加掛人民幣ETF受益憑證-國外成份/加掛外幣證券指數股票型基金,FUBON SSE 180 ETF RMB,twse_opendata
+00631L,元大台灣50正2,TWSE,leveraged,True,劉宗聖,臺灣50指數,2014-10-23,2014-10-31,2024-05-24,槓桿/反向指數股票型基金,否,4573348000,元大ETF傘型證券投資信託基金之台灣50單日正向2倍證券投資信託基金,Yuanta Daily Taiwan 50 Bull 2X ETF,twse_opendata
+00632R,元大台灣50反1,TWSE,leveraged,True,劉宗聖,臺灣50指數,2014-10-23,2014-10-31,2024-05-24,槓桿/反向指數股票型基金,否,2271207730,元大ETF傘型證券投資信託基金之台灣50單日反向1倍證券投資信託基金,Yuanta Daily Taiwan 50 Bear -1X ETF,twse_opendata
+00633L,富邦上証正2,TWSE,leveraged,True,黃昭棠,上証180兩倍槓桿指數,2014-11-11,2014-11-25,2024-05-24,槓桿/反向指數股票型基金,是,140458000,富邦中國ETF傘型證券投資信託基金之富邦上証180單日正向兩倍證券投資信託基金,Fubon SSE 180 Leveraged 2X Index ETF,twse_opendata
+00634R,富邦上証反1,TWSE,leveraged,True,黃昭棠,上証180反向指數,2014-11-11,2014-11-25,2024-05-24,槓桿/反向指數股票型基金,是,47256000,富邦中國ETF傘型證券投資信託基金之富邦上証180單日反向一倍證券投資信託基金,Fubon SSE 180 Inversed Index ETF,twse_opendata
+00635U,期元大S&amp;P黃金(原名：元大S&amp;P黃金),TWSE,commodity,False,劉宗聖,標普高盛黃金ER指數,2015-04-01,2015-04-15,2024-05-24,指數股票型期貨信託基金,是,292014000,元大標普高盛黃金ER指數股票型期貨信託基金,Yuanta S&amp;P GSCI Gold ER Futures ETF,twse_opendata
+00636,國泰中國A50,TWSE,passive_equity,False,李偉正,富時中國A50指數,2015-03-20,2015-04-01,2024-05-24,國外成分證券指數股票型基金,是,107946000,國泰富時中國A50證券投資信託基金,Cathay FTSE China A50 ETF,twse_opendata
+00636K,國泰富時中國A50+U,TWSE,passive_equity,False,李偉正,富時中國A50指數,2017-10-24,2017-10-24,2024-05-24,國外成份/加掛外幣證券指數股票型基金,是,62100,國泰富時中國A50證券投資信託基金(加掛美元受益憑證)-國外成份/加掛外幣證券指數股票型基金,Cathay FTSE China A50 ETF,twse_opendata
+00637L,元大滬深300正2,TWSE,leveraged,True,劉宗聖,滬深300日報酬正向兩倍指數,2015-05-06,2015-05-18,2024-05-24,槓桿/反向指數股票型基金,是,815606000,元大滬深300傘型證券投資信託基金之滬深300單日正向2倍證券投資信託基金,Yuanta Daily CSI300 Bull 2X ETF,twse_opendata
+00638R,元大滬深300反1,TWSE,leveraged,True,劉宗聖,滬深300日報酬反向一倍指數,2015-05-06,2015-05-18,2024-05-24,槓桿/反向指數股票型基金,是,27448000,元大滬深300傘型證券投資信託基金之滬深300單日反向1倍證券投資信託基金,Yuanta Daily CSI 300 Bear -1X ETF,twse_opendata
+00639,富邦深100,TWSE,passive_equity,False,黃昭棠,深証100指數,2015-05-20,2015-06-09,2024-05-24,國外成分證券指數股票型基金,是,111903000,富邦深証100證券投資信託基金,Fubon SZSE 100 ETF,twse_opendata
+00640L,富邦日本正2,TWSE,leveraged,True,黃昭棠,東証正向二倍指數,2015-08-27,2015-09-10,2024-05-24,槓桿/反向指數股票型基金,是,9419000,富邦日本ETF傘型證券投資信託基金之富邦日本東証單日正向兩倍證券投資信託基金,Fubon TOPIX Leveraged 2X Index ETF,twse_opendata
+00641R,富邦日本反1,TWSE,leveraged,True,黃昭棠,東証反向一倍指數,2015-08-27,2015-09-10,2024-05-24,槓桿/反向指數股票型基金,是,74758000,富邦日本ETF傘型證券投資信託基金之富邦日本東証單日反向一倍證券投資信託基金,Fubon TOPIX Inverse-1X Index ETF,twse_opendata
+00642U,期元大S&amp;P石油(原名：元大S&amp;P石油),TWSE,commodity,False,劉宗聖,標普高盛原油增強超額回報指數,2015-08-27,2015-09-07,2024-05-24,指數股票型期貨信託基金,是,102821000,元大標普高盛原油ER指數股票型期貨信託基金,Yuanta S&amp;P GSCI Crude Oil ER Futures ETF,twse_opendata
+00643,群益深証中小,TWSE,passive_equity,False,賴政昇,中小企業１００指數,2015-11-12,2015-12-02,2024-05-24,國外成分證券指數股票型基金,是,81700000,群益深証中小１００證券投資信託基金,CAPITAL SZSE SME １００ INDEX EXCHANGE TRADED FUND,twse_opendata
+00643K,群益深証中小+R,TWSE,passive_equity,False,賴政昇,中小企業１００指數,2015-11-12,2016-08-26,2024-05-24,國外成份/加掛外幣證券指數股票型基金,是,127000,群益深証中小１００證券投資信託基金加掛—人民幣ETF受益憑證-國外成份/加掛外幣證券指數股票型基金,CAPITAL SZSE SME １００ INDEX EXCHANGE TRADED FUND,twse_opendata
+00645,富邦日本,TWSE,passive_equity,False,黃昭棠,東證股價指數,2015-10-28,2015-11-06,2024-05-24,國外成分證券指數股票型基金,是,50997000,富邦日本東証證券投資信託基金,Fubon TOPIX ETF,twse_opendata
+00646,元大S&amp;P500,TWSE,passive_equity,False,劉宗聖,標普500指數,2015-12-02,2015-12-14,2024-05-24,國外成分證券指數股票型基金,是,549985000,元大標普500傘型證券投資信託基金之標普500證券投資信託基金,Yuanta S&amp;P 500 ETF,twse_opendata
+00647L,元大S&amp;P500正2,TWSE,leveraged,True,劉宗聖,標普500 2倍槓桿指數,2015-12-02,2015-12-14,2024-05-24,槓桿/反向指數股票型基金,是,6416000,元大標普500傘型證券投資信託基金之標普500單日正向2倍證券投資信託基金,Yuanta Daily S&amp;P 500 Bull 2X ETF,twse_opendata
+00648R,元大S&amp;P500反1,TWSE,leveraged,True,劉宗聖,標普500反向指數,2015-12-02,2015-12-14,2024-05-24,槓桿/反向指數股票型基金,是,146688000,元大標普500傘型證券投資信託基金之標普500單日反向1倍證券投資信託基金,Yuanta Daily S&amp;P 500 Bear 1X ETF,twse_opendata
+00649,FH香港,TWSE,passive_equity,False,杜俊雄,恒生指數,2016-01-13,2016-01-27,2024-05-24,國外成分證券指數股票型基金,是,4272000,復華香港ETF傘型證券投資信託基金之復華恒生證券投資信託基金,Fuh Hwa Hang Seng ETF,twse_opendata
+00650L,復華香港正2,TWSE,leveraged,True,杜俊雄,恒指槓桿指數,2016-01-13,2016-01-27,2024-05-24,槓桿/反向指數股票型基金,是,121338000,復華香港ETF傘型證券投資信託基金之復華恒生單日正向二倍證券投資信託基金,Fuh Hwa Daily Hang Seng Leveraged 2X ETF,twse_opendata
+00651R,復華香港反1,TWSE,leveraged,True,杜俊雄,恒指短倉指數,2016-01-13,2016-01-27,2024-05-24,槓桿/反向指數股票型基金,是,33192000,復華香港ETF傘型證券投資信託基金之復華恒生單日反向一倍證券投資信託基金,Fuh Hwa Daily Hang Seng Inversed ETF,twse_opendata
+00652,富邦印度,TWSE,passive_equity,False,黃昭棠,NIFTY指數,2016-03-16,2016-03-29,2024-05-24,國外成分證券指數股票型基金,是,68035000,富邦印度ETF傘型證券投資信託基金之富邦印度NIFTY證券投資信託基金,Fubon NIFTY ETF,twse_opendata
+00653L,富邦印度正2,TWSE,leveraged,True,黃昭棠,NIFTY正向2倍指數,2016-03-16,2016-03-29,2024-05-24,槓桿/反向指數股票型基金,是,18403000,富邦印度ETF傘型證券投資信託基金之富邦印度NIFTY單日正向兩倍證券投資信託基金,Fubon NIFTY 2X Leveraged Index ETF,twse_opendata
+00654R,富邦印度反1,TWSE,leveraged,True,黃昭棠,NIFTY反向1倍指數,2016-03-16,2016-03-29,2024-05-24,槓桿/反向指數股票型基金,是,19466000,富邦印度ETF傘型證券投資信託基金之富邦印度NIFTY單日反向一倍證券投資信託基金,Fubon NIFTY -1 Inverse Index ETF,twse_opendata
+00655L,國泰中國A50正2,TWSE,leveraged,True,李偉正,富時中國A50兩倍槓桿指數,2016-03-08,2016-03-18,2024-05-24,槓桿/反向指數股票型基金,是,72458000,國泰A50傘型證券投資信託基金之富時中國A50單日正向2倍證券投資信託基金,Cathay FTSE China A50 Daily Leveraged 2X ETF,twse_opendata
+00656R,國泰中國A50反1,TWSE,leveraged,True,李偉正,富時中國A50反向指數,2016-03-08,2016-03-18,2024-05-24,槓桿/反向指數股票型基金,是,20357000,國泰A50傘型證券投資信託基金之富時中國A50單日反向1倍證券投資信託基金,Cathay FTSE China A50 Daily Inversed  ETF,twse_opendata
+00657,國泰日經225,TWSE,passive_equity,False,李偉正,日經225,2016-04-25,2016-05-09,2024-05-24,國外成分證券指數股票型基金,是,6613000,國泰日本ETF傘型證券投資信託基金之日經225證券投資信託基金,Cathay Nikkei 225 Currency-hedged ETF Fund,twse_opendata
+00657K,國泰日經225+U,TWSE,passive_equity,False,李偉正,日經225,2017-10-24,2017-10-24,2024-05-24,國外成份/加掛外幣證券指數股票型基金,是,29900,國泰日經225證券投資信託基金(加掛美元受益憑證)-國外成份/加掛外幣證券指數股票型基金,Cathay Nikkei 225 Currency-hedged ETF Fund(USD),twse_opendata
+00658L,國泰日本正2,TWSE,leveraged,True,李偉正,富時日本單日正向2倍指數,2016-04-25,2016-05-09,2024-05-24,槓桿/反向指數股票型基金,是,845000,國泰日本ETF傘型證券投資信託基金之富時日本單日正向2倍證券投資信託基金,Cathay FTSE Japan Daily Leveraged 2X ETF Fund,twse_opendata
+00659R,國泰日本反1,TWSE,leveraged,True,李偉正,富時日本單日反向1倍指數,2016-04-25,2016-05-09,2024-05-24,槓桿/反向指數股票型基金,是,3080000,國泰日本ETF傘型證券投資信託基金之富時日本單日反向1倍證券投資信託基金,Cathay FTSE Japan Daily Inversed ETF Fund,twse_opendata
+00660,元大歐洲50,TWSE,passive_equity,False,劉宗聖,歐洲 STOXX50 指數,2016-06-01,2016-06-15,2024-05-24,國外成分證券指數股票型基金,是,8031000,元大已開發國家傘型證券投資信託基金之元大歐洲50證券投資信託基金,Yuanta EURO STOXX 50 ETF,twse_opendata
+00661,元大日經225,TWSE,passive_equity,False,劉宗聖,日經225指數,2016-06-01,2016-06-15,2024-05-24,國外成分證券指數股票型基金,是,23925000,元大已開發國家傘型證券投資信託基金之元大日經225證券投資信託基金,Yuanta Nikkei 225 ETF,twse_opendata
+00662,富邦NASDAQ,TWSE,passive_equity,False,黃昭棠,NASDAQ-100 指數,2016-06-03,2016-06-17,2024-05-24,國外成分證券指數股票型基金,是,751529000,富邦NASDAQ-100證券投資信託基金,Fubon  NASDAQ-100  ETF,twse_opendata
+00663L,國泰臺灣加權正2,TWSE,leveraged,True,李偉正,臺灣證券交易所發行量加權股價日報酬正向兩倍指數,2016-07-01,2016-07-14,2024-05-24,槓桿/反向指數股票型基金,否,112663000,國泰臺指ETF傘型證券投資信託基金之臺灣加權指數單日正向2倍證券投資信託基金,Cathay TAIEX Daily Leveraged 2X ETF Fund,twse_opendata
+00664R,國泰臺灣加權反1,TWSE,leveraged,True,李偉正,臺灣證券交易所發行量加權股價日報酬反向一倍指數,2016-07-01,2016-07-14,2024-05-24,槓桿/反向指數股票型基金,否,776575000,國泰臺指ETF傘型證券投資信託基金之臺灣加權指數單日反向1倍證券投資信託基金,Cathay TAIEX Daily Inversed ETF,twse_opendata
+00665L,富邦恒生國企正2,TWSE,leveraged,True,黃昭棠,恒生國企槓桿指數,2016-07-21,2016-08-05,2024-05-24,槓桿/反向指數股票型基金,是,467465000,富邦恒生國企ETF傘型證券投資信託基金之富邦恒生國企單日正向兩倍證券投資信託基金,Fubon Hang Seng China Enterprises Leveraged Index ETF,twse_opendata
+00666R,富邦恒生國企反1,TWSE,leveraged,True,黃昭棠,恒生國企短倉指數,2016-07-21,2016-08-05,2024-05-24,槓桿/反向指數股票型基金,是,14624000,富邦恒生國企ETF傘型證券投資信託基金之富邦恒生國企單日反向一倍證券投資信託基金,Fubon Hang Seng China Enterprises Inverse Index ETF,twse_opendata
+00667,元大韓國,TWSE,passive_equity,False,黃古彬,KOSPI 200指數,2016-09-30,2016-10-07,2024-05-24,國外成分證券指數股票型基金,是,929000,元大韓國KOSPI 200證券投資信託基金,Yuanta KOSPI 200 ETF,twse_opendata
+00668,國泰美國道瓊,TWSE,passive_equity,False,李偉正,道瓊斯工業平均指數,2016-10-03,2016-10-17,2024-05-24,國外成分證券指數股票型基金,是,11558000,國泰美國ETF傘型證券投資信託基金之道瓊工業平均指數證券投資信託基金,Cathay DJIA ETF,twse_opendata
+00668K,國泰美國道瓊+U,TWSE,passive_equity,False,李偉正,道瓊斯工業平均指數,2017-10-24,2017-10-24,2024-05-24,國外成份/加掛外幣證券指數股票型基金,是,10500,國泰道瓊工業平均指數證券投資信託基金(加掛美元受益憑證)-國外成份/加掛外幣證券指數股票型基金,Cathay Dow Jones Industrial Average ETF(USD),twse_opendata
+00669R,國泰美國道瓊反1,TWSE,leveraged,True,李偉正,道瓊斯工業平均單日反向指數,2016-10-03,2016-10-17,2024-05-24,槓桿/反向指數股票型基金,是,208617000,國泰美國ETF傘型證券投資信託基金之道瓊工業平均指數單日反向1倍證券投資信託基金,Cathay DJIA Inv 1X ETF,twse_opendata
+00670L,富邦NASDAQ正2,TWSE,leveraged,True,黃昭棠,NASDAQ-100正向2倍指數,2017-02-14,2017-02-21,2024-05-24,槓桿/反向指數股票型基金,是,75145000,富邦NASDAQ-100 ETF 傘型證券投資信託基金之富邦NASDAQ-100單日正向兩倍證券投資信託基金,Fubon NASDAQ-100  2X Leveraged Index ETF,twse_opendata
+00671R,富邦NASDAQ 反1,TWSE,leveraged,True,黃昭棠,NASDAQ-100反向1倍指數,2016-02-14,2017-02-21,2024-05-24,槓桿/反向指數股票型基金,是,546884000,富邦NASDAQ-100 ETF傘型證券投資信託基金之富邦NASDAQ-100 單日反向一倍證券投資信託基金,Fubon NASDAQ-100 -1X  Inverse Index ETF,twse_opendata
+00672L,元大S&amp;P原油正2,TWSE,leveraged,True,劉宗聖,標普高盛原油日報酬正向兩倍ER指數,2016-09-30,2016-10-07,2024-05-24,槓桿/反向指數股票型基金,是,2036187000,元大標普油金傘型期貨信託基金之元大標普高盛原油ER單日正向2倍指數股票型期貨信託基金,Yuanta S&amp;P GSCI Crude Oil 2x Leveraged ER Futures ETF,twse_opendata
+00673R,期元大S&amp;P原油反1(原名：元大S&amp;P原油反1),TWSE,leveraged,True,劉宗聖,標普高盛原油日報酬反向一倍ER指數,2016-09-30,2016-10-07,2024-05-24,槓桿/反向指數股票型基金,是,849050646,元大標普油金傘型期貨信託基金之元大標普高盛原油ER單日反向1倍指數股票型期貨信託基金,Yuanta S&amp;P GSCI Crude Oil 1x Inverse ER Futures ETF,twse_opendata
+00674R,期元大S&amp;P黃金反1(原名：元大S&amp;P黃金反1),TWSE,leveraged,True,劉宗聖,標普高盛黃金日報酬反向一倍ER指數,2016-09-30,2016-10-07,2024-05-24,槓桿/反向指數股票型基金,是,16420555,元大標普油金傘型期貨信託基金之元大標普高盛黃金ER單日反向1倍指數股票型期貨信託基金,Yuanta S&amp;P GSCI Gold 1x Inverse ER FuturesETF,twse_opendata
+00675L,FB臺灣加權正2,TWSE,leveraged,True,黃昭棠,臺灣證券交易所發行量加權股價日報酬正向兩倍指數,2016-09-23,2016-10-05,2024-05-24,槓桿/反向指數股票型基金,否,109786000,富邦臺灣加權ETF傘型證券投資信託基金之富邦臺灣加權單日正向兩倍證券投資信託基金,Fubon TAIEX Daily 2X  Leveraged ETF,twse_opendata
+00676R,富邦臺灣加權反1,TWSE,leveraged,True,黃昭棠,臺灣證券交易所發行量加權股價日報酬反向一倍指數,2016-09-23,2016-10-05,2024-05-24,槓桿/反向指數股票型基金,否,172833683,富邦臺灣加權ETF傘型證券投資信託基金之富邦臺灣加權單日反向一倍證券投資信託基金,Fubon TAIEX Daily-1X Inverse ETF,twse_opendata
+00677U,期富邦VIX,TWSE,commodity,False,史綱,標普500波動率短期期貨ER指數,2016-12-22,2016-12-30,2024-05-24,指數股票型期貨信託基金,是,1486708000,富邦標普500波動率短期期貨ER指數股票型期貨信託基金,Fubon S&amp;P 500 VIX  Short-Term Futures ETF,twse_opendata
+00678,群益那斯達克生技,TWSE,passive_equity,False,賴政昇,那斯達克生技指數(NBI),2017-01-09,2017-01-16,2024-05-24,國外成分證券指數股票型基金,是,7948000,群益那斯達克生技證券投資信託基金,CAPITAL NASDAQ BIOTECHNOLOGY INDEX EXCHANGE,twse_opendata
+00679B,元大美債20年,TPEx,bond,False,元大,ICE 20+年期美國公債指數,2017-01-11,2017-01-17,2024-05-24,債券型,,,元大美債20年,,tpex_seed
+00680L,元大美債20正2,TWSE,leveraged,True,劉宗聖,ICE美國政府20+年期債券2倍槓桿指數,2017-01-11,2017-01-17,2024-05-24,槓桿/反向指數股票型基金,是,1875576000,元大美國政府20年期(以上)債券ETF傘型證券投資信託基金之元大美國政府20年期(以上)債券單日正向2倍證券投資信託基金,Yuanta Daily U.S. Treasury 20+ Year Bond Bull 2X ETF,twse_opendata
+00681R,元大美債20反1,TWSE,leveraged,True,劉宗聖,ICE美國政府20+年期債券1倍反向指數,2017-01-11,2017-01-17,2024-05-24,槓桿/反向指數股票型基金,是,7594000,元大美國政府20年期(以上)債券ETF傘型證券投資信託基金之元大美國政府20年期(以上)債券單日反向1倍證券投資信託基金,Yuanta Daily U.S. Treasury 20+ Year Bond Bear 1X ETF,twse_opendata
+00682U,期元大美元指數(原名：元大美元指數),TWSE,commodity,False,劉宗聖,標普美元ER指數,2017-03-06,2017-03-14,2024-05-24,指數股票型期貨信託基金,是,7644000,元大標普美元指數傘型期貨信託基金之元大標普美元ER指數股票型期貨信託基金,Yuanta S&amp;P US Dollar ER Futures ETF,twse_opendata
+00683L,期元大美元指正2(原名：元大美元指數正2),TWSE,leveraged,True,劉宗聖,標普美元日報酬正向兩倍ER指數,2017-03-06,2017-03-14,2024-05-24,槓桿/反向指數股票型基金,是,11434000,元大標普美元指數傘型期貨信託基金之元大標普美元ER單日正向2倍指數股票型期貨信託基金,Yuanta S&amp;P US Dollar 2x Leverage ER Futures ETF,twse_opendata
+00684R,期元大美元指反1(原名：元大美元指數反1),TWSE,leveraged,True,劉宗聖,標普美元日報酬反向一倍ER指數,2017-03-06,2017-03-14,2024-05-24,槓桿/反向指數股票型基金,是,9688000,元大標普美元指數傘型期貨信託基金之元大標普美元ER單日反向1倍指數股票型期貨信託基金,Yuanta S&amp;P US Dollar 1x Inverse ER Futures ETF,twse_opendata
+00685L,群益臺灣加權正2,TWSE,leveraged,True,賴政昇,臺灣證券交易所發行量加權股價日報酬正向兩倍指數,2017-03-23,2017-03-30,2024-05-24,槓桿/反向指數股票型基金,否,40139000,群益臺灣加權指數ETF傘型證券投資信託基金之群益臺灣加權指數單日正向2倍證券投資信託基金,CAPITAL TAIEX DAILY LEVERAGED 2X ETF,twse_opendata
+00686R,群益臺灣加權反1,TWSE,leveraged,True,賴政昇,臺灣證券交易所發行量加權股價日報酬反向一倍指數,2017-03-23,2017-03-30,2024-05-24,槓桿/反向指數股票型基金,否,178276000,群益臺灣加權指數ETF傘型證券投資信託基金之群益臺灣加權指數單日反向1倍證券投資信託基金,CAPITAL TAIEX DAILY INVERSED -1X ETF,twse_opendata
+00687B,國泰20年美債,TPEx,bond,False,國泰,彭博20年期(以上)美國公債指數,2017-04-13,2017-04-20,2024-05-24,債券型,,,國泰20年美債,,tpex_seed
+00688L,國泰20年美債正2,TWSE,leveraged,True,李偉正,彭博20年期(以上)美國公債單日正向2倍指數,2017-04-06,2017-04-13,2024-05-24,槓桿/反向指數股票型基金,是,785115000,國泰美國債券ETF傘型證券投資信託基金之20年期(以上)美國公債指數單日正向2倍證券投資信託基金,Cathay US Treasury 20+ YR Lev 2X ETF,twse_opendata
+00689R,國泰20年美債反1,TWSE,leveraged,True,李偉正,彭博20年期(以上)美國公債單日反向1倍指數,2017-04-06,2017-04-13,2024-05-24,槓桿/反向指數股票型基金,是,6889000,國泰美國債券ETF傘型證券投資信託基金之20年期(以上)美國公債指數單日反向1倍證券投資信託基金,Cathay US Treasury 20+ YR Inv 1X ETF,twse_opendata
+00690,兆豐藍籌30,TWSE,passive_equity,False,陳佩君,藍籌30指數,2017-03-27,2017-03-31,2024-05-24,國內成分證券指數股票型基金,否,80830000,兆豐臺灣藍籌30ETF傘型證券投資信託基金之兆豐臺灣藍籌30 ETF證券投資信託基金,Mega Taiwan Blue Chip 30 ETF,twse_opendata
+00691R,兆豐藍籌反一,TWSE,leveraged,False,程聰仁,藍籌30反向一倍指數,2017-03-27,2017-03-31,2024-05-24,槓桿/反向指數股票型基金,否,2106000,兆豐國際臺灣藍籌30ETF傘型證券投資信託基金之兆豐國際臺灣藍籌30單日反向一倍ETF證券投資信託基金,Mega Taiwan Blue Chip 30 Daily Inverse ETF,twse_opendata
+00692,富邦公司治理,TWSE,passive_equity,False,黃昭棠,臺灣證券交易所公司治理100指數,2017-05-04,2017-05-17,2024-05-24,國內成分證券指數股票型基金,否,620280000,富邦臺灣公司治理100證券投資信託基金,Fubon TWSE Corporate Governance 100 ETF,twse_opendata
+00693U,期街口S&amp;P黃豆,TWSE,commodity,False,方詳棋,標普高盛黃豆ER指數(S&amp;P GSCI Soybeans ER Index),2017-04-17,2017-04-25,2024-05-24,指數股票型期貨信託基金,是,99166000,街口標普高盛黃豆ER指數股票型期貨信託基金,JKO S&amp;P GSCI Soybeans ER Futures ETF,twse_opendata
+00694B,富邦美債1-3,TPEx,bond,False,富邦,彭博1-3年期美國公債指數,2017-06-08,2017-06-15,2024-05-24,債券型,,,富邦美債1-3,,tpex_seed
+00695B,富邦美債7-10,TPEx,bond,False,富邦,彭博7-10年期美國公債指數,2017-06-08,2017-06-15,2024-05-24,債券型,,,富邦美債7-10,,tpex_seed
+00696B,富邦美債20年,TPEx,bond,False,富邦,彭博20年期(以上)美國公債指數,2017-06-08,2017-06-15,2024-05-24,債券型,,,富邦美債20年,,tpex_seed
+00697B,元大美債7-10,TPEx,bond,False,元大,ICE 7-10年期美國公債指數,2017-06-23,2017-06-29,2024-05-24,債券型,,,元大美債7-10,,tpex_seed
+00698L,元大美債7-10正2,TWSE,leveraged,True,黃古彬,ICE美國政府7-10年期債券2倍槓桿指數,2017-06-15,2017-06-23,2024-05-24,槓桿/反向指數股票型基金,是,1149000,元大美國政府7至10年期債券ETF傘型證券投資信託基金之元大美國政府7至10年期債券單日正向2倍證券投資信託基金,Yuanta Daily U.S. Treasury 7-10 Year Bond Bull 2X ETF,twse_opendata
+00699R,元大美債7-10反1,TWSE,leveraged,True,黃古彬,ICE美國政府7-10年期債券1倍反向指數,2017-06-15,2017-06-23,2024-05-24,槓桿/反向指數股票型基金,是,714000,元大美國政府7至10年期債券ETF傘型證券投資信託基金之元大美國政府7至10年期債券單日反向1倍證券投資信託基金,Yuanta Daily U.S. Treasury 7-10 Year Bond Bear 1X ETF,twse_opendata
+00700,富邦恒生國企,TWSE,passive_equity,False,黃昭棠,恒生中國企業指數,2017-07-21,2017-07-28,2024-05-24,國外成分證券指數股票型基金,是,35983000,富邦恒生國企ETF證券投資信託基金,Fubon Hang Seng China Enterprises  ETF,twse_opendata
+00701,國泰臺灣低波動股利精選30基金,TWSE,passive_equity,False,李偉正,臺灣指數公司低波動精選30指數,2017-08-09,2017-08-17,2024-05-24,國內成分證券指數股票型基金,否,181391000,國泰低波動ETF傘型證券投資信託基金之臺灣低波動股利精選30證券投資信託基金,Cathay TIP TAIEX +Low Volatility Select 30 ETF,twse_opendata
+00702,國泰標普低波高息,TWSE,passive_equity,False,李偉正,標普500低波動高股息指數,2017-08-09,2017-08-17,2024-05-24,國外成分證券指數股票型基金,是,6688000,國泰低波動ETF傘型證券投資信託基金之美國標普500低波動高股息證券投資信託基金,Cathay S&amp;P 500 Low Volatility High,twse_opendata
+00703,台新MSCI中國,TWSE,passive_equity,False,賴昭吟,MSCI中國指數,2017-08-02,2017-08-10,2024-05-24,國外成分證券指數股票型基金,是,10050000,台新MSCI新興市場國家傘型ETF證券投資信託基金之台新MSCI中國證券投資信託基金,Taishin MSCI China ETF,twse_opendata
+00704L,台新MSCI台灣正2,TWSE,leveraged,True,賴昭吟,MSCI台灣正向2倍指數,2017-08-02,2017-08-10,2024-05-24,槓桿/反向指數股票型基金,否,1378000,台新MSCI新興市場國家傘型ETF證券投資信託基金之台新MSCI台灣單日正向2倍證券投資信託基金,Taishin MSCI Taiwan Daily Leveraged 2X ETF,twse_opendata
+00705R,台新MSCI台灣反1,TWSE,leveraged,True,賴昭吟,MSCI台灣反向1倍指數,2017-08-02,2017-08-10,2024-05-24,槓桿/反向指數股票型基金,否,1815000,台新MSCI新興市場國家傘型ETF證券投資信託基金之台新MSCI台灣單日反向1倍證券投資信託基金,Taishin MSCI Taiwan Daily Inverse ETF,twse_opendata
+00706L,期元大S&amp;P日圓正2(原名：元大S&amp;P日圓正2),TWSE,leveraged,True,劉宗聖,標普日圓期貨日報酬正向2倍ER指數,2017-08-23,2017-09-01,2024-05-24,槓桿/反向指數股票型基金,是,158270853,元大標普金日傘型期貨信託基金之元大標普日圓ER單日正向2倍指數股票型期貨信託基金,Yuanta S&amp;P Japanese Yen 2x Leverage ER Futures ETF,twse_opendata
+00707R,期元大S&amp;P日圓反1(原名：元大S&amp;P日圓反1),TWSE,leveraged,True,劉宗聖,標普日圓期貨日報酬反向1倍ER指數,2017-08-23,2017-09-01,2024-05-24,槓桿/反向指數股票型基金,是,5855000,元大標普金日傘型期貨信託基金之元大標普日圓ER單日反向1倍指數股票型期貨信託基金,Yuanta S&amp;P Japanese Yen 1x Inverse ER Futures ETF,twse_opendata
+00708L,期元大S&amp;P黃金正2(原名：元大S&amp;P黃金正2),TWSE,leveraged,True,劉宗聖,標普高盛黃金日報酬正向兩倍ER指數,2017-08-23,2017-09-01,2024-05-24,槓桿/反向指數股票型基金,是,111073000,元大標普金日傘型期貨信託基金之元大標普高盛黃金ER單日正向2倍指數股票型期貨信託基金,Yuanta S&amp;P GSCI Gold 2x Leveraged ER Futures ETF,twse_opendata
+00709,富邦歐洲,TWSE,passive_equity,False,黃昭棠,富時發展歐洲指數,2017-08-07,2017-08-15,2024-05-24,國外成分證券指數股票型基金,是,15960000,富邦富時歐洲ETF證券投資信託基金,Fubon FTSE Developed Europe ETF,twse_opendata
+00710B,復華彭博非投等債,TWSE,bond,False,杜俊雄,彭博1至5年期美元高收益債券(不含中國)發行量五億美元產業10%上限指數,2017-08-09,2017-08-21,2024-05-24,國外成分證券指數股票型基金,是,183261000,復華全球收益ETF傘型證券投資信託基金之復華1至5年期非投資等級債券證券投資信託基金,Fuh Hwa 1-5 Yr High Yield ETF,twse_opendata
+00711B,復華彭博新興債,TWSE,bond,False,杜俊雄,彭博新興市場10年期以上美元投資等級債券(不含中國)國家10%上限指數,2017-08-09,2017-08-21,2024-05-24,國外成分證券指數股票型基金,是,872261000,復華全球收益ETF傘型證券投資信託基金之復華新興市場10年期以上債券證券投資信託基金,Fuh Hwa Emerging Market 10+ Yr Bond ETF,twse_opendata
+00712,復華富時不動產,TWSE,passive_equity,False,杜俊雄,富時NAREIT抵押權型不動產投資信託指數,2017-08-09,2017-08-21,2024-05-24,國外成分證券指數股票型基金,是,4954011000,復華全球收益ETF傘型證券投資信託基金之復華富時不動產證券化證券投資信託基金,Fuh Hwa FTSE Mortgage REITs ETF,twse_opendata
+00713,元大台灣高息低波,TWSE,passive_equity,False,劉宗聖,臺灣指數公司特選高股息低波動指數,2017-09-19,2017-09-27,2024-05-24,國內成分證券指數股票型基金,否,1895512000,元大台灣高股息低波動ETF證券投資信託基金,Yuanta Taiwan High Dividend Low Volatility ETF,twse_opendata
+00714,群益道瓊美國地產,TWSE,passive_equity,False,賴政昇,道瓊美國地產指數(Dow Jones U.S. Real Estate Index),2017-10-20,2017-10-27,2024-05-24,國外成分證券指數股票型基金,是,22067000,群益道瓊美國地產ETF證券投資信託基金,CAPITAL DOW JONES U.S. REAL ESTATE  INDEX EXCHANGE TRADED FUND,twse_opendata
+00715L,期街口布蘭特正2,TWSE,leveraged,True,方詳棋,標普高盛布蘭特原油日報酬正向兩倍ER指數,2017-11-08,2017-11-16,2024-05-24,槓桿/反向指數股票型基金,是,84191793,街口標普高盛布蘭特原油ER單日正向2倍指數股票型期貨信託基金,JKO S&amp;P GSCI Brent Crude 2x Leveraged ER Futures ETF,twse_opendata
+00716R,華頓S&amp;P布蘭特反1,TWSE,leveraged,True,王律傑,標普高盛布蘭特原油日報酬反向一倍ER指數,2017-11-08,2017-11-16,2024-05-24,指數股票型期貨信託基金,是,158000,華頓標普高盛布蘭特原油傘型期貨信託基金之華頓標普高盛布蘭特原油ER單日反向1倍指數股票型期貨信託基金,Paradigm S&amp;P GSCI Brent Crude 1X Inverse ER Futures ETF,twse_opendata
+00717,富邦美國特別股,TWSE,passive_equity,False,黃昭棠,標普美國特別股指數,2017-11-13,2017-11-29,2024-05-24,國外成分證券指數股票型基金,是,139605000,富邦標普美國特別股ETF證券投資信託基金,Fubon S&amp;P US Preferred Stock ETF,twse_opendata
+00719B,元大美債1-3,TPEx,bond,False,元大,ICE 1-3年期美國公債指數,2018-01-12,2018-01-18,2024-05-24,債券型,,,元大美債1-3,,tpex_seed
+00720B,元大投資級公司債,TPEx,bond,False,元大,彭博美國投資級公司債指數,2018-01-12,2018-01-18,2024-05-24,債券型,,,元大投資級公司債,,tpex_seed
+00722B,群益15年IG電信債,TPEx,bond,False,群益,彭博美國電信業15年期以上投資級債券指數,2018-01-23,2018-01-30,2024-05-24,債券型,,,群益15年IG電信債,,tpex_seed
+00724B,群益15年IG金融債,TPEx,bond,False,群益,彭博美國金融業15年期以上投資級債券指數,2018-01-23,2018-01-30,2024-05-24,債券型,,,群益15年IG金融債,,tpex_seed
+00725B,國泰投資級公司債,TPEx,bond,False,國泰,彭博10年期以上(美元計價)投資等級成熟市場大型公司債券指數,2018-01-26,2018-02-02,2024-05-24,債券型,,,國泰投資級公司債,,tpex_seed
+00728,第一金工業30,TWSE,passive_equity,False,尤昭文,臺灣工業菁英30指數,2018-04-10,2018-04-18,2024-05-24,國內成分證券指數股票型基金,否,39423000,第一金臺灣工業菁英30ETF傘型證券投資信託基金之第一金臺灣工業菁英30 ETF證券投資信託基金,FSITC Taiwan Industry Elite 30 ETF,twse_opendata
+00729R,第一金工業30反一,TWSE,leveraged,False,薛淑梅,臺灣工業菁英30日報酬反向一倍指數,2018-04-10,2018-04-18,2024-05-24,槓桿/反向指數股票型基金,否,598000,第一金臺灣工業菁英30ETF傘型證券投資信託基金之第一金臺灣工業菁英30單日反向一倍ETF證券投資信託基金,FSITC Taiwan Industry Elite 30 Daily -1X Inverse ETF,twse_opendata
+00730,富邦臺灣優質高息,TWSE,passive_equity,False,黃昭棠,道瓊斯台灣優質高股息30指數,2018-01-30,2018-02-08,2024-05-24,國內成分證券指數股票型基金,否,74544000,富邦道瓊臺灣優質高息30ETF證券投資信託基金,Fubon Dow Jones Taiwan High-Quality Dividend 30 ETF,twse_opendata
+00731,復華富時高息低波,TWSE,passive_equity,False,杜俊雄,富時台灣高股息低波動指數,2018-04-12,2018-04-20,2024-05-24,國內成分證券指數股票型基金,否,25100000,復華富時台灣高股息低波動證券投資信託基金,Fuh Hwa FTSE Taiwan High Div Low Vol ETF,twse_opendata
+00732,國泰RMB短期報酬,TWSE,bond,False,張錫,富時中國國債及政策性銀行債券0-1 年精選指數,2018-05-04,2018-05-14,2024-05-24,國外成分證券指數股票型基金,是,772000,國泰優勢收益傘型證券投資信託基金之富時人民幣短期報酬ETF 證券投資信託基金,Cathay FTSE Chinese Government and Policy Bank Bond 0-1Year Select ETF,twse_opendata
+00733,臺灣中小A級動能50 ETF基金,TWSE,passive_equity,False,黃昭棠,臺灣指數公司中小型A級動能50指數,2018-05-04,2018-05-17,2024-05-24,國內成分證券指數股票型基金,否,73466000,富邦臺灣中小A級動能50 ETF證券投資信託基金,Fubon Taiwan Small-Mid Cap Alpha Momentum 50 ETF,twse_opendata
+00735,國泰臺韓科技,TWSE,passive_equity,False,李偉正,臺韓資訊科技指數,2018-05-29,2018-06-11,2024-05-24,國外成分證券指數股票型基金,是,68789000,國泰趨勢ETF傘型證券投資信託基金之臺韓科技證券投資信託基金,Cathay Korea/Taiwan IT Premier ETF,twse_opendata
+00736,國泰富時新興市場基金,TWSE,passive_equity,False,李偉正,富時新興市場（納入A股）指數,2018-05-29,2018-06-11,2024-05-24,國外成分證券指數股票型基金,是,6227000,國泰趨勢ETF傘型證券投資信託基金之富時新興市場證券投資信託基金,Cathay FTSE Emerging Markets ETF,twse_opendata
+00737,國泰AI機器人,TWSE,passive_equity,False,李偉正,納斯達克 CTA 全球人工智慧及機器人指數,2018-05-29,2018-06-11,2024-05-24,國外成分證券指數股票型基金,是,22538000,國泰趨勢ETF傘型證券投資信託基金之納斯達克全球人工智慧及機器人證券投資信託基金,Cathay Nasdaq CTA Artificial Inteligence and Robotics ETF,twse_opendata
+00738U,期元大道瓊白銀(原名：元大道瓊白銀),TWSE,commodity,False,劉宗聖,道瓊白銀ER指數,2018-05-23,2018-06-01,2024-05-24,指數股票型期貨信託基金,是,250799000,元大道瓊白銀ER指數股票型期貨信託基金,Yuanta DJCI Silver ER Futures ETF,twse_opendata
+00739,元大MSCI A股,TWSE,passive_equity,False,劉宗聖,MSCI中國A股國際通指數,2018-06-19,2018-06-27,2024-05-24,國外成分證券指數股票型基金,是,25988000,元大MSCI中國A股國際通ETF證券投資信託基金,Yuanta MSCI CHINA  A  ETF,twse_opendata
+00742,新光內需收益,TWSE,passive_equity,False,劉坤錫,臺灣指數公司特選內需高收益指數,2018-06-12,2018-06-22,2024-05-24,國內成分證券指數股票型基金,否,1610000,新光特選內需收益ETF證券投資信託基金,Shin Kong Domestic Demand High Dividend ETF,twse_opendata
+00743,國泰中國A150,TWSE,passive_equity,False,張錫,富時中國A150指數,2018-07-25,2018-08-03,2024-05-24,國外成分證券指數股票型基金,是,2347000,國泰新中國傘型證券投資信託基金之富時中國A150ETF證券投資信託基金,Cathay FTSE China A150 ETF,twse_opendata
+00746B,富邦A級公司債,TPEx,bond,False,富邦,彭博美國10年期以上A級公司債券指數,2018-04-27,2018-05-08,2024-05-24,債券型,,,富邦A級公司債,,tpex_seed
+00751B,元大AAA至A公司債,TPEx,bond,False,元大,彭博10年期以上AAA-A美元公司債流動性指數,2018-06-22,2018-06-28,2024-05-24,債券型,,,元大AAA至A公司債,,tpex_seed
+00752,中信中國50,TWSE,passive_equity,False,陳金榮,MSCI中國外資自由投資50不含A及B股指數,2018-10-24,2018-10-31,2024-05-24,國外成分證券指數股票型基金,是,306216000,中國信託中國外資自由投資50不含A及B股傘型ETF證券投資信託基金之中國信託MSCI中國外資自由50不含A及B股ETF證券投資信託基金,CTBC MSCI China Free 50 ex A and B ETF,twse_opendata
+00753L,中信中國50正2,TWSE,leveraged,True,陳金榮,MSCI中國外資自由投資50不含A及B股單日正向2倍指數,2018-10-24,2018-10-31,2024-05-24,槓桿/反向指數股票型基金,是,721657000,中國信託中國外資自由投資50不含A及B股傘型ETF證券投資信託基金之中國信託MSCI中國外資自由投資50不含A及B股單日正向2倍ETF證券投資信託基金,CTBC MSCI China Free 50 ex A and B Daily Leveraged 2X ETF,twse_opendata
+00757,統一FANG+,TWSE,passive_equity,False,鄧潤澤,NYSE FANG+ Index,2018-11-27,2018-12-06,2024-05-24,國外成分證券指數股票型基金,是,295994000,統一NYSE FANG+ ETF證券投資信託基金,UPAMC NYSE  FANG+ ETF,twse_opendata
+00761B,國泰A級公司債,TPEx,bond,False,國泰,彭博10年期以上特選(AAA-A級)美元公司債指數,2018-08-09,2018-08-16,2024-05-24,債券型,,,國泰A級公司債,,tpex_seed
+00762,元大全球AI,TWSE,passive_equity,False,劉宗聖,STOXX全球人工智慧指數,2019-01-16,2019-01-23,2024-05-24,國外成分證券指數股票型基金,是,48248000,元大全球人工智慧ETF證券投資信託基金,Yuanta  STOXX  Global  Artificial Intelligence  ETF,twse_opendata
+00763U,期街口道瓊銅,TWSE,commodity,False,方詳棋,道瓊銅ER指數 (Dow Jones Commodity Index North American Copper ER),2018-12-12,2018-12-19,2024-05-24,指數股票型期貨信託基金,是,54565000,街口道瓊銅ER指數股票型期貨信託基金,JKO Dow Jones Copper ER Futures ETF,twse_opendata
+00766L,台新MSCI中國正2,TWSE,leveraged,True,賴昭吟,MSCI中國外資自由投資單日正向2倍指數,2019-01-16,2019-01-23,2024-05-24,槓桿/反向指數股票型基金,是,1946000,台新MSCI中國外資自由投資單日正向2倍ETF證券投資信託基金,Taishin MSCI China Free Leveraged 2X Daily ETF,twse_opendata
+00767,FH美國金融股,TWSE,passive_equity,False,杜俊雄,道瓊斯美國金融服務業指數,2019-01-15,2019-01-28,2024-05-24,國外成分證券指數股票型基金,是,4090000,復華多元資產傘型證券投資信託基金之復華美國金融服務業股票ETF證券投資信託基金,Fuh Hwa Dow Jones US Financial Services Equity ETF,twse_opendata
+00770,國泰標普北美科技ETF基金,TWSE,passive_equity,False,李偉正,標普北美科技行業指數,2019-01-22,2019-01-29,2024-05-24,國外成分證券指數股票型基金,是,82958000,國泰標普北美科技ETF證券投資信託基金,Cathay North American Technology ETF,twse_opendata
+00771,元大US高息特別股,TWSE,passive_equity,False,劉宗聖,標普美國高收益特別股指數,2019-04-25,2019-05-16,2024-05-24,國外成分證券指數股票型基金,是,14225000,元大標普美國高息特別股ETF證券投資信託基金,Yuanta S&amp;P U.S. High Yield Preferred Stock ETF,twse_opendata
+00772B,中信高評級公司債,TPEx,bond,False,中信,彭博10年期以上高評級美元公司債指數,2018-12-12,2019-01-31,2024-05-24,債券型,,,中信高評級公司債,,tpex_seed
+00773B,中信優先金融債,TPEx,bond,False,中信,彭博10年期以上美元優先順位金融債券指數,2018-12-12,2019-01-31,2024-05-24,債券型,,,中信優先金融債,,tpex_seed
+00774B,新光中國政金綠債,TWSE,passive_equity,False,劉坤錫,中債-10年期國債及政策銀行債綠色增強指數,2019-01-25,2019-02-27,2024-05-24,國外成分證券指數股票型基金,是,2350000,新光全方位收益ETF傘型證券投資信託基金之新光中國10年期國債及政策金融附加綠債債券ETF 證券投資信託基金,Shin Kong 10 Years China Treasury Policy Bank Green Bond ETF,twse_opendata
+00774C,00774C,TWSE,passive_equity,False,劉坤錫,中債-10年期國債及政策銀行債綠色增強指數,2019-07-01,2019-08-28,2024-05-24,國外成份/加掛外幣證券指數股票型基金,是,1950000,新光全方位收益ETF傘型證券投資信託基金之新光中國10年期國債及政策金融附加綠債債券ETF證券投資信託基金-加掛人民幣ETF受益憑證-國外成份/加掛外幣證券指數股票型基金,Shin Kong 10 Years China Treasury Policy Bank Green Bond ETF RMB,twse_opendata
+00775B,新光投等債15+,TWSE,bond,False,賴昭吟,富時15年期以上投資等級債券指數,2019-01-25,2019-02-15,2024-05-24,國外成分證券指數股票型基金,是,232100000,新光全方位收益ETF傘型證券投資信託基金之新光富時15年以上特選產業美元投資等級債券ETF證券投資信託基金,Shin Kong FTSE 15 Years Investment Grade USD Corporate Bond ETF,twse_opendata
+00776,新光ICE美國權值,TWSE,passive_equity,False,劉坤錫,NYSE 美國核心大型權值股指數,2019-01-25,2019-02-15,2024-05-24,國外成分證券指數股票型基金,是,100000,新光全方位收益ETF傘型證券投資信託基金之新光NYSE美國核心大型權值股ETF證券投資信託基金,Shin Kong NYSE US Core Large Cap ETF,twse_opendata
+00777B,凱基AAA至A公司債,TPEx,bond,False,凱基,彭博10年期以上AAA-A評等美元公司債券指數,2019-01-22,2019-02-15,2024-05-24,債券型,,,凱基AAA至A公司債,,tpex_seed
+00778B,凱基金融債20+,TPEx,bond,False,凱基,彭博20年期以上美元金融債券指數,2019-01-22,2019-02-15,2024-05-24,債券型,,,凱基金融債20+,,tpex_seed
+00779B,凱基美債25+,TPEx,bond,False,凱基,彭博25年期以上美國公債指數,2019-01-22,2019-02-15,2024-05-24,債券型,,,凱基美債25+,,tpex_seed
+00781B,FH富時不動產,TPEx,bond,False,FH,富時EPRA Nareit美國抵押貸款不動產投資信託指數,2019-02-22,2019-03-12,2024-05-24,債券型,,,FH富時不動產,,tpex_seed
+00782B,中信美國公債20年,TPEx,bond,False,中信,彭博美國公債20年期以上指數,2019-02-22,2019-03-12,2024-05-24,債券型,,,中信美國公債20年,,tpex_seed
+00783,富邦中証500,TWSE,passive_equity,False,黃昭棠,中証小盤500指數,2019-03-20,2019-03-27,2024-05-24,國外成分證券指數股票型基金,是,10531000,富邦多元收益ⅡETF傘型證券投資信託基金之富邦中國中証中小500ETF證券投資信託基金,Fubon China CSI 500 Index ETF,twse_opendata
+00784B,富邦中國政策金融債券,TPEx,bond,False,富邦,彭博中國政策性金融債券9-10年期指數,2019-03-14,2019-03-26,2024-05-24,債券型,,,富邦中國政策金融債券,,tpex_seed
+00785B,富邦金融投等債,TPEx,bond,False,富邦,彭博美國金融10年以上投資等級公司債指數,2019-03-14,2019-03-26,2024-05-24,債券型,,,富邦金融投等債,,tpex_seed
+00786B,元大10年IG銀行債,TPEx,bond,False,元大,ICE 10年期以上美元銀行業投資級公司債券指數,2019-03-19,2019-03-26,2024-05-24,債券型,,,元大10年IG銀行債,,tpex_seed
+00787B,群益A級公司債,TPEx,bond,False,群益,彭博10年期以上美元A級公司債券指數,2019-03-19,2019-03-26,2024-05-24,債券型,,,群益A級公司債,,tpex_seed
+00788B,中信高評級公司債,TPEx,bond,False,中信,彭博10年期以上Aa-A美元公司債券指數,2019-03-19,2019-03-26,2024-05-24,債券型,,,中信高評級公司債,,tpex_seed
+00789B,中信新興市場債,TPEx,bond,False,中信,彭博新興市場美元投資等級主權債券指數,2019-03-19,2019-03-26,2024-05-24,債券型,,,中信新興市場債,,tpex_seed
+00790B,復華中國政策債,TPEx,bond,False,復華,彭博中國7-10年政策金融債,2019-03-21,2019-04-08,2024-05-24,債券型,,,復華中國政策債,,tpex_seed
+00791B,復華新興企業債,TPEx,bond,False,復華,彭博新興市場高息企業債券指數,2019-03-21,2019-04-08,2024-05-24,債券型,,,復華新興企業債,,tpex_seed
+00792B,群益25年美債,TPEx,bond,False,群益,ICE 25年期以上美國公債指數,2019-03-21,2019-04-08,2024-05-24,債券型,,,群益25年美債,,tpex_seed
+00793B,群益7-10年IG電能債,TPEx,bond,False,群益,彭博美國電力公用事業7-10年投資等級債券指數,2019-04-17,2019-04-25,2024-05-24,債券型,,,群益7-10年IG電能債,,tpex_seed
+00795B,中信美國政府入息1-7,TPEx,bond,False,中信,彭博美國政府入息1-7年指數,2019-04-17,2019-04-25,2024-05-24,債券型,,,中信美國政府入息1-7,,tpex_seed
+0080,恒中國,TWSE,passive_equity,False,馮孝忠,恒生H股指數,2003-11-19,2009-08-14,2024-05-24,境外指數股票型基金,是,500000,恒生H股指數股票型基金,HANG SENG H-SHARE INDEX ETF,twse_opendata
+0081,恒香港,TWSE,passive_equity,False,馮孝忠,恒生指數,2004-09-13,2009-08-14,2024-05-24,境外指數股票型基金,是,250000,恒生指數股票型基金,HANG SENG INDEX ETF,twse_opendata
+008201,BP上證50,TWSE,passive_equity,False,丁紹曾,上證50指數,2009-04-09,2010-12-08,2024-05-24,境外指數股票型基金,是,349100,標智上證50中國指數基金(本基金配息來源可能為本金),W.I.S.E. - SSE 50 China Tracker,twse_opendata
+00830,國泰費城半導體,TWSE,passive_equity,False,李偉正,美國費城半導體指數,2019-04-23,2019-05-03,2024-05-24,國外成分證券指數股票型基金,是,639465000,國泰大三元ETF傘型證券投資信託基金之美國費城半導體證券投資信託基金,Cathay U.S. PHLX Semiconductor Sector ETF,twse_opendata
+00834B,第一金美債1-3,TPEx,bond,False,第一金,彭博1-3年期美國公債指數,2019-09-26,2019-10-03,2024-05-24,債券型,,,第一金美債1-3,,tpex_seed
+00836B,永豐10年A公司債,TPEx,bond,False,永豐,ICE 10年期以上A評等美元公司債券指數,2019-09-26,2019-10-03,2024-05-24,債券型,,,永豐10年A公司債,,tpex_seed
+00840B,凱基IG精選15+,TPEx,bond,False,凱基,彭博15年期以上美元優選投資等級公司債券指數,2019-12-19,2019-12-27,2024-05-24,債券型,,,凱基IG精選15+,,tpex_seed
+00841B,凱基AAA-A精選公司債,TPEx,bond,False,凱基,彭博10年期以上美元AAA-A精選公司債券指數,2019-12-19,2019-12-27,2024-05-24,債券型,,,凱基AAA-A精選公司債,,tpex_seed
+00844B,新光美債1-3,TPEx,bond,False,新光,彭博美國公債1-3年期指數,2020-01-09,2020-01-17,2024-05-24,債券型,,,新光美債1-3,,tpex_seed
+00845B,富邦新興投等債,TPEx,bond,False,富邦,彭博新興市場主權投資等級債券指數,2020-01-09,2020-01-17,2024-05-24,債券型,,,富邦新興投等債,,tpex_seed
+00846B,中信美國公債0-1,TPEx,bond,False,中信,彭博美國公債0-1年指數,2020-01-09,2020-01-17,2024-05-24,債券型,,,中信美國公債0-1,,tpex_seed
+00847B,中信美國公債1-3,TPEx,bond,False,中信,彭博美國公債1-3年指數,2020-01-09,2020-01-17,2024-05-24,債券型,,,中信美國公債1-3,,tpex_seed
+00848B,中信A-BBB公司債,TPEx,bond,False,中信,彭博10年期以上美元投資等級公司債指數,2020-01-09,2020-01-17,2024-05-24,債券型,,,中信A-BBB公司債,,tpex_seed
+00849B,中信美國公債20+,TPEx,bond,False,中信,彭博美國公債20年期以上指數,2020-01-09,2020-01-17,2024-05-24,債券型,,,中信美國公債20+,,tpex_seed
+00850,元大臺灣ESG永續,TWSE,passive_equity,False,劉宗聖,臺灣永續指數,2019-08-15,2019-08-23,2024-05-24,國內成分證券指數股票型基金,否,416944000,元大臺灣ESG永續ETF證券投資信託基金,Yuanta FTSE4Good TIP Taiwan ESG ETF,twse_opendata
+00851,台新全球AI,TWSE,passive_equity,False,賴昭吟,SG全球AI機器人精選指數,2019-07-30,2019-08-12,2024-05-24,國外成分證券指數股票型基金,是,6025000,台新SG全球AI機器人精選ETF證券投資信託基金,Taishin SG Global AI and Robotics Select ETF,twse_opendata
+00852L,國泰美國道瓊正2,TWSE,leveraged,True,李偉正,道瓊工業平均單日正向2倍指數,2019-08-15,2019-08-22,2024-05-24,槓桿/反向指數股票型基金,是,8865000,國泰道瓊工業平均指數單日正向2倍證券投資信託基金,Cathay DJIA Daily Leveraged 2X ETF,twse_opendata
+00853B,統一美債1-3,TPEx,bond,False,統一,ICE 1-3年期美國公債指數,2020-04-10,2020-04-22,2024-05-24,債券型,,,統一美債1-3,,tpex_seed
+00857B,新光美債20+,TPEx,bond,False,新光,彭博美國公債20年以上指數,2020-04-22,2020-04-30,2024-05-24,債券型,,,新光美債20+,,tpex_seed
+00858,永豐美國500大,TPEx,passive_equity,False,永豐,標普美國500大企業精選指數,2020-04-22,2020-04-30,2024-05-24,股票型,,,永豐美國500大,,tpex_seed
+00859B,群益AAA-AA公司債,TPEx,bond,False,群益,彭博10年期以上AAA-AA美元公司債券指數,2020-05-26,2020-06-03,2024-05-24,債券型,,,群益AAA-AA公司債,,tpex_seed
+00860B,群益1-5年IG債,TPEx,bond,False,群益,彭博1-5年美元投資等級債券指數,2020-05-26,2020-06-03,2024-05-24,債券型,,,群益1-5年IG債,,tpex_seed
+00861,元大全球未來通訊,TWSE,passive_equity,False,劉宗聖,NYSE FactSet全球未來通訊指數,2019-11-11,2019-11-19,2024-05-24,國外成分證券指數股票型基金,是,68912000,元大全球未來通訊ETF證券投資信託基金,Yuanta Global NextGen Communications ETF,twse_opendata
+00862B,中信投資級公司債,TPEx,bond,False,中信,彭博10年期以上美元投資等級公司債指數,2020-06-12,2020-06-22,2024-05-24,債券型,,,中信投資級公司債,,tpex_seed
+00863B,中信全球公司債,TPEx,bond,False,中信,彭博全球公司債(美元計價)指數,2020-06-12,2020-06-22,2024-05-24,債券型,,,中信全球公司債,,tpex_seed
+00865B,國泰US短期公債,TWSE,bond,False,李偉正,彭博美國短期公債收益指數,2019-11-15,2019-11-25,2024-05-24,國外成分證券指數股票型基金,是,235744000,國泰美國收益傘型證券投資信託基金之美國短期公債ETF證券投資信託基金,Cathay US Short Term Treasury ETF,twse_opendata
+00866,新光Shiller CAPE,TWSE,passive_equity,False,劉坤錫,Shiller Barclays CAPE&#174;美國產業價值投資指數,2019-11-08,2019-11-19,2024-05-24,國外成分證券指數股票型基金,是,1229000,新光優質收益ETF傘型證券投資信託基金之新光Shiller Barclays CAPE&#174;美國產業價值投資ETF證券投資信託基金,Shin Kong Shiller Barclays CAPE&#174; US Sector Value ETF,twse_opendata
+00867B,新光投等債15+,TPEx,bond,False,新光,彭博美元美國投資等級15年期以上公司債指數,2020-07-22,2020-07-30,2024-05-24,債券型,,,新光投等債15+,,tpex_seed
+00875,國泰網路資安ETF,TWSE,passive_equity,False,李偉正,納斯達克ISE 全球網路資安指數,2020-03-23,2020-03-30,2024-05-24,國外成分證券指數股票型基金,是,13488000,國泰網路資安ETF證券投資信託基金,Cathay Cyber Security ETF,twse_opendata
+00876,元大全球5G(原名:元大未來關鍵科技),TWSE,passive_equity,False,劉宗聖,iSTOXX全球5G關鍵科技指數,2020-06-22,2020-07-07,2024-05-24,國外成分證券指數股票型基金,是,74024000,元大全球5G關鍵科技ETF證券投資信託基金(原名:元大全球未來關鍵科技ETF證券投資信託基金),Yuanta Global 5G &amp; NexGen Telecommunication Components ETF,twse_opendata
+00878,國泰永續高股息,TWSE,passive_equity,False,李偉正,MSCI臺灣ESG永續高股息精選30指數,2020-07-10,2020-07-20,2024-05-24,國內成分證券指數股票型基金,否,18939290000,國泰台灣高股息傘型證券投資信託基金之台灣ESG永續高股息ETF證券投資信託基金,Cathay MSCI Taiwan ESG Sustainability High Dividend Yield ETF,twse_opendata
+00881,國泰台灣科技龍頭,TWSE,passive_equity,False,李偉正,臺灣指數公司特選臺灣上市上櫃FactSet科技龍頭通訊指數,2020-12-01,2020-12-10,2024-05-24,國內成分證券指數股票型基金,否,2353903000,國泰台灣科技龍頭ETF證券投資信託基金,Cathay Taiwan Technology Leader ETF,twse_opendata
+00882,中信中國高股息,TWSE,passive_equity,False,陳金榮,恒生中國高股息率指數,2021-01-27,2021-02-04,2024-05-24,國外成分證券指數股票型基金,是,2046849000,中國信託全球收益ETF傘型證券投資信託基金之中國信託恒生中國高股息ETF證券投資信託基金,CTBC Hang Seng China High Dividend Yield ETF,twse_opendata
+00885,富邦越南,TWSE,passive_equity,False,黃昭棠,富時越南30指數,2021-03-30,2021-04-19,2024-05-24,國外成分證券指數股票型基金,是,653738000,富邦富時越南ETF證券投資信託基金,Fubon FTSE Vietnam ETF,twse_opendata
+00890B,凱基ESG BBB債15+,TPEx,bond,False,凱基,彭博美元優選15年期以上ESG BBB公司債指數,2021-02-04,2021-02-15,2024-05-24,債券型,,,凱基ESG BBB債15+,,tpex_seed
+00891,中信關鍵半導體,TWSE,passive_equity,False,陳金榮,NYSE FactSet 臺灣ESG永續關鍵半導體指數,2021-05-20,2021-05-28,2024-05-24,國內成分證券指數股票型基金,否,1847090000,中國信託臺灣ESG永續關鍵半導體ETF證券投資信託基金,CTBC Taiwan ESG Leading Semiconductor ETF,twse_opendata
+00892,富邦台灣半導體,TWSE,passive_equity,False,黃昭棠,NYSE FactSet台灣核心半導體指數,2021-06-02,2021-06-10,2024-05-24,國內成分證券指數股票型基金,否,268792000,富邦台灣核心半導體ETF證券投資信託基金,Fubon ICE FactSet Taiwan Core Semiconductor ETF,twse_opendata
+00893,國泰智能電動車,TWSE,passive_equity,False,李偉正,NYSE FactSet 全球智能電動車指數,2021-06-21,2021-07-01,2024-05-24,國外成分證券指數股票型基金,是,375884000,國泰全球智能電動車ETF證券投資信託基金,Cathay Global Autonomous EV ETF,twse_opendata
+00894,中信小資高價30,TWSE,passive_equity,False,陳金榮,臺灣指數公司特選小資高價30指數,2021-08-05,2021-08-13,2024-05-24,國內成分證券指數股票型基金,否,155009000,中國信託特選小資高價30ETF證券投資信託基金,CTBC TIP Customized Investor Movement Aristocrats 30ETF,twse_opendata
+00895,富邦未來車,TWSE,passive_equity,False,黃昭棠,MSCI ACWI IMI 精選未來車30指數,2021-08-02,2021-08-12,2024-05-24,國外成分證券指數股票型基金,是,155416000,富邦未來車ETF證券投資信託基金,Fubon MSCI ACWI IMI Select Future Mobility Top 30 Capped ETF,twse_opendata
+00896,中信綠能及電動車,TWSE,passive_equity,False,陳金榮,臺灣指數公司特選臺灣上市上櫃綠能及電動車指數,2021-09-09,2021-09-16,2024-05-24,國內成分證券指數股票型基金,否,271380000,中國信託臺灣綠能及電動車ETF證券投資信託基金,CTBC TIP Customized Taiwan Green Energy and Electric Vehicles ETF,twse_opendata
+00897,富邦基因免疫生技,TWSE,passive_equity,False,黃昭棠,NYSE FactSet 全球基因免疫生技指數,2021-09-24,2021-10-04,2024-05-24,國外成分證券指數股票型基金,是,153512000,富邦基因免疫生技ETF證券投資信託基金,Fubon NYSE FactSet Global Genomics and Immuno Biopharma ETF,twse_opendata
+00898,國泰全球基因免疫與醫療革命ETF基金,TWSE,passive_equity,False,李偉正,Solactive全球基因免疫與醫療革命指數,2021-11-11,2021-11-22,2024-05-24,國外成分證券指數股票型基金,是,160476000,國泰全球基因免疫與醫療革命ETF證券投資信託基金,Solactive Global Genomics Immunology and medical revolution index,twse_opendata
+00899,FT潔淨能源(原名:富蘭克林潔淨能源),TWSE,passive_equity,False,黃書明,標普全球潔淨能源精選指數,2022-01-12,2022-01-21,2024-05-24,國外成分證券指數股票型基金,是,16135000,富蘭克林華美全球潔淨能源ETF證券投資信託基金,Franklin Templeton SinoAm Global Clean Energy ETF,twse_opendata
+00900,富邦特選高股息30,TWSE,passive_equity,False,黃昭棠,臺灣指數公司特選臺灣上市上櫃高股息30指數,2021-12-14,2021-12-22,2024-05-24,國內成分證券指數股票型基金,否,1805025000,富邦特選台灣高股息30 ETF證券投資信託基金,Fubon Taiwan Index high dividend 30 ETF,twse_opendata
+00901,永豐智能車供應鏈,TWSE,passive_equity,False,陳思寬,臺灣指數公司特選上市上櫃臺灣智能車供應鏈聯盟指數,2021-12-06,2021-12-15,2024-05-24,國內成分證券指數股票型基金,否,65349000,永豐台灣智能車供應鏈ETF證券投資信託基金,SinoPac Taiwan Electric Vehicle Supply Chain ETF,twse_opendata
+00902,中信電池及儲能,TWSE,passive_equity,False,陳金榮,NYSE FactSet 電池與儲能科技指數,2022-01-18,2022-01-25,2024-05-24,國外成分證券指數股票型基金,是,238497000,中國信託電池及儲能科技ETF證券投資信託基金,CTBC Battery and Energy Storage Technology ETF,twse_opendata
+00903,富邦元宇宙,TWSE,passive_equity,False,黃昭棠,Solactive元宇宙指數,2022-01-14,2022-01-24,2024-05-24,國外成分證券指數股票型基金,是,53221000,富邦元宇宙ETF證券投資信託基金,Fubon Solactive Metaverse ETF,twse_opendata
+00904,新光臺灣半導體30,TWSE,passive_equity,False,賴昭吟,臺灣指數公司臺灣全市場半導體精選30指數,2022-02-23,2022-03-07,2024-05-24,國內成分證券指數股票型基金,否,172112000,新光臺灣全市場半導體精選30ETF證券投資信託基金,Shin Kong TIP Taiwan Semiconductor 30 ETF,twse_opendata
+00905,FT臺灣Smart,TWSE,passive_equity,False,黃書明,臺灣指數公司特選Smart多因子指數,2022-04-13,2022-04-21,2024-05-24,國內成分證券指數股票型基金,否,333827000,富蘭克林華美臺灣Smart ETF證券投資信託基金,Franklin Templeton SinoAm Taiwan Smart ETF,twse_opendata
+00906,大華元宇宙科技50,TWSE,passive_equity,False,張文傑,Solactive元宇宙科技與服務指數,2022-05-06,2022-05-17,2024-05-24,國外成分證券指數股票型基金,是,1271000,大華銀元宇宙科技與服務ETF證券投資信託基金,United Metaverse Technology and Services ETF,twse_opendata
+00907,永豐優息存股,TWSE,passive_equity,False,陳思寬,臺灣指數公司特選臺灣優選入息存股指數,2022-05-17,2022-05-24,2024-05-24,國內成分證券指數股票型基金,否,185633000,永豐台灣優選入息存股ETF證券投資信託基金,SinoPac Taiwan Superior Dividend Highlight Stocks ETF,twse_opendata
+00908,富邦入息REITs+,TWSE,passive_equity,False,黃昭棠,全球入息不動產與基礎建設指數,2022-05-10,2022-05-20,2024-05-24,國外成分證券指數股票型基金,是,36916000,富邦全球入息不動產與基礎建設ETF證券投資信託基金,Fubon Global Dividend REITs and Infrastructure ETF,twse_opendata
+00909,國泰全球數位支付服務ETF基金,TWSE,passive_equity,False,李偉正,Solactive全球數位支付服務指數,2022-07-01,2022-07-13,2024-05-24,國外成分證券指數股票型基金,是,142204000,國泰全球數位支付服務ETF證券投資信託基金,Cathay Global Digital Payment Services ETF,twse_opendata
+00910,第一金太空衛星,TWSE,passive_equity,False,尤昭文,太空衛星指數,2022-07-12,2022-07-20,2024-05-24,國外成分證券指數股票型基金,是,91939000,第一金太空衛星ETF證券投資信託基金,FSITC Aerospace and Satellite ETF,twse_opendata
+00911,兆豐洲際半導體,TWSE,passive_equity,False,陳佩君,洲際半導體指數,2022-06-17,2022-06-27,2024-05-24,國外成分證券指數股票型基金,是,18403000,兆豐洲際半導體ETF證券投資信託基金,Mega ICE Semiconductor ETF,twse_opendata
+00912,中信臺灣智慧50,TWSE,passive_equity,False,陳金榮,臺灣指數公司特選臺灣上市上櫃智慧50指數,2022-06-22,2022-06-29,2024-05-24,國內成分證券指數股票型基金,否,59253000,中國信託臺灣智慧50ETF證券投資信託基金,CTBC TIP Customized Taiwan Smart Factor 50 ETF,twse_opendata
+00913,兆豐台灣晶圓製造ETF,TWSE,passive_equity,False,陳佩君,臺灣晶圓製造指數,2022-08-01,2022-08-08,2024-05-24,國內成分證券指數股票型基金,否,20266000,兆豐特選台灣晶圓製造 ETF證券投資信託基金,Mega Taiwan Wafer Manufacture ETF,twse_opendata
+00915,凱基優選高股息30,TWSE,passive_equity,False,丁紹曾,臺灣指數公司特選臺灣上市上櫃多因子優選高股息30指數,2022-08-01,2022-08-09,2024-05-24,國內成分證券指數股票型基金,否,607483000,凱基台灣優選高股息30ETF證券投資信託基金,KGI Taiwan Premium Selection High Dividend 30 ETF,twse_opendata
+00916,國泰全球品牌50,TWSE,passive_equity,False,李偉正,NYSE FactSet 全球品牌50指數,2022-09-16,2022-09-26,2024-05-24,國外成分證券指數股票型基金,是,62419000,國泰全球品牌50ETF證券投資信託基金,Cathay Global Top 50 Brands ETF,twse_opendata
+00917,中信特選金融,TWSE,passive_equity,False,陳金榮,NYSE FactSet 特選金融及數據指數,2022-08-18,2022-08-26,2024-05-24,國外成分證券指數股票型基金,是,63978000,中國信託特選金融及數據ETF證券投資信託基金,CTBC Selected Financials and Data Industry ETF,twse_opendata
+00918,大華優利高填息30 ETF,TWSE,passive_equity,False,張文傑,特選台灣優利高填息30指數,2022-11-15,2022-11-24,2024-05-24,國內成分證券指數股票型基金,否,3111764000,大華銀台灣優選股利高填息30ETF證券投資信託基金,United Taiwan High Dividend Recovery ETF,twse_opendata
+00919,群益台灣精選高息,TWSE,passive_equity,False,賴政昇,臺灣指數公司特選臺灣上市上櫃精選高息指數,2022-10-13,2022-10-20,2024-05-24,國內成分證券指數股票型基金,否,17571635000,群益台灣精選高息ETF證券投資信託基金,CAPITAL TIP CUSTOMIZED TAIWAN SELECT HIGH DIVIDEND EXCHANGE TRADED FUND,twse_opendata
+00920,富邦ESG綠色電力,TWSE,passive_equity,False,黃昭棠,NYSE  FactSet 全球綠能ESG指數,2022-10-12,2022-10-20,2024-05-24,國外成分證券指數股票型基金,是,19780000,富邦全球ESG綠色電力ETF證券投資信託基金,Fubon Global ESG Green Energy ETF,twse_opendata
+00921,兆豐龍頭等權重,TWSE,passive_equity,False,陳佩君,特選臺灣產業龍頭存股等權重指數,2023-01-04,2023-01-13,2024-05-24,國內成分證券指數股票型基金,否,60770000,兆豐台灣產業龍頭存股等權重ETF證券投資信託基金,Mega Taiwan Market Leader EW ETF,twse_opendata
+00922,國泰台灣領袖 50,TWSE,passive_equity,False,李偉正,MSCI台灣領袖50精選指數,2023-03-16,2023-03-27,2024-05-24,國內成分證券指數股票型基金,否,2011686000,國泰台灣領袖 50 ETF 證券投資信託基金,Cathay MSCI Taiwan Leaders 50 Select ETF,twse_opendata
+00923,群益台ESG低碳50,TWSE,passive_equity,False,賴政昇,臺灣指數公司特選臺灣ESG低碳50指數,2023-02-24,2023-03-08,2024-05-24,國內成分證券指數股票型基金,否,849423000,群益台灣ESG低碳50ETF證券投資信託基金,CAPITAL TIP CUSTOMIZED TAIWAN ESG LOW CARBON 50 EXCHANGE TRADED FUND,twse_opendata
+00924,復華S&amp;P500成長,TWSE,passive_equity,False,杜俊雄,標普500成長指數,2023-04-12,2023-04-26,2024-05-24,國外成分證券指數股票型基金,是,455103000,復華美國標普500成長ETF證券投資信託基金,Fuh Hwa US S&amp;P 500 Growth ETF,twse_opendata
+00925,新光標普電動車,TWSE,passive_equity,False,劉坤錫,標普Kensho電動車市值加權指數,2023-03-31,2023-04-18,2024-05-24,國外成分證券指數股票型基金,是,1751000,新光標普電動車ETF證券投資信託基金,Shin Kong S&amp;P Electric Vehicles ETF,twse_opendata
+00926,凱基全球菁英55,TWSE,passive_equity,False,丁紹曾,彭博全球菁英 55 指數,2023-05-26,2023-06-02,2024-05-24,國外成分證券指數股票型基金,是,89482000,凱基全球菁英55 ETF證券投資信託基金,KGI Global Industry Elite 55 ETF,twse_opendata
+00927,群益半導體收益,TWSE,passive_equity,False,賴政昇,臺灣指數公司特選臺灣上市上櫃半導體收益指數,2023-05-29,2023-06-06,2024-05-24,國內成分證券指數股票型基金,否,754897000,群益台灣半導體收益ETF證券投資信託基金,CAPITAL TIP CUSTOMIZED TAIWAN SEMICONDUCTOR DIVIDEND YIELD EXCHANGE TRADED FUND,twse_opendata
+00929,復華台灣科技優息,TWSE,passive_equity,False,杜俊雄,臺灣指數公司特選臺灣上市上櫃科技優息指數,2023-06-01,2023-06-09,2024-05-24,國內成分證券指數股票型基金,否,4692139000,復華台灣科技優息ETF證券投資信託基金,Fuh Hwa Taiwan Technology Dividend Highlight ETF,twse_opendata
+00930,永豐ESG低碳高息,TWSE,passive_equity,False,陳思寬,臺灣指數公司特選臺灣上市上櫃ESG低碳高息40指數,2023-07-07,2023-07-13,2024-05-24,國內成分證券指數股票型基金,否,145779000,永豐台灣ESG低碳高息40ETF證券投資信託基金,SinoPac Taiwan ESG Low Carbon High Dividend ETF,twse_opendata
+00932,兆豐永續高息等權,TWSE,passive_equity,False,陳佩君,臺灣ESG永續高股息等權重指數,2023-08-22,2023-09-01,2024-05-24,國內成分證券指數股票型基金,否,158283000,兆豐台灣ESG永續高股息等權重ETF證券投資信託基金,Mega Taiwan ESG High Dividend Equal Weight ETF,twse_opendata
+00934,中信成長高股息,TWSE,passive_equity,False,陳金榮,臺灣指數公司特選臺灣上市上櫃優選成長高股息指數,2023-10-25,2023-11-01,2024-05-24,國內成分證券指數股票型基金,否,409526000,中國信託臺灣優選成長高股息ETF證券投資信託基金,CTBC TIP Customized Taiwan Growth and High Dividend ETF,twse_opendata
+00935,野村臺灣新科技50,TWSE,passive_equity,False,毛昱文,臺灣指數公司特選臺灣上市上櫃FactSet創新科技50指數,2023-10-23,2023-11-01,2024-05-24,國內成分證券指數股票型基金,否,589004000,野村臺灣創新科技50 ETF證券投資信託基金,NEXT FUNDS – Nomura Taiwan Innovative Technology 50 ETF,twse_opendata
+00936,台新永續高息中小型ETF,TWSE,passive_equity,False,賴昭吟,台灣永續高息中小型指數,2023-10-30,2023-11-08,2024-05-24,國內成分證券指數股票型基金,否,252797000,台新臺灣永續高息中小型ETF證券投資信託基金,Taishin TIP Customized Taiwan ESG High Dividend Small/Mid-Cap ETF,twse_opendata
 00938,凱基優選30,TWSE,passive_equity,False,丁紹曾,臺灣指數公司特選臺灣上市上櫃優選多因子30指數,2024-10-14,2024-10-23,2024-10-14,國內成分證券指數股票型基金,否,81516000,凱基台灣優選30 ETF證券投資信託基金,KGI Taiwan Premium Selection 30 ETF,twse_opendata
-00939,統一台灣高息動能ETF基金,TWSE,passive_equity,False,鄧潤澤,特選臺灣高息動能指數,2024-03-08,2024-03-20,2024-03-08,國內成分證券指數股票型基金,否,1249476000,統一台灣高息動能ETF證券投資信託基金,UPAMC Taiwan High Dividend Momentum ETF,twse_opendata
-00940,元大台灣價值高息,TWSE,passive_equity,False,劉宗聖,臺灣指數公司特選臺灣價值高息指數,2024-03-18,2024-04-01,2024-03-18,國內成分證券指數股票型基金,否,5905365000,元大臺灣價值高息ETF證券投資信託基金,Yuanta Taiwan Value High Dividend ETF,twse_opendata
-00941,中信上游半導體,TWSE,passive_equity,False,陳金榮,NYSE FactSet 上游半導體指數,2024-03-06,2024-03-15,2024-03-06,國外成分證券指數股票型基金,是,456791000,中國信託上游半導體ETF證券投資信託基金,CTBC Upstream Semiconductor ETF,twse_opendata
-00943,兆豐電子高息等權,TWSE,passive_equity,False,陳佩君,臺灣電子成長高息等權重指數,2024-05-09,2024-05-20,2024-05-09,國內成分證券指數股票型基金,否,42389000,兆豐台灣電子成長高息等權重ETF證券投資信託基金,Mega Taiwan IT Growth and High Dividend Equal Weight ETF,twse_opendata
-00944,野村趨勢動能高息,TWSE,passive_equity,False,毛昱文,臺灣指數公司特選臺灣上市上櫃FactSet臺灣趨勢動能高股息指數,2024-04-29,2024-05-09,2024-04-29,國內成分證券指數股票型基金,否,59081000,野村臺灣趨勢動能高股息ETF證券投資信託基金,NEXT FUNDS – Nomura Taiwan Momentum High Dividend ETF,twse_opendata
-00945B,凱基美國非投等債,TWSE,bond,False,丁紹曾,彭博美國企業非投資等級1-5年Ba至B債券指數,2024-04-22,2024-05-02,2024-04-22,國外成分證券指數股票型基金,是,856818000,凱基美國優選收益非投資等級債券ETF證券投資信託基金,KGI US Premium Selection High Yield Bond ETF,twse_opendata
-00946,群益科技高息成長,TWSE,passive_equity,False,賴政昇,臺灣指數公司特選臺灣上市上櫃科技高息成長指數,2024-04-29,2024-05-09,2024-04-29,國內成分證券指數股票型基金,否,493746000,群益台灣科技高息成長ETF證券投資信託基金,CAPITAL TAIWAN TECH HIGH DIVIDEND AND GROWTH ETF,twse_opendata
+00939,統一台灣高息動能ETF基金,TWSE,passive_equity,False,鄧潤澤,特選臺灣高息動能指數,2024-03-08,2024-03-20,2024-05-24,國內成分證券指數股票型基金,否,1249476000,統一台灣高息動能ETF證券投資信託基金,UPAMC Taiwan High Dividend Momentum ETF,twse_opendata
+00940,元大台灣價值高息,TWSE,passive_equity,False,劉宗聖,臺灣指數公司特選臺灣價值高息指數,2024-03-18,2024-04-01,2024-05-24,國內成分證券指數股票型基金,否,5905365000,元大臺灣價值高息ETF證券投資信託基金,Yuanta Taiwan Value High Dividend ETF,twse_opendata
+00941,中信上游半導體,TWSE,passive_equity,False,陳金榮,NYSE FactSet 上游半導體指數,2024-03-06,2024-03-15,2024-05-24,國外成分證券指數股票型基金,是,456791000,中國信託上游半導體ETF證券投資信託基金,CTBC Upstream Semiconductor ETF,twse_opendata
+00943,兆豐電子高息等權,TWSE,passive_equity,False,陳佩君,臺灣電子成長高息等權重指數,2024-05-09,2024-05-20,2024-05-24,國內成分證券指數股票型基金,否,42389000,兆豐台灣電子成長高息等權重ETF證券投資信託基金,Mega Taiwan IT Growth and High Dividend Equal Weight ETF,twse_opendata
+00944,野村趨勢動能高息,TWSE,passive_equity,False,毛昱文,臺灣指數公司特選臺灣上市上櫃FactSet臺灣趨勢動能高股息指數,2024-04-29,2024-05-09,2024-05-24,國內成分證券指數股票型基金,否,59081000,野村臺灣趨勢動能高股息ETF證券投資信託基金,NEXT FUNDS – Nomura Taiwan Momentum High Dividend ETF,twse_opendata
+00945B,凱基美國非投等債,TWSE,bond,False,丁紹曾,彭博美國企業非投資等級1-5年Ba至B債券指數,2024-04-22,2024-05-02,2024-05-24,國外成分證券指數股票型基金,是,856818000,凱基美國優選收益非投資等級債券ETF證券投資信託基金,KGI US Premium Selection High Yield Bond ETF,twse_opendata
+00946,群益科技高息成長,TWSE,passive_equity,False,賴政昇,臺灣指數公司特選臺灣上市上櫃科技高息成長指數,2024-04-29,2024-05-09,2024-05-24,國內成分證券指數股票型基金,否,493746000,群益台灣科技高息成長ETF證券投資信託基金,CAPITAL TAIWAN TECH HIGH DIVIDEND AND GROWTH ETF,twse_opendata
 00947,台新臺灣IC設計動能ETF基金,TWSE,passive_equity,False,賴昭吟,台灣IC設計動能指數,2024-05-31,2024-06-12,2024-05-31,國內成分證券指數股票型基金,否,196864000,台新臺灣IC設計動能ETF證券投資信託基金,Taishin Taiwan IC Design and Momentum ETF,twse_opendata
 00949,復華日本龍頭,TWSE,passive_equity,False,杜俊雄,NYSE FactSet日本護城河優勢龍頭企業指數,2024-06-20,2024-07-01,2024-06-20,國外成分證券指數股票型基金,是,195928000,復華日本護城河優勢龍頭企業ETF證券投資信託基金,Fuh Hwa Japan Global Moat Leaders ETF,twse_opendata
 00951,台新日本半導體ETF,TWSE,passive_equity,False,賴昭吟,NYSE FactSet日本半導體指數,2024-07-16,2024-07-25,2024-07-16,國外成分證券指數股票型基金,是,219042000,台新日本半導體ETF證券投資信託基金,Taishin NYSE FactSet Japan Semiconductor ETF,twse_opendata
