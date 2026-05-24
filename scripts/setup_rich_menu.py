@@ -78,7 +78,7 @@ PAGE2 = [
     # Row 2 — navigation at bottom-LEFT, then gold and reserved space (625 × 4 = 2500)
     (0,    843, 625, 843, "<", "上一頁", "回主選單",        ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),   # nav slate ◀ LEFT
     (625,  843, 625, 843, "金", "黃金",   "黃金現貨",        (202, 138,   4), "message",        "黃金",   False),  # gold amber
-    (1250, 843, 625, 843, "待", "即將", "推出",              ( 18,  26,  42), "none",           None,     True),
+    (1250, 843, 625, 843, "脈", "市場脈動", "加權狀態儀表板",  ( 99, 102, 241), "message",        "市場脈動", False),
     (1875, 843, 625, 843, "待", "即將", "推出",              ( 18,  26,  42), "none",           None,     True),
 ]
 

@@ -391,7 +391,7 @@ def _render_headline(taiex: pd.Series) -> dict:
     with c3:
         _render_health_metric(
             "距 1 年高點",
-            _format_distance_from_high(dist_1y_hi),
+            f"{dist_1y_hi:+.1f}%",
             c_hi, s_hi, r_hi,
         )
     with c4:

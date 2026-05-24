@@ -17,7 +17,7 @@ This repository contains the backend services, data pipelines, and frontend appl
 ## Architecture Overview
 
 1. **Frontend (Streamlit):** Located in `app.py` and `src/ui/`. Renders dashboards for both Active (00981A, 00997A) and Passive (0050, 00830, 00878, 009805) ETFs.
-2. **LINE Webhook (Flask):** Located in `api/webhook.py`. Listens for user commands, builds ETF quote cards, returns charts (Forex, Oil, Bonds), and broadcasts daily operation reports.
+2. **LINE Webhook (Flask):** Located in `api/webhook.py`. Listens for user commands, builds ETF quote cards, returns charts (Forex, Oil, Bonds, 市場脈動), and broadcasts daily operation reports.
 3. **Data Fetchers:** Scheduled scripts that pull official NAVs and constituent holdings from respective providers (e.g., Cathay JSON APIs, Capital Fund, etc.).
 4. **Quote Cache Monitors:** Persistent daemon services that fetch real-time stock prices (via Yahoo Finance/TradingView) during market hours and build localized JSON caches to serve the frontend and webhook rapidly.
 
@@ -76,6 +76,7 @@ journalctl -u stock-webhook.service -n 100 --no-pager
 - **Holdings/Logs:** `etf_{TICKER}_history.json`, `passive_{TICKER}_log.json`.
 - **Quote Caches:** `quote_cache/etf_{TICKER}_quotes.json`, `quote_cache/master_holding.json`.
 - **Generated Media:** Summaries and snapshot images are saved to `data/images/` and `data/summaries/`.
+  `market_pulse_latest.png` is generated on demand from the Streamlit 市場脈動 tab through `stock-chart.service`.
 
 ## ETF Benchmark Database
 

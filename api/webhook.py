@@ -84,6 +84,15 @@ def is_gold_command(text):
     compact = re.sub(r"[^0-9a-z\u4e00-\u9fff]", "", normalized)
     return "黃金" in normalized or "黄金" in normalized or compact in {"gold", "xau", "xauusd"}
 
+def is_market_pulse_command(text):
+    normalized = unicodedata.normalize("NFKC", text).strip().lower()
+    compact = re.sub(r"[^0-9a-z\u4e00-\u9fff]", "", normalized)
+    return (
+        "市場脈動" in normalized
+        or "市场脉动" in normalized
+        or compact in {"marketpulse", "pulse", "markethealth"}
+    )
+
 def parse_operation_report_ticker(text):
     compact = unicodedata.normalize("NFKC", text).lower()
     compact = re.sub(r"[^0-9a-z]", "", compact)
@@ -572,7 +581,8 @@ def handle_message(event):
     is_master_holding = is_master_holding_command(user_msg)
     is_operation_report = is_operation_report_command(user_msg)
     is_gold = is_gold_command(user_msg)
-    etf_quote_ticker = None if is_operation_report or is_master_holding or is_gold else parse_etf_quote_command(user_msg)
+    is_market_pulse = is_market_pulse_command(user_msg)
+    etf_quote_ticker = None if is_operation_report or is_master_holding or is_gold or is_market_pulse else parse_etf_quote_command(user_msg)
     print(f"LINE text={user_msg!r} parsed_etf={etf_quote_ticker}", flush=True)
     
     if is_master_holding:
@@ -597,6 +607,27 @@ def handle_message(event):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text="吳大師持股暫時無法產生，請稍後再試。")
+            )
+
+    elif is_market_pulse:
+        try:
+            res = requests.post(f"{CHART_SERVICE_URL}/market-pulse-snapshot", timeout=60).json()
+            if res.get("status") != "success":
+                raise RuntimeError(res)
+            latest_date = res.get("latest_date") or "最新交易日"
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    TextSendMessage(text=f"市場脈動｜資料截至 {latest_date}"),
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
+                ],
+            )
+        except Exception as e:
+            print("Market pulse snapshot generation failed:", e)
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="市場脈動截圖暫時無法產生，請稍後再試。")
             )
 
     elif is_gold:
@@ -791,6 +822,7 @@ def handle_message(event):
             "• 匯率 — 美元兌台幣、瑞郎、日圓\n"
             "• 債券 — 美國10年期公債殖利率\n"
             "• 黃金 — TradingView GOLD 報價與圖\n"
+            "• 市場脈動 — 加權指數市場狀態截圖\n"
             "• 981 — 00981A 持股即時表\n"
             "• 997 — 00997A 持股即時表\n"
             "• 0050 — 元大台灣50 持股即時表\n"

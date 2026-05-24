@@ -2,13 +2,17 @@ import os
 import asyncio
 import urllib.request
 import re
+import sqlite3
 from io import BytesIO
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from playwright.async_api import async_playwright
 from PIL import Image, ImageDraw, ImageFont
 
 app = FastAPI()
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
 
 # Configuration
 CHART_TABS = {
@@ -352,6 +356,17 @@ class SnapshotRequest(BaseModel):
     key: str
 
 
+def _latest_taiex_date():
+    db_path = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
+    try:
+        with sqlite3.connect(db_path) as conn:
+            row = conn.execute("SELECT MAX(date) FROM prices WHERE ticker = '^TWII'").fetchone()
+        return row[0] if row and row[0] else None
+    except Exception as exc:
+        print(f"⚠️ Could not read latest TAIEX date: {exc}")
+        return None
+
+
 async def _get_page_for_key(key):
     if key not in pages:
         await init_browser()
@@ -467,6 +482,49 @@ async def take_snapshot(req: SnapshotRequest):
         print(f"❌ Error during snapshot for {req.key}: {e}")
         await init_browser()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/market-pulse-snapshot")
+async def market_pulse_snapshot():
+    """Capture the Streamlit 市場脈動 tab for the latest DB trading date."""
+    filename = "market_pulse_latest.png"
+    filepath = os.path.join(OUTPUT_DIR, filename)
+    latest_date = _latest_taiex_date()
+    page = None
+    try:
+        if browser_context is None:
+            await init_browser()
+        page = await browser_context.new_page()
+        await page.set_viewport_size({"width": 1500, "height": 1900})
+        await page.goto("http://127.0.0.1:8501", wait_until="networkidle", timeout=90000)
+        tab = page.get_by_role("tab", name=re.compile("市場脈動|甯傚牬鑴堝嫊"))
+        await tab.click(timeout=30000)
+        await page.wait_for_load_state("networkidle", timeout=30000)
+        await page.wait_for_timeout(2500)
+
+        await page.add_style_tag(content="""
+            header, [data-testid="stToolbar"], [data-testid="stDecoration"],
+            [data-testid="stStatusWidget"], #MainMenu, footer {
+                display: none !important;
+            }
+            .block-container {
+                padding-top: 1.2rem !important;
+                padding-bottom: 1.2rem !important;
+                max-width: 1500px !important;
+            }
+        """)
+        await page.screenshot(path=filepath, full_page=True)
+        print(f"  ✅ Market pulse snapshot saved: {filename} (latest_date={latest_date})")
+        return {"status": "success", "url": filename, "path": filepath, "latest_date": latest_date}
+    except Exception as e:
+        print(f"❌ Error during market pulse snapshot: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if page is not None:
+            try:
+                await page.close()
+            except Exception:
+                pass
 
 if __name__ == "__main__":
     import uvicorn
