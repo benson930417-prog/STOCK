@@ -304,7 +304,10 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         # Price series: adj_close (還原) or raw close, per toggle
         if use_adj and not force_raw:
             price = df["adj_close"].fillna(df["close"])
-            status_label = "✅ 配息還原"
+            if db.get_dividends(ticker).empty:
+                status_label = "無配息資料"
+            else:
+                status_label = "✅ 配息還原"
         else:
             price = df["close"]
             status_label = "📊 原始收盤"
