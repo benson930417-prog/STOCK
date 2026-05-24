@@ -142,43 +142,68 @@ def _render_headline(taiex: pd.Series) -> None:
 
 
 def _render_taiex_timeframes(taiex: pd.Series) -> None:
-    """TAIEX percentile across multiple lookback windows — horizontal bars."""
-    st.markdown("### 🌡️ TAIEX 在歷史區間的位置")
-    st.caption("數字越高 = 越接近區間高點。看到 90+ 多個視窗都偏熱 → 進入歷史極端區。")
+    """TAIEX multi-window check — price percentile AND stretch from that
+    window's own moving average. Stretch matters because in a strong
+    trending market, every day is at percentile 100 — that alone is not
+    bubble, it's just an uptrend. Bubble = high percentile + parabolic
+    distance from longer-term mean."""
+    st.markdown("### 🌡️ TAIEX 多視窗檢查")
+    st.caption(
+        "**分位數**：當前價格在該視窗內的位置（趨勢市中經常 100，本身不算過熱）。　"
+        "**距視窗均線**：與該視窗均線的距離，反映「離趨勢有多遠」。　"
+        "兩個都偏高才是真正過熱（不只是處於上升趨勢）。"
+    )
 
+    if taiex is None or len(taiex) < 60:
+        st.info("TAIEX 資料不足。")
+        return
+
+    current = float(taiex.iloc[-1])
     windows = [("60 日 (~3M)", 60), ("1 年 (252d)", 252), ("2 年 (504d)", 504)]
-    rows = []
+    rows: list[dict] = []
     for label, lb in windows:
+        win = taiex.iloc[-lb:] if len(taiex) >= lb else taiex
         pct = _percentile_in_window(taiex, lb)
+        win_ma = float(win.mean())
+        stretch = (current - win_ma) / win_ma * 100.0 if win_ma > 0 else None
+        tag, severity = _composite_judgment(pct, stretch)
         rows.append({
-            "label": label,
-            "pct": pct or 0.0,
-            "color": _heat_color(pct),
-            "tag": _heat_label(pct),
+            "視窗":      label,
+            "分位數":    pct,
+            "距視窗均線": stretch,
+            "綜合判斷":  tag,
+            "_sort":     severity,
         })
 
-    fig = go.Figure()
-    fig.add_trace(go.Bar(
-        y=[r["label"] for r in rows],
-        x=[r["pct"]   for r in rows],
-        marker=dict(color=[r["color"] for r in rows]),
-        text=[f"{r['pct']:.0f}  {r['tag']}" for r in rows],
-        textposition="outside",
-        cliponaxis=False,
-        orientation="h",
-    ))
-    fig.update_layout(
-        xaxis=dict(range=[0, 110], showticklabels=True, tickformat=".0f",
-                   ticksuffix=" pct", showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
-        yaxis=dict(showgrid=False),
-        height=200, margin=dict(l=10, r=80, t=10, b=10),
-        showlegend=False,
-        plot_bgcolor="rgba(0,0,0,0)",
+    df_show = pd.DataFrame(rows).drop(columns="_sort")
+
+    def _color_pct(v):
+        if v is None or pd.isna(v): return ""
+        if v >= 95: return "color: #dc2626; font-weight: 700"
+        if v >= 80: return "color: #f97316"
+        if v >= 60: return "color: #facc15"
+        if v <  20: return "color: #1e40af"
+        return ""
+
+    def _color_stretch(v):
+        if v is None or pd.isna(v): return ""
+        if v >=  25: return "background-color: rgba(220, 38, 38, 0.25); font-weight: 700"
+        if v >=  15: return "background-color: rgba(249, 115, 22, 0.20)"
+        if v >=   5: return "background-color: rgba(250, 204, 21, 0.15)"
+        if v <= -15: return "background-color: rgba(30, 64, 175, 0.20); color: #93c5fd"
+        if v <=  -5: return "background-color: rgba(14, 165, 233, 0.15)"
+        return ""
+
+    styled = (
+        df_show.style
+        .format({
+            "分位數":     lambda v: f"{v:.0f}"  if pd.notna(v) else "—",
+            "距視窗均線": lambda v: f"{v:+.1f}%" if pd.notna(v) else "—",
+        })
+        .map(_color_pct,     subset=["分位數"])
+        .map(_color_stretch, subset=["距視窗均線"])
     )
-    # Reference lines at 20 and 80 (rough "extreme" markers)
-    fig.add_vline(x=20, line=dict(color="rgba(14,165,233,0.4)",  width=1, dash="dot"))
-    fig.add_vline(x=80, line=dict(color="rgba(249,115,22,0.4)",  width=1, dash="dot"))
-    st.plotly_chart(fig, width="stretch")
+    st.dataframe(styled, hide_index=True, width="stretch")
 
 
 def _composite_judgment(pct: float | None, stretch: float | None) -> tuple[str, str]:
