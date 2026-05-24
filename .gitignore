@@ -37,3 +37,8 @@ data/etf_bench/*.sqlite-shm
 
 # Atomic-write leftover (OneDrive vs editor race condition)
 *.tmp.*
+
+# strategy_experiment — local backtest artefacts, never tracked
+strategy_experiment/*.csv
+strategy_experiment/*.log
+strategy_experiment/results/

@@ -1,10 +1,18 @@
-"""One-shot tactical-rule optimizer.
+"""One-shot tactical-rule optimizer.  [strategy_experiment / local-only]
 
-Run ONCE locally. Picks the best (FIRE percentiles, RETRIEVE percentiles,
-cooldown, lookback window) combo for a 70%-core / 30%-bullet portfolio rule
-system, by backtesting against TAIEX history.
+This script lives in strategy_experiment/ to keep it separate from the
+production server pipeline. Run on the local dev machine to investigate
+strategy ideas. The CSV output is gitignored so experiment artefacts
+never get pushed.
 
-The winner gets hard-coded into the 市場脈動 tab. No live tuning.
+Picks the best (FIRE percentiles, RETRIEVE percentiles, cooldown, lookback,
+core %) combo for a layered core / bullet portfolio rule system, by
+backtesting against TAIEX history.
+
+Conclusion from runs so far: across 1080-config grids and 2y/5y windows on
+either 0050 (TSMC-heavy) or 00662 (NASDAQ) as core, the tactical layer adds
+no Sharpe alpha vs simple static rebalancing or DCA. Kept around as
+historical record / re-runnable when more bear-market data accumulates.
 
 Strategy model
 ──────────────
@@ -27,8 +35,8 @@ Costs
                                    or 0.39%/rebalance (RETRIEVE)
 
 Run:
-    python -m scripts.etf_benchmark.optimize_tactical_rules
-    python -m scripts.etf_benchmark.optimize_tactical_rules --core-ticker 0050 --bullet-ticker 00865B
+    python -m strategy_experiment.optimize_tactical_rules
+    python -m strategy_experiment.optimize_tactical_rules --years 5 --core-ticker 00662
 """
 from __future__ import annotations
 
@@ -44,12 +52,13 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
+ROOT_DIR     = Path(__file__).resolve().parents[1]
+SCRIPT_DIR   = Path(__file__).resolve().parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 DB_PATH      = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
-RESULTS_CSV  = ROOT_DIR / "data" / "etf_bench" / "tactical_backtest_results.csv"
+RESULTS_CSV  = SCRIPT_DIR / "tactical_backtest_results.csv"
 
 # ── constants ───────────────────────────────────────────────────────────────
 INITIAL_CAPITAL    = 1_000_000.0   # NTD
