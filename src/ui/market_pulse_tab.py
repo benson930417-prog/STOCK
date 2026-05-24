@@ -785,7 +785,7 @@ def _render_summary_card(taiex: pd.Series,
 def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> None:
     st.subheader("📊 市場脈動")
     st.caption(
-        "即時市場狀態儀表板 — **給你資料，由你判斷**。"
+        "市場狀態儀表板 — **給你資料，由你判斷**。"
         "四個區塊分別測量**水平 / 拉伸 / 速度 / 廣度**，"
         "最後以一段中性文字綜合解讀。本頁不提供買賣訊號。"
     )
@@ -795,6 +795,32 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
         st.error("資料庫無 TAIEX (^TWII) 價格。請先執行 step3_backfill。")
         return
     taiex = taiex_df.set_index("date")["close"].dropna()
+
+    # "As of" date banner — important because viewing on a weekend / holiday
+    # could mislead readers into thinking this is intraday data
+    as_of_date = taiex.index[-1].date()
+    today      = pd.Timestamp.today().date()
+    days_stale = (today - as_of_date).days
+    if days_stale == 0:
+        freshness = "今日收盤"
+        bg_color, text_color = "rgba(34,197,94,0.10)", "#86efac"
+    elif days_stale == 1:
+        freshness = "昨日收盤"
+        bg_color, text_color = "rgba(99,102,241,0.10)", "#a5b4fc"
+    elif days_stale <= 4:
+        freshness = f"{days_stale} 天前收盤（週末/假日延遲）"
+        bg_color, text_color = "rgba(99,102,241,0.10)", "#a5b4fc"
+    else:
+        freshness = f"⚠ {days_stale} 天前收盤（資料可能未更新，請檢查 step3 排程）"
+        bg_color, text_color = "rgba(249,115,22,0.15)", "#fdba74"
+    st.markdown(
+        f"""<div style="padding:0.55rem 1rem; margin:0.4rem 0 1rem 0;
+                      background:{bg_color}; border-radius:4px;
+                      font-size:0.92rem; color:{text_color};">
+              📅 <b>資料截至</b>　{as_of_date.strftime('%Y-%m-%d')}　({as_of_date.strftime('%A')})　·　{freshness}
+            </div>""",
+        unsafe_allow_html=True,
+    )
 
     # 1. Market Level
     _render_headline(taiex)
