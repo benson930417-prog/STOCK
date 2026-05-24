@@ -41,6 +41,7 @@ import plotly.graph_objects as go
 import requests
 import streamlit as st
 from src.ui.etf_tab import render_etf_tab, render_passive_etf_tab
+from src.ui.etf_compare_tab import render_etf_compare_tab
 from scripts.master_manual_positions import (
     CASH_LABEL as MANUAL_CASH_LABEL,
     MANUAL_PATH as MANUAL_POSITIONS_PATH,
@@ -2299,7 +2300,7 @@ try:
 
     hr()
 
-    tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf, tab_passive_etf, tab_master_holding = st.tabs(
+    tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf, tab_passive_etf, tab_master_holding, tab_etf_compare = st.tabs(
         [
             T(lang, "Overview", "總覽"),
             T(lang, "Leaderboard", "排行"),
@@ -2308,6 +2309,7 @@ try:
             T(lang, "Active ETFs", "主動型 ETF"),
             T(lang, "Passive ETFs", "被動式 ETF"),
             "吳大師持股",
+            T(lang, "ETF Comparison", "ETF 比較"),
         ]
     )
 
@@ -3770,6 +3772,19 @@ try:
                                 "全持股",
                                 coverage_word="覆蓋",
                             )
+
+    # -------------------- ETF Comparison --------------------
+    with tab_etf_compare:
+        render_etf_compare_tab(
+            lang=lang,
+            T=T,
+            DATA_DIR=DATA_DIR,
+            get_market_data=get_market_data,
+            add_zero_line=add_zero_line,
+            hex_to_rgba=hex_to_rgba,
+            PROFIT_COLOR=PROFIT_COLOR,
+            LOSS_COLOR=LOSS_COLOR,
+        )
 
 except Exception:
     st.error("App crashed during rendering. Here is the full traceback:")

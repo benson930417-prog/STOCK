@@ -1,5 +1,10 @@
 #!/bin/bash
-# Run selected ETF fetchers, push new data to GitHub, and send LINE notifications.
+# Daily orchestrator: ETF fetchers + etf_benchmark refresh + git push +
+# LINE notify + admin email summary.
+#
+# Triggered by stock-fetch-1730-tw.timer at 17:30 TPE (09:30 UTC).
+# Failure of any single step does NOT abort the rest — every step's status is
+# captured into a summary and emailed to ADMIN_EMAIL at the end.
 
 set -u
 
@@ -12,20 +17,93 @@ pip install -r requirements.txt -q
 
 SECRETS_FILE="/home/ubuntu/.stock_secrets"
 if [ -f "$SECRETS_FILE" ]; then
+    # shellcheck disable=SC1090
     source "$SECRETS_FILE"
 else
-    echo "Warning: Secrets file $SECRETS_FILE not found. LINE notification will fail."
+    echo "Warning: Secrets file $SECRETS_FILE not found. LINE/email will fail."
 fi
 
 GITHUB_REPO="${GITHUB_REPO:-benson930417-prog/STOCK}"
 
+# ──────────────────────────────────────────────────────────────────────────
+# Logging scaffolding — every step writes to $LOG_DIR/<name>.log and appends
+# a one-line status to $SUMMARY_FILE. At end we email both.
+# ──────────────────────────────────────────────────────────────────────────
+LOG_DIR=$(mktemp -d -t stock_run.XXXX)
+SUMMARY_FILE="$LOG_DIR/_summary.txt"
+ERRORS_FILE="$LOG_DIR/_errors.txt"
+trap 'rm -rf "$LOG_DIR"' EXIT
+
+run_start_utc=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+run_start_epoch=$(date +%s)
+overall_status="SUCCESS"
+fail_count=0
+
+{
+    echo "STOCK daily run summary"
+    echo "Run started: $run_start_utc"
+    echo "Hostname   : $(hostname)"
+    echo
+} > "$SUMMARY_FILE"
+
+# Run a labeled command; append OK/FAIL to summary, capture full stderr+stdout
+# to a per-step log file, and on failure copy the tail into errors file.
+run_step() {
+    local label="$1"; shift
+    local logfile="$LOG_DIR/${label// /_}.log"
+    echo "=== $label ==="
+    if "$@" > "$logfile" 2>&1; then
+        # Pull useful metrics out of step3/step4/step5 output
+        local metrics=""
+        case "$label" in
+            step3*)
+                metrics=$(grep -E "^\s*(OK|EMPTY|FAIL|rows:)" "$logfile" | tr '\n' ' ' | sed 's/  */ /g')
+                ;;
+            step4*)
+                metrics=$(grep -E "^\s*(pass|warn|fail|skip)" "$logfile" | tr '\n' ' ' | sed 's/  */ /g')
+                ;;
+            step5*)
+                metrics=$(grep -E "^\s*[0-9A-Z]+\s+\[(PASS|WARN|FAIL)\]" "$logfile" | tr '\n' '|' | sed 's/|$//')
+                ;;
+        esac
+        if [ -n "$metrics" ]; then
+            printf "  [OK]   %-40s  %s\n" "$label" "$metrics" >> "$SUMMARY_FILE"
+        else
+            printf "  [OK]   %s\n" "$label" >> "$SUMMARY_FILE"
+        fi
+        # Echo tail for journal log
+        tail -n 3 "$logfile"
+        return 0
+    else
+        local rc=$?
+        printf "  [FAIL] %s  (exit=%d)\n" "$label" "$rc" >> "$SUMMARY_FILE"
+        {
+            echo
+            echo "═══════════════════════════════════════════════════"
+            echo "FAILURE: $label  (exit=$rc)"
+            echo "Last 30 lines of $logfile:"
+            echo "───────────────────────────────────────────────────"
+            tail -n 30 "$logfile"
+            echo
+        } >> "$ERRORS_FILE"
+        overall_status="PARTIAL_FAIL"
+        fail_count=$((fail_count + 1))
+        echo "  [FAIL] $label (exit=$rc) — continuing"
+        return $rc
+    fi
+}
+
+# ──────────────────────────────────────────────────────────────────────────
+# 1. ETF fetchers (your existing per-ETF scripts)
+# ──────────────────────────────────────────────────────────────────────────
 if [ "$#" -gt 0 ]; then
     ETFS=("$@")
 else
     ETFS=("00981A" "00997A" "0050" "00830" "00878" "009805" "009820")
 fi
 
-echo "Running ETF fetch for: ${ETFS[*]}"
+echo "ETF list: ${ETFS[*]}"
+{ echo "ETF Fetchers"; echo "──────────"; } >> "$SUMMARY_FILE"
 
 RUN_STARTED_UTC="$(python -c 'from datetime import datetime, timezone; print(datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))')"
 FAILED_ETFS=()
@@ -33,17 +111,29 @@ FAILED_ETFS=()
 for ETF in "${ETFS[@]}"; do
     case "$ETF" in
         00981A|00997A)
-            python "scripts/fetch_etf_${ETF}.py" || FAILED_ETFS+=("$ETF")
+            run_step "fetch $ETF (active)" python "scripts/fetch_etf_${ETF}.py" || FAILED_ETFS+=("$ETF")
             ;;
         0050|00830|00878|009805|009820)
-            python "scripts/fetch_passive_${ETF}.py" || FAILED_ETFS+=("$ETF")
+            run_step "fetch $ETF (passive)" python "scripts/fetch_passive_${ETF}.py" || FAILED_ETFS+=("$ETF")
             ;;
         *)
             echo "Skipping unknown ETF: $ETF"
+            printf "  [SKIP] unknown ETF: %s\n" "$ETF" >> "$SUMMARY_FILE"
             ;;
     esac
 done
 
+# ──────────────────────────────────────────────────────────────────────────
+# 2. etf_benchmark refresh (NEW)
+# ──────────────────────────────────────────────────────────────────────────
+{ echo; echo "etf_benchmark"; echo "──────────"; } >> "$SUMMARY_FILE"
+run_step "step3 backfill --incremental" python -m scripts.etf_benchmark.step3_backfill --incremental
+run_step "step4 verify (adj_close)"     python -m scripts.etf_benchmark.step4_verify
+run_step "step5 verify_nav"              python -m scripts.etf_benchmark.step5_verify_nav
+
+# ──────────────────────────────────────────────────────────────────────────
+# 3. Detect which ETFs got NEW DATA this run
+# ──────────────────────────────────────────────────────────────────────────
 CHANGED_ETFS=()
 ACTIVE_NEW_ETFS=()
 while IFS= read -r ETF; do
@@ -107,24 +197,34 @@ for etf in os.environ.get("FAILED_ETFS_STR", "").split():
 PY
 fi
 
+# ──────────────────────────────────────────────────────────────────────────
+# 4. Git push + (if active ETF got new data) LINE broadcast
+# ──────────────────────────────────────────────────────────────────────────
 git config --global user.name "OCI Server Bot"
 git config --global user.email "oci-bot@localhost"
 
+{ echo; echo "Git & LINE"; echo "──────────"; } >> "$SUMMARY_FILE"
+
 if [ "${#CHANGED_ETFS[@]}" -gt 0 ]; then
     echo "New data detected for: ${CHANGED_ETFS[*]}"
+    printf "  [INFO] NEW DATA for: %s\n" "${CHANGED_ETFS[*]}" >> "$SUMMARY_FILE"
     if [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ]; then
-        python scripts/generate_etf_summary.py
+        run_step "generate_etf_summary" python scripts/generate_etf_summary.py
     fi
 
-    git add data/*.json data/summaries/*.jpg
-    git commit -m "Auto-update ETF data and summary images from OCI" || true
-    git push origin main
+    git add data/*.json data/summaries/*.jpg 2>/dev/null
+    if git commit -m "Auto-update ETF data and summary images from OCI" 2>&1; then
+        printf "  [OK]   git commit\n" >> "$SUMMARY_FILE"
+    else
+        printf "  [INFO] git: no changes to commit\n" >> "$SUMMARY_FILE"
+    fi
+    run_step "git push origin main" git push origin main
 
     if [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ] && [ -n "${LINE_TOKEN:-}" ]; then
         export GITHUB_REPO
         export LINE_ETFS="${ACTIVE_NEW_ETFS[*]}"
         export LINE_TOKEN
-        python - <<'PY'
+        run_step "LINE broadcast active reports" python - <<'PY'
 import json
 import os
 import time
@@ -171,12 +271,54 @@ req = request.Request(
 with request.urlopen(req, timeout=20) as resp:
     print(resp.status, resp.read().decode("utf-8", errors="replace"))
 PY
-    else
+    elif [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ]; then
+        printf "  [SKIP] LINE broadcast: LINE_TOKEN not set\n" >> "$SUMMARY_FILE"
         echo "LINE_TOKEN is not set. Skipping LINE notification."
     fi
 else
     echo "No new ETF data found. Pushing log timestamps only."
-    git add data/*.json
-    git commit -m "Auto-update ETF log timestamps from OCI" || true
-    git push origin main
+    printf "  [INFO] no new ETF data\n" >> "$SUMMARY_FILE"
+    git add data/*.json 2>/dev/null
+    git commit -m "Auto-update ETF log timestamps from OCI" 2>/dev/null || true
+    run_step "git push origin main (log-only)" git push origin main
 fi
+
+# ──────────────────────────────────────────────────────────────────────────
+# 5. Send admin email summary (always, even on full success)
+# ──────────────────────────────────────────────────────────────────────────
+run_end_epoch=$(date +%s)
+duration=$((run_end_epoch - run_start_epoch))
+
+{
+    echo
+    echo "──────────"
+    echo "Duration   : ${duration}s"
+    echo "Overall    : $overall_status"
+    echo "Failed steps: $fail_count"
+} >> "$SUMMARY_FILE"
+
+# Compose final body: summary always, errors appended if any
+FINAL_BODY="$LOG_DIR/_email_body.txt"
+cat "$SUMMARY_FILE" > "$FINAL_BODY"
+if [ -s "$ERRORS_FILE" ]; then
+    {
+        echo
+        echo "════════════ FAILURE DETAILS ════════════"
+        cat "$ERRORS_FILE"
+    } >> "$FINAL_BODY"
+fi
+
+SUBJECT="[STOCK] daily run — $overall_status ($(date +%Y-%m-%d %H:%M) TPE)"
+if [ -n "${GMAIL_APP_PASSWORD:-}" ]; then
+    GMAIL_APP_PASSWORD="$GMAIL_APP_PASSWORD" \
+    ADMIN_EMAIL="${ADMIN_EMAIL:-benson930417@gmail.com}" \
+    GMAIL_FROM="${GMAIL_FROM:-${ADMIN_EMAIL:-benson930417@gmail.com}}" \
+    python scripts/admin_email.py \
+        --subject "$SUBJECT" \
+        --body-file "$FINAL_BODY" \
+        || echo "WARN: admin email failed (non-fatal)"
+else
+    echo "GMAIL_APP_PASSWORD not set in $SECRETS_FILE — skipping admin email"
+fi
+
+echo "Run complete: $overall_status ($fail_count failed steps, ${duration}s)"

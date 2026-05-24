@@ -27,3 +27,12 @@ data/fonts/
 data/quote_cache/
 data/debug_00997A/
 data/etf_*_summary_*.jpg
+
+# etf_benchmark SQLite — built from yfinance locally / on OCI, not tracked
+data/etf_bench/*.sqlite
+data/etf_bench/*.sqlite-journal
+data/etf_bench/*.sqlite-wal
+data/etf_bench/*.sqlite-shm
+
+# Atomic-write leftover (OneDrive vs editor race condition)
+*.tmp.*

@@ -7,8 +7,10 @@ This repository contains the backend services, data pipelines, and frontend appl
 - [Server Environment](#server-environment)
 - [Systemd Services](#systemd-services)
 - [Data Pipeline & Business Logic](#data-pipeline--business-logic)
+- [ETF Benchmark Database](#etf-benchmark-database)
 - [Repository Structure](#repository-structure)
 - [Deployment & Operations](#deployment--operations)
+- [Daily Run & Admin Email](#daily-run--admin-email)
 
 ---
 
@@ -75,6 +77,62 @@ journalctl -u stock-webhook.service -n 100 --no-pager
 - **Quote Caches:** `quote_cache/etf_{TICKER}_quotes.json`, `quote_cache/master_holding.json`.
 - **Generated Media:** Summaries and snapshot images are saved to `data/images/` and `data/summaries/`.
 
+## ETF Benchmark Database
+
+A local-first, dividend-correct SQLite database covering every TWSE-listed ETF
+plus key reference indices. Built from `yfinance` and triple-validated against
+issuer NAVs. Powers the **ETF 比較** tab (replaces per-request Yahoo calls
+with sub-second SQLite reads).
+
+**Location:** `data/etf_bench/etf_bench.sqlite` (gitignored — built per host)
+
+**Coverage:** rolling 2-year window (recomputed every run).
+- 313 entries: 307 ETFs (from TWSE OpenAPI + TPEx seed list) + 6 reference
+  indices (^TWII, ^TWOII, ^SOX, ^GSPC, ^IXIC, ^DJI).
+- ~280 ETFs have actual prices (the rest are delisted shells).
+
+**Tables:**
+| Table | Purpose |
+|---|---|
+| `etfs` | Master list (ticker, name, market, fund_type, inception_date, ...) |
+| `prices` | Daily OHLCV + Yahoo's `adj_close` (dividend-adjusted) |
+| `dividends` | Ex-date / amount, with `is_income_equalization` flag |
+| `splits` | Stock split events (ratio = new/old shares) |
+| `benchmark` | TAIEX price + total-return index |
+| `regimes` | Bull / correction / bear regime tags (TODO step 6) |
+| `ingest_log` | One row per ticker per backfill run — success / empty / fail |
+| `verification_log` | Per-ticker per-check pass/warn/fail — persistent audit trail |
+
+**Pipeline scripts** (`scripts/etf_benchmark/`):
+| Script | What it does |
+|---|---|
+| `step1_universe.py` | Builds `data/etf_bench/universe.csv` from TWSE OpenAPI + TPEx seed |
+| `step2_schema.py` | Creates / resets SQLite schema (`--reset` drops tables first) |
+| `step3_backfill.py` | yfinance batch download → prices/dividends/splits. `--incremental` = last 5 trading days only |
+| `step4_verify.py` | Reconstructs adj_close from raw close + dividends, compares to Yahoo's stored adj_close (>0.5% diff = FAIL) |
+| `step5_verify_nav.py` | Cross-checks Yahoo close vs the official NAVs already collected by the existing per-ETF fetchers (`data/passive_*.json` / `data/etf_*.json`) |
+| `db.py` | Streamlit-cached read helpers (`get_universe`, `get_prices`, `get_dividends`, `get_avg_turnover_map`) |
+
+**Three-way verification chain** (last full run, 2024-05-24 → today):
+1. **step4** — 275/278 PASS (adj_close formula matches Yahoo within 0.5%; 3 outliers are 收益平準金 or Yahoo duplicate-dividend records, not bugs)
+2. **step5** — TW-equity ETFs (0050, 00878) match issuer NAV within 1%; US-tracking ETFs (00830, 00997A) show 2-4% structural diff due to cross-timezone FX pricing
+3. **Top 28 high-dividend ETFs** (including 18×/yr monthly bond distributors) — 0.00000% diff vs Yahoo
+
+**First-time setup on a new host:**
+```bash
+cd /home/ubuntu/STOCK
+source venv/bin/activate
+python -m scripts.etf_benchmark.step1_universe       # build universe.csv
+python -m scripts.etf_benchmark.step2_schema --reset # create schema
+python -m scripts.etf_benchmark.step3_backfill       # ~12 sec, full 2-year backfill
+python -m scripts.etf_benchmark.step4_verify         # ~3 sec, validate
+python -m scripts.etf_benchmark.step5_verify_nav     # ~1 sec, NAV cross-check
+```
+
+After that the daily 17:30 timer keeps it fresh via `--incremental` mode.
+
+---
+
 ## Repository Structure
 
 ### `scripts/` (Pipeline & Processors)
@@ -83,7 +141,9 @@ journalctl -u stock-webhook.service -n 100 --no-pager
 - **`monitor_etf_quotes.py`**: The main daemon script for building the quote cache. Handles Yahoo pricing and TSMC futures.
 - **`generate_quote_card.py`**: The shared image-rendering engine for ETF and Master Quote cards.
 - **`master_holding_quote_card.py`**: Data adapter that expands ETF holdings into granular underlying exposure for the "吳大師" composite.
-- **`update_and_notify.sh`**: The orchestrator. Runs fetches, generates summaries, commits updates to GitHub, and triggers LINE push messages.
+- **`update_and_notify.sh`**: The orchestrator. Runs fetches, refreshes the etf_benchmark DB, generates summaries, commits updates to GitHub, triggers LINE push messages, and emails an admin summary.
+- **`admin_email.py`**: Gmail SMTP helper used by `update_and_notify.sh` to send the daily run summary.
+- **`etf_benchmark/`**: The ETF benchmark database pipeline (see [section above](#etf-benchmark-database)).
 
 ### `api/` (Webhook)
 - **`webhook.py`**: Flask server handling LineBot events. Routes text commands (e.g., "981", "0050", "油價", "吳大師") to their respective rendering and API integration functions.
@@ -150,3 +210,121 @@ python scripts/monitor_etf_quotes.py 00981A --interval 60
 # 3. Generate Master card cache
 python scripts/master_holding_quote_card.py
 ```
+
+---
+
+## Daily Run & Admin Email
+
+The `stock-fetch-1730-tw.timer` fires `scripts/update_and_notify.sh` every day
+at 17:30 TPE (09:30 UTC). The script now performs the following steps in order,
+captures each step's status, and emails a summary to the admin:
+
+1. `git pull` (rebase + autostash) — pulls latest code
+2. `pip install -r requirements.txt -q` — keep deps in sync
+3. **Per-ETF fetchers** (the 7 active/passive scripts) — write `data/*_history.json`
+4. **etf_benchmark refresh** —
+   - `step3_backfill --incremental` (yfinance → SQLite, last 5 trading days)
+   - `step4_verify` (re-validate adj_close)
+   - `step5_verify_nav` (cross-check vs the NAVs from step 3)
+5. **Git commit + push** if any tracked data changed
+6. **LINE broadcast** of active ETF reports if new data found
+7. **Admin email summary** — sent every run, success or partial-fail
+
+### Email format
+
+Subject: `[STOCK] daily run — SUCCESS (2026-05-24 17:30) TPE`
+Body: per-step OK/FAIL lines with key metrics (`step3` row counts, `step4` pass/fail
+totals, `step5` per-ETF status). If any step failed, a `FAILURE DETAILS` section
+appends the last 30 lines of that step's full log.
+
+### Gmail App Password setup (one-time)
+
+The script uses Gmail SMTP via `scripts/admin_email.py`. You need a **Gmail App
+Password** (NOT your regular Google password) because Google blocks normal
+password auth from scripts.
+
+**Steps to generate:**
+1. Sign in to [https://myaccount.google.com](https://myaccount.google.com)
+2. **Security** → ensure **2-Step Verification** is **ON** (App Passwords are
+   only available when 2FA is enabled)
+3. Go to [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+4. App name: `STOCK Server` → **Create**
+5. Copy the 16-character password Google shows you (looks like
+   `abcd efgh ijkl mnop`). Save it now — Google won't show it again.
+
+### Adding the secrets on the OCI server
+
+Edit `/home/ubuntu/.stock_secrets` and add three lines (alongside the existing
+`LINE_TOKEN` etc.):
+
+```bash
+# Admin email (Gmail SMTP)
+export GMAIL_APP_PASSWORD="abcdefghijklmnop"   # 16 chars, spaces OK or stripped
+export ADMIN_EMAIL="benson930417@gmail.com"    # recipient
+export GMAIL_FROM="benson930417@gmail.com"     # the Gmail account that owns the App Password (often same as ADMIN_EMAIL)
+```
+
+Permissions check:
+```bash
+chmod 600 /home/ubuntu/.stock_secrets
+ls -l /home/ubuntu/.stock_secrets             # should show -rw------- ubuntu ubuntu
+```
+
+### Verifying email works (manual test)
+
+```bash
+cd /home/ubuntu/STOCK
+source venv/bin/activate
+source /home/ubuntu/.stock_secrets
+python scripts/admin_email.py \
+    --subject "[STOCK] manual SMTP test" \
+    --body "If you see this, email config works."
+```
+
+You should receive the test email within ~30 seconds. If not, check:
+- 2-Step Verification is actually ON
+- App Password was copied correctly (no extra characters)
+- `journalctl -u stock-fetch-1730-tw.service -n 50` shows the SMTP error
+
+### Behaviour when secrets are missing
+
+If `GMAIL_APP_PASSWORD` is not set, `admin_email.py` prints a warning and
+exits 0 — the daily job will **never abort** because of a missing email
+secret. The same applies to `LINE_TOKEN` (existing behaviour).
+
+---
+
+## Server Deployment (new host or after this commit)
+
+```bash
+# 1. Pull the new code
+cd /home/ubuntu/STOCK
+git pull origin main --rebase --autostash
+source venv/bin/activate
+pip install -r requirements.txt -q     # picks up yfinance >= 0.2.30
+
+# 2. Build the etf_benchmark database for the first time (~15 sec)
+python -m scripts.etf_benchmark.step1_universe
+python -m scripts.etf_benchmark.step2_schema --reset
+python -m scripts.etf_benchmark.step3_backfill
+python -m scripts.etf_benchmark.step4_verify
+python -m scripts.etf_benchmark.step5_verify_nav
+
+# 3. Add Gmail App Password to /home/ubuntu/.stock_secrets
+#    (see "Daily Run & Admin Email" section above)
+nano /home/ubuntu/.stock_secrets
+
+# 4. Verify email works
+source /home/ubuntu/.stock_secrets
+python scripts/admin_email.py --subject "[STOCK] manual test" --body "OK"
+
+# 5. Restart the Streamlit dashboard so it picks up the new tab + DB reads
+sudo systemctl restart stock-dashboard.service
+
+# 6. (Optional) trigger a manual run of the daily orchestrator to verify
+#    everything works end-to-end without waiting for 17:30
+bash scripts/update_and_notify.sh
+```
+
+The 17:30 timer needs no changes — it already calls `update_and_notify.sh`,
+which now includes the etf_benchmark refresh + admin email automatically.
