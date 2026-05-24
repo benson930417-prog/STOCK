@@ -137,6 +137,7 @@ run_step "step3 backfill --incremental" python -m scripts.etf_benchmark.step3_ba
 run_step "step4 verify (total return)"  python -m scripts.etf_benchmark.step4_verify
 run_step "step5 verify_nav"              python -m scripts.etf_benchmark.step5_verify_nav
 run_step "step6 regime tagger"           python -m scripts.etf_benchmark.step6_regimes
+run_step "generate_market_pulse_summary" python scripts/generate_market_pulse_summary.py
 
 # ──────────────────────────────────────────────────────────────────────────
 # 3. Detect which ETFs got NEW DATA this run
@@ -285,8 +286,8 @@ PY
 else
     echo "No new ETF data found. Pushing log timestamps only."
     printf "  [INFO] no new ETF data\n" >> "$SUMMARY_FILE"
-    git add data/*.json 2>/dev/null
-    git commit -m "Auto-update ETF log timestamps from OCI" 2>/dev/null || true
+    git add data/*.json data/summaries/*.jpg 2>/dev/null
+    git commit -m "Auto-update ETF log timestamps and market pulse summary from OCI" 2>/dev/null || true
     run_step "git push origin main (log-only)" git push origin main
 fi
 

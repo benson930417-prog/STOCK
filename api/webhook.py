@@ -611,14 +611,16 @@ def handle_message(event):
 
     elif is_market_pulse:
         try:
-            response = requests.post(f"{CHART_SERVICE_URL}/market-pulse-snapshot", timeout=90)
-            if not response.ok:
-                raise RuntimeError(f"chart_service {response.status_code}: {response.text[:500]}")
-            res = response.json()
-            if res.get("status") != "success":
-                raise RuntimeError(res)
-            latest_date = res.get("latest_date") or "最新交易日"
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
+            from scripts.generate_market_pulse_summary import generate, latest_taiex_date
+
+            filename = "market_pulse_latest.jpg"
+            image_path = os.path.join(parent_dir, "data", "summaries", filename)
+            latest_date = latest_taiex_date()
+            dated_path = os.path.join(parent_dir, "data", "summaries", f"market_pulse_{latest_date}.jpg")
+            if not os.path.exists(image_path) or not os.path.exists(dated_path):
+                latest_date, _, _ = generate()
+
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/summaries/{filename}?t={int(time.time())}"
             line_bot_api.reply_message(
                 event.reply_token,
                 [
