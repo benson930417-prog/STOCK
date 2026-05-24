@@ -195,15 +195,35 @@ def _classify_day_change(pct: float) -> tuple[str, str, str]:
     return HEALTH_COLORS["red"], "大跌", "日內 ±1.5% 為正常範圍"
 
 
-def _classify_regime(label_zh: str, days: int | None) -> tuple[str, str, str]:
-    color_by_regime = {
-        "多頭": (HEALTH_COLORS["green"],  "上升趨勢"),
-        "小熊": (HEALTH_COLORS["yellow"], "短期修正"),
-        "中熊": (HEALTH_COLORS["orange"], "中期回檔"),
-        "大熊": (HEALTH_COLORS["red"],    "深度熊市"),
-    }
-    color, status = color_by_regime.get(label_zh, (HEALTH_COLORS["gray"], label_zh))
-    return color, status, "多頭通常持續 50~200 個交易日"
+def _classify_regime(label_zh: str, days: int | None,
+                     dist_from_1y_high: float | None = None) -> tuple[str, str, str]:
+    """Regime color reflects BOTH the regime type AND its risk context, so
+    the headline reads consistently:
+      • 多頭 而且近高點 → yellow/orange (pullback risk),不是green
+      • 多頭 fresh and away from high → green (healthy uptrend)
+      • 小熊/中熊/大熊 → progressive yellow→red by severity
+    """
+    if label_zh == "多頭":
+        near_high = (dist_from_1y_high is not None and dist_from_1y_high >= -1.0)
+        mature    = (days is not None and days >= 180)
+        moderate  = (days is not None and days >= 90)
+        if near_high and mature:
+            return HEALTH_COLORS["red"],    "成熟多頭近高點", "多頭近高點+持續>180天 → 拉回機率明顯升高"
+        if near_high:
+            return HEALTH_COLORS["orange"], "多頭近高點",     "多頭近 1 年高點 → 拉回風險偏高"
+        if mature:
+            return HEALTH_COLORS["yellow"], "延長多頭",       "多頭持續超過 180 天屬延長階段"
+        if moderate:
+            return HEALTH_COLORS["green"],  "成熟多頭",       "多頭通常持續 50~200 天"
+        return HEALTH_COLORS["green"],      "健康上升",       "多頭通常持續 50~200 天"
+
+    if label_zh == "小熊":
+        return HEALTH_COLORS["yellow"], "短期修正", "小熊通常 5~20 天"
+    if label_zh == "中熊":
+        return HEALTH_COLORS["orange"], "中期回檔", "中熊通常 20~60 天"
+    if label_zh == "大熊":
+        return HEALTH_COLORS["red"],    "深度熊市", "大熊通常 30~150 天"
+    return HEALTH_COLORS["gray"], label_zh, ""
 
 
 def _classify_distance_from_high(dist_pct: float) -> tuple[str, str, str]:
@@ -313,9 +333,10 @@ def _render_headline(taiex: pd.Series) -> dict:
     dist_1y_hi = (current - h_252) / h_252 * 100.0 if h_252 > 0 else 0.0
     dist_60_lo = (current - l_60)  / l_60  * 100.0 if l_60  > 0 else 0.0
 
-    # Per-metric classification
+    # Per-metric classification — regime takes the distance-from-high as
+    # context so a 多頭 near the 1y high reads yellow/orange, not green
     c_day,    s_day,    r_day    = _classify_day_change(day_pct)
-    c_reg,    s_reg,    r_reg    = _classify_regime(cur_regime_label, cur_regime_days)
+    c_reg,    s_reg,    r_reg    = _classify_regime(cur_regime_label, cur_regime_days, dist_1y_hi)
     c_hi,     s_hi,     r_hi     = _classify_distance_from_high(dist_1y_hi)
     c_lo,     s_lo,     r_lo     = _classify_distance_from_low(dist_60_lo)
 
