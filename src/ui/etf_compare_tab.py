@@ -34,10 +34,10 @@ CORPORATE_ACTION_WARNINGS = {
 }
 
 REGIME_COLORS = {
-    "bull":       "rgba(40,  167,  69, 0.22)",
-    "correction": "rgba(255, 193,   7, 0.32)",
-    "mini_bear":  "rgba(253, 126,  20, 0.40)",
-    "bear":       "rgba(220,  53,  69, 0.48)",
+    "bull":       "rgba(46,  204, 113, 0.28)",   # emerald — stands out on dark theme
+    "correction": "rgba(241, 196,  15, 0.50)",   # sunflower yellow
+    "mini_bear":  "rgba(230, 126,  34, 0.60)",   # carrot orange
+    "bear":       "rgba(231,  76,  60, 0.65)",   # alizarin red
 }
 REGIME_LABELS_ZH = {
     "bull":       "多頭",
