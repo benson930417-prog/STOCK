@@ -29,6 +29,7 @@ data/debug_00997A/
 data/etf_*_summary_*.jpg
 
 # etf_benchmark SQLite — built from yfinance locally / on OCI, not tracked
+data/etf_bench/universe.csv
 data/etf_bench/*.sqlite
 data/etf_bench/*.sqlite-journal
 data/etf_bench/*.sqlite-wal
