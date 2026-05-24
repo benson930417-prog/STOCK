@@ -611,7 +611,10 @@ def handle_message(event):
 
     elif is_market_pulse:
         try:
-            res = requests.post(f"{CHART_SERVICE_URL}/market-pulse-snapshot", timeout=60).json()
+            response = requests.post(f"{CHART_SERVICE_URL}/market-pulse-snapshot", timeout=90)
+            if not response.ok:
+                raise RuntimeError(f"chart_service {response.status_code}: {response.text[:500]}")
+            res = response.json()
             if res.get("status") != "success":
                 raise RuntimeError(res)
             latest_date = res.get("latest_date") or "最新交易日"
