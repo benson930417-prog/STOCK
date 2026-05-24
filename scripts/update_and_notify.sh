@@ -12,6 +12,12 @@ cd /home/ubuntu/STOCK || exit 1
 source venv/bin/activate
 
 # Keep the OCI server in sync with UI updates and code changes from GitHub.
+# step1_universe rewrites this generated snapshot; do not let it block deploy pulls.
+if ! git diff --quiet -- data/etf_bench/universe.csv || ! git diff --cached --quiet -- data/etf_bench/universe.csv; then
+    echo "Restoring generated data/etf_bench/universe.csv before pull."
+    git restore --staged --worktree data/etf_bench/universe.csv 2>/dev/null \
+        || git checkout -- data/etf_bench/universe.csv
+fi
 git pull origin main --rebase --autostash
 pip install -r requirements.txt -q
 
