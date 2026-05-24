@@ -2,19 +2,13 @@ import os
 import asyncio
 import urllib.request
 import re
-import sqlite3
 from io import BytesIO
-from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from playwright.async_api import async_playwright
 from PIL import Image, ImageDraw, ImageFont
 
 app = FastAPI()
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-MARKET_PULSE_URL = os.environ.get("MARKET_PULSE_URL", "http://127.0.0.1:8501")
-MARKET_PULSE_LABEL = "\u5e02\u5834\u8108\u52d5"  # 市場脈動
 
 # Configuration
 CHART_TABS = {
@@ -358,54 +352,6 @@ class SnapshotRequest(BaseModel):
     key: str
 
 
-def _latest_taiex_date():
-    db_path = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
-    try:
-        with sqlite3.connect(db_path) as conn:
-            row = conn.execute("SELECT MAX(date) FROM prices WHERE ticker = '^TWII'").fetchone()
-        return row[0] if row and row[0] else None
-    except Exception as exc:
-        print(f"⚠️ Could not read latest TAIEX date: {exc}")
-        return None
-
-
-def _compress_market_pulse_image(path):
-    """Keep the LINE image comfortably small and readable."""
-    img = Image.open(path).convert("RGB")
-    max_width = 1200
-    if img.width > max_width:
-        ratio = max_width / img.width
-        img = img.resize((max_width, int(img.height * ratio)), Image.Resampling.LANCZOS)
-    img.save(path, format="JPEG", quality=88, optimize=True, progressive=True)
-
-
-async def _click_market_pulse_tab(page):
-    """Click the Streamlit 市場脈動 tab using role first, DOM text fallback second."""
-    await page.wait_for_selector("body", timeout=30000)
-    try:
-        await page.get_by_role("tab", name=re.compile(MARKET_PULSE_LABEL)).click(timeout=15000)
-        return
-    except Exception as role_exc:
-        print(f"⚠️ Market pulse role-tab click failed: {role_exc}")
-
-    clicked = await page.evaluate(
-        """(label) => {
-            const nodes = Array.from(document.querySelectorAll('button, [role="tab"], div, span, p'));
-            const target = nodes.find((node) => {
-                const text = (node.innerText || node.textContent || '').trim();
-                return text === label || text.includes(label);
-            });
-            if (!target) return false;
-            target.click();
-            return true;
-        }""",
-        MARKET_PULSE_LABEL,
-    )
-    if not clicked:
-        body = await _get_body_text(page)
-        raise RuntimeError(f"Market pulse tab not found. Body head: {body[:500]}")
-
-
 async def _get_page_for_key(key):
     if key not in pages:
         await init_browser()
@@ -522,47 +468,6 @@ async def take_snapshot(req: SnapshotRequest):
         await init_browser()
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.post("/market-pulse-snapshot")
-async def market_pulse_snapshot():
-    """Capture the Streamlit 市場脈動 tab for the latest DB trading date."""
-    filename = "market_pulse_latest.jpg"
-    filepath = os.path.join(OUTPUT_DIR, filename)
-    latest_date = _latest_taiex_date()
-    page = None
-    try:
-        if browser_context is None:
-            await init_browser()
-        page = await browser_context.new_page()
-        await page.set_viewport_size({"width": 1400, "height": 1800})
-        await page.goto(MARKET_PULSE_URL, wait_until="domcontentloaded", timeout=60000)
-        await _click_market_pulse_tab(page)
-        await page.wait_for_timeout(4000)
-
-        await page.add_style_tag(content="""
-            header, [data-testid="stToolbar"], [data-testid="stDecoration"],
-            [data-testid="stStatusWidget"], #MainMenu, footer {
-                display: none !important;
-            }
-            .block-container {
-                padding-top: 1.2rem !important;
-                padding-bottom: 1.2rem !important;
-                max-width: 1500px !important;
-            }
-        """)
-        await page.screenshot(path=filepath, full_page=False, type="jpeg", quality=88)
-        _compress_market_pulse_image(filepath)
-        print(f"  ✅ Market pulse snapshot saved: {filename} (latest_date={latest_date})")
-        return {"status": "success", "url": filename, "path": filepath, "latest_date": latest_date}
-    except Exception as e:
-        print(f"❌ Error during market pulse snapshot: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if page is not None:
-            try:
-                await page.close()
-            except Exception:
-                pass
 
 if __name__ == "__main__":
     import uvicorn

@@ -10,6 +10,7 @@ import re
 import unicodedata
 import json
 import subprocess
+import sqlite3
 from datetime import datetime, timezone
 
 # Ensure the root STOCK directory is in sys.path so 'scripts' can be imported dynamically
@@ -92,6 +93,14 @@ def is_market_pulse_command(text):
         or "市场脉动" in normalized
         or compact in {"marketpulse", "pulse", "markethealth"}
     )
+
+def latest_market_pulse_date():
+    db_path = os.path.join(parent_dir, "data", "etf_bench", "etf_bench.sqlite")
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT MAX(date) FROM prices WHERE ticker = '^TWII'").fetchone()
+    if not row or not row[0]:
+        raise RuntimeError("No ^TWII price date found in etf_bench DB")
+    return str(row[0])
 
 def parse_operation_report_ticker(text):
     compact = unicodedata.normalize("NFKC", text).lower()
@@ -611,15 +620,12 @@ def handle_message(event):
 
     elif is_market_pulse:
         try:
-            from scripts.generate_market_pulse_summary import generate, latest_taiex_date
-
             filename = "market_pulse_latest.jpg"
             image_path = os.path.join(parent_dir, "data", "summaries", filename)
-            latest_date = latest_taiex_date()
-            dated_path = os.path.join(parent_dir, "data", "summaries", f"market_pulse_{latest_date}.jpg")
-            if not os.path.exists(image_path) or not os.path.exists(dated_path):
-                latest_date, _, _ = generate()
+            if not os.path.exists(image_path):
+                raise FileNotFoundError(f"Missing cached market pulse image: {image_path}")
 
+            latest_date = latest_market_pulse_date()
             img_url = f"https://linechatbot.duckdns.org/api/webhook/summaries/{filename}?t={int(time.time())}"
             line_bot_api.reply_message(
                 event.reply_token,
@@ -629,10 +635,10 @@ def handle_message(event):
                 ],
             )
         except Exception as e:
-            print("Market pulse snapshot generation failed:", e)
+            print("Market pulse cached image reply failed:", e)
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="市場脈動截圖暫時無法產生，請稍後再試。")
+                TextSendMessage(text="市場脈動截圖尚未更新完成，請稍後再試。")
             )
 
     elif is_gold:
