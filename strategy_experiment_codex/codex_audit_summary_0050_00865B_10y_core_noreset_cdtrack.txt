@@ -1,0 +1,38 @@
+Codex tactical audit
+====================
+
+Data: 2019-11-15 -> 2026-05-22 (1581 trading days)
+Train: 2019-11-15 -> 2023-10-06 (948 trading days)
+Holdout: 2023-10-11 -> 2026-05-22 (633 trading days)
+Risk-free annual rate: 1.00%
+Price source: yfinance
+Signal source: core
+Midpoint reset: off
+Cooldown mode: track
+
+Top train config
+----------------
+core=70%/A6_wide/R4_xconservative/cd=7/win=90
+Train tactical                                                 ret=  21.61% ann=   5.34% sharpe=  0.38 sortino=  0.48 maxDD= -28.96% trades= 29
+
+Holdout challenge
+-----------------
+Chosen tactical on holdout                                     ret=  58.17% ann=  20.02% sharpe=  1.30 sortino=  1.46 maxDD= -22.32% trades= 11
+DCA monthly into core                                          ret= 118.25% ann=  36.44% sharpe=  1.98 sortino=  2.76 maxDD= -16.81% trades= 31
+Buy & Hold 100% core                                           ret= 227.83% ann=  60.43% sharpe=  2.00 sortino=  2.63 maxDD= -27.48% trades=  1
+Static 30/70 weekly                                            ret=  54.68% ann=  18.96% sharpe=  2.23 sortino=  2.57 maxDD=  -9.06% trades= 66
+Static 40/60 weekly                                            ret=  73.03% ann=  24.39% sharpe=  2.24 sortino=  2.73 maxDD= -10.76% trades= 77
+Static 50/50 weekly                                            ret=  93.12% ann=  29.95% sharpe=  2.19 sortino=  2.75 maxDD= -13.69% trades= 78
+Static 60/40 weekly                                            ret= 115.30% ann=  35.70% sharpe=  2.14 sortino=  2.72 maxDD= -16.55% trades= 77
+Static 70/30 weekly                                            ret= 139.49% ann=  41.58% sharpe=  2.09 sortino=  2.69 maxDD= -19.39% trades= 64
+
+Verdict: FAIL vs best holdout benchmark by excess Sharpe (Static 40/60 weekly).
+
+Important fixes vs original
+---------------------------
+- Signal uses today's close, execution happens next trading day.
+- Initial transaction costs reduce performance vs starting cash.
+- Rebalance costs are charged on the traded buy/sell legs.
+- Sharpe and Sortino use excess returns over the configured risk-free rate.
+- The selected config is challenged on a later holdout segment.
+- Cooldowns track the strongest signal seen during the pause.
