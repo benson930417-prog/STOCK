@@ -17,6 +17,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from scripts.etf_benchmark import db
+from scripts.etf_benchmark.step6_regimes import zigzag_pivots, classify_leg
 
 
 FUND_TYPE_LABELS = {
@@ -120,6 +121,31 @@ def _format_adjustment_ratio(ratio: float) -> str:
     if ratio >= 1:
         return f"{ratio:.0f}:1"
     return f"1:{1.0 / ratio:.0f}"
+
+
+def _compute_regimes_live(threshold_pct: float) -> pd.DataFrame:
+    """Run ZigZag on the latest TAIEX prices in the DB. Returns the same
+    schema as db.get_regimes() so the rest of the tab is agnostic."""
+    taiex = db.get_prices("^TWII")
+    if taiex.empty or len(taiex) < 2:
+        return pd.DataFrame()
+    prices = taiex["close"].to_numpy(dtype=float)
+    dates  = pd.to_datetime(taiex["date"]).tolist()
+    pivot_idxs = zigzag_pivots(prices, threshold_pct)
+    rows: list[dict] = []
+    for a, b in zip(pivot_idxs[:-1], pivot_idxs[1:]):
+        p0, p1 = float(prices[a]), float(prices[b])
+        if p0 <= 0:
+            continue
+        mag = (p1 - p0) / p0 * 100.0
+        rows.append({
+            "start_date": pd.Timestamp(dates[a]),
+            "end_date":   pd.Timestamp(dates[b]),
+            "regime":     classify_leg(mag, threshold_pct),
+            "severity":   round(mag, 2),
+            "notes":      f"{b - a + 1} trading days",
+        })
+    return pd.DataFrame(rows)
 
 
 def _corporate_action_warnings(ticker: str, name: str, prices: pd.DataFrame) -> list[str]:
@@ -285,11 +311,24 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
             show_taiex   = st.checkbox("顯示加權指數", value=True,  key="etfc_show_taiex")
             show_otc     = st.checkbox("顯示櫃買指數", value=False, key="etfc_show_otc")
             show_regimes = st.checkbox("顯示市場區間", value=True,  key="etfc_show_regimes",
-                                       help="在圖上疊加多頭 / 修正 / 小熊市 / 熊市色塊（以加權指數回撤計算）。")
+                                       help="在圖上疊加多頭 / 修正 / 小熊市 / 熊市色塊（以加權指數 ZigZag 擺動計算）。")
             use_adj      = st.checkbox("配息還原 (adj close)", value=True,
                                        key="etfc_use_adj",
                                        help="勾起：用 Yahoo 的 adj_close 算報酬率（公平比較高股息）。"
                                             "取消：用原始收盤價（高股息會被低估）。")
+
+    if show_regimes:
+        with st.container(border=True):
+            zigzag_threshold = st.slider(
+                "市場區間敏感度（ZigZag 反轉門檻 %）",
+                min_value=2.0, max_value=10.0, value=5.0, step=0.5,
+                key="etfc_zigzag_threshold",
+                help="ZigZag 演算法用這個百分比認定一次「擺動轉折」。"
+                     "門檻越小越敏感（小波動也算一段），越大越乾淨（只看大方向）。"
+                     "5% 是學術預設值；想看到 4-5% 的小修正可降到 3-4%。",
+            )
+    else:
+        zigzag_threshold = 5.0
 
     baseline_date = pd.Timestamp(st.session_state["etfc_baseline"])
     today_ts = pd.Timestamp(summary["date_max"])
@@ -398,7 +437,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     # ─────────── Regime background overlays ───────────
     regimes_df = pd.DataFrame()
     if show_regimes:
-        regimes_df = db.get_regimes()
+        regimes_df = _compute_regimes_live(zigzag_threshold)
         for _, row in regimes_df.iterrows():
             s = pd.Timestamp(row["start_date"])
             e = pd.Timestamp(row["end_date"])
@@ -478,7 +517,10 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
         if stat_rows:
             sdf = pd.DataFrame(stat_rows)
-            with st.expander("📊 市場區間績效（以加權指數 ZigZag 5% 擺動劃分）", expanded=False):
+            with st.expander(
+                f"📊 市場區間績效（ZigZag 門檻 {zigzag_threshold:g}%，以加權指數擺動劃分）",
+                expanded=False,
+            ):
                 st.caption(
                     "彙整：各 ETF 在「多頭 / 修正 / 小熊市 / 熊市」期間的"
                     "**交易日加權平均報酬率**（每期報酬以該期交易日數為權重）。"
