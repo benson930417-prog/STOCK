@@ -141,6 +141,30 @@ def get_avg_turnover_map(mtime: float | None = None) -> dict[str, float]:
 
 
 @_cache_data(ttl=600)
+def get_regimes(
+    reference_index: str = "^TWII",
+    mtime: float | None = None,
+) -> pd.DataFrame:
+    """Regime periods from step6. Columns: start_date, end_date, regime, severity, notes."""
+    _ = mtime if mtime is not None else _db_mtime()
+    if not DB_PATH.exists():
+        return pd.DataFrame()
+    with _connect() as conn:
+        df = pd.read_sql_query(
+            "SELECT start_date, end_date, regime, severity, notes "
+            "FROM regimes "
+            "WHERE reference_index = ? AND source = 'auto_drawdown' "
+            "ORDER BY start_date",
+            conn,
+            params=[reference_index],
+        )
+    if not df.empty:
+        df["start_date"] = pd.to_datetime(df["start_date"])
+        df["end_date"]   = pd.to_datetime(df["end_date"])
+    return df
+
+
+@_cache_data(ttl=600)
 def get_ingest_status(mtime: float | None = None) -> pd.DataFrame:
     """Most-recent ingest_log row per ticker. Useful for showing 'last refreshed'."""
     _ = mtime if mtime is not None else _db_mtime()

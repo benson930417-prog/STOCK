@@ -31,6 +31,19 @@ FUND_TYPE_LABELS = {
 CORPORATE_ACTION_WARNINGS = {
     "0052": "曾有分割 / 資本事件，圖表保留，但該段期間的報酬線請視為需要人工解讀",
 }
+
+REGIME_COLORS = {
+    "bull":       "rgba(40,  167,  69, 0.07)",
+    "correction": "rgba(255, 193,   7, 0.13)",
+    "mini_bear":  "rgba(253, 126,  20, 0.16)",
+    "bear":       "rgba(220,  53,  69, 0.20)",
+}
+REGIME_LABELS_ZH = {
+    "bull":       "多頭",
+    "correction": "修正",
+    "mini_bear":  "小熊市",
+    "bear":       "熊市",
+}
 COMMON_PRICE_ADJUSTMENT_RATIOS = (2, 3, 4, 5, 6, 7, 10)
 PRICE_ADJUSTMENT_TOLERANCE = 0.08
 
@@ -269,12 +282,14 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
             r2[2].button("2Y",  on_click=_set_offset, kwargs={"years": 2},       key="etfc_b2y",  use_container_width=True)
             r2[3].button("MAX", on_click=_set_max,                                key="etfc_bmax", use_container_width=True)
         with c_ref:
-            show_taiex = st.checkbox("顯示加權指數", value=True, key="etfc_show_taiex")
-            show_otc   = st.checkbox("顯示櫃買指數", value=False, key="etfc_show_otc")
-            use_adj    = st.checkbox("配息還原 (adj close)", value=True,
-                                     key="etfc_use_adj",
-                                     help="勾起：用 Yahoo 的 adj_close 算報酬率（公平比較高股息）。"
-                                          "取消：用原始收盤價（高股息會被低估）。")
+            show_taiex   = st.checkbox("顯示加權指數", value=True,  key="etfc_show_taiex")
+            show_otc     = st.checkbox("顯示櫃買指數", value=False, key="etfc_show_otc")
+            show_regimes = st.checkbox("顯示市場區間", value=True,  key="etfc_show_regimes",
+                                       help="在圖上疊加多頭 / 修正 / 小熊市 / 熊市色塊（以加權指數回撤計算）。")
+            use_adj      = st.checkbox("配息還原 (adj close)", value=True,
+                                       key="etfc_use_adj",
+                                       help="勾起：用 Yahoo 的 adj_close 算報酬率（公平比較高股息）。"
+                                            "取消：用原始收盤價（高股息會被低估）。")
 
     baseline_date = pd.Timestamp(st.session_state["etfc_baseline"])
     today_ts = pd.Timestamp(summary["date_max"])
@@ -285,6 +300,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     palette = px.colors.qualitative.Plotly + px.colors.qualitative.Vivid
     line_rows: list[dict] = []
     per_ticker_dates: dict[str, list] = {}
+    per_ticker_prices: dict[str, pd.Series] = {}   # price series keyed by ticker, for regime stats
     corporate_action_warnings: list[str] = []
 
     def _add_line(ticker, name, color, dash="solid", record=True, force_raw=False, status_override=None):
@@ -333,6 +349,11 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         y_max = max(y_max, float(pct.max()))
         y_min = min(y_min, float(pct.min()))
         per_ticker_dates[ticker] = sorted(df["date"].tolist())
+        if record:
+            # Store the price series with date as index for per-regime stats
+            price_indexed = price.copy()
+            price_indexed.index = pd.to_datetime(df["date"])
+            per_ticker_prices[ticker] = price_indexed
 
         if record:
             line_rows.append({
@@ -374,6 +395,28 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
             dash="dash", force_raw=True, status_override="📈 參考指數"
         )
 
+    # ─────────── Regime background overlays ───────────
+    regimes_df = pd.DataFrame()
+    if show_regimes:
+        regimes_df = db.get_regimes()
+        for _, row in regimes_df.iterrows():
+            s = pd.Timestamp(row["start_date"])
+            e = pd.Timestamp(row["end_date"])
+            if e < baseline_date or s > today_ts:
+                continue
+            color = REGIME_COLORS.get(row["regime"], "rgba(128,128,128,0.08)")
+            x0 = max(s, baseline_date)
+            x1 = min(e, today_ts)
+            label = REGIME_LABELS_ZH.get(row["regime"], row["regime"])
+            show_label = (x1 - x0).days >= 15
+            fig.add_vrect(
+                x0=x0, x1=x1,
+                fillcolor=color, layer="below", line_width=0,
+                annotation_text=label if show_label else "",
+                annotation_position="top left",
+                annotation_font=dict(size=9, color="rgba(200,200,200,0.55)"),
+            )
+
     if not fig.data:
         st.info("請至少選擇一檔 ETF。")
         return
@@ -401,6 +444,70 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     if add_zero_line:
         add_zero_line(fig, axis="y", color="#A9B1BD", width=2, dash="dash")
     st.plotly_chart(fig, width="stretch")
+
+    # ─────────── 市場區間績效摘要 ───────────
+    if show_regimes and not regimes_df.empty and per_ticker_prices:
+        stat_rows: list[dict] = []
+        for ticker, price_series in per_ticker_prices.items():
+            if price_series.empty:
+                continue
+            urow = etf_universe[etf_universe["ticker"] == ticker]
+            t_name = urow.iloc[0]["name"] if not urow.empty else ticker
+            for _, rrow in regimes_df.iterrows():
+                s = pd.Timestamp(rrow["start_date"])
+                e = pd.Timestamp(rrow["end_date"])
+                if e < baseline_date or s > today_ts:
+                    continue
+                mask = (price_series.index >= s) & (price_series.index <= e)
+                sub = price_series[mask]
+                if len(sub) < 2:
+                    continue
+                p0, p1 = float(sub.iloc[0]), float(sub.iloc[-1])
+                if p0 <= 0:
+                    continue
+                stat_rows.append({
+                    "代號":   ticker,
+                    "名稱":   t_name,
+                    "區間類型": REGIME_LABELS_ZH.get(rrow["regime"], rrow["regime"]),
+                    "起":      rrow["start_date"].date().isoformat(),
+                    "訖":      rrow["end_date"].date().isoformat(),
+                    "最嚴重回撤 %": round(float(rrow["severity"]), 1) if not pd.isna(rrow["severity"]) else None,
+                    "ETF 報酬 %":  round((p1 - p0) / p0 * 100.0, 2),
+                })
+
+        if stat_rows:
+            sdf = pd.DataFrame(stat_rows)
+            with st.expander("📊 市場區間績效", expanded=False):
+                st.caption(
+                    "各 ETF 在每段多頭 / 修正 / 小熊市 / 熊市期間的報酬率。"
+                    "顏色：多頭=綠、修正=黃、小熊=橙、熊市=紅。"
+                )
+
+                # Summary pivot: average return per (ticker, regime_type)
+                pivot = (
+                    sdf.groupby(["代號", "名稱", "區間類型"])["ETF 報酬 %"]
+                    .agg(平均報酬="mean", 期數="count")
+                    .round({"平均報酬": 2})
+                    .reset_index()
+                )
+                pivot.columns = ["代號", "名稱", "區間類型", "平均報酬 %", "期數"]
+
+                regime_order = ["多頭", "修正", "小熊市", "熊市"]
+                pivot["_sort"] = pivot["區間類型"].map(
+                    {r: i for i, r in enumerate(regime_order)}
+                ).fillna(99)
+                pivot = pivot.sort_values(["代號", "_sort"]).drop(columns="_sort")
+                st.dataframe(pivot, hide_index=True, width="stretch")
+
+                # Detail table in a nested expander
+                with st.expander("展開逐期明細"):
+                    detail = sdf[["代號", "名稱", "區間類型", "起", "訖",
+                                  "最嚴重回撤 %", "ETF 報酬 %"]].copy()
+                    detail["_sort"] = detail["區間類型"].map(
+                        {r: i for i, r in enumerate(regime_order)}
+                    ).fillna(99)
+                    detail = detail.sort_values(["代號", "_sort", "起"]).drop(columns="_sort")
+                    st.dataframe(detail, hide_index=True, width="stretch")
 
     if corporate_action_warnings:
         with st.container(border=True):
