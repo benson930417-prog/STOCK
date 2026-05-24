@@ -114,7 +114,7 @@ def _zscore_label(z: float | None) -> str:
     """Soft descriptive label — no emoji, no alarm."""
     if z is None: return "—"
     if z >=  2.0: return "高位"
-    if z >=  1.0: return "偏高"
+    if z >=  1.5: return "偏高"
     if z >= -1.0: return "中性"
     if z >= -2.0: return "偏低"
     return "低位"
@@ -124,7 +124,7 @@ def _zscore_style(z: float | None) -> str:
     """Subtle pandas Styler color — softer than the old red/green walls."""
     if z is None or pd.isna(z): return ""
     if z >=  2.0: return "background-color: rgba(220,38,38,0.18); font-weight: 600"
-    if z >=  1.0: return "background-color: rgba(249,115,22,0.13)"
+    if z >=  1.5: return "background-color: rgba(249,115,22,0.13)"
     if z >= -1.0: return ""
     if z >= -2.0: return "background-color: rgba(14,165,233,0.12)"
     return "background-color: rgba(30,64,175,0.18)"
@@ -232,19 +232,27 @@ def _classify_regime(label_zh: str, days: int | None,
 
 
 def _classify_distance_from_high(dist_pct: float) -> tuple[str, str, str]:
-    if dist_pct >= -0.5:   return HEALTH_COLORS["red"],    "持平高點", "與 1 年高點 -5%~-15% 屬正常波動"
-    if dist_pct >= -5:     return HEALTH_COLORS["orange"], "高位區",   "與 1 年高點 -5%~-15% 屬正常波動"
-    if dist_pct >= -15:    return HEALTH_COLORS["green"],  "正常回檔", "與 1 年高點 -5%~-15% 屬正常波動"
-    if dist_pct >= -25:    return HEALTH_COLORS["yellow"], "深度回檔", "與 1 年高點 -5%~-15% 屬正常波動"
-    return HEALTH_COLORS["blue"], "熊市區間", "與 1 年高點 -5%~-15% 屬正常波動"
+    # Calibrated to TAIEX 2y distribution:
+    # p25=-8.4%, p50=-4.9%, p75=-1.2%, exact/near 1y high ~15% of days,
+    # p05=-15.8%. Being at a high is notable, but not a top-5% alarm by itself.
+    ref = "常態約 -8%~-1% / 近高點 >-1% / 低位 <-16%（基於加權指數 2 年分布）"
+    if dist_pct >= -0.5:   return HEALTH_COLORS["orange"], "近高點",   ref
+    if dist_pct >= -1.5:   return HEALTH_COLORS["yellow"], "高位區",   ref
+    if dist_pct >= -8.5:   return HEALTH_COLORS["green"],  "常態區",   ref
+    if dist_pct >= -16:    return HEALTH_COLORS["blue"],   "回檔區",   ref
+    return HEALTH_COLORS["deep_blue"], "低位區", ref
 
 
 def _classify_distance_from_low(dist_pct: float) -> tuple[str, str, str]:
-    if dist_pct >= 30:     return HEALTH_COLORS["red"],    "急漲",   "近 60 日反彈 +10%~+25% 為健康範圍"
-    if dist_pct >= 15:     return HEALTH_COLORS["orange"], "強漲",   "近 60 日反彈 +10%~+25% 為健康範圍"
-    if dist_pct >= 5:      return HEALTH_COLORS["green"],  "穩健反彈", "近 60 日反彈 +10%~+25% 為健康範圍"
-    if dist_pct >= 0:      return HEALTH_COLORS["blue"],   "築底中", "近 60 日反彈 +10%~+25% 為健康範圍"
-    return HEALTH_COLORS["deep_blue"], "破底", "近 60 日反彈 +10%~+25% 為健康範圍"
+    # Calibrated to TAIEX 2y distribution:
+    # p25=+8.7%, p50=+14.2%, p75=+19.8%, p90=+25.0%, p95=+28.7%, p99=+32.1%.
+    ref = "常態約 +9%~+20% / 強漲 >+25% / 急漲 >+30%（基於加權指數 2 年分布）"
+    if dist_pct >= 30:     return HEALTH_COLORS["red"],    "急漲",     ref
+    if dist_pct >= 25:     return HEALTH_COLORS["orange"], "強漲",     ref
+    if dist_pct >= 20:     return HEALTH_COLORS["yellow"], "偏高反彈", ref
+    if dist_pct >= 8:      return HEALTH_COLORS["green"],  "常態反彈", ref
+    if dist_pct >= 2:      return HEALTH_COLORS["blue"],   "近低位",   ref
+    return HEALTH_COLORS["deep_blue"], "貼近低點", ref
 
 
 def _classify_return(pct: float, window: str) -> tuple[str, str, str]:
@@ -471,9 +479,9 @@ def _render_stretch_normalized() -> dict:
     )
 
     rows: list[dict] = []
-    stretched_names:  list[str] = []   # z >= +1.5
-    neutral_names:    list[str] = []   # -1.5 < z < +1.5
-    compressed_names: list[str] = []   # z <= -1.5
+    stretched_names:  list[str] = []   # z >= +2.0, roughly top 5% for TAIEX trailing stretch z
+    neutral_names:    list[str] = []   # -2.0 < z < +2.0
+    compressed_names: list[str] = []   # z <= -2.0
     for ticker, name in CROSS_ASSET_INDICES:
         df = db.get_prices(ticker)
         if df.empty:
@@ -490,9 +498,9 @@ def _render_stretch_normalized() -> dict:
         })
         if z is None:
             continue
-        if z >=  1.5:
+        if z >=  2.0:
             stretched_names.append(name)
-        elif z <= -1.5:
+        elif z <= -2.0:
             compressed_names.append(name)
         else:
             neutral_names.append(name)
