@@ -53,6 +53,23 @@ def _get_yahoo_closing_price(ticker, date_str):
         return None
 
 
+def _fetch_latest_assets(headers, today_str, lookback_days=10):
+    for i in range(lookback_days + 1):
+        search_date = (
+            datetime.strptime(today_str, "%Y-%m-%d") - timedelta(days=i)
+        ).strftime("%Y-%m-%d")
+        params_assets = {
+            "FundCode": "BO",
+            "SearchDate": search_date,
+        }
+        r_assets = requests.get(JSON_API_ASSETS, headers=headers, params=params_assets, timeout=15)
+        r_assets.raise_for_status()
+        assets_data = r_assets.json()
+        if assets_data.get("success") and assets_data.get("result"):
+            return assets_data["result"], search_date
+    return None, None
+
+
 def fetch_and_update_00830():
     now_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     history = _load_json(HISTORY_FILE, {})
@@ -68,19 +85,25 @@ def fetch_and_update_00830():
     tw_now = datetime.now(timezone.utc) + timedelta(hours=8)
     today_str = tw_now.strftime("%Y-%m-%d")
 
-    # 1. Fetch ETF Assets (NAV, Fund Size, True Date)
-    params_assets = {
-        "FundCode": "BO",
-        "SearchDate": today_str
-    }
-    r_assets = requests.get(JSON_API_ASSETS, headers=headers, params=params_assets, timeout=15)
-    r_assets.raise_for_status()
-    assets_data = r_assets.json()
-    
-    if not assets_data.get("success") or not assets_data.get("result"):
-        raise ValueError(f"Failed to fetch 00830 assets from API: {assets_data.get('returnMessage')}")
-        
-    result_assets = assets_data["result"]
+    # 1. Fetch ETF Assets (NAV, Fund Size, True Date). Cathay may return
+    # "查無資料" on weekends/holidays, so walk back to the latest available day.
+    result_assets, queried_date = _fetch_latest_assets(headers, today_str)
+    if not result_assets:
+        latest_date = previous_log.get("latest_date") or (max(history) if history else None)
+        _write_json(
+            LOG_FILE,
+            {
+                "last_checked_utc": now_utc,
+                "last_updated_utc": previous_log.get("last_updated_utc"),
+                "latest_date": latest_date,
+                "status": "NO DATA",
+                "source": URL,
+                "message": "Cathay API returned no asset data in recent lookback window",
+            },
+        )
+        print("No 00830 asset data available from Cathay API in recent lookback window.")
+        return
+
     pre_date_raw = result_assets.get("preDate")
     if not pre_date_raw:
         raise ValueError("Missing preDate in assets response")
@@ -110,7 +133,20 @@ def fetch_and_update_00830():
     api_data = r_json.json()
     
     if not api_data.get("success") or not api_data.get("result"):
-        raise ValueError(f"Failed to fetch 00830 holdings from API: {api_data.get('returnMessage')}")
+        latest_date = previous_log.get("latest_date") or (max(history) if history else None)
+        _write_json(
+            LOG_FILE,
+            {
+                "last_checked_utc": now_utc,
+                "last_updated_utc": previous_log.get("last_updated_utc"),
+                "latest_date": latest_date,
+                "status": "NO DATA",
+                "source": URL,
+                "message": f"Cathay API returned no holdings for {date_key}: {api_data.get('returnMessage')}",
+            },
+        )
+        print(f"No 00830 holdings data available from Cathay API for {date_key}.")
+        return
 
     holdings = []
     for item in api_data["result"]:

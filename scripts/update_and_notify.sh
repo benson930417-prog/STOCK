@@ -308,7 +308,7 @@ if [ -s "$ERRORS_FILE" ]; then
     } >> "$FINAL_BODY"
 fi
 
-SUBJECT="[STOCK] daily run — $overall_status ($(date +%Y-%m-%d %H:%M) TPE)"
+SUBJECT="[STOCK] daily run — $overall_status ($(date +"%Y-%m-%d %H:%M") TPE)"
 if [ -n "${GMAIL_APP_PASSWORD:-}" ]; then
     GMAIL_APP_PASSWORD="$GMAIL_APP_PASSWORD" \
     ADMIN_EMAIL="${ADMIN_EMAIL:-benson930417@gmail.com}" \
