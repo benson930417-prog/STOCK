@@ -9,6 +9,8 @@ Refresh path:
 """
 from __future__ import annotations
 
+from datetime import datetime
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -25,6 +27,12 @@ FUND_TYPE_LABELS = {
     "leveraged":      "槓桿/反向",
     "other":          "其他",
 }
+
+MANUAL_CORPORATE_ACTION_CAVEATS = {
+    "0052": "已知分割/資本事件；Yahoo OHLCV 看起來已調整，但 DB 沒有 split event。圖表保留，請把這段期間視為有 corporate-action caveat。",
+}
+COMMON_SPLIT_RATIOS = (2, 3, 4, 5, 6, 7, 10)
+SPLIT_RATIO_TOLERANCE = 0.08
 
 
 def _group_consecutive_missing(missing_dates: list, ref_dates: list) -> list[tuple]:
@@ -62,6 +70,62 @@ def _fmt_ntd(amount: float) -> str:
     return f"{amount:,.0f}"
 
 
+def _humanize_db_mtime(summary: dict) -> str:
+    epoch = summary.get("db_mtime_epoch")
+    if not epoch:
+        return summary.get("db_mtime", "未知")
+
+    sec = max(0, int(datetime.now().timestamp() - float(epoch)))
+    if sec < 60:
+        return f"{sec} 秒前"
+    if sec < 3600:
+        return f"{sec // 60} 分鐘前"
+    if sec < 86400:
+        return f"{sec // 3600} 小時前"
+    return f"{sec // 86400} 天前"
+
+
+def _nearest_split_ratio(close_ratio: float) -> float | None:
+    if close_ratio <= 0:
+        return None
+    candidates = list(COMMON_SPLIT_RATIOS) + [1.0 / r for r in COMMON_SPLIT_RATIOS]
+    nearest = min(candidates, key=lambda r: abs(close_ratio / r - 1.0))
+    if abs(close_ratio / nearest - 1.0) <= SPLIT_RATIO_TOLERANCE:
+        return nearest
+    return None
+
+
+def _detect_corporate_action_caveats(ticker: str, name: str, prices: pd.DataFrame) -> list[str]:
+    caveats: list[str] = []
+    manual = MANUAL_CORPORATE_ACTION_CAVEATS.get(ticker)
+    if manual:
+        caveats.append(f"**{ticker} {name}**：{manual}")
+
+    if len(prices) < 2:
+        return caveats
+
+    prev_close = prices["close"].shift(1)
+    for row in prices.assign(prev_close=prev_close).itertuples(index=False):
+        if pd.isna(row.prev_close) or row.prev_close <= 0 or row.close <= 0:
+            continue
+        close_ratio = float(row.close) / float(row.prev_close)
+        matched_ratio = _nearest_split_ratio(close_ratio)
+        if matched_ratio is None:
+            continue
+
+        event_date = pd.Timestamp(row.date).date().isoformat()
+        if matched_ratio >= 1:
+            ratio_label = f"{matched_ratio:.0f}:1 反分割型跳動"
+        else:
+            ratio_label = f"1:{1.0 / matched_ratio:.0f} 分割型跳動"
+        caveats.append(
+            f"**{ticker} {name}**：{event_date} 偵測到接近 {ratio_label}，"
+            f"收盤 {float(row.prev_close):.2f} → {float(row.close):.2f}；DB 無 split row。"
+        )
+
+    return list(dict.fromkeys(caveats))
+
+
 def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                            get_market_data=None, add_zero_line=None,
                            hex_to_rgba=None, PROFIT_COLOR=None, LOSS_COLOR=None):
@@ -79,7 +143,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     st.caption(
         f"📦 資料庫：{summary['n_with_px']} 檔有價、共 {summary['n_prices']:,} 筆日資料、"
         f"{summary['n_dividends']} 筆配息 ｜ 資料區間 {summary['date_min']} → {summary['date_max']} ｜ "
-        f"最後更新 {summary['db_mtime']}"
+        f"最後更新 {_humanize_db_mtime(summary)}"
     )
 
     universe = db.get_universe()
@@ -212,6 +276,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     palette = px.colors.qualitative.Plotly + px.colors.qualitative.Vivid
     line_rows: list[dict] = []
     per_ticker_dates: dict[str, list] = {}
+    corporate_action_warnings: list[str] = []
 
     def _add_line(ticker, name, color, dash="solid", record=True):
         nonlocal y_max, y_min
@@ -272,6 +337,9 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     # User-selected ETFs
     for i, t in enumerate(selected_tickers):
         urow = etf_universe[etf_universe["ticker"] == t].iloc[0]
+        corporate_action_warnings.extend(
+            _detect_corporate_action_caveats(t, urow["name"], db.get_prices(t))
+        )
         _add_line(t, urow["name"], palette[i % len(palette)], dash="solid")
 
     # TAIEX — always fetched in background as gap-reference; chart-drawn only if opted-in
@@ -313,6 +381,16 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     if add_zero_line:
         add_zero_line(fig, axis="y", color="#A9B1BD", width=2, dash="dash")
     st.plotly_chart(fig, width="stretch")
+
+    if corporate_action_warnings:
+        with st.container(border=True):
+            st.markdown("⚠️ **分割 / 資本事件警示**")
+            st.caption(
+                "這些 ETF 的原始 close 可能受分割或資本事件影響；若 Yahoo 沒有提供可存入 DB 的 split event，"
+                "含息報酬線仍保留，但該段期間需要人工解讀。"
+            )
+            for w in list(dict.fromkeys(corporate_action_warnings)):
+                st.markdown(f"- {w}")
 
     # ─────────── 缺漏交易日警示 ───────────
     ref_ticker = None

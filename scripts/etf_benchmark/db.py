@@ -159,12 +159,14 @@ def db_summary() -> dict:
     """Quick dict for status badges / debug panel."""
     if not DB_PATH.exists():
         return {"db_exists": False}
+    db_mtime = _db_mtime()
     with _connect() as conn:
         c = conn.execute
         return {
             "db_exists":  True,
             "db_path":    str(DB_PATH),
-            "db_mtime":   datetime.fromtimestamp(_db_mtime()).isoformat(timespec="seconds"),
+            "db_mtime":   datetime.fromtimestamp(db_mtime).isoformat(timespec="seconds"),
+            "db_mtime_epoch": db_mtime,
             "n_etfs":     c("SELECT COUNT(*) FROM etfs").fetchone()[0],
             "n_with_px":  c("SELECT COUNT(DISTINCT ticker) FROM prices").fetchone()[0],
             "n_prices":   c("SELECT COUNT(*) FROM prices").fetchone()[0],
