@@ -70,6 +70,12 @@ def _fmt_ntd(amount: float) -> str:
     return f"{amount:,.0f}"
 
 
+def _as_date_or_none(value):
+    if value is None or pd.isna(value) or value == "":
+        return None
+    return pd.Timestamp(value).date()
+
+
 def _humanize_db_mtime(summary: dict) -> str:
     epoch = summary.get("db_mtime_epoch")
     if not epoch:
@@ -281,7 +287,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     per_ticker_dates: dict[str, list] = {}
     corporate_action_warnings: list[str] = []
 
-    def _add_line(ticker, name, color, dash="solid", record=True):
+    def _add_line(ticker, name, color, dash="solid", record=True, force_raw=False, status_override=None):
         nonlocal y_max, y_min
         df = db.get_prices(ticker, start=baseline_date)
         if df.empty:
@@ -296,12 +302,14 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
             return
 
         # Price series: adj_close (還原) or raw close, per toggle
-        if use_adj:
+        if use_adj and not force_raw:
             price = df["adj_close"].fillna(df["close"])
             status_label = "✅ 配息還原"
         else:
             price = df["close"]
             status_label = "📊 原始收盤"
+        if status_override:
+            status_label = status_override
         base = float(price.iloc[0])
         if base <= 0:
             return
@@ -347,7 +355,10 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
     # TAIEX — always fetched in background as gap-reference; chart-drawn only if opted-in
     if show_taiex:
-        _add_line("^TWII", "加權指數", "rgba(200,200,200,0.85)", dash="dash")
+        _add_line(
+            "^TWII", "加權指數", "rgba(200,200,200,0.85)",
+            dash="dash", force_raw=True, status_override="📈 參考指數"
+        )
     else:
         taiex_df = db.get_prices("^TWII", start=baseline_date)
         if not taiex_df.empty:
@@ -355,7 +366,10 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
     # OTC index — only when opted-in; not used as reference
     if show_otc:
-        _add_line("^TWOII", "櫃買指數", "rgba(255,200,100,0.85)", dash="dash")
+        _add_line(
+            "^TWOII", "櫃買指數", "rgba(255,200,100,0.85)",
+            dash="dash", force_raw=True, status_override="📈 參考指數"
+        )
 
     if not fig.data:
         st.info("請至少選擇一檔 ETF。")
@@ -406,20 +420,49 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         ref_set = set(ref_dates)
         ref_n = len(ref_dates)
         gap_warnings: list[str] = []
+        not_listed_warnings: list[str] = []
         for t, dates in per_ticker_dates.items():
             if t == ref_ticker or not dates:
                 continue
-            missing = sorted(ref_set - set(dates))
-            if not missing:
+            missing_all = sorted(ref_set - set(dates))
+            if not missing_all:
                 continue
-            ranges = _group_consecutive_missing(missing, ref_dates)
-            parts = "、".join(_fmt_range(s, e) for s, e in ranges)
             urow = etf_universe[etf_universe["ticker"] == t]
             name = urow.iloc[0]["name"] if not urow.empty else ""
-            gap_warnings.append(
-                f"**{t} {name}** 缺 {len(missing)} 個交易日"
-                f"（{t} {len(dates)} 天 vs 參考 {ref_n} 天）：{parts}"
-            )
+            listed_from = None
+            if not urow.empty:
+                listed_from = _as_date_or_none(urow.iloc[0].get("listing_date"))
+                listed_from = listed_from or _as_date_or_none(urow.iloc[0].get("inception_date"))
+                listed_from = listed_from or _as_date_or_none(urow.iloc[0].get("first_date"))
+
+            not_listed_missing = []
+            true_missing = missing_all
+            if listed_from:
+                not_listed_missing = [d for d in missing_all if pd.Timestamp(d).date() < listed_from]
+                true_missing = [d for d in missing_all if pd.Timestamp(d).date() >= listed_from]
+
+            if not_listed_missing:
+                ranges = _group_consecutive_missing(not_listed_missing, ref_dates)
+                parts = "、".join(_fmt_range(s, e) for s, e in ranges)
+                not_listed_warnings.append(
+                    f"**{t} {name}** 於 {listed_from.isoformat()} 上市，"
+                    f"因此起始日前少 {len(not_listed_missing)} 個參考交易日：{parts}"
+                )
+
+            if true_missing:
+                ranges = _group_consecutive_missing(true_missing, ref_dates)
+                parts = "、".join(_fmt_range(s, e) for s, e in ranges)
+                gap_warnings.append(
+                    f"**{t} {name}** 缺 {len(true_missing)} 個交易日"
+                    f"（{t} {len(dates)} 天 vs 參考 {ref_n} 天）：{parts}"
+                )
+        if not_listed_warnings:
+            with st.container(border=True):
+                ref_label = "加權指數" if ref_ticker == "^TWII" else ref_ticker
+                st.markdown(f"ℹ️ **新上市資料不足**（參考：{ref_label}）")
+                st.caption("這不是資料缺漏，而是 ETF 在比較起始日之後才上市；圖表會從該 ETF 第一筆可用價格開始。")
+                for w in not_listed_warnings:
+                    st.markdown(f"- {w}")
         if gap_warnings:
             with st.container(border=True):
                 ref_label = "加權指數" if ref_ticker == "^TWII" else ref_ticker
