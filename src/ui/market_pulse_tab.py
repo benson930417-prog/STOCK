@@ -215,6 +215,43 @@ def _render_headline(taiex: pd.Series) -> None:
     )
 
 
+def _breadth_narrative(stretched_names: list[str],
+                       neutral_names:  list[str],
+                       compressed_names: list[str]) -> str:
+    """Build a fully data-driven breadth sentence from the actual index
+    names — no hardcoded "TAIEX/SOX". If those cool down and越南 heats up,
+    the sentence updates itself."""
+    total = len(stretched_names) + len(neutral_names) + len(compressed_names)
+    n_stretched = len(stretched_names)
+    n_compressed = len(compressed_names)
+
+    def _join(names: list[str]) -> str:
+        return "、".join(names)
+
+    if total == 0:
+        return "無可用資料。"
+
+    # Compression cases (low z-score — rare in bull, but cover for completeness)
+    if n_compressed >= 2 and n_stretched == 0:
+        return (f"**{_join(compressed_names)}** 處於自身歷史低位區間；"
+                f"其餘 {total - n_compressed} 個指數中性 — 全球大盤偏冷。")
+
+    # Stretch cases — the common ones
+    if n_stretched == 0:
+        return f"{total} 個指數全部位於中性區間 — 全球大盤未過熱。"
+    if n_stretched == total:
+        return f"{total} 個指數同步拉伸 — 全面過熱，無一倖免。"
+    if n_stretched == 1:
+        return (f"**僅 {_join(stretched_names)}** 處於自身歷史高位區間；"
+                f"其餘 {total - 1} 個指數仍中性 — **局部現象，非全球同步**。")
+    if n_stretched <= total // 2:
+        return (f"**熱點集中於 {_join(stretched_names)}**；"
+                f"**{_join(neutral_names)}** 仍在中性區間 — "
+                f"**全球大盤尚未全面過熱**。")
+    return (f"**{_join(stretched_names)}** 已拉伸；"
+            f"僅 {_join(neutral_names) or '少數'} 仍中性 — 接近全面偏熱。")
+
+
 def _render_stretch_normalized() -> dict:
     """Cross-asset stretch table normalised by each asset's own 2y history.
 
@@ -231,7 +268,9 @@ def _render_stretch_normalized() -> dict:
     )
 
     rows: list[dict] = []
-    z_values: list[float] = []
+    stretched_names:  list[str] = []   # z >= +1.5
+    neutral_names:    list[str] = []   # -1.5 < z < +1.5
+    compressed_names: list[str] = []   # z <= -1.5
     for ticker, name in CROSS_ASSET_INDICES:
         df = db.get_prices(ticker)
         if df.empty:
@@ -246,8 +285,14 @@ def _render_stretch_normalized() -> dict:
             "z-score":  z,
             "判斷":     _zscore_label(z),
         })
-        if z is not None:
-            z_values.append(z)
+        if z is None:
+            continue
+        if z >=  1.5:
+            stretched_names.append(name)
+        elif z <= -1.5:
+            compressed_names.append(name)
+        else:
+            neutral_names.append(name)
 
     df_show = pd.DataFrame(rows)
     # Sort by z-score desc so most-stretched float to the top; nones at bottom
@@ -264,21 +309,19 @@ def _render_stretch_normalized() -> dict:
     )
     st.dataframe(styled, hide_index=True, width="stretch")
 
-    # Breadth tally — embedded in the same panel
-    n_stretched  = sum(1 for z in z_values if z >=  1.5)
-    n_compressed = sum(1 for z in z_values if z <= -1.5)
-    n_total      = len(z_values)
-    if n_stretched == 0:
-        st.caption(f"📊 廣度：{n_total} 個指數中 0 個位於 z≥+1.5 拉伸區間 — 全球普遍正常。")
-    elif n_stretched == 1:
-        st.caption(f"📊 廣度：{n_total} 個中 1 個拉伸 — 局部現象（單一市場），非全球同步。")
-    elif n_stretched <= 3:
-        st.caption(f"📊 廣度：{n_total} 個中 {n_stretched} 個拉伸 — 區域同步，集中於部分市場。")
-    else:
-        st.caption(f"📊 廣度：{n_total} 個中 {n_stretched} 個拉伸 — 全球同步偏熱。")
+    # Breadth narrative — fully data-driven from the actual stretched names
+    narrative = _breadth_narrative(stretched_names, neutral_names, compressed_names)
+    st.markdown(f"📊 **廣度**：{narrative}")
 
-    return {"n_stretched": n_stretched, "n_compressed": n_compressed, "n_total": n_total,
-            "rows": rows}
+    return {
+        "n_stretched":      len(stretched_names),
+        "n_compressed":     len(compressed_names),
+        "n_total":          len(stretched_names) + len(neutral_names) + len(compressed_names),
+        "stretched_names":  stretched_names,
+        "neutral_names":    neutral_names,
+        "compressed_names": compressed_names,
+        "rows":             rows,
+    }
 
 
 def _render_speed_panel(taiex: pd.Series) -> dict:
@@ -439,17 +482,21 @@ def _render_summary_card(taiex: pd.Series,
         else:
             parts.append(f"TAIEX 拉伸 z={tw_z:+.1f}（偏低）")
 
-    # Breadth descriptor
+    # Breadth descriptor — use the same data-driven names as the section above
+    stretched = stretch_info.get("stretched_names", [])
+    neutral   = stretch_info.get("neutral_names", [])
     ns = stretch_info.get("n_stretched", 0)
     nt = stretch_info.get("n_total", 0)
     if ns == 0:
         parts.append(f"全球 {nt} 指數普遍正常")
+    elif ns == nt:
+        parts.append("全球指數全面拉伸")
     elif ns == 1:
-        parts.append(f"{nt} 個指數中僅 1 個拉伸（局部）")
-    elif ns <= 3:
-        parts.append(f"{nt} 個指數中 {ns} 個拉伸（區域同步）")
+        parts.append(f"僅 {stretched[0]} 拉伸（局部）")
+    elif ns <= nt // 2:
+        parts.append(f"熱點集中於 {'、'.join(stretched)}")
     else:
-        parts.append(f"{nt} 個指數中 {ns} 個拉伸（全球同步）")
+        parts.append(f"{'、'.join(stretched)} 多市場同步拉伸")
 
     state_line = "**市場狀態**：" + "　·　".join(parts)
 
