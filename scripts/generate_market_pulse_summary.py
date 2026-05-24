@@ -145,6 +145,30 @@ def latest_regime(series: pd.Series, threshold_pct: float = 4.0) -> tuple[str, i
     return label, days
 
 
+def classify_regime(label: str, days: int | None, dist_1y: float | None) -> tuple[str, str, str]:
+    if label == "多頭":
+        near_high = dist_1y is not None and dist_1y >= -1.0
+        mature = days is not None and days >= 180
+        moderate = days is not None and days >= 90
+        if near_high and mature:
+            return COLORS["red"], "成熟多頭近高點", "多頭近高點+持續>180天 → 拉回機率明顯升高"
+        if near_high:
+            return COLORS["orange"], "多頭近高點", "多頭近 1 年高點 → 拉回風險偏高"
+        if mature:
+            return COLORS["yellow"], "延長多頭", "多頭持續超過 180 天屬延長階段"
+        if moderate:
+            return COLORS["green"], "成熟多頭", "多頭通常持續 50~200 天"
+        return COLORS["green"], "健康上升", "多頭通常持續 50~200 天"
+
+    if label == "小熊":
+        return COLORS["yellow"], "短期修正", "小熊通常 5~20 天"
+    if label == "中熊":
+        return COLORS["orange"], "中期回檔", "中熊通常 20~60 天"
+    if label == "大熊":
+        return COLORS["red"], "深度熊市", "大熊通常 30~150 天"
+    return COLORS["gray"], label, "ZigZag 4%：描述目前波段，不等於預測"
+
+
 def classify_day_change(pct: float) -> tuple[str, str]:
     if pct >= 2.5:
         return COLORS["red"], "大漲"
@@ -344,7 +368,7 @@ def render_html(snapshot: dict) -> str:
 
     regime_days = snapshot["regime_days"]
     regime_suffix = f"已 {regime_days} 天" if regime_days is not None else ""
-    regime_color = COLORS["green"] if snapshot["regime"] == "多頭" else COLORS["orange"]
+    regime_color, regime_tag, regime_ref = classify_regime(snapshot["regime"], regime_days, snapshot["dist_high"])
     breadth = f"{len(snapshot['stretched'])} / {len(snapshot['stretch_rows'])} 個指數處於自身高位"
     if snapshot["stretched"]:
         breadth += "：" + "、".join(snapshot["stretched"])
@@ -431,11 +455,11 @@ def render_html(snapshot: dict) -> str:
     <h1>市場脈動</h1>
     <div class="date">資料截至 {html.escape(snapshot['latest_date'])}</div>
   </div>
-  <div class="subtitle">直接由 etf_benchmark SQLite 產生，不依賴 Streamlit 截圖。數字是市場體溫計，不是買賣訊號。</div>
+  <div class="subtitle">數字是市場體溫計，不是買賣訊號。</div>
 
   <div class="grid">
     {metric_card("加權指數", f"{snapshot['current']:,.0f}　<span style='font-size:28px'>{snapshot['day_pct']:+.2f}%</span>", day_color, day_tag, "日漲跌：正常約 ±1%，±2.5% 以上才算少見")}
-    {metric_card("目前規制", f"{html.escape(snapshot['regime'])}　<span style='font-size:28px'>{html.escape(regime_suffix)}</span>", regime_color, snapshot['regime'], "ZigZag 4%：描述目前波段，不等於預測")}
+    {metric_card("目前規制", f"{html.escape(snapshot['regime'])}　<span style='font-size:28px'>{html.escape(regime_suffix)}</span>", regime_color, regime_tag, regime_ref)}
     {metric_card("距 1 年高點", fmt_pct(snapshot['dist_high']), high_color, high_tag, "接近 0 代表貼近一年高點；越負代表離高點越遠")}
     {metric_card("距 60 日低點", fmt_pct(snapshot['dist_low']), low_color, low_tag, "反彈幅度；過高代表短期速度偏快")}
     {metric_card("30 日報酬", fmt_pct(snapshot['ret_30'], 2), r30_color, r30_tag, "30 日：> +18% 屬急漲區")}
