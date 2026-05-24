@@ -321,14 +321,14 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         with st.container(border=True):
             zigzag_threshold = st.slider(
                 "市場區間敏感度（ZigZag 反轉門檻 %）",
-                min_value=2.0, max_value=10.0, value=5.0, step=0.5,
+                min_value=3.0, max_value=10.0, value=4.0, step=0.5,
                 key="etfc_zigzag_threshold",
                 help="ZigZag 演算法用這個百分比認定一次「擺動轉折」。"
                      "門檻越小越敏感（小波動也算一段），越大越乾淨（只看大方向）。"
-                     "5% 是學術預設值；想看到 4-5% 的小修正可降到 3-4%。",
+                     "預設 4%；學術慣例為 5%。",
             )
     else:
-        zigzag_threshold = 5.0
+        zigzag_threshold = 4.0
 
     baseline_date = pd.Timestamp(st.session_state["etfc_baseline"])
     today_ts = pd.Timestamp(summary["date_max"])
