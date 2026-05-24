@@ -63,7 +63,7 @@ run_step() {
                 metrics=$(grep -E "^\s*(pass|warn|fail|skip)" "$logfile" | tr '\n' ' ' | sed 's/  */ /g')
                 ;;
             step5*)
-                metrics=$(grep -E "^\s*[0-9A-Z]+\s+\[(PASS|WARN|FAIL)\]" "$logfile" | tr '\n' '|' | sed 's/|$//')
+                metrics=$(grep -E "^\s*[0-9A-Z]+\s+\[(PASS|INFO|WARN|FAIL)\]" "$logfile" | tr '\n' '|' | sed 's/|$//')
                 ;;
         esac
         if [ -n "$metrics" ]; then
@@ -128,6 +128,8 @@ done
 # ──────────────────────────────────────────────────────────────────────────
 { echo; echo "etf_benchmark"; echo "──────────"; } >> "$SUMMARY_FILE"
 run_step "step3 backfill --incremental" python -m scripts.etf_benchmark.step3_backfill --incremental
+run_step "step4 verify (total return)"  python -m scripts.etf_benchmark.step4_verify
+run_step "step5 verify_nav"              python -m scripts.etf_benchmark.step5_verify_nav
 
 # ──────────────────────────────────────────────────────────────────────────
 # 3. Detect which ETFs got NEW DATA this run
