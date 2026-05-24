@@ -47,6 +47,8 @@ DUPLICATE_DIVIDEND_WINDOW_DAYS = 5
 MANUAL_CORPORATE_ACTION_CAVEATS = {
     "0052": "known split/corporate action; Yahoo OHLCV appears adjusted, but split event is not stored in DB",
 }
+COMMON_SPLIT_RATIOS = (2, 3, 4, 5, 6, 7, 10)
+SPLIT_RATIO_TOLERANCE = 0.08
 
 
 def _load_prices(conn: sqlite3.Connection, ticker: str) -> pd.DataFrame:
@@ -71,6 +73,59 @@ def _load_dividends(conn: sqlite3.Connection, ticker: str) -> pd.DataFrame:
         return df
     df["ex_date"] = pd.to_datetime(df["ex_date"])
     return df
+
+
+def _load_splits(conn: sqlite3.Connection, ticker: str) -> pd.DataFrame:
+    df = pd.read_sql_query(
+        "SELECT ex_date, ratio FROM splits WHERE ticker = ? ORDER BY ex_date",
+        conn,
+        params=[ticker],
+    )
+    if df.empty:
+        return df
+    df["ex_date"] = pd.to_datetime(df["ex_date"])
+    return df
+
+
+def _nearest_split_ratio(close_ratio: float) -> float | None:
+    if close_ratio <= 0:
+        return None
+    candidates = list(COMMON_SPLIT_RATIOS) + [1.0 / r for r in COMMON_SPLIT_RATIOS]
+    nearest = min(candidates, key=lambda r: abs(close_ratio / r - 1.0))
+    if abs(close_ratio / nearest - 1.0) <= SPLIT_RATIO_TOLERANCE:
+        return nearest
+    return None
+
+
+def detect_unstored_split_caveats(prices: pd.DataFrame, splits: pd.DataFrame) -> list[str]:
+    if len(prices) < 2:
+        return []
+
+    split_dates = set()
+    if not splits.empty:
+        split_dates = {pd.Timestamp(d).date() for d in splits["ex_date"]}
+
+    caveats: list[str] = []
+    prev_close = prices["close"].shift(1)
+    for row in prices.assign(prev_close=prev_close).itertuples(index=False):
+        if pd.isna(row.prev_close) or row.prev_close <= 0 or row.close <= 0:
+            continue
+        close_ratio = float(row.close) / float(row.prev_close)
+        matched_ratio = _nearest_split_ratio(close_ratio)
+        if matched_ratio is None:
+            continue
+        event_date = pd.Timestamp(row.date).date()
+        if event_date in split_dates:
+            continue
+        if matched_ratio >= 1:
+            ratio_label = f"{matched_ratio:.0f}:1 reverse split-like jump"
+        else:
+            ratio_label = f"1:{1.0 / matched_ratio:.0f} split-like drop"
+        caveats.append(
+            f"{event_date} {ratio_label} inferred from close {row.prev_close:.2f} -> {row.close:.2f}; "
+            "no split row stored"
+        )
+    return caveats
 
 
 def duplicate_dividend_baseline_dates(prices: pd.DataFrame, dividends: pd.DataFrame) -> set[pd.Timestamp]:
@@ -167,7 +222,9 @@ def verify_ticker(conn: sqlite3.Connection, ticker: str) -> dict:
         return {"ticker": ticker, "status": "skip", "reason": "not enough prices"}
 
     dividends = _load_dividends(conn, ticker)
+    splits = _load_splits(conn, ticker)
     duplicate_baselines = duplicate_dividend_baseline_dates(prices, dividends)
+    split_caveats = detect_unstored_split_caveats(prices, splits)
     transparent_index = build_cash_reinvested_index(prices, dividends)
     if transparent_index.empty:
         return {"ticker": ticker, "status": "skip", "reason": "cannot build total return index"}
@@ -197,14 +254,16 @@ def verify_ticker(conn: sqlite3.Connection, ticker: str) -> dict:
     else:
         status = "pass"
 
-    split_caveat = MANUAL_CORPORATE_ACTION_CAVEATS.get(ticker)
-    if split_caveat and status == "pass":
+    manual_caveat = MANUAL_CORPORATE_ACTION_CAVEATS.get(ticker)
+    if manual_caveat:
+        split_caveats.insert(0, manual_caveat)
+    if split_caveats and status == "pass":
         status = "warn"
 
     return {
         "ticker": ticker,
         "status": status,
-        "split_caveat": split_caveat,
+        "split_caveat": "; ".join(split_caveats),
         "n_divs": int(len(dividends)),
         "ignored_duplicate_baselines": int(dates.isin(duplicate_baselines).sum()),
         "n_dates": int(valid.sum()),
