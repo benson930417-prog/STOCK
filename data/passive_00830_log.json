@@ -1,9 +1,9 @@
 {
-  "last_checked_utc": "2026-05-23T09:31:02.515196Z",
+  "last_checked_utc": "2026-05-24T05:10:22.252235Z",
   "last_updated_utc": "2026-05-22T09:30:46.682999Z",
   "latest_date": "2026-05-21",
   "status": "FETCH FAILED",
   "source": "https://www.cathaysite.com.tw/ETF/detail/EBO?tab=etf3",
   "holdings_count": 30,
-  "error": "00830 fetch failed during daily job started at 2026-05-23T09:30:10.602941Z"
+  "error": "00830 fetch failed during daily job started at 2026-05-24T05:08:46.081780Z"
 }
