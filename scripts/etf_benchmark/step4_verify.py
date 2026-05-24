@@ -39,6 +39,7 @@ DB_PATH = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
 # cash-dividend total return.
 WARN_ENDPOINT_DRIFT_PCT = 0.50
 FAIL_ENDPOINT_DRIFT_PCT = 2.00
+DUPLICATE_DIVIDEND_WINDOW_DAYS = 5
 
 
 def _load_prices(conn: sqlite3.Connection, ticker: str) -> pd.DataFrame:
@@ -63,6 +64,58 @@ def _load_dividends(conn: sqlite3.Connection, ticker: str) -> pd.DataFrame:
         return df
     df["ex_date"] = pd.to_datetime(df["ex_date"])
     return df
+
+
+def duplicate_dividend_baseline_dates(prices: pd.DataFrame, dividends: pd.DataFrame) -> set[pd.Timestamp]:
+    """Return dates that sit inside likely duplicate Yahoo dividend clusters.
+
+    Yahoo occasionally reports the same cash distribution twice a few trading
+    days apart. Its adj_close may include both events, but using one of those
+    dates as a comparison baseline is contaminated: the user is starting inside
+    the adjustment window. Keep the event stream intact, but ignore those
+    baseline dates when scoring max drift.
+    """
+    if dividends.empty:
+        return set()
+
+    df = dividends.copy()
+    df = df[df["amount"].notna() & (df["amount"].astype(float) > 0)].copy()
+    if df.empty:
+        return set()
+
+    df["amount_key"] = df["amount"].astype(float).round(6)
+    price_dates = list(prices["date"])
+    pos_by_date = {pd.Timestamp(d): i for i, d in enumerate(price_dates)}
+    duplicate_dates: set[pd.Timestamp] = set()
+    for _, group in df.sort_values("ex_date").groupby("amount_key", sort=False):
+        cluster: list[pd.Timestamp] = []
+
+        def flush_cluster() -> None:
+            if len(cluster) > 1:
+                duplicate_dates.update(cluster)
+
+        for _, row in group.iterrows():
+            ex_date = pd.Timestamp(row["ex_date"])
+            current_pos = pos_by_date.get(ex_date)
+            if not cluster:
+                cluster = [ex_date]
+                continue
+
+            prev_date = cluster[-1]
+            prev_pos = pos_by_date.get(prev_date)
+            if current_pos is not None and prev_pos is not None:
+                close_enough = (current_pos - prev_pos) <= DUPLICATE_DIVIDEND_WINDOW_DAYS
+            else:
+                close_enough = (ex_date - prev_date).days <= 10
+
+            if close_enough:
+                cluster.append(ex_date)
+            else:
+                flush_cluster()
+                cluster = [ex_date]
+        flush_cluster()
+
+    return duplicate_dates
 
 
 def build_cash_reinvested_index(prices: pd.DataFrame, dividends: pd.DataFrame) -> pd.Series:
@@ -107,6 +160,7 @@ def verify_ticker(conn: sqlite3.Connection, ticker: str) -> dict:
         return {"ticker": ticker, "status": "skip", "reason": "not enough prices"}
 
     dividends = _load_dividends(conn, ticker)
+    duplicate_baselines = duplicate_dividend_baseline_dates(prices, dividends)
     transparent_index = build_cash_reinvested_index(prices, dividends)
     if transparent_index.empty:
         return {"ticker": ticker, "status": "skip", "reason": "cannot build total return index"}
@@ -123,7 +177,9 @@ def verify_ticker(conn: sqlite3.Connection, ticker: str) -> dict:
     yahoo_index = y / y.iloc[0] * 100.0
     endpoint_drift = ((y.iloc[-1] / y) - (t.iloc[-1] / t)) * 100.0
     terminal_drift_pct = float(endpoint_drift.iloc[0])
-    max_endpoint_idx = int(endpoint_drift.abs().idxmax())
+    score_mask = ~dates.isin(duplicate_baselines)
+    scored_endpoint_drift = endpoint_drift[score_mask] if score_mask.any() else endpoint_drift
+    max_endpoint_idx = int(scored_endpoint_drift.abs().idxmax())
     max_endpoint_drift_pct = float(endpoint_drift.iloc[max_endpoint_idx])
     max_path_drift_pct = float((yahoo_index - t).abs().max())
 
@@ -138,6 +194,7 @@ def verify_ticker(conn: sqlite3.Connection, ticker: str) -> dict:
         "ticker": ticker,
         "status": status,
         "n_divs": int(len(dividends)),
+        "ignored_duplicate_baselines": int(dates.isin(duplicate_baselines).sum()),
         "n_dates": int(valid.sum()),
         "terminal_drift_pct": round(terminal_drift_pct, 4),
         "max_endpoint_drift_pct": round(max_endpoint_drift_pct, 4),
@@ -153,7 +210,9 @@ def log_verification(conn: sqlite3.Connection, results: list[dict]) -> None:
         notes = (
             f"terminal_drift_pct={r['terminal_drift_pct']} "
             f"max_path_drift_pct={r['max_path_drift_pct']} "
-            f"n_divs={r['n_divs']} n_dates={r['n_dates']}"
+            f"n_divs={r['n_divs']} "
+            f"ignored_duplicate_baselines={r.get('ignored_duplicate_baselines', 0)} "
+            f"n_dates={r['n_dates']}"
         )
         conn.execute(
             "INSERT INTO verification_log "
@@ -216,7 +275,7 @@ def main() -> int:
                 f"    {r['ticker']:8s}  max_endpoint_drift={r['max_endpoint_drift_pct']:+.3f} pct-pt "
                 f"from {r['max_endpoint_date']} to latest  "
                 f"(terminal={r['terminal_drift_pct']:+.3f}, max_path={r['max_path_drift_pct']:.3f}, "
-                f"n_divs={r['n_divs']})"
+                f"n_divs={r['n_divs']}, ignored_dup_baselines={r.get('ignored_duplicate_baselines', 0)})"
             )
 
     print()

@@ -37,10 +37,8 @@ DATA_DIR     = ROOT_DIR / "data" / "etf_bench"
 DB_PATH      = DATA_DIR / "etf_bench.sqlite"
 UNIVERSE_CSV = DATA_DIR / "universe.csv"
 
-from datetime import date as _date
-# Rolling 2-year window — must match step1_universe.BENCH_START semantics
-_today = _date.today()
-BENCH_START = _today.replace(year=_today.year - 2).isoformat()
+# Fixed benchmark window; must match step1_universe.BENCH_START semantics.
+BENCH_START = "2024-01-01"
 
 # Reference indices — added to the etfs table so price queries are uniform.
 REFERENCE_INDICES = [

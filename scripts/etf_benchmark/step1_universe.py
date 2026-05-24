@@ -22,13 +22,9 @@ from pathlib import Path
 
 import requests
 
-# Rolling 2-year benchmark window. Recomputed on every step1 run.
-def _bench_start() -> str:
-    today = date.today()
-    return today.replace(year=today.year - 2).isoformat()
-
-
-BENCH_START = _bench_start()
+# Fixed benchmark window so the 2Y UI preset always has enough room even when
+# "today" is a weekend and the latest market close is a prior trading day.
+BENCH_START = "2024-01-01"
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
@@ -285,7 +281,7 @@ def main() -> int:
             name=r["name"],
         )
         r["is_leveraged_inverse"] = is_leveraged_or_inverse(r["ticker"], r["name"])
-        # data_start_date = max(rolling 2-year window start, inception)
+        # data_start_date = max(fixed benchmark window start, inception)
         inc = r.get("inception_date")
         r["data_start_date"] = max(BENCH_START, inc) if inc else BENCH_START
 

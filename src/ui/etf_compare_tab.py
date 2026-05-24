@@ -158,16 +158,22 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     max_d = pd.Timestamp(summary["date_max"]).date()
     min_d = pd.Timestamp(summary["date_min"]).date()
 
+    def _clamp_baseline(value):
+        value = pd.Timestamp(value).date()
+        return min(max(value, min_d), max_d)
+
+    st.session_state["etfc_baseline"] = _clamp_baseline(st.session_state["etfc_baseline"])
+
     def _set_bday(n):
-        st.session_state["etfc_baseline"] = (pd.Timestamp(max_d) - pd.offsets.BDay(n)).date()
+        st.session_state["etfc_baseline"] = _clamp_baseline(pd.Timestamp(max_d) - pd.offsets.BDay(n))
 
     def _set_offset(months=0, years=0):
-        st.session_state["etfc_baseline"] = (
+        st.session_state["etfc_baseline"] = _clamp_baseline(
             pd.Timestamp(max_d) - pd.DateOffset(months=months, years=years)
-        ).date()
+        )
 
     def _set_ytd():
-        st.session_state["etfc_baseline"] = pd.Timestamp(year=max_d.year, month=1, day=1).date()
+        st.session_state["etfc_baseline"] = _clamp_baseline(pd.Timestamp(year=max_d.year, month=1, day=1))
 
     def _set_max():
         st.session_state["etfc_baseline"] = min_d
