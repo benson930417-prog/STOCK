@@ -29,7 +29,7 @@ FUND_TYPE_LABELS = {
 }
 
 CORPORATE_ACTION_WARNINGS = {
-    "0052": "曾有分割 / 資本事件，圖表保留，但該段期間的報酬線請視為需要人工解讀。",
+    "0052": "曾有分割 / 資本事件，圖表保留，但該段期間的報酬線請視為需要人工解讀",
 }
 COMMON_PRICE_ADJUSTMENT_RATIOS = (2, 3, 4, 5, 6, 7, 10)
 PRICE_ADJUSTMENT_TOLERANCE = 0.08
@@ -104,29 +104,29 @@ def _format_adjustment_ratio(ratio: float) -> str:
 
 
 def _corporate_action_warnings(ticker: str, name: str, prices: pd.DataFrame) -> list[str]:
-    warnings: list[str] = []
+    details: list[str] = []
     warning = CORPORATE_ACTION_WARNINGS.get(ticker)
-    if warning:
-        warnings.append(f"**{ticker} {name}**：{warning}")
 
-    if len(prices) < 2:
-        return warnings
+    if len(prices) >= 2:
+        prev_close = prices["close"].shift(1)
+        for row in prices.assign(prev_close=prev_close).itertuples(index=False):
+            if pd.isna(row.prev_close) or row.prev_close <= 0 or row.close <= 0:
+                continue
+            matched_ratio = _nearest_price_adjustment_ratio(float(row.close) / float(row.prev_close))
+            if matched_ratio is None:
+                continue
+            event_date = pd.Timestamp(row.date).date().isoformat()
+            details.append(
+                f"{event_date} 偵測到約 {_format_adjustment_ratio(matched_ratio)} 的價格調整"
+                f"（收盤 {float(row.prev_close):.2f} → {float(row.close):.2f}）"
+            )
 
-    prev_close = prices["close"].shift(1)
-    for row in prices.assign(prev_close=prev_close).itertuples(index=False):
-        if pd.isna(row.prev_close) or row.prev_close <= 0 or row.close <= 0:
-            continue
-        matched_ratio = _nearest_price_adjustment_ratio(float(row.close) / float(row.prev_close))
-        if matched_ratio is None:
-            continue
-        event_date = pd.Timestamp(row.date).date().isoformat()
-        warnings.append(
-            f"**{ticker} {name}**：{event_date} 偵測到約 "
-            f"{_format_adjustment_ratio(matched_ratio)} 的價格調整"
-            f"（收盤 {float(row.prev_close):.2f} → {float(row.close):.2f}）。"
-        )
+    if not warning and not details:
+        return []
 
-    return list(dict.fromkeys(warnings))
+    parts = [warning] if warning else ["偵測到可能的價格調整，該段期間請用人工判斷。"]
+    parts.extend(list(dict.fromkeys(details)))
+    return [f"**{ticker} {name}**：{'；'.join(parts)}。"]
 
 
 def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
