@@ -28,11 +28,9 @@ FUND_TYPE_LABELS = {
     "other":          "其他",
 }
 
-MANUAL_CORPORATE_ACTION_CAVEATS = {
-    "0052": "已知分割/資本事件；Yahoo OHLCV 看起來已調整，但 DB 沒有 split event。圖表保留，請把這段期間視為有 corporate-action caveat。",
+CORPORATE_ACTION_WARNINGS = {
+    "0052": "曾有分割 / 資本事件，圖表保留，但該段期間的報酬線請視為需要人工解讀。",
 }
-COMMON_SPLIT_RATIOS = (2, 3, 4, 5, 6, 7, 10)
-SPLIT_RATIO_TOLERANCE = 0.08
 
 
 def _group_consecutive_missing(missing_dates: list, ref_dates: list) -> list[tuple]:
@@ -85,45 +83,11 @@ def _humanize_db_mtime(summary: dict) -> str:
     return f"{sec // 86400} 天前"
 
 
-def _nearest_split_ratio(close_ratio: float) -> float | None:
-    if close_ratio <= 0:
+def _corporate_action_warning(ticker: str, name: str) -> str | None:
+    warning = CORPORATE_ACTION_WARNINGS.get(ticker)
+    if not warning:
         return None
-    candidates = list(COMMON_SPLIT_RATIOS) + [1.0 / r for r in COMMON_SPLIT_RATIOS]
-    nearest = min(candidates, key=lambda r: abs(close_ratio / r - 1.0))
-    if abs(close_ratio / nearest - 1.0) <= SPLIT_RATIO_TOLERANCE:
-        return nearest
-    return None
-
-
-def _detect_corporate_action_caveats(ticker: str, name: str, prices: pd.DataFrame) -> list[str]:
-    caveats: list[str] = []
-    manual = MANUAL_CORPORATE_ACTION_CAVEATS.get(ticker)
-    if manual:
-        caveats.append(f"**{ticker} {name}**：{manual}")
-
-    if len(prices) < 2:
-        return caveats
-
-    prev_close = prices["close"].shift(1)
-    for row in prices.assign(prev_close=prev_close).itertuples(index=False):
-        if pd.isna(row.prev_close) or row.prev_close <= 0 or row.close <= 0:
-            continue
-        close_ratio = float(row.close) / float(row.prev_close)
-        matched_ratio = _nearest_split_ratio(close_ratio)
-        if matched_ratio is None:
-            continue
-
-        event_date = pd.Timestamp(row.date).date().isoformat()
-        if matched_ratio >= 1:
-            ratio_label = f"{matched_ratio:.0f}:1 反分割型跳動"
-        else:
-            ratio_label = f"1:{1.0 / matched_ratio:.0f} 分割型跳動"
-        caveats.append(
-            f"**{ticker} {name}**：{event_date} 偵測到接近 {ratio_label}，"
-            f"收盤 {float(row.prev_close):.2f} → {float(row.close):.2f}；DB 無 split row。"
-        )
-
-    return list(dict.fromkeys(caveats))
+    return f"**{ticker} {name}**：{warning}"
 
 
 def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
@@ -337,9 +301,9 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     # User-selected ETFs
     for i, t in enumerate(selected_tickers):
         urow = etf_universe[etf_universe["ticker"] == t].iloc[0]
-        corporate_action_warnings.extend(
-            _detect_corporate_action_caveats(t, urow["name"], db.get_prices(t))
-        )
+        warning = _corporate_action_warning(t, urow["name"])
+        if warning:
+            corporate_action_warnings.append(warning)
         _add_line(t, urow["name"], palette[i % len(palette)], dash="solid")
 
     # TAIEX — always fetched in background as gap-reference; chart-drawn only if opted-in
@@ -384,11 +348,8 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
     if corporate_action_warnings:
         with st.container(border=True):
-            st.markdown("⚠️ **分割 / 資本事件警示**")
-            st.caption(
-                "這些 ETF 的原始 close 可能受分割或資本事件影響；若 Yahoo 沒有提供可存入 DB 的 split event，"
-                "含息報酬線仍保留，但該段期間需要人工解讀。"
-            )
+            st.markdown("⚠️ **資本事件提醒**")
+            st.caption("以下 ETF 曾有資本事件；我們保留圖表，但該段期間請用人工判斷。")
             for w in list(dict.fromkeys(corporate_action_warnings)):
                 st.markdown(f"- {w}")
 
