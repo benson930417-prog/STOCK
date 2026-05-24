@@ -53,11 +53,13 @@ RESULTS_CSV  = ROOT_DIR / "data" / "etf_bench" / "tactical_backtest_results.csv"
 
 # ── constants ───────────────────────────────────────────────────────────────
 INITIAL_CAPITAL    = 1_000_000.0   # NTD
-TARGET_CORE_PCT    = 0.70
+TARGET_CORE_PCT    = 0.70          # baseline default, overridden by CORE_PCTS sweep
 N_TIERS            = 5
-TIER_STEP_PCT      = (1.0 - TARGET_CORE_PCT) / N_TIERS   # = 6% per tier
-DEPLOY_MIN         = 1.0 - N_TIERS * TIER_STEP_PCT       # 40%
-DEPLOY_MAX         = TARGET_CORE_PCT + N_TIERS * TIER_STEP_PCT  # 100%
+# Tier steps are now ASYMMETRIC: depend on core %, so deployment stays in [0, 100].
+#   fire_step    = (1 - core) / N_TIERS   → 5 FIRE tiers reach 100% deployed
+#   retrieve_step =     core   / N_TIERS  → 5 RETRIEVE tiers reach 0% deployed
+DEPLOY_MIN         = 0.0
+DEPLOY_MAX         = 1.0
 
 COST_FIRE          = 0.0030    # ≈ 0.1425% × 2 (no tax on bond sell)
 COST_RETRIEVE      = 0.0039    # ≈ 0.1425% × 2 + 0.1% TW equity sell tax
@@ -83,6 +85,7 @@ RETRIEVE_CONFIGS = {
 }
 COOLDOWN_DAYS = [3, 5, 7]
 LOOKBACKS     = [60, 90]
+CORE_PCTS     = [0.30, 0.40, 0.50, 0.60, 0.70]
 
 # ── data loaders ────────────────────────────────────────────────────────────
 def _to_yahoo_symbol(ticker: str) -> str:
@@ -176,6 +179,10 @@ def backtest_tactical(
     core_arr  = core_prices.to_numpy()
     bul_arr   = bullet_prices.to_numpy()
 
+    # Asymmetric tier steps so deployment stays in [0, 1] for any core %
+    fire_step     = (1.0 - target_core_pct) / N_TIERS
+    retrieve_step =        target_core_pct  / N_TIERS
+
     # Initial allocation at target_core_pct / (1 - target_core_pct)
     core_shares  = (initial_capital * target_core_pct)       / core_arr[0]
     bullet_shares = (initial_capital * (1 - target_core_pct)) / bul_arr[0]
@@ -226,8 +233,8 @@ def backtest_tactical(
             if retrieve_active > 0 and rank < mid_pct:
                 retrieve_active = 0
 
-        # Compute target deployment %
-        deployment_pct = target_core_pct + TIER_STEP_PCT * (fire_active - retrieve_active)
+        # Compute target deployment % — asymmetric steps stay in [0, 1]
+        deployment_pct = target_core_pct + fire_step * fire_active - retrieve_step * retrieve_active
         deployment_pct = max(DEPLOY_MIN, min(DEPLOY_MAX, deployment_pct))
 
         # Rebalance only when deployment changes
@@ -359,48 +366,59 @@ class ConfigResult:
     retrieve_name: str
     cooldown: int
     lookback: int
+    core_pct: float
     result: BTResult
 
     def key(self) -> str:
-        return f"{self.fire_name}/{self.retrieve_name}/cd={self.cooldown}/win={self.lookback}"
+        return (f"core={int(self.core_pct*100)}%/{self.fire_name}/{self.retrieve_name}"
+                f"/cd={self.cooldown}/win={self.lookback}")
 
 
 def run_grid(taiex: pd.Series,
              core_prices: pd.Series,
-             bullet_prices: pd.Series) -> list[ConfigResult]:
+             bullet_prices: pd.Series,
+             core_pcts: list[float]) -> list[ConfigResult]:
     out: list[ConfigResult] = []
-    total = len(FIRE_CONFIGS) * len(RETRIEVE_CONFIGS) * len(COOLDOWN_DAYS) * len(LOOKBACKS)
+    total = (len(FIRE_CONFIGS) * len(RETRIEVE_CONFIGS)
+             * len(COOLDOWN_DAYS) * len(LOOKBACKS) * len(core_pcts))
     done = 0
-    for fname, ft in FIRE_CONFIGS.items():
-        for rname, rt in RETRIEVE_CONFIGS.items():
-            for cd in COOLDOWN_DAYS:
-                for lb in LOOKBACKS:
-                    bt = backtest_tactical(
-                        taiex, core_prices, bullet_prices,
-                        fire_thresholds=ft, retrieve_thresholds=rt,
-                        cooldown_days=cd, lookback_days=lb,
-                    )
-                    out.append(ConfigResult(fname, rname, cd, lb, bt))
-                    done += 1
-                    if done % 50 == 0:
-                        print(f"  [grid] {done}/{total} configs done", flush=True)
+    for core_pct in core_pcts:
+        for fname, ft in FIRE_CONFIGS.items():
+            for rname, rt in RETRIEVE_CONFIGS.items():
+                for cd in COOLDOWN_DAYS:
+                    for lb in LOOKBACKS:
+                        bt = backtest_tactical(
+                            taiex, core_prices, bullet_prices,
+                            fire_thresholds=ft, retrieve_thresholds=rt,
+                            cooldown_days=cd, lookback_days=lb,
+                            target_core_pct=core_pct,
+                        )
+                        out.append(ConfigResult(fname, rname, cd, lb, core_pct, bt))
+                        done += 1
+                        if done % 100 == 0:
+                            print(f"  [grid] {done}/{total} configs done", flush=True)
     return out
 
 
 # ── robustness check ────────────────────────────────────────────────────────
-def robustness_score(cfg: ConfigResult, all_configs: list[ConfigResult]) -> float:
+def robustness_score(cfg: ConfigResult, all_configs: list[ConfigResult],
+                     core_pcts: list[float]) -> float:
     """Average Sharpe of "neighbour" configs: same FIRE/RETRIEVE family,
-    ±1 step in cooldown and lookback. High = config is in a stable plateau,
-    not a lucky spike. Returns mean Sharpe of up to 4 neighbours."""
+    ±1 step in cooldown, lookback, and core_pct. High = config is in a stable
+    plateau, not a lucky spike."""
     neighbours: list[float] = []
     for other in all_configs:
         if other is cfg:
             continue
         if other.fire_name != cfg.fire_name or other.retrieve_name != cfg.retrieve_name:
             continue
-        cd_step = abs(COOLDOWN_DAYS.index(other.cooldown) - COOLDOWN_DAYS.index(cfg.cooldown))
-        lb_step = abs(LOOKBACKS.index(other.lookback)     - LOOKBACKS.index(cfg.lookback))
-        if cd_step + lb_step <= 1:
+        cd_step   = abs(COOLDOWN_DAYS.index(other.cooldown) - COOLDOWN_DAYS.index(cfg.cooldown))
+        lb_step   = abs(LOOKBACKS.index(other.lookback)     - LOOKBACKS.index(cfg.lookback))
+        try:
+            core_step = abs(core_pcts.index(other.core_pct) - core_pcts.index(cfg.core_pct))
+        except ValueError:
+            continue
+        if cd_step + lb_step + core_step <= 1:
             neighbours.append(other.result.sharpe)
     return float(np.mean(neighbours)) if neighbours else cfg.result.sharpe
 
@@ -414,29 +432,31 @@ def print_header(title: str) -> None:
 
 
 def print_top_n(configs: list[ConfigResult], n: int = 10) -> None:
-    print(f"{'Rank':<5}{'Config':<48}{'Ret%':>7}{'Sharpe':>8}{'Sortino':>9}"
+    print(f"{'Rank':<5}{'Config':<60}{'Ret%':>7}{'Sharpe':>8}{'Sortino':>9}"
           f"{'MaxDD%':>9}{'#Trd':>6}")
-    print("─" * 92)
+    print("─" * 104)
     for i, c in enumerate(configs[:n], start=1):
         r = c.result
-        print(f"{i:<5}{c.key():<48}{r.total_return_pct:>7.1f}"
+        print(f"{i:<5}{c.key():<60}{r.total_return_pct:>7.1f}"
               f"{r.sharpe:>8.2f}{r.sortino:>9.2f}"
               f"{r.max_dd_pct:>9.1f}{r.n_trades:>6}")
 
 
 def print_benchmarks(bms: dict[str, BTResult]) -> None:
-    print(f"{'':<5}{'Benchmark':<48}{'Ret%':>7}{'Sharpe':>8}{'Sortino':>9}"
+    print(f"{'':<5}{'Benchmark':<60}{'Ret%':>7}{'Sharpe':>8}{'Sortino':>9}"
           f"{'MaxDD%':>9}{'#Trd':>6}")
-    print("─" * 92)
+    print("─" * 104)
     for name, r in bms.items():
-        print(f"{'':<5}{name:<48}{r.total_return_pct:>7.1f}"
+        print(f"{'':<5}{name:<60}{r.total_return_pct:>7.1f}"
               f"{r.sharpe:>8.2f}{r.sortino:>9.2f}"
               f"{r.max_dd_pct:>9.1f}{r.n_trades:>6}")
 
 
 def print_recommendation(top: ConfigResult, robust_score: float,
                          benchmarks: dict[str, BTResult]) -> None:
-    static = benchmarks.get("Static 70/30 (weekly rebalance)")
+    # Compare against the matching-core-pct static benchmark, not always 70/30
+    static_key = f"Static {int(top.core_pct*100)}/{100-int(top.core_pct*100)} (weekly rebalance)"
+    static = benchmarks.get(static_key)
     dca    = benchmarks.get("DCA monthly into core")
     bh     = benchmarks.get("Buy & Hold 100% core")
 
@@ -449,7 +469,11 @@ def print_recommendation(top: ConfigResult, robust_score: float,
 
     fire_ths     = FIRE_CONFIGS[top.fire_name]
     retrieve_ths = RETRIEVE_CONFIGS[top.retrieve_name]
+    fire_step     = (1.0 - top.core_pct) / N_TIERS * 100
+    retrieve_step =        top.core_pct  / N_TIERS * 100
     print(f"  WINNER: {top.key()}")
+    print(f"    Core baseline:        {int(top.core_pct*100)}% "
+          f"(FIRE step +{fire_step:.1f}%/tier, RETRIEVE step -{retrieve_step:.1f}%/tier)")
     print(f"    FIRE percentiles:     {' / '.join(str(t) for t in fire_ths)}")
     print(f"    RETRIEVE percentiles: {' / '.join(str(t) for t in retrieve_ths)}")
     print(f"    Cooldown:             {top.cooldown} trading days")
@@ -476,14 +500,14 @@ def write_results_csv(configs: list[ConfigResult]) -> None:
     with open(RESULTS_CSV, "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow([
-            "fire_config", "retrieve_config", "cooldown", "lookback",
+            "core_pct", "fire_config", "retrieve_config", "cooldown", "lookback",
             "total_return_pct", "annual_return_pct", "sharpe", "sortino",
             "max_dd_pct", "n_trades", "n_fire", "n_retrieve", "final_value",
         ])
         for c in configs:
             r = c.result
             w.writerow([
-                c.fire_name, c.retrieve_name, c.cooldown, c.lookback,
+                f"{c.core_pct:.2f}", c.fire_name, c.retrieve_name, c.cooldown, c.lookback,
                 f"{r.total_return_pct:.3f}", f"{r.annual_return_pct:.3f}",
                 f"{r.sharpe:.4f}", f"{r.sortino:.4f}", f"{r.max_dd_pct:.3f}",
                 r.n_trades, r.n_fire, r.n_retrieve, f"{r.final_value:.2f}",
@@ -505,15 +529,25 @@ def main() -> int:
                     help="Always-invested core ETF (default 0050)")
     ap.add_argument("--bullet-ticker", default="00865B",
                     help="Defensive bullet ETF (default 00865B US short bonds)")
-    ap.add_argument("--core-pct", type=float, default=TARGET_CORE_PCT,
-                    help=f"Baseline core % (default {TARGET_CORE_PCT})")
+    ap.add_argument("--core-pcts", type=str, default=",".join(f"{p:g}" for p in CORE_PCTS),
+                    help=f"Comma-separated list of baseline core % values to sweep "
+                         f"(default {','.join(f'{p:g}' for p in CORE_PCTS)})")
     ap.add_argument("--years", type=float, default=5.0,
                     help="Lookback years for the backtest (default 5). "
                          "≥3 fetches fresh from yfinance, otherwise uses the local DB.")
     args = ap.parse_args()
+    try:
+        core_pcts = [float(x.strip()) for x in args.core_pcts.split(",") if x.strip()]
+        core_pcts = [p if p <= 1 else p / 100.0 for p in core_pcts]  # accept "70" or "0.70"
+        core_pcts = sorted(set(core_pcts))
+        assert all(0 < p < 1 for p in core_pcts)
+    except (ValueError, AssertionError):
+        print(f"--core-pcts must be comma-separated values in (0, 1) or (0, 100). got: {args.core_pcts}")
+        return 1
 
     print(f"[backtest] Core:    {args.core_ticker}")
     print(f"[backtest] Bullet:  {args.bullet_ticker}")
+    print(f"[backtest] Core %:  sweeping {[f'{int(p*100)}%' for p in core_pcts]}")
     print(f"[backtest] Window:  {args.years} years")
 
     if args.years > 2.0:
@@ -541,9 +575,10 @@ def main() -> int:
             print(f"[backtest] ⚠ Aligned start trails target by {short_by_yrs:.1f}y — "
                   f"one of the tickers ({args.bullet_ticker}?) has limited history.")
 
-    total = len(FIRE_CONFIGS) * len(RETRIEVE_CONFIGS) * len(COOLDOWN_DAYS) * len(LOOKBACKS)
+    total = (len(FIRE_CONFIGS) * len(RETRIEVE_CONFIGS)
+             * len(COOLDOWN_DAYS) * len(LOOKBACKS) * len(core_pcts))
     print(f"[backtest] Running {total} tactical configurations …")
-    all_configs = run_grid(taiex, core, bullet)
+    all_configs = run_grid(taiex, core, bullet, core_pcts)
 
     # Sort by Sharpe (primary), Sortino (tiebreak)
     all_configs.sort(key=lambda c: (c.result.sharpe, c.result.sortino), reverse=True)
@@ -551,26 +586,27 @@ def main() -> int:
     print_header("BACKTEST RESULTS — top 10 by Sharpe ratio")
     print_top_n(all_configs, n=10)
 
-    # Benchmarks
+    # Benchmarks — one static for each core_pct so we can compare apples-to-apples
     print_header("BENCHMARKS")
-    benchmarks = {
-        "DCA monthly into core":             backtest_dca(core),
-        "Static 70/30 (weekly rebalance)":   backtest_static_split(core, bullet,
-                                                                   target_core_pct=args.core_pct),
-        "Buy & Hold 100% core":              backtest_buy_hold(core),
+    benchmarks: dict[str, BTResult] = {
+        "DCA monthly into core":      backtest_dca(core),
+        "Buy & Hold 100% core":       backtest_buy_hold(core),
     }
+    for p in core_pcts:
+        label = f"Static {int(p*100)}/{100-int(p*100)} (weekly rebalance)"
+        benchmarks[label] = backtest_static_split(core, bullet, target_core_pct=p)
     print_benchmarks(benchmarks)
 
     # Robustness check on top 3
     print_header("ROBUSTNESS CHECK — top 3 configurations")
-    print(f"{'Rank':<5}{'Config':<48}{'Sharpe':>8}{'Neighbour avg':>15}{'Flag':>8}")
-    print("─" * 84)
+    print(f"{'Rank':<5}{'Config':<60}{'Sharpe':>8}{'Neighbour avg':>15}{'Flag':>8}")
+    print("─" * 96)
     top_with_robust: list[tuple[ConfigResult, float]] = []
     for i, c in enumerate(all_configs[:3], start=1):
-        rs = robustness_score(c, all_configs)
+        rs = robustness_score(c, all_configs, core_pcts)
         ratio = rs / c.result.sharpe if c.result.sharpe > 0 else 0
         flag = "✓" if ratio >= 0.93 else "⚠"
-        print(f"{i:<5}{c.key():<48}{c.result.sharpe:>8.2f}{rs:>15.2f}{flag:>8}")
+        print(f"{i:<5}{c.key():<60}{c.result.sharpe:>8.2f}{rs:>15.2f}{flag:>8}")
         top_with_robust.append((c, rs))
 
     # Pick the most robust of the top 3 (not just rank #1)
