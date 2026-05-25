@@ -478,6 +478,20 @@ async def market_text(req: SnapshotRequest):
                 print(f"⚠️ DOM quote extraction failed for {req.key}: {dom_error}")
                 text = await _get_body_text(page)
                 quote = _parse_market_text(text)
+        else:
+            # Scanner data is fast but its `Perf.W` is week-to-date (since
+            # Monday), NOT the last 5 trading days. TradingView's on-page
+            # widget displays "5 days" which IS the trailing 5d. To match
+            # what the user sees on the actual page, overlay DOM-scraped
+            # performance over scanner values where DOM provides them.
+            try:
+                dom_perf = _parse_performance_from_text(await _get_body_text(page))
+                perf = quote.setdefault("performance", {})
+                for k in ("1d", "5d", "1m", "6m"):
+                    if dom_perf.get(k) is not None:
+                        perf[k] = dom_perf[k]
+            except Exception as e:
+                print(f"⚠️ Could not overlay DOM perf for {req.key}: {e}")
         return _market_text_payload(req.key, quote)
     except Exception as e:
         print(f"❌ Error parsing market text for {req.key}: {e}")
@@ -527,19 +541,26 @@ async def take_snapshot(req: SnapshotRequest):
         if "403 ERROR" in page_text or "The request could not be satisfied" in page_text:
             raise ValueError(f"TradingView page is blocked: {page_text[:300]}")
 
+        # Always scroll to top first — defends against the page being scrolled
+        # to footer for any reason. Without this the viewport snapshot fallback
+        # would capture the cookie banner / social-link footer instead of chart.
+        await page.evaluate("window.scrollTo(0, 0)")
+        await asyncio.sleep(0.2)
+
         # Clip the chart area. TradingView uses DIFFERENT page templates for
         # different symbol types:
         #   • Forex / equities → "performance-chart-id" container
-        #   • Futures (e.g. CBOT_MINI:10Y1!) → "symbol-overview-chart" or
-        #     no named container, just a canvas inside the body
-        # So: try named containers in priority, then fall back to the LARGEST
-        # visible canvas on the page. Don't restrict by y-position (was 700)
-        # because futures pages render the price chart lower on the page.
+        #   • Futures (e.g. CBOT_MINI:10Y1!) → no named perf container; main
+        #     price chart is a <canvas> inside body, near the top of the page
+        # So: try named containers first. Then fall back to the largest
+        # CANVAS (not iframe — those are usually ads/social) in the UPPER
+        # portion of the page where the price chart actually renders.
         clip = await page.evaluate("""() => {
-            const visibleChartLike = (el) => {
+            const inUpperPage = (r) => r.top >= 40 && r.top <= 600;
+            const visibleChartLike = (el, ymax) => {
                 const r = el.getBoundingClientRect();
                 if (r.width < 250 || r.height < 120) return false;
-                if (r.top < 40) return false;   // skip the hidden header zone
+                if (r.top < 40 || r.top > ymax) return false;
                 const style = window.getComputedStyle(el);
                 return style
                     && style.display !== 'none'
@@ -547,8 +568,8 @@ async def take_snapshot(req: SnapshotRequest):
                     && Number(style.opacity || 1) > 0;
             };
 
-            // Try named containers in priority order — covers forex/equity AND
-            // futures/index page templates.
+            // 1) Try named containers in priority order — covers forex/equity
+            //    AND futures/index page templates.
             const containerSelectors = [
                 'div[data-container-name="performance-chart-id"]',
                 'div[data-container-name="symbol-overview-chart-container"]',
@@ -556,54 +577,53 @@ async def take_snapshot(req: SnapshotRequest):
                 'div[data-name="symbol-page-chart-section"]',
                 'div[class*="chartContainer"]',
             ];
-            let chartContainer = null;
             for (const sel of containerSelectors) {
                 const el = document.querySelector(sel);
-                if (el && visibleChartLike(el)) { chartContainer = el; break; }
+                if (el && visibleChartLike(el, 800)) {
+                    const r = el.getBoundingClientRect();
+                    const pad = 10;
+                    return {
+                        x: Math.max(0, r.left - pad),
+                        y: Math.max(0, r.top  - pad),
+                        width:  Math.min(window.innerWidth,  r.right  + pad) - Math.max(0, r.left - pad),
+                        height: Math.min(window.innerHeight, r.bottom + pad) - Math.max(0, r.top  - pad),
+                    };
+                }
             }
 
-            // Get candidate graphic elements
-            const graphicElements = chartContainer
-                ? Array.from(chartContainer.querySelectorAll('canvas, svg, iframe')).filter(visibleChartLike)
-                : Array.from(document.querySelectorAll('canvas, svg, iframe')).filter(visibleChartLike);
-
-            // Sort by area (largest first) — the price chart canvas is almost
-            // always the biggest graphic element on a symbol page.
-            const sorted = graphicElements
-                .map(el => ({el, r: el.getBoundingClientRect()}))
+            // 2) Fallback: largest CANVAS in upper page (futures page case).
+            //    Iframes excluded — they're often ads/social widgets that
+            //    would steal "largest area" but be unrelated to the chart.
+            const canvases = Array.from(document.querySelectorAll('canvas'))
+                .filter(c => visibleChartLike(c, 600))
+                .map(c => ({el: c, r: c.getBoundingClientRect()}))
                 .sort((a, b) => (b.r.width * b.r.height) - (a.r.width * a.r.height));
-            if (!sorted.length) return null;
-
-            // Prefer the named container's rect if we found one (gives cleaner
-            // padding); otherwise the largest visible canvas.
-            const bestRect = chartContainer
-                ? chartContainer.getBoundingClientRect()
-                : sorted[0].r;
-
-            const pad = 10;
-            const top    = Math.max(0, bestRect.top - pad);
-            const bottom = Math.min(window.innerHeight, bestRect.bottom + pad);
-            const left   = Math.max(0, bestRect.left - pad);
-            const right  = Math.min(window.innerWidth, bestRect.right + pad);
-
-            if (bottom - top < 120 || right - left < 250) return null;
-            return {x: left, y: top, width: right - left, height: bottom - top};
+            if (canvases.length) {
+                const r = canvases[0].r;
+                const pad = 10;
+                return {
+                    x: Math.max(0, r.left - pad),
+                    y: Math.max(0, r.top  - pad),
+                    width:  Math.min(window.innerWidth,  r.right  + pad) - Math.max(0, r.left - pad),
+                    height: Math.min(window.innerHeight, r.bottom + pad) - Math.max(0, r.top  - pad),
+                };
+            }
+            return null;
         }""")
 
-        if clip:
+        if clip and clip["width"] >= 250 and clip["height"] >= 120:
             await page.screenshot(path=filepath, clip=clip)
             print(f"  ✅ Snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
         else:
-            # One last-resort attempt: scroll to top, give the chart a moment
-            # to render, then take a viewport screenshot. Better to show
-            # something than fail outright.
-            try:
-                await page.evaluate("window.scrollTo(0, 0)")
-                await asyncio.sleep(0.3)
-                await page.screenshot(path=filepath, full_page=False)
-                print(f"  ⚠ Snapshot fallback to full viewport: {filename}")
-            except Exception:
-                raise ValueError("TradingView performance chart container was not found")
+            # Last-resort: take only the UPPER part of the viewport. Bounded
+            # rectangle avoids accidentally returning the footer/cookies area
+            # (which is what the previous unrestricted full-viewport fallback
+            # produced for the bond futures page).
+            await page.screenshot(
+                path=filepath,
+                clip={"x": 0, "y": 40, "width": 600, "height": 460},
+            )
+            print(f"  ⚠ Snapshot fallback to upper-viewport bounded clip: {filename}")
         
         # --- Overlay Chinese title ---
         meta = CHART_META.get(req.key)
