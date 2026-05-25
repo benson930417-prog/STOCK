@@ -369,17 +369,20 @@ def _trim_bottom_whitespace(image_path, padding=18, min_trim=24):
     width, height = img.size
     pixels = img.load()
     last_content_y = height - 1
+    scan_left = max(0, int(width * 0.08))
+    scan_right = min(width, int(width * 0.92))
+    min_pixels = max(4, int((scan_right - scan_left) * 0.015))
 
     for y in range(height - 1, -1, -1):
         non_white = 0
-        for x in range(width):
+        for x in range(scan_left, scan_right):
             r, g, b = pixels[x, y]
-            if min(r, g, b) < 245:
+            if min(r, g, b) < 238:
                 non_white += 1
-                if non_white >= 8:
+                if non_white >= min_pixels:
                     last_content_y = y
                     break
-        if non_white >= 8:
+        if non_white >= min_pixels:
             break
 
     crop_bottom = min(height, last_content_y + padding)
@@ -515,29 +518,19 @@ async def take_snapshot(req: SnapshotRequest):
         if "403 ERROR" in page_text or "The request could not be satisfied" in page_text:
             raise ValueError(f"TradingView page is blocked: {page_text[:300]}")
 
-        # Clip ONLY the chart canvas area (no header). Different TradingView
-        # symbol pages use different container names, so fall back to visible
-        # chart-like elements when the performance-chart wrapper is absent.
+        # Clip ONLY the chart canvas area (no header). Prefer the original
+        # performance chart wrapper; otherwise use the largest visible graphic.
         clip = await page.evaluate("""() => {
             const chartContainer = document.querySelector('div[data-container-name="performance-chart-id"]');
-            const visibleChartLike = (el) => {
+            const visibleGraphic = (el) => {
                 const r = el.getBoundingClientRect();
                 if (r.width < 250 || r.height < 120 || r.top < 40 || r.top > 700) return false;
                 const style = window.getComputedStyle(el);
                 return style && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0;
             };
-            const graphicElements = chartContainer
-                ? Array.from(chartContainer.querySelectorAll('canvas, svg, iframe')).filter(visibleChartLike)
-                : Array.from(document.querySelectorAll('canvas, svg, iframe')).filter(visibleChartLike);
-            const containerElements = chartContainer
+            const elements = chartContainer
                 ? [chartContainer]
-                : Array.from(document.querySelectorAll([
-                    'div[class*="chart"]',
-                    'div[class*="Chart"]',
-                    'div[data-name*="chart"]',
-                    'div[data-name*="Chart"]'
-                ].join(','))).filter(visibleChartLike);
-            const elements = graphicElements.length ? graphicElements : containerElements;
+                : Array.from(document.querySelectorAll('canvas, svg, iframe')).filter(visibleGraphic);
             const rects = elements
                 .map(el => el.getBoundingClientRect())
                 .filter(r => r.width > 250 && r.height > 120 && r.top > 40 && r.top < 700);
