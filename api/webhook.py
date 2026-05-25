@@ -534,6 +534,19 @@ MARKET_TEXT_ERROR_LABELS = {
     "usdjpy": "美元兌日幣",
 }
 
+def _exception_detail(exc):
+    response = getattr(exc, "response", None)
+    if response is not None:
+        body = (getattr(response, "text", "") or "").strip()
+        if len(body) > 600:
+            body = body[:600] + "..."
+        return f"{type(exc).__name__}: HTTP {response.status_code} {body}".strip()
+    return f"{type(exc).__name__}: {exc}"
+
+def _tradingview_error_text(key, stage, exc):
+    label = MARKET_TEXT_ERROR_LABELS.get(key, key)
+    return f"{label}\n──────────\nTradingView {stage}錯誤：\n{_exception_detail(exc)}"
+
 def get_market_text(key):
     try:
         response = requests.post(
@@ -545,8 +558,19 @@ def get_market_text(key):
         return response.json()["text"]
     except Exception as exc:
         print(f"Chart market text failed for {key}: {exc}")
-        label = MARKET_TEXT_ERROR_LABELS.get(key, key)
-        return f"{label}\n──────────\nTradingView 文字報價暫時無法取得。"
+        return _tradingview_error_text(key, "文字報價", exc)
+
+def get_chart_snapshot(key, timeout=30):
+    response = requests.post(
+        f"{CHART_SERVICE_URL}/snapshot",
+        json={"key": key},
+        timeout=timeout,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not payload.get("url"):
+        raise RuntimeError(f"Chart service returned no snapshot URL for {key}: {payload}")
+    return payload
 
 def get_oil_price():
     return "\n\n".join(get_market_text(key) for key in ["oil", "brent"])
@@ -644,8 +668,7 @@ def handle_message(event):
     elif is_gold:
         reply_msg = get_gold_text()
         try:
-            snapshot_url = "http://127.0.0.1:5005/snapshot"
-            res = requests.post(snapshot_url, json={"key": "gold"}, timeout=30).json()
+            res = get_chart_snapshot("gold")
             img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
             line_bot_api.reply_message(
                 event.reply_token,
@@ -656,7 +679,8 @@ def handle_message(event):
             )
         except Exception as e:
             print("Gold Chart generation failed:", e)
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_msg))
+            error_msg = _tradingview_error_text("gold", "圖表", e)
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
 
     elif etf_quote_ticker:
         try:
@@ -739,27 +763,25 @@ def handle_message(event):
     elif user_msg == "油價":
         reply_msg = get_oil_price()
         try:
-            snapshot_url = "http://127.0.0.1:5005/snapshot"
             messages = [TextSendMessage(text=reply_msg)]
             
             # WTI and Brent - chart_service scrapes data from TradingView directly
+            key = "oil"
             for key in ["oil", "brent"]:
-                payload = {"key": key}
-                res = requests.post(snapshot_url, json=payload, timeout=30).json()
+                res = get_chart_snapshot(key)
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             
             line_bot_api.reply_message(event.reply_token, messages)
         except Exception as e:
             print("Oil Chart generation failed:", e)
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_msg))
+            error_msg = _tradingview_error_text(key, "圖表", e)
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
 
     elif user_msg in ["債卷", "債券"]:
         reply_msg = get_10yf_price()
         try:
-            snapshot_url = "http://127.0.0.1:5005/snapshot"
-            payload = {"key": "bond"}
-            res = requests.post(snapshot_url, json=payload, timeout=30).json()
+            res = get_chart_snapshot("bond")
             
             img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
             
@@ -772,25 +794,26 @@ def handle_message(event):
             )
         except Exception as e:
             print("Bond Chart generation failed:", e)
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_msg))
+            error_msg = _tradingview_error_text("bond", "圖表", e)
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
 
     elif user_msg == "匯率":
         reply_msg = get_exchange_rates()
         try:
-            snapshot_url = "http://127.0.0.1:5005/snapshot"
             messages = [TextSendMessage(text=reply_msg)]
             
             # 3 Quick snapshots - chart_service scrapes data from TradingView directly
+            key = "usdtwd"
             for key in ["usdtwd", "usdjpy", "usdchf"]:
-                payload = {"key": key}
-                res = requests.post(snapshot_url, json=payload, timeout=30).json()
+                res = get_chart_snapshot(key)
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             
             line_bot_api.reply_message(event.reply_token, messages)
         except Exception as e:
             print("Forex Chart generation failed:", e)
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_msg))
+            error_msg = _tradingview_error_text(key, "圖表", e)
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
     elif user_msg.lower() == "admin":
         line_bot_api.reply_message(
             event.reply_token,
