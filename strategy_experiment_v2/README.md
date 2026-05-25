@@ -28,13 +28,13 @@ retrieve rule pulls them back to cash.
 From repo root:
 
 ```bash
-python -m strategy_experiment_v2.run_v2 --tickers 0050 SPY QQQ --years 5 10 --workers 0 --progress-every 250
+python -m strategy_experiment_v2.run_v2 --tickers 0050 SPY QQQ --years 5 10 --workers 0 --chunk-size 1000 --progress-every 1000
 ```
 
 For a faster first pass:
 
 ```bash
-python -m strategy_experiment_v2.run_v2 --tickers 0050 --years 5 10 --workers 0 --progress-every 250
+python -m strategy_experiment_v2.run_v2 --tickers 0050 --years 5 10 --workers 0 --chunk-size 1000 --progress-every 1000
 ```
 
 The progress bar shows percent complete, elapsed time, and ETA for each
@@ -42,6 +42,9 @@ ticker/window pair.
 
 Use `--workers 0` for all logical CPU cores, or `--workers 8` / `--workers 16`
 to leave some machine headroom.
+
+On Windows, larger `--chunk-size` values are usually faster because process
+scheduling overhead is high. Good starting points are `500`, `1000`, or `2000`.
 
 Outputs:
 

@@ -506,6 +506,17 @@ def worker_build_row(spec: StrategySpec) -> dict:
     return build_row(_WORKER_PRICES, _WORKER_TICKER, int(_WORKER_META["years"]), spec)
 
 
+def worker_build_rows(specs: list[StrategySpec]) -> list[dict]:
+    if _WORKER_PRICES is None or _WORKER_TICKER is None or _WORKER_META is None:
+        raise RuntimeError("worker not initialized")
+    years = int(_WORKER_META["years"])
+    return [build_row(_WORKER_PRICES, _WORKER_TICKER, years, spec) for spec in specs]
+
+
+def chunked(items: list[StrategySpec], chunk_size: int) -> list[list[StrategySpec]]:
+    return [items[i : i + chunk_size] for i in range(0, len(items), chunk_size)]
+
+
 def format_duration(seconds: float) -> str:
     seconds = max(0, int(seconds))
     h, rem = divmod(seconds, 3600)
@@ -531,7 +542,14 @@ def print_progress(label: str, idx: int, total: int, start_time: float, force_ne
     print(msg, end="\n" if force_newline else "", flush=True)
 
 
-def run_one(ticker: str, years: int, specs: list[StrategySpec], progress_every: int, workers: int) -> pd.DataFrame:
+def run_one(
+    ticker: str,
+    years: int,
+    specs: list[StrategySpec],
+    progress_every: int,
+    workers: int,
+    chunk_size: int,
+) -> pd.DataFrame:
     prices = load_prices(ticker, years)
     rows = []
     label = f"[{ticker} {years}y]"
@@ -546,14 +564,18 @@ def run_one(ticker: str, years: int, specs: list[StrategySpec], progress_every: 
                 print_progress(label, idx, len(specs), start_time, force_newline=idx == len(specs))
         return pd.DataFrame(rows)
 
-    print(f"{label} using {workers} worker processes")
+    chunks = chunked(specs, max(1, chunk_size))
+    print(f"{label} using {workers} worker processes, {len(chunks):,} chunks of up to {chunk_size:,} specs")
     meta = {"years": years}
     with ProcessPoolExecutor(max_workers=workers, initializer=init_worker, initargs=(prices, ticker, meta)) as executor:
-        futures = [executor.submit(worker_build_row, spec) for spec in specs]
+        futures = [executor.submit(worker_build_rows, chunk) for chunk in chunks]
+        completed = 0
         for idx, fut in enumerate(as_completed(futures), 1):
-            rows.append(fut.result())
-            if idx % progress_every == 0 or idx == len(specs):
-                print_progress(label, idx, len(specs), start_time, force_newline=idx == len(specs))
+            chunk_rows = fut.result()
+            rows.extend(chunk_rows)
+            completed += len(chunk_rows)
+            if completed % progress_every < len(chunk_rows) or completed == len(specs):
+                print_progress(label, completed, len(specs), start_time, force_newline=completed == len(specs))
     return pd.DataFrame(rows)
 
 
@@ -650,6 +672,12 @@ def main(argv: list[str] | None = None) -> int:
         default=1,
         help="Parallel worker processes. Use 0 for all logical cores, 1 for serial.",
     )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=500,
+        help="Strategies per worker task. Larger chunks reduce Windows multiprocessing overhead.",
+    )
     args = parser.parse_args(argv)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -659,11 +687,21 @@ def main(argv: list[str] | None = None) -> int:
     workers = (os.cpu_count() or 1) if args.workers == 0 else max(1, args.workers)
     print(f"Specs: {len(specs):,}")
     print(f"Workers: {workers}")
+    print(f"Chunk size: {max(1, args.chunk_size):,}")
 
     frames = []
     for ticker in args.tickers:
         for years in args.years:
-            frames.append(run_one(ticker, years, specs, max(1, args.progress_every), workers))
+            frames.append(
+                run_one(
+                    ticker,
+                    years,
+                    specs,
+                    max(1, args.progress_every),
+                    workers,
+                    max(1, args.chunk_size),
+                )
+            )
 
     results = pd.concat(frames, ignore_index=True)
     summary = summarize(results)
