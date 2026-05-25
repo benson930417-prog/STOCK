@@ -16,9 +16,9 @@ CHART_TABS = {
     "brent": "https://www.tradingview.com/symbols/RUS-BR1!/?timeframe=5D",
     "bond": "https://www.tradingview.com/symbols/TVC-US10Y/?timeframe=5D",
     "gold": "https://www.tradingview.com/symbols/GOLD/?timeframe=5D",
-    "usdtwd": "https://www.tradingview.com/symbols/USDTWD/?exchange=FX_IDC&timeframe=5D",
-    "usdjpy": "https://www.tradingview.com/symbols/USDJPY/?exchange=OANDA&timeframe=5D",
-    "usdchf": "https://www.tradingview.com/symbols/USDCHF/?exchange=OANDA&timeframe=5D"
+    "usdtwd": "https://s.tradingview.com/widgetembed/?symbol=FX_IDC%3AUSDTWD&interval=60&range=5D&theme=light&style=1&timezone=Asia%2FTaipei&withdateranges=1&hide_side_toolbar=1&hide_top_toolbar=1&save_image=0&studies=[]",
+    "usdjpy": "https://s.tradingview.com/widgetembed/?symbol=OANDA%3AUSDJPY&interval=60&range=5D&theme=light&style=1&timezone=Asia%2FTaipei&withdateranges=1&hide_side_toolbar=1&hide_top_toolbar=1&save_image=0&studies=[]",
+    "usdchf": "https://s.tradingview.com/widgetembed/?symbol=OANDA%3AUSDCHF&interval=60&range=5D&theme=light&style=1&timezone=Asia%2FTaipei&withdateranges=1&hide_side_toolbar=1&hide_top_toolbar=1&save_image=0&studies=[]"
 }
 
 # Chinese titles for each chart key
@@ -43,6 +43,12 @@ PERFORMANCE_LABELS = {
     "5 years": "5y",
     "10 years": "10y",
     "All time": "all",
+}
+
+TRADINGVIEW_SCANNER_QUOTES = {
+    "usdtwd": {"scanner": "forex", "symbol": "FX_IDC:USDTWD"},
+    "usdjpy": {"scanner": "forex", "symbol": "OANDA:USDJPY"},
+    "usdchf": {"scanner": "forex", "symbol": "OANDA:USDCHF"},
 }
 
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')
@@ -213,6 +219,38 @@ async def _extract_market_quote(page):
     return _parse_market_text(await _get_body_text(page))
 
 
+async def _fetch_tradingview_scanner_quote(page, key):
+    config = TRADINGVIEW_SCANNER_QUOTES.get(key)
+    if not config:
+        return None
+    response = await page.request.post(
+        f"https://scanner.tradingview.com/{config['scanner']}/scan",
+        data={
+            "symbols": {"tickers": [config["symbol"]], "query": {"types": []}},
+            "columns": ["name", "close", "change", "change_abs", "currency"],
+        },
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=10000,
+    )
+    if not response.ok:
+        raise ValueError(f"TradingView scanner HTTP {response.status}: {await response.text()}")
+    payload = await response.json()
+    rows = payload.get("data") or []
+    if not rows:
+        raise ValueError(f"TradingView scanner returned no rows for {config['symbol']}")
+    values = rows[0].get("d") or []
+    if len(values) < 4 or values[1] is None:
+        raise ValueError(f"TradingView scanner row missing close/change for {config['symbol']}: {values}")
+    return {
+        "price": float(values[1]),
+        "currency": values[4] if len(values) > 4 and values[4] else "",
+        "change_pct": float(values[2]) if values[2] is not None else None,
+        "change_abs": float(values[3]) if values[3] is not None else None,
+        "as_of_text": None,
+        "performance": {},
+    }
+
+
 def _format_change(change_pct, label):
     sign = "+" if change_pct > 0 else ""
     direction = "🔴" if change_pct > 0 else "🟢"
@@ -368,12 +406,14 @@ async def _get_body_text(page):
 async def market_text(req: SnapshotRequest):
     page = await _get_page_for_key(req.key)
     try:
-        try:
-            quote = await _extract_market_quote(page)
-        except Exception as dom_error:
-            print(f"⚠️ DOM quote extraction failed for {req.key}: {dom_error}")
-            text = await _get_body_text(page)
-            quote = _parse_market_text(text)
+        quote = await _fetch_tradingview_scanner_quote(page, req.key)
+        if quote is None:
+            try:
+                quote = await _extract_market_quote(page)
+            except Exception as dom_error:
+                print(f"⚠️ DOM quote extraction failed for {req.key}: {dom_error}")
+                text = await _get_body_text(page)
+                quote = _parse_market_text(text)
         return _market_text_payload(req.key, quote)
     except Exception as e:
         print(f"❌ Error parsing market text for {req.key}: {e}")
@@ -419,6 +459,10 @@ async def take_snapshot(req: SnapshotRequest):
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     try:
+        page_text = (await _get_body_text(page))[:1000]
+        if "403 ERROR" in page_text or "The request could not be satisfied" in page_text:
+            raise ValueError(f"TradingView page is blocked: {page_text[:300]}")
+
         # Clip ONLY the chart canvas area (no header)
         clip = await page.evaluate("""() => {
             const chartContainer = document.querySelector('div[data-container-name="performance-chart-id"]');
