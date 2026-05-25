@@ -49,10 +49,6 @@ TRADINGVIEW_SCANNER_QUOTES = {
     "usdtwd": {"scanner": "forex", "symbol": "FX_IDC:USDTWD"},
     "usdjpy": {"scanner": "forex", "symbol": "OANDA:USDJPY"},
     "usdchf": {"scanner": "forex", "symbol": "OANDA:USDCHF"},
-    "bond": {
-        "scanners": ["bond", "america", "cfd"],
-        "symbol": "TVC:US10Y",
-    },
 }
 
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')
@@ -155,6 +151,8 @@ def _parse_performance_from_text(text):
 def _parse_market_text(text):
     raw = str(text or "")
     compact_patterns = [
+        r"Market\s+open\s*([0-9][0-9,.]*)\s*%\s*(?:R)?\s*([-+−][0-9][0-9,.]*)\s*([-+−][0-9][0-9,.]*%)",
+        r"([0-9][0-9,.]*)\s*%\s*(?:R)?\s*([-+−][0-9][0-9,.]*)\s*([-+−][0-9][0-9,.]*%)",
         r"Market\s+open\s*([0-9][0-9,.]*(?:[kKmM])?)\s*[A-Z]?\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD)?(?:[\s\u2009\u202f/]*[A-Z]{2,5})?\s*[A-Z]?\s*([-+−][0-9][0-9,.]*(?:[kKmM])?)\s*([-+−][0-9][0-9,.]*%)",
         r"([0-9][0-9,.]*(?:[kKmM])?)\s*[A-Z]?\s*(USD|TWD|JPY|CHF|EUR|GBP|HKD)(?:[\s\u2009\u202f/]*[A-Z]{2,5})?\s*[A-Z]?\s*([-+−][0-9][0-9,.]*(?:[kKmM])?)\s*([-+−][0-9][0-9,.]*%)",
         r"([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*(?:R)?\s*([-+−]?[0-9][0-9,.]*(?:[kKmM])?)\s*([-+−]?[0-9][0-9,.]*%)",
