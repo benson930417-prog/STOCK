@@ -37,8 +37,8 @@ Sections
 
 Philosophy unchanged
 ────────────────────
-Tactical backtests (strategy_experiment/) proved no rule combo beats DCA
-or static rebalance on Sharpe across 5y of data. So this tab gives no
+Prior tactical backtests found no rule combo that beat DCA or static
+rebalance on Sharpe across 5y of data. So this tab gives no
 buy/sell signals — only context to suppress emotional trading decisions.
 """
 from __future__ import annotations

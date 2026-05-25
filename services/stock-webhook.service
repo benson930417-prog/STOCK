@@ -1,0 +1,18 @@
+[Unit]
+Description=STOCK LINE Webhook Flask Server
+After=network-online.target stock-chart.service
+Wants=network-online.target stock-chart.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/STOCK
+EnvironmentFile=-/home/ubuntu/.stock_secrets
+ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/api/webhook.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/ubuntu/STOCK/stock_webhook.log
+StandardError=append:/home/ubuntu/STOCK/stock_webhook.log
+
+[Install]
+WantedBy=multi-user.target

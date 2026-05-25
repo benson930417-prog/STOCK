@@ -1,12 +1,10 @@
 [Unit]
 Description=OCI Firewall Reset (Flush Iptables)
-# Run early in the boot process
 After=network-pre.target
 Before=network.target
 
 [Service]
 Type=oneshot
-# Bypasses restricted OCI firewall rules by resetting the policy to ACCEPT
 ExecStart=/usr/bin/bash -c "sleep 5; /sbin/iptables -F; /sbin/iptables -P INPUT ACCEPT; /sbin/iptables -P FORWARD ACCEPT; /sbin/iptables -P OUTPUT ACCEPT"
 RemainAfterExit=yes
 

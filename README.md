@@ -1,332 +1,518 @@
-# STOCK: ETF Monitoring Dashboard & LINE Webhook
+# STOCK
 
-This repository contains the backend services, data pipelines, and frontend applications for an automated ETF tracking and monitoring system. It provides a real-time dashboard and a LINE messaging bot to query live metrics, view daily operation reports, and evaluate composite index performances (like the "吳大師" master holdings).
+STOCK is a self-hosted ETF and market-monitoring system. It has three user-facing surfaces:
 
-## Table of Contents
-- [Architecture Overview](#architecture-overview)
-- [Server Environment](#server-environment)
-- [Systemd Services](#systemd-services)
-- [Data Pipeline & Business Logic](#data-pipeline--business-logic)
-- [ETF Benchmark Database](#etf-benchmark-database)
-- [Repository Structure](#repository-structure)
-- [Deployment & Operations](#deployment--operations)
-- [Daily Run & Admin Email](#daily-run--admin-email)
+- A Streamlit dashboard for ETF holdings, quote status, ETF comparison, master holdings, and market pulse.
+- A LINE bot webhook for quote cards, daily reports, market charts, and admin commands.
+- A Playwright/FastAPI chart service that captures TradingView text quotes and chart snapshots for the LINE bot.
 
----
+The production server path used by all service files is `/home/ubuntu/STOCK`.
 
-## Architecture Overview
+## Runtime Map
 
-1. **Frontend (Streamlit):** Located in `app.py` and `src/ui/`. Renders dashboards for both Active (00981A, 00997A) and Passive (0050, 00830, 00878, 009805) ETFs.
-2. **LINE Webhook (Flask):** Located in `api/webhook.py`. Listens for user commands, builds ETF quote cards, returns charts (Forex, Oil, Bonds, 市場脈動), and broadcasts daily operation reports.
-3. **Data Fetchers:** Scheduled scripts that pull official NAVs and constituent holdings from respective providers (e.g., Cathay JSON APIs, Capital Fund, etc.).
-4. **Quote Cache Monitors:** Persistent daemon services that fetch real-time stock prices (via Yahoo Finance/TradingView) during market hours and build localized JSON caches to serve the frontend and webhook rapidly.
-
-## Server Environment
-
-The application is deployed on an OCI (Oracle Cloud Infrastructure) instance.
-- **Host / User:** `ubuntu@minecraft-vnic`
-- **Root Directory:** `/home/ubuntu/STOCK`
-- **Virtual Environment:** `/home/ubuntu/STOCK/venv`
-- **Secrets File:** `/home/ubuntu/.stock_secrets` (Required for LINE tokens and GitHub integration)
-
-## Systemd Services
-
-The infrastructure relies heavily on `systemd` to keep background monitors and webhooks running. 
-
-### Core Services
-- `stock-dashboard.service`: The main Streamlit web application.
-- `stock-webhook.service`: The LINE Bot webhook server.
-- `stock-chart.service`: A persistent browser service using Playwright for generating ad-hoc snapshot charts.
-- `stock-master-holding-monitor.service`: Monitors and generates the cached composite view for the "吳大師" master holdings.
-
-### Per-ETF Quote Monitors
-These services run continuously to update real-time pricing caches.
-- `stock-quote-monitor-0050.service`
-- `stock-quote-monitor-00830.service`
-- `stock-quote-monitor-00981a.service`
-- `stock-quote-monitor-00878.service`
-- `stock-quote-monitor-009805.service`
-
-### Scheduled Fetchers
-- `stock-fetch-1730-tw.timer` / `stock-fetch-1730-tw.service`: Daily job that executes `/usr/bin/bash /home/ubuntu/STOCK/scripts/update_and_notify.sh 00981A 00997A 0050 00830 00878 009805`.
-
-**Useful debugging commands:**
-```bash
-# Check service status
-systemctl list-units --type=service | grep -i -E "stock|webhook|line|bot"
-systemctl status stock-webhook.service
-
-# View recent logs
-journalctl -u stock-webhook.service -n 100 --no-pager
-```
-
-## Data Pipeline & Business Logic
-
-### Business Logic Constraints
-- **Live-Market Composites:** The "Composite %" solely represents the live-market weighted movement. If a market is closed, the composite is hidden.
-- **Market Hours Compliance:** A stock's "open" or "closed" status is determined strictly by its official exchange hours, not by quote staleness.
-  - TW: 09:00 - 13:30
-  - JP: 09:00 - 11:30 and 12:30 - 15:30
-  - HK: 09:30 - 12:00 and 13:00 - 16:00
-  - US: Tracks Pre-market, Regular, Post-market, and After-close.
-- **TSMC Futures (QFF1!):** Acts solely as a proxy for 2330.TW during Taiwan's night session. It is explicitly labeled as "期" (Futures) and does not double-count in weighted calculations.
-- **Official Data Enforcement (Cathay ETFs):** The 00830 and 00878 fetchers strictly use the official Cathay JSON API (`cwapi.cathaysite.com.tw`). Unofficial fallbacks (like Yahoo) are deliberately excluded.
-
-### Data Storage (`data/`)
-- **Holdings/Logs:** `etf_{TICKER}_history.json`, `passive_{TICKER}_log.json`.
-- **Quote Caches:** `quote_cache/etf_{TICKER}_quotes.json`, `quote_cache/master_holding.json`.
-- **Generated Media:** Summaries and snapshot images are saved to `data/images/` and `data/summaries/`.
-  `market_pulse_latest.jpg` and `market_pulse_YYYY-MM-DD.jpg` are generated by `scripts/generate_market_pulse_summary.py` during `update_and_notify.sh`, then served from `data/summaries/` for the LINE 市場脈動 menu.
-
-## ETF Benchmark Database
-
-A local-first, dividend-aware SQLite database covering every TWSE-listed ETF
-plus key reference indices. Built from `yfinance` and verified with a transparent
-cash-dividend total-return model. Powers the **ETF 比較** tab (replaces per-request Yahoo calls
-with sub-second SQLite reads).
-
-**Location:** `data/etf_bench/etf_bench.sqlite` (gitignored — built per host)
-
-**Coverage:** fixed window from 2024-01-01 onward.
-- 313 entries: 307 ETFs (from TWSE OpenAPI + TPEx seed list) + 6 reference
-  indices (^TWII, ^TWOII, ^SOX, ^GSPC, ^IXIC, ^DJI).
-- ~280 ETFs have actual prices (the rest are delisted shells).
-
-**Tables:**
-| Table | Purpose |
-|---|---|
-| `etfs` | Master list (ticker, name, market, fund_type, inception_date, ...) |
-| `prices` | Daily OHLCV + Yahoo's `adj_close` (dividend-adjusted) |
-| `dividends` | Ex-date / amount, with `is_income_equalization` flag |
-| `splits` | Stock split events (ratio = new/old shares) |
-| `benchmark` | TAIEX price + total-return index |
-| `regimes` | Bull / correction / bear regime tags (TODO step 6) |
-| `ingest_log` | One row per ticker per backfill run — success / empty / fail |
-| `verification_log` | Per-ticker per-check pass/warn/fail — persistent audit trail |
-
-**Pipeline scripts** (`scripts/etf_benchmark/`):
-| Script | What it does |
-|---|---|
-| `step1_universe.py` | Builds `data/etf_bench/universe.csv` from TWSE OpenAPI + TPEx seed |
-| `step2_schema.py` | Creates / resets SQLite schema (`--reset` drops tables first) |
-| `step3_backfill.py` | yfinance batch download → prices/dividends/splits. `--incremental` = last 5 trading days only |
-| `step4_verify.py` | Compares Yahoo `adj_close` baseline-to-latest returns against a transparent raw-close + cash-dividend reinvested total-return model |
-| `step5_verify_nav.py` | Optional/manual diagnostic only: cross-checks Yahoo close vs issuer NAV snapshots. This is intentionally noisy for US/TW-listed ETFs because close, NAV, FX, and market timing differ. |
-| `db.py` | Streamlit-cached read helpers (`get_universe`, `get_prices`, `get_dividends`, `get_avg_turnover_map`) |
-
-**Verification model** (last full run, 2024-05-24 → today):
-1. **Required freshness:** `step3_backfill --incremental` keeps prices, dividends, and splits current for the comparison tab.
-2. **Fairness audit:** `step4_verify` ignores duplicate-event baseline dates, builds an independent total-return series from raw close + reinvested cash dividends, then compares every possible baseline-to-latest return against Yahoo `adj_close`. Known or inferred split/corporate-action caveats, such as `0052`, are surfaced as warnings even when Yahoo's adjusted price series appears usable.
-3. **NAV diagnostic:** `step5_verify_nav` checks issuer NAV snapshots. US-tracking ETFs are reported as `INFO` because market close, NAV, and FX timing naturally differ; domestic ETF mismatches remain actionable `WARN`/`FAIL`.
-
-**First-time setup on a new host:**
-```bash
-cd /home/ubuntu/STOCK
-source venv/bin/activate
-python -m scripts.etf_benchmark.step1_universe       # build universe.csv
-python -m scripts.etf_benchmark.step2_schema --reset # create schema
-python -m scripts.etf_benchmark.step3_backfill       # full backfill from 2024-01-01
-python -m scripts.etf_benchmark.step4_verify         # total-return fairness audit
-# Optional only when debugging NAV snapshots:
-# python -m scripts.etf_benchmark.step5_verify_nav
-```
-
-After that the daily 17:30 timer keeps it fresh via `--incremental` mode.
-
----
+| Runtime | Entry point | systemd unit | Purpose |
+|---|---|---|---|
+| Streamlit dashboard | `app.py` | `stock-dashboard.service` | Browser UI for ETF data, master holdings, ETF comparison, and market pulse. |
+| LINE webhook | `api/webhook.py` | `stock-webhook.service` | Handles LINE messages, returns text/cards/images, and routes admin commands. |
+| TradingView chart API | `scripts/chart_service.py` | `stock-chart.service` | Keeps a browser alive and exposes `/market-text`, `/snapshot`, and `/market-debug` on `127.0.0.1:5005`. |
+| Daily fetch | `scripts/update_and_notify.sh` | `stock-fetch-1730-tw.timer` + `.service` | Pulls latest code, refreshes data, updates benchmark DB, commits/pushes, broadcasts reports, and emails admin summary. |
+| ETF quote monitors | `scripts/monitor_etf_quotes.py` | `stock-quote-monitor-*.service` | Refreshes per-ETF quote caches used by the dashboard and LINE cards. |
+| Gold monitor | `scripts/monitor_gold_quote.py` | `stock-gold-monitor.service` | Refreshes TradingView GOLD quote cache. |
+| Master holdings monitor | `scripts/monitor_master_holding.py` | `stock-master-holding-monitor.service` | Refreshes the expanded portfolio/master-holding cache. |
+| OCI boot firewall reset | system iptables | `oci-firewall.service` | Host boot helper that clears restrictive iptables rules so dashboard/webhook services are reachable after reboot. |
 
 ## Repository Structure
 
-### `scripts/` (Pipeline & Processors)
-- **`fetch_etf_*.py`**: Fetchers for actively managed ETFs.
-- **`fetch_passive_*.py`**: Fetchers for passive ETFs (e.g., 0050, 00830, 00878).
-- **`monitor_etf_quotes.py`**: The main daemon script for building the quote cache. Handles Yahoo pricing and TSMC futures.
-- **`generate_quote_card.py`**: The shared image-rendering engine for ETF and Master Quote cards.
-- **`master_holding_quote_card.py`**: Data adapter that expands ETF holdings into granular underlying exposure for the "吳大師" composite.
-- **`update_and_notify.sh`**: The orchestrator. Runs fetches, refreshes the etf_benchmark DB, generates summaries, commits updates to GitHub, triggers LINE push messages, and emails an admin summary.
-- **`admin_email.py`**: Gmail SMTP helper used by `update_and_notify.sh` to send the daily run summary.
-- **`etf_benchmark/`**: The ETF benchmark database pipeline (see [section above](#etf-benchmark-database)).
+```text
+.
+├── app.py                         # Streamlit dashboard entry point
+├── requirements.txt               # Single Python dependency list for all runtimes
+├── api/
+│   └── webhook.py                 # LINE bot Flask webhook
+├── data/                          # Tracked source/history state plus ignored generated caches
+├── scripts/                       # Fetchers, monitors, renderers, chart API, daily orchestrator
+│   └── etf_benchmark/             # Local SQLite ETF benchmark pipeline
+├── services/                      # systemd unit templates for the OCI server
+└── src/ui/                        # Streamlit tab modules
+```
 
-### `api/` (Webhook)
-- **`webhook.py`**: Flask server handling LineBot events. Routes text commands (e.g., "981", "0050", "油價", "吳大師") to their respective rendering and API integration functions.
+## Root Files
 
-### `src/ui/` (Frontend Layouts)
-- **`etf_tab.py`**: Contains routing and visualization components for active and passive ETFs within the Streamlit dashboard.
+| File | Purpose |
+|---|---|
+| `.gitignore` | Keeps generated images, quote caches, logs, SQLite DBs, virtualenvs, and local research sandboxes out of Git. |
+| `app.py` | Main Streamlit app. Loads tracked JSON data, quote caches, secrets, authentication, translations, and renders all tabs. |
+| `requirements.txt` | Dependency source of truth for dashboard, webhook, chart service, fetchers, monitors, and benchmark jobs. |
+| `README.md` | This handoff and operations guide. |
 
-## Deployment & Operations
+## Dashboard
 
-### Standard Update Command
-When pulling new code changes into the server, run the following:
+`app.py` renders the main dashboard and delegates major sections to `src/ui/`.
+
+| File | Purpose |
+|---|---|
+| `src/__init__.py` | Marks `src` as an import package. |
+| `src/ui/__init__.py` | Marks UI helpers as an import package. |
+| `src/ui/etf_tab.py` | Active/passive ETF dashboard views and daily operation report UI. |
+| `src/ui/etf_compare_tab.py` | ETF comparison tab backed by the local `data/etf_bench/etf_bench.sqlite` database. |
+| `src/ui/market_pulse_tab.py` | Market pulse tab using ETF benchmark/index history and regime calculations. |
+
+Dashboard authentication uses `VIEW_PASSWORD` and `ADMIN_PASSWORD` from Streamlit secrets, environment variables, or `/home/ubuntu/.stock_secrets` depending on the runtime.
+
+## LINE Webhook
+
+`api/webhook.py` is a Flask app listening on `0.0.0.0:8080` when executed directly. It requires LINE credentials and calls the chart service through `CHART_SERVICE_URL`, defaulting to `http://127.0.0.1:5005`.
+
+Common LINE commands:
+
+| Command | Response |
+|---|---|
+| `981`, `997`, `0050`, `830`, `878`, `9805`, `9820` | ETF quote card/report for the mapped ETF. |
+| `吳大師` | Master holding portfolio card. |
+| `市場脈動` | Latest generated market pulse image. |
+| `油價` | WTI and Brent TradingView text quotes plus charts. |
+| `匯率` | USD/TWD, USD/CHF, and USD/JPY TradingView text quotes plus charts. |
+| `債券` or `債卷` | US 10-year yield text quote and chart. |
+| `黃金` / `gold` / `xau` / `xauusd` | GOLD text quote and chart. |
+| `操作日報 981`, `操作日報 997` | Re-render and broadcast an active ETF operation report. |
+| `id` | Return LINE user/group/room identifiers. |
+| `admin` | Show admin command help. |
+
+Errors from TradingView are intentionally returned as explicit error messages. There is no silent non-TradingView fallback for market text/chart commands.
+
+## TradingView Chart Service
+
+`scripts/chart_service.py` is a FastAPI service on `127.0.0.1:5005`. It launches Playwright Chromium once and reuses the browser for requests.
+
+Endpoints:
+
+| Endpoint | Method | Body | Purpose |
+|---|---|---|---|
+| `/market-text` | POST | `{"key":"oil"}` | Return formatted quote text for one market key. |
+| `/snapshot` | POST | `{"key":"oil"}` | Capture a TradingView chart image into `data/images/`. |
+| `/market-debug` | POST | `{"key":"oil"}` | Return raw debug information for parser troubleshooting. |
+
+Market keys:
+
+| Key | Market |
+|---|---|
+| `oil` | WTI crude oil |
+| `brent` | Brent crude oil |
+| `bond` | US 10-year yield, using TradingView `CBOT_MINI-10Y1!` for text performance and charting |
+| `gold` | GOLD spot |
+| `usdtwd` | USD/TWD |
+| `usdchf` | USD/CHF |
+| `usdjpy` | USD/JPY |
+
+Manual checks on the server:
+
+```bash
+curl -s -X POST http://127.0.0.1:5005/market-text \
+  -H "Content-Type: application/json" \
+  -d '{"key":"bond"}'
+
+curl -s -X POST http://127.0.0.1:5005/snapshot \
+  -H "Content-Type: application/json" \
+  -d '{"key":"bond"}'
+```
+
+## Scripts
+
+| File | Purpose |
+|---|---|
+| `scripts/admin_email.py` | Sends daily run summaries through Gmail SMTP. Exits successfully when email secrets are missing so the daily job is not blocked. |
+| `scripts/chart_service.py` | TradingView quote/chart FastAPI service used by the LINE webhook. |
+| `scripts/fetch_etf_00981A.py` | Fetches official 00981A holdings/NAV data into tracked history/log JSON. |
+| `scripts/fetch_etf_00997A.py` | Fetches official 00997A holdings/NAV data into tracked history/log JSON. |
+| `scripts/fetch_passive_0050.py` | Fetches 0050 passive ETF holdings/history. |
+| `scripts/fetch_passive_00830.py` | Fetches 00830 passive ETF holdings/history from the official Cathay source. |
+| `scripts/fetch_passive_00878.py` | Fetches 00878 passive ETF holdings/history from the official Cathay source. |
+| `scripts/fetch_passive_009805.py` | Fetches 009805 passive ETF holdings/history. |
+| `scripts/fetch_passive_009820.py` | Fetches 009820 passive ETF holdings/history. |
+| `scripts/generate_etf_summary.py` | Builds daily ETF summary images for LINE broadcast. |
+| `scripts/generate_market_pulse_summary.py` | Renders the market pulse summary image served by the LINE `市場脈動` command. |
+| `scripts/generate_quote_card.py` | Shared quote-card image renderer for ETF/master-holding views. |
+| `scripts/master_holding_quote_card.py` | Expands ETF holdings into the configured master portfolio and renders/caches its quote card. |
+| `scripts/master_manual_positions.py` | Manual position data/helpers for the master portfolio. |
+| `scripts/monitor_etf_quotes.py` | Long-running quote cache daemon for one ETF ticker. |
+| `scripts/monitor_gold_quote.py` | Long-running GOLD quote monitor. |
+| `scripts/monitor_master_holding.py` | Long-running master-holding cache monitor. |
+| `scripts/rebroadcast_line.py` | Manual helper for rebroadcasting generated LINE report images. |
+| `scripts/setup_rich_menu.py` | Creates/updates the LINE rich menu. |
+| `scripts/update_and_notify.sh` | Daily orchestrator for fetchers, benchmark refresh, market pulse image, Git update, LINE broadcast, and admin email. |
+
+## ETF Benchmark Pipeline
+
+The ETF comparison tab reads a local SQLite database generated under `data/etf_bench/`. The database is intentionally ignored by Git and rebuilt on each host.
+
+| File | Purpose |
+|---|---|
+| `scripts/etf_benchmark/__init__.py` | Package marker. |
+| `scripts/etf_benchmark/db.py` | Streamlit-cached SQLite read helpers. |
+| `scripts/etf_benchmark/seed_tpex_etfs.csv` | Seed list for TPEx ETFs not covered by the TWSE source. |
+| `scripts/etf_benchmark/step1_universe.py` | Builds `data/etf_bench/universe.csv`. |
+| `scripts/etf_benchmark/step2_schema.py` | Creates/resets SQLite schema. |
+| `scripts/etf_benchmark/step3_backfill.py` | Downloads prices/dividends/splits through yfinance. Use `--incremental` for daily refresh. |
+| `scripts/etf_benchmark/step4_verify.py` | Audits adjusted-close returns against a transparent cash-dividend total-return model. |
+| `scripts/etf_benchmark/step5_verify_nav.py` | Optional NAV diagnostic for issuer NAV snapshots. |
+| `scripts/etf_benchmark/step6_regimes.py` | Builds market regime tags used by market pulse/benchmark views. |
+
+First-time benchmark setup:
+
+```bash
+cd /home/ubuntu/STOCK
+source venv/bin/activate
+python -m scripts.etf_benchmark.step1_universe
+python -m scripts.etf_benchmark.step2_schema --reset
+python -m scripts.etf_benchmark.step3_backfill
+python -m scripts.etf_benchmark.step4_verify
+python -m scripts.etf_benchmark.step6_regimes
+```
+
+Daily refresh uses:
+
+```bash
+python -m scripts.etf_benchmark.step3_backfill --incremental
+python -m scripts.etf_benchmark.step4_verify
+python -m scripts.etf_benchmark.step5_verify_nav
+python -m scripts.etf_benchmark.step6_regimes
+```
+
+## Data Directory
+
+Tracked files in `data/` are source/history state that should move with the repo:
+
+| File pattern | Purpose |
+|---|---|
+| `data/etf_00981A_history.json`, `data/etf_00997A_history.json` | Active ETF official history snapshots. |
+| `data/etf_00981A_log.json`, `data/etf_00997A_log.json` | Active ETF fetch logs/status. |
+| `data/passive_*_history.json` | Passive ETF official history snapshots for 0050, 00830, 00878, 009805, and 009820. |
+| `data/passive_*_log.json` | Passive ETF fetch logs/status. |
+| `data/master_manual_positions.json` | Manual master portfolio positions. |
+| `data/master_meta.json` | Master portfolio metadata/state. |
+| `data/master_trades.csv` | Manual trade ledger for the master portfolio. |
+
+Ignored generated data:
+
+| Path | Producer |
+|---|---|
+| `data/images/` | `chart_service.py`, quote-card renderers, webhook responses. |
+| `data/summaries/` | `generate_market_pulse_summary.py` and report generators. |
+| `data/quote_cache/` | Quote monitor services. |
+| `data/fonts/` | Local font assets if installed on the server. |
+| `data/etf_bench/*.sqlite` | ETF benchmark pipeline. |
+
+## Services
+
+All service templates live in `services/` and assume:
+
+- Linux user: `ubuntu`
+- Repository: `/home/ubuntu/STOCK`
+- Virtualenv: `/home/ubuntu/STOCK/venv`
+- Secrets: `/home/ubuntu/.stock_secrets`
+
+| File | Installed unit | Purpose |
+|---|---|---|
+| `services/stock-dashboard.service` | `stock-dashboard.service` | Streamlit dashboard on port 8501. |
+| `services/stock-webhook.service` | `stock-webhook.service` | LINE webhook on port 8080. |
+| `services/stock-chart.service` | `stock-chart.service` | TradingView Playwright API on `127.0.0.1:5005`. |
+| `services/oci-firewall.service` | `oci-firewall.service` | Boot-time iptables reset used on OCI so public services remain reachable after reboot. |
+| `services/stock-fetch-1730-tw.service` | `stock-fetch-1730-tw.service` | One-shot daily fetch/orchestration job. |
+| `services/stock-fetch-1730-tw.timer` | `stock-fetch-1730-tw.timer` | Runs the daily job at 09:30 UTC / 17:30 Taiwan time. |
+| `services/stock-gold-monitor.service` | `stock-gold-monitor.service` | GOLD quote monitor. |
+| `services/stock-master-holding-monitor.service` | `stock-master-holding-monitor.service` | Master holdings monitor. |
+| `services/stock-quote-monitor-0050.service` | `stock-quote-monitor-0050.service` | 0050 quote monitor. |
+| `services/stock-quote-monitor-00830.service` | `stock-quote-monitor-00830.service` | 00830 quote monitor. |
+| `services/stock-quote-monitor-00878.service` | `stock-quote-monitor-00878.service` | 00878 quote monitor. |
+| `services/stock-quote-monitor-009805.service` | `stock-quote-monitor-009805.service` | 009805 quote monitor. |
+| `services/stock-quote-monitor-00981a.service` | `stock-quote-monitor-00981a.service` | 00981A quote monitor. |
+| `services/stock-quote-monitor-009820.service` | `stock-quote-monitor-009820.service` | 009820 quote monitor. |
+| `services/stock-quote-monitor-00997a.service` | `stock-quote-monitor-00997a.service` | 00997A quote monitor. |
+
+Install/update service templates:
+
+```bash
+cd /home/ubuntu/STOCK
+sudo cp services/*.service services/*.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.service
+sudo systemctl enable oci-firewall.service
+sudo systemctl enable stock-fetch-1730-tw.timer
+sudo systemctl enable stock-gold-monitor.service stock-master-holding-monitor.service
+sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-00830.service
+sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-009805.service
+sudo systemctl enable stock-quote-monitor-00981a.service stock-quote-monitor-009820.service
+sudo systemctl enable stock-quote-monitor-00997a.service
+```
+
+Restart common production services after code changes:
+
+```bash
+sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service
+```
+
+Restart all monitors:
+
+```bash
+sudo systemctl restart stock-gold-monitor.service stock-master-holding-monitor.service
+sudo systemctl restart stock-quote-monitor-0050.service stock-quote-monitor-00830.service
+sudo systemctl restart stock-quote-monitor-00878.service stock-quote-monitor-009805.service
+sudo systemctl restart stock-quote-monitor-00981a.service stock-quote-monitor-009820.service
+sudo systemctl restart stock-quote-monitor-00997a.service
+```
+
+## Server Setup
+
+First-time host setup:
+
+```bash
+cd /home/ubuntu
+git clone https://github.com/benson930417-prog/STOCK.git
+cd /home/ubuntu/STOCK
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt -q
+python -m playwright install chromium
+```
+
+Create `/home/ubuntu/.stock_secrets`.
+
+Minimum server pattern used by the webhook, daily LINE broadcast, and admin email:
+
+```bash
+LINE_TOKEN="..."
+LINE_UID="..."
+export LINE_CHANNEL_SECRET="..."
+export ADMIN_EMAIL="..."
+export GMAIL_FROM="..."
+export GMAIL_APP_PASSWORD="..."
+```
+
+Optional values used by the Streamlit dashboard's admin/GitHub features:
+
+```bash
+export VIEW_PASSWORD="..."
+export ADMIN_PASSWORD="..."
+export GITHUB_TOKEN="..."
+export GITHUB_REPO="benson930417-prog/STOCK"
+export GITHUB_BRANCH="main"
+```
+
+`scripts/update_and_notify.sh` does not read `GITHUB_TOKEN`; it runs `git pull origin main --rebase --autostash` and `git push origin main`, so server Git authentication must already be configured through the Git remote/credential helper. `LINE_CHANNEL_ACCESS_TOKEN` is also optional because the webhook maps `LINE_TOKEN` to that name internally.
+
+Secure it:
+
+```bash
+chmod 600 /home/ubuntu/.stock_secrets
+```
+
+Deploy services:
+
+```bash
+sudo cp services/*.service services/*.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now oci-firewall.service
+sudo systemctl enable --now stock-chart.service stock-webhook.service stock-dashboard.service
+sudo systemctl enable --now stock-fetch-1730-tw.timer
+```
+
+## Standard Deployment
+
+Use this after pulling new code on the server:
 
 ```bash
 cd /home/ubuntu/STOCK
 git pull origin main --rebase --autostash
 source venv/bin/activate
 pip install -r requirements.txt -q
+sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service
 ```
 
-### Updating the LINE Rich Menu
-If you added or modified buttons in the LINE Bot Rich Menu, run the setup script within the virtual environment to deploy the changes to LINE:
+If service files changed:
+
+```bash
+sudo cp services/*.service services/*.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service
+```
+
+## Daily Job Flow
+
+`stock-fetch-1730-tw.timer` runs at 09:30 UTC, which is 17:30 Taiwan time.
+
+`scripts/update_and_notify.sh` performs:
+
+1. Load `/home/ubuntu/.stock_secrets`.
+2. Pull latest Git changes with rebase/autostash.
+3. Install dependencies from `requirements.txt`.
+4. Run all active/passive ETF fetchers requested by the service arguments.
+5. Refresh ETF benchmark SQLite data and regime tags.
+6. Generate the market pulse image.
+7. Commit and push changed tracked data.
+8. Broadcast active ETF reports through LINE when new active ETF data exists.
+9. Send admin email summary with success/failure details.
+
+Manual run:
 
 ```bash
 cd /home/ubuntu/STOCK
 source venv/bin/activate
+bash scripts/update_and_notify.sh 00981A 00997A 0050 00830 00878 009805 009820
+```
+
+## Rich Menu
+
+Run this when LINE rich-menu buttons change:
+
+```bash
+cd /home/ubuntu/STOCK
+source venv/bin/activate
+source /home/ubuntu/.stock_secrets
 python scripts/setup_rich_menu.py
 ```
 
-### Restarting Services after Updates
-If you add new services, update the webhook logic, or modify the image generation code, restart the relevant systemd services. Note that new `.service` files must be copied to `/etc/systemd/system/` first:
+## Manual Fetch and Cache Checks
+
+Fetch official holdings:
 
 ```bash
-# Example: Copying a new service (only needed once for new services)
-sudo cp services/stock-quote-monitor-009805.service /etc/systemd/system/
-
-sudo systemctl daemon-reload
-
-# Example: Enabling a new service to start on boot
-sudo systemctl enable stock-quote-monitor-009805.service
-
-sudo systemctl restart stock-webhook.service \
-                       stock-master-holding-monitor.service \
-                       stock-quote-monitor-0050.service \
-                       stock-quote-monitor-00981a.service \
-                       stock-quote-monitor-00997a.service \
-                       stock-quote-monitor-00830.service \
-                       stock-quote-monitor-00878.service \
-                       stock-quote-monitor-009805.service
+python scripts/fetch_etf_00981A.py
+python scripts/fetch_etf_00997A.py
+python scripts/fetch_passive_0050.py
+python scripts/fetch_passive_00830.py
+python scripts/fetch_passive_00878.py
+python scripts/fetch_passive_009805.py
+python scripts/fetch_passive_009820.py
 ```
 
-### Manual Triggering
-To manually initialize data or test fetchers without waiting for the cron schedule:
+Seed one ETF quote cache:
 
 ```bash
-source venv/bin/activate
-
-# 1. Fetch official holdings
-python scripts/fetch_etf_00981A.py
-python scripts/fetch_passive_00830.py
-
-# 2. Seed the quote cache (Ctrl+C after first successful update)
 python scripts/monitor_etf_quotes.py 00981A --interval 60
+```
 
-# 3. Generate Master card cache
+Render master holding card once:
+
+```bash
 python scripts/master_holding_quote_card.py
 ```
 
----
-
-## Daily Run & Admin Email
-
-The `stock-fetch-1730-tw.timer` fires `scripts/update_and_notify.sh` every day
-at 17:30 TPE (09:30 UTC). The script now performs the following steps in order,
-captures each step's status, and emails a summary to the admin:
-
-1. `git pull` (rebase + autostash) — pulls latest code
-2. `pip install -r requirements.txt -q` — keep deps in sync
-3. **Per-ETF fetchers** (the 7 active/passive scripts) — write `data/*_history.json`
-4. **etf_benchmark refresh** —
-   - `step3_backfill --incremental` (yfinance → SQLite, last 5 trading days)
-   - `step4_verify` (audit Yahoo `adj_close` vs transparent total-return model)
-   - `step5_verify_nav` (issuer NAV diagnostic; foreign-market timing differences are reported as INFO)
-5. **Git commit + push** if any tracked data changed
-6. **LINE broadcast** of active ETF reports if new data found
-7. **Admin email summary** — sent every run, success or partial-fail
-
-### Email format
-
-Subject: `[STOCK] daily run — SUCCESS (2026-05-24 17:30) TPE`
-Body: per-step OK/FAIL lines with key metrics (`step3` row counts, `step4` pass/fail totals,
-and `step5` per-ETF status). If any step failed, a `FAILURE DETAILS` section
-appends the last 30 lines of that step's full log.
-
-### Gmail App Password setup (one-time)
-
-The script uses Gmail SMTP via `scripts/admin_email.py`. You need a **Gmail App
-Password** (NOT your regular Google password) because Google blocks normal
-password auth from scripts.
-
-**Steps to generate:**
-1. Sign in to [https://myaccount.google.com](https://myaccount.google.com)
-2. **Security** → ensure **2-Step Verification** is **ON** (App Passwords are
-   only available when 2FA is enabled)
-3. Go to [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
-4. App name: `STOCK Server` → **Create**
-5. Copy the 16-character password Google shows you (looks like
-   `abcd efgh ijkl mnop`). Save it now — Google won't show it again.
-
-### Adding the secrets on the OCI server
-
-Edit `/home/ubuntu/.stock_secrets` and add three lines (alongside the existing
-`LINE_TOKEN` etc.):
+Test admin email:
 
 ```bash
-# Admin email (Gmail SMTP)
-export GMAIL_APP_PASSWORD="abcdefghijklmnop"   # 16 chars, spaces OK or stripped
-export ADMIN_EMAIL="benson930417@gmail.com"    # recipient
-export GMAIL_FROM="benson930417@gmail.com"     # the Gmail account that owns the App Password (often same as ADMIN_EMAIL)
-```
-
-Permissions check:
-```bash
-chmod 600 /home/ubuntu/.stock_secrets
-ls -l /home/ubuntu/.stock_secrets             # should show -rw------- ubuntu ubuntu
-```
-
-### Verifying email works (manual test)
-
-```bash
-cd /home/ubuntu/STOCK
-source venv/bin/activate
 source /home/ubuntu/.stock_secrets
 python scripts/admin_email.py \
-    --subject "[STOCK] manual SMTP test" \
-    --body "If you see this, email config works."
+  --subject "[STOCK] manual SMTP test" \
+  --body "If you see this, email config works."
 ```
 
-You should receive the test email within ~30 seconds. If not, check:
-- 2-Step Verification is actually ON
-- App Password was copied correctly (no extra characters)
-- `journalctl -u stock-fetch-1730-tw.service -n 50` shows the SMTP error
+## Troubleshooting
 
-### Behaviour when secrets are missing
-
-If `GMAIL_APP_PASSWORD` is not set, `admin_email.py` prints a warning and
-exits 0 — the daily job will **never abort** because of a missing email
-secret. The same applies to `LINE_TOKEN` (existing behaviour).
-
----
-
-## Server Deployment (new host or after this commit)
+Service status:
 
 ```bash
-# 1. Pull the new code
-cd /home/ubuntu/STOCK
-git pull origin main --rebase --autostash
-source venv/bin/activate
-pip install -r requirements.txt -q     # picks up yfinance >= 0.2.30
-
-# 2. Build the etf_benchmark database for the first time (~15 sec)
-python -m scripts.etf_benchmark.step1_universe
-python -m scripts.etf_benchmark.step2_schema --reset
-python -m scripts.etf_benchmark.step3_backfill
-python -m scripts.etf_benchmark.step4_verify
-python -m scripts.etf_benchmark.step5_verify_nav
-
-# 3. Add Gmail App Password to /home/ubuntu/.stock_secrets
-#    (see "Daily Run & Admin Email" section above)
-nano /home/ubuntu/.stock_secrets
-
-# 4. Verify email works
-source /home/ubuntu/.stock_secrets
-python scripts/admin_email.py --subject "[STOCK] manual test" --body "OK"
-
-# 5. Restart the Streamlit dashboard so it picks up the new tab + DB reads
-sudo systemctl restart stock-dashboard.service
-
-# 6. (Optional) trigger a manual run of the daily orchestrator to verify
-#    everything works end-to-end without waiting for 17:30
-bash scripts/update_and_notify.sh
+sudo systemctl status stock-chart.service --no-pager
+sudo systemctl status stock-webhook.service --no-pager
+sudo systemctl status stock-dashboard.service --no-pager
 ```
 
-The 17:30 timer needs no changes — it already calls `update_and_notify.sh`,
-which now includes the etf_benchmark refresh + admin email automatically.
+Recent logs:
+
+```bash
+journalctl -u stock-chart.service -n 100 --no-pager
+journalctl -u stock-webhook.service -n 100 --no-pager
+journalctl -u stock-fetch-1730-tw.service -n 100 --no-pager
+```
+
+If LINE says it cannot connect to `127.0.0.1:5005`, restart and test the chart service:
+
+```bash
+sudo systemctl restart stock-chart.service
+curl -s http://127.0.0.1:5005/docs >/dev/null && echo "chart service reachable"
+```
+
+If TradingView text or chart parsing breaks, use the exact failing key with `/market-debug` and inspect `journalctl -u stock-chart.service`.
+
+If GitHub push returns a remote 500, retry after a few minutes. That error is server-side when local `git status` is clean and credentials are unchanged.
+
+## Current File Inventory
+
+This is the complete intended production tree after cleanup:
+
+```text
+.gitignore
+README.md
+requirements.txt
+app.py
+api/webhook.py
+data/etf_00981A_history.json
+data/etf_00981A_log.json
+data/etf_00997A_history.json
+data/etf_00997A_log.json
+data/master_manual_positions.json
+data/master_meta.json
+data/master_trades.csv
+data/passive_0050_history.json
+data/passive_0050_log.json
+data/passive_00830_history.json
+data/passive_00830_log.json
+data/passive_00878_history.json
+data/passive_00878_log.json
+data/passive_009805_history.json
+data/passive_009805_log.json
+data/passive_009820_history.json
+data/passive_009820_log.json
+scripts/admin_email.py
+scripts/chart_service.py
+scripts/fetch_etf_00981A.py
+scripts/fetch_etf_00997A.py
+scripts/fetch_passive_0050.py
+scripts/fetch_passive_00830.py
+scripts/fetch_passive_00878.py
+scripts/fetch_passive_009805.py
+scripts/fetch_passive_009820.py
+scripts/generate_etf_summary.py
+scripts/generate_market_pulse_summary.py
+scripts/generate_quote_card.py
+scripts/master_holding_quote_card.py
+scripts/master_manual_positions.py
+scripts/monitor_etf_quotes.py
+scripts/monitor_gold_quote.py
+scripts/monitor_master_holding.py
+scripts/rebroadcast_line.py
+scripts/setup_rich_menu.py
+scripts/update_and_notify.sh
+scripts/etf_benchmark/__init__.py
+scripts/etf_benchmark/db.py
+scripts/etf_benchmark/seed_tpex_etfs.csv
+scripts/etf_benchmark/step1_universe.py
+scripts/etf_benchmark/step2_schema.py
+scripts/etf_benchmark/step3_backfill.py
+scripts/etf_benchmark/step4_verify.py
+scripts/etf_benchmark/step5_verify_nav.py
+scripts/etf_benchmark/step6_regimes.py
+services/stock-chart.service
+services/stock-dashboard.service
+services/oci-firewall.service
+services/stock-fetch-1730-tw.service
+services/stock-fetch-1730-tw.timer
+services/stock-gold-monitor.service
+services/stock-master-holding-monitor.service
+services/stock-quote-monitor-0050.service
+services/stock-quote-monitor-00830.service
+services/stock-quote-monitor-00878.service
+services/stock-quote-monitor-009805.service
+services/stock-quote-monitor-00981a.service
+services/stock-quote-monitor-009820.service
+services/stock-quote-monitor-00997a.service
+services/stock-webhook.service
+src/__init__.py
+src/ui/__init__.py
+src/ui/etf_compare_tab.py
+src/ui/etf_tab.py
+src/ui/market_pulse_tab.py
+```
+
+## Cleanup Policy
+
+Only production code, service templates, and tracked source/history data belong in this repo. Generated images, quote caches, benchmark SQLite files, local TradingView/TSIT captures, and one-off research experiments are ignored or removed. Local experiments should live outside the repo or in `strategy_experiment*/`, which is ignored.
