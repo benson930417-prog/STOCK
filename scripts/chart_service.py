@@ -492,44 +492,44 @@ async def take_snapshot(req: SnapshotRequest):
 
         # Clip ONLY the chart canvas area (no header). Different TradingView
         # symbol pages use different container names, so fall back to visible
-        # canvas bounds when the performance-chart wrapper is absent.
+        # chart-like elements when the performance-chart wrapper is absent.
         clip = await page.evaluate("""() => {
             const chartContainer = document.querySelector('div[data-container-name="performance-chart-id"]');
-            const canvases = chartContainer
-                ? Array.from(chartContainer.querySelectorAll('canvas'))
-                : Array.from(document.querySelectorAll('canvas')).filter(c => {
-                    const r = c.getBoundingClientRect();
-                    return r.width > 250 && r.height > 120 && r.top > 40 && r.top < 650;
-                });
-            if (!canvases.length) return null;
+            const visibleChartLike = (el) => {
+                const r = el.getBoundingClientRect();
+                if (r.width < 250 || r.height < 120 || r.top < 40 || r.top > 700) return false;
+                const style = window.getComputedStyle(el);
+                return style && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0;
+            };
+            const elements = chartContainer
+                ? [chartContainer, ...Array.from(chartContainer.querySelectorAll('canvas, svg, iframe'))]
+                : Array.from(document.querySelectorAll([
+                    'canvas',
+                    'svg',
+                    'iframe',
+                    'div[class*="chart"]',
+                    'div[class*="Chart"]',
+                    'div[data-name*="chart"]',
+                    'div[data-name*="Chart"]'
+                ].join(','))).filter(visibleChartLike);
+            const rects = elements
+                .map(el => el.getBoundingClientRect())
+                .filter(r => r.width > 250 && r.height > 120 && r.top > 40 && r.top < 700);
+            if (!rects.length) return null;
 
-            let canvasBottom = 0;
-            let canvasTop = Infinity;
-            let canvasLeft = Infinity;
-            let canvasRight = 0;
-            canvases.forEach(c => {
-                const r = c.getBoundingClientRect();
-                if (r.bottom > canvasBottom) canvasBottom = r.bottom;
-                if (r.top < canvasTop) canvasTop = r.top;
-                if (r.left < canvasLeft) canvasLeft = r.left;
-                if (r.right > canvasRight) canvasRight = r.right;
-            });
-            
-            if (canvasBottom === 0) {
-                canvasBottom = chartContainer ? chartContainer.getBoundingClientRect().bottom - 50 : 650;
-            }
-            
-            const containerRect = chartContainer
+            const bestRect = chartContainer
                 ? chartContainer.getBoundingClientRect()
-                : { top: canvasTop, left: canvasLeft, right: canvasRight };
+                : rects.sort((a, b) => (b.width * b.height) - (a.width * a.height))[0];
             const pad = 10;
-            const top = Math.max(0, containerRect.top - pad);
-            const bottom = canvasBottom + pad;
+            const top = Math.max(0, bestRect.top - pad);
+            const bottom = Math.min(window.innerHeight, bestRect.bottom + pad);
+            const left = Math.max(0, bestRect.left - pad);
+            const right = Math.min(window.innerWidth, bestRect.right + pad);
             
             return {
-                x: Math.max(0, Math.min(containerRect.left || 0, 0)),
+                x: left,
                 y: top,
-                width: 600,
+                width: Math.max(250, right - left),
                 height: bottom - top
             };
         }""")
