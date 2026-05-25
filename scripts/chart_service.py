@@ -56,12 +56,6 @@ TRADINGVIEW_SCANNER_QUOTES = {
     "usdtwd": {"scanner": "forex", "symbol": "FX_IDC:USDTWD"},
     "usdjpy": {"scanner": "forex", "symbol": "OANDA:USDJPY"},
     "usdchf": {"scanner": "forex", "symbol": "OANDA:USDCHF"},
-    "bond": {
-        "candidates": [
-            {"scanner": "bond", "symbol": "TVC:US10Y"},
-        ],
-        "columns": ["name", "close", "change", "change_abs", "currency"],
-    },
 }
 
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')
