@@ -1,0 +1,37 @@
+Overheat bullet experiment for 0050.TW
+================================================
+Start condition uses ^TWII trailing metrics; forward return uses the asset ETF.
+Portfolio starts 60% invested / 40% cash; each plan decides how to deploy the 40% over 63 trading days.
+
+similar_now_strict
+------------------
+wait_20d_then_all: n=1, median=30.95%, avg=30.95%, win=100%, avgDD=-7.48%, worstDD=-7.48%
+dip_3_6_10_time: n=1, median=30.83%, avg=30.83%, win=100%, avgDD=-9.19%, worstDD=-9.19%
+immediate_40: n=1, median=30.53%, avg=30.53%, win=100%, avgDD=-10.84%, worstDD=-10.84%
+time_5_weekly: n=1, median=28.54%, avg=28.54%, win=100%, avgDD=-8.80%, worstDD=-8.80%
+dip_5_10_15_or_end: n=1, median=27.27%, avg=27.27%, win=100%, avgDD=-7.59%, worstDD=-7.59%
+wait_40d_then_all: n=1, median=27.23%, avg=27.23%, win=100%, avgDD=-6.74%, worstDD=-6.74%
+time_10_monthly: n=1, median=26.24%, avg=26.24%, win=100%, avgDD=-8.15%, worstDD=-8.15%
+cash_wait: n=1, median=18.32%, avg=18.32%, win=100%, avgDD=-6.74%, worstDD=-6.74%
+
+hot_near_high
+-------------
+immediate_40: n=8, median=7.42%, avg=7.89%, win=62%, avgDD=-9.78%, worstDD=-21.30%
+dip_3_6_10_time: n=8, median=6.58%, avg=7.17%, win=62%, avgDD=-8.43%, worstDD=-20.23%
+time_5_weekly: n=8, median=6.40%, avg=6.93%, win=62%, avgDD=-8.18%, worstDD=-17.80%
+wait_20d_then_all: n=8, median=6.35%, avg=6.75%, win=62%, avgDD=-9.03%, worstDD=-20.35%
+time_10_monthly: n=8, median=6.13%, avg=6.46%, win=62%, avgDD=-7.81%, worstDD=-17.17%
+dip_5_10_15_or_end: n=8, median=5.88%, avg=6.21%, win=62%, avgDD=-6.99%, worstDD=-18.25%
+wait_40d_then_all: n=8, median=5.48%, avg=6.55%, win=62%, avgDD=-6.66%, worstDD=-13.38%
+cash_wait: n=8, median=4.45%, avg=4.74%, win=62%, avgDD=-6.07%, worstDD=-13.38%
+
+stretch_only
+------------
+wait_20d_then_all: n=8, median=11.47%, avg=12.63%, win=88%, avgDD=-7.65%, worstDD=-12.91%
+dip_3_6_10_time: n=8, median=9.95%, avg=11.46%, win=75%, avgDD=-8.42%, worstDD=-18.88%
+immediate_40: n=8, median=9.91%, avg=11.43%, win=75%, avgDD=-9.92%, worstDD=-21.30%
+time_5_weekly: n=8, median=9.77%, avg=10.96%, win=88%, avgDD=-8.17%, worstDD=-15.39%
+wait_40d_then_all: n=8, median=9.09%, avg=10.37%, win=88%, avgDD=-7.32%, worstDD=-12.91%
+time_10_monthly: n=8, median=8.89%, avg=10.08%, win=88%, avgDD=-7.76%, worstDD=-15.02%
+dip_5_10_15_or_end: n=8, median=8.07%, avg=9.90%, win=88%, avgDD=-6.92%, worstDD=-17.17%
+cash_wait: n=8, median=5.94%, avg=6.86%, win=75%, avgDD=-6.08%, worstDD=-12.91%
