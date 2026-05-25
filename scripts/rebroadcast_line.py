@@ -125,10 +125,15 @@ def _git_push_summaries(tickers: list[str]) -> bool:
     print("[push] staging summary JPGs + JSON logs …")
     rel_jpgs = [str(_summary_path(t).relative_to(ROOT)) for t in tickers
                 if _summary_path(t).exists()]
-    add_cmd = ["git", "add", *rel_jpgs, "data/etf_00981A_log.json",
-               "data/etf_00997A_log.json", "data/etf_00981A_history.json",
-               "data/etf_00997A_history.json"]
-    subprocess.run(add_cmd, cwd=str(ROOT))   # ignore missing files
+    # `-f` forces add even if a stale .gitignore rule still matches the
+    # path. We've fixed the rule (track _latest.jpg specifically) but
+    # belt-and-suspenders: -f makes this script resilient to future
+    # gitignore edits that might re-ignore the directory.
+    if rel_jpgs:
+        subprocess.run(["git", "add", "-f", *rel_jpgs], cwd=str(ROOT))
+    json_paths = ["data/etf_00981A_log.json", "data/etf_00997A_log.json",
+                  "data/etf_00981A_history.json", "data/etf_00997A_history.json"]
+    subprocess.run(["git", "add", *json_paths], cwd=str(ROOT))
 
     commit_msg = "Manually push ETF summaries (after interrupted daily run)"
     commit_result = subprocess.run(

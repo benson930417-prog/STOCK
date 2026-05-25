@@ -27,7 +27,10 @@ data/fonts/
 data/quote_cache/
 data/debug_00997A/
 data/etf_*_summary_*.jpg
-data/summaries/
+# data/summaries/: track only the _latest.jpg files (LINE bot pulls them
+# via GitHub raw URL); ignore the day-stamped historical snapshots.
+data/summaries/*
+!data/summaries/etf_*_summary_latest.jpg
 
 # etf_benchmark SQLite — built from yfinance locally / on OCI, not tracked
 data/etf_bench/universe.csv
