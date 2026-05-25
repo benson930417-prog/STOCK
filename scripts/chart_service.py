@@ -363,6 +363,31 @@ def _overlay_title(image_path, title):
     print(f"  🖌️ Title overlay added: {title}")
 
 
+def _trim_bottom_whitespace(image_path, padding=18, min_trim=24):
+    """Trim blank white space below the chart while preserving axis labels."""
+    img = Image.open(image_path).convert("RGB")
+    width, height = img.size
+    pixels = img.load()
+    last_content_y = height - 1
+
+    for y in range(height - 1, -1, -1):
+        non_white = 0
+        for x in range(width):
+            r, g, b = pixels[x, y]
+            if min(r, g, b) < 245:
+                non_white += 1
+                if non_white >= 8:
+                    last_content_y = y
+                    break
+        if non_white >= 8:
+            break
+
+    crop_bottom = min(height, last_content_y + padding)
+    if height - crop_bottom >= min_trim:
+        img.crop((0, 0, width, crop_bottom)).save(image_path)
+        print(f"  ✂️ Trimmed bottom whitespace: {height - crop_bottom}px")
+
+
 async def init_browser():
     global playwright_instance, browser_instance, browser_context, pages
 
@@ -544,6 +569,7 @@ async def take_snapshot(req: SnapshotRequest):
         # --- Overlay Chinese title ---
         meta = CHART_META.get(req.key)
         if meta:
+            _trim_bottom_whitespace(filepath)
             _overlay_title(filepath, meta["title"])
         
         return {"status": "success", "url": filename, "path": filepath}
