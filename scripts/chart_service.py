@@ -490,29 +490,44 @@ async def take_snapshot(req: SnapshotRequest):
         if "403 ERROR" in page_text or "The request could not be satisfied" in page_text:
             raise ValueError(f"TradingView page is blocked: {page_text[:300]}")
 
-        # Clip ONLY the chart canvas area (no header)
+        # Clip ONLY the chart canvas area (no header). Different TradingView
+        # symbol pages use different container names, so fall back to visible
+        # canvas bounds when the performance-chart wrapper is absent.
         clip = await page.evaluate("""() => {
             const chartContainer = document.querySelector('div[data-container-name="performance-chart-id"]');
-            if (!chartContainer) return null;
-            
-            const canvases = chartContainer.querySelectorAll('canvas');
+            const canvases = chartContainer
+                ? Array.from(chartContainer.querySelectorAll('canvas'))
+                : Array.from(document.querySelectorAll('canvas')).filter(c => {
+                    const r = c.getBoundingClientRect();
+                    return r.width > 250 && r.height > 120 && r.top > 40 && r.top < 650;
+                });
+            if (!canvases.length) return null;
+
             let canvasBottom = 0;
+            let canvasTop = Infinity;
+            let canvasLeft = Infinity;
+            let canvasRight = 0;
             canvases.forEach(c => {
                 const r = c.getBoundingClientRect();
                 if (r.bottom > canvasBottom) canvasBottom = r.bottom;
+                if (r.top < canvasTop) canvasTop = r.top;
+                if (r.left < canvasLeft) canvasLeft = r.left;
+                if (r.right > canvasRight) canvasRight = r.right;
             });
             
             if (canvasBottom === 0) {
-                canvasBottom = chartContainer.getBoundingClientRect().bottom - 50;
+                canvasBottom = chartContainer ? chartContainer.getBoundingClientRect().bottom - 50 : 650;
             }
             
-            const containerRect = chartContainer.getBoundingClientRect();
+            const containerRect = chartContainer
+                ? chartContainer.getBoundingClientRect()
+                : { top: canvasTop, left: canvasLeft, right: canvasRight };
             const pad = 10;
             const top = Math.max(0, containerRect.top - pad);
             const bottom = canvasBottom + pad;
             
             return {
-                x: 0,
+                x: Math.max(0, Math.min(containerRect.left || 0, 0)),
                 y: top,
                 width: 600,
                 height: bottom - top
