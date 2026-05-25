@@ -44,6 +44,40 @@ ACTIVE_NAMES = {
     "00997A": "主動群益美國增長",
 }
 
+SECRETS_FILE = "/home/ubuntu/.stock_secrets"
+
+
+def _get_line_token() -> str | None:
+    """Match webhook.py's lookup: env var first, then read secrets file
+    directly. Accepts either LINE_TOKEN or LINE_CHANNEL_ACCESS_TOKEN since
+    the secrets file uses one and the webhook treats them as aliases."""
+    for env_key in ("LINE_TOKEN", "LINE_CHANNEL_ACCESS_TOKEN"):
+        val = os.environ.get(env_key)
+        if val:
+            return val
+    # Fall back to reading the secrets file directly — handles the case
+    # where the file uses `LINE_TOKEN=xxx` without `export` (source puts
+    # it in the shell but not in the env Python sees).
+    try:
+        with open(SECRETS_FILE, "r") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                # Tolerate "export KEY=VAL" or just "KEY=VAL"
+                if line.startswith("export "):
+                    line = line[len("export "):]
+                if "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                k = k.strip()
+                v = v.strip().strip('"').strip("'")
+                if k in ("LINE_TOKEN", "LINE_CHANNEL_ACCESS_TOKEN") and v:
+                    return v
+    except Exception:
+        pass
+    return None
+
 
 def _latest_history_date(ticker: str) -> str:
     path = DATA_DIR / f"etf_{ticker}_history.json"
@@ -98,10 +132,12 @@ def main() -> int:
                     help="GitHub repo for image URL (default: benson930417-prog/STOCK)")
     args = ap.parse_args()
 
-    token = os.environ.get("LINE_TOKEN")
+    token = _get_line_token()
     if not token:
-        print("ERROR: LINE_TOKEN env var not set. Run:", file=sys.stderr)
-        print("       source /home/ubuntu/.stock_secrets", file=sys.stderr)
+        print("ERROR: LINE_TOKEN / LINE_CHANNEL_ACCESS_TOKEN not found.", file=sys.stderr)
+        print(f"  Checked env vars + {SECRETS_FILE} (matching webhook.py logic).", file=sys.stderr)
+        print(f"  Verify your secrets file has a line like:", file=sys.stderr)
+        print(f"    LINE_TOKEN=\"abc123...\"     # or LINE_CHANNEL_ACCESS_TOKEN=\"...\"", file=sys.stderr)
         return 1
 
     # Validate tickers exist and have history
