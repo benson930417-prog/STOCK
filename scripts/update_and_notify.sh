@@ -29,7 +29,8 @@ else
     echo "Warning: Secrets file $SECRETS_FILE not found. LINE/email will fail."
 fi
 
-GITHUB_REPO="${GITHUB_REPO:-benson930417-prog/STOCK}"
+# (GITHUB_REPO no longer needed — daily LINE broadcast serves images via
+#  the webhook's duckdns.org URL directly, not GitHub raw.)
 
 # ──────────────────────────────────────────────────────────────────────────
 # Logging scaffolding — every step writes to $LOG_DIR/<name>.log and appends
@@ -229,16 +230,17 @@ if [ "${#CHANGED_ETFS[@]}" -gt 0 ]; then
     run_step "git push origin main" git push origin main
 
     if [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ] && [ -n "${LINE_TOKEN:-}" ]; then
-        export GITHUB_REPO
         export LINE_ETFS="${ACTIVE_NEW_ETFS[*]}"
         export LINE_TOKEN
+        # Daily broadcast — images served directly by the webhook via duckdns.org,
+        # NOT GitHub raw URL. This avoids the git commit+push+CDN-wait dance and
+        # the gitignore-mismatch class of bug that broke the daily images.
         run_step "LINE broadcast active reports" python - <<'PY'
 import json
 import os
 import time
 from urllib import request
 
-repo = os.environ["GITHUB_REPO"]
 token = os.environ["LINE_TOKEN"]
 tickers = os.environ["LINE_ETFS"].split()
 names = {
@@ -253,8 +255,8 @@ for ticker in tickers:
     with open(history_path, encoding="utf-8") as fh:
         date_str = max(json.load(fh).keys())
     img_url = (
-        f"https://raw.githubusercontent.com/{repo}/main/"
-        f"data/summaries/etf_{ticker}_summary_latest.jpg?t={cache_buster}"
+        f"https://linechatbot.duckdns.org/api/webhook/summaries/"
+        f"etf_{ticker}_summary_latest.jpg?t={cache_buster}"
     )
     messages.append({
         "type": "text",

@@ -114,83 +114,6 @@ def parse_operation_report_ticker(text):
 def _line_access_token():
     return get_secret('LINE_CHANNEL_ACCESS_TOKEN') or get_secret('LINE_TOKEN')
 
-def _github_repo():
-    return get_secret("GITHUB_REPO") or "benson930417-prog/STOCK"
-
-def _publish_summary_to_github(ticker, image_path):
-    rel_image_path = os.path.relpath(image_path, parent_dir).replace(os.sep, "/")
-    env = os.environ.copy()
-    git_bin = "/usr/bin/git"
-
-    subprocess.run(
-        [git_bin, "pull", "origin", "main", "--rebase", "--autostash"],
-        cwd=parent_dir,
-        env=env,
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    subprocess.run(
-        [git_bin, "config", "user.name", "Webhook Bot"],
-        cwd=parent_dir,
-        env=env,
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=20,
-    )
-    subprocess.run(
-        [git_bin, "config", "user.email", "webhook-bot@localhost"],
-        cwd=parent_dir,
-        env=env,
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=20,
-    )
-    subprocess.run(
-        [git_bin, "add", rel_image_path],
-        cwd=parent_dir,
-        env=env,
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=20,
-    )
-
-    has_staged_change = subprocess.run(
-        [git_bin, "diff", "--cached", "--quiet", "--", rel_image_path],
-        cwd=parent_dir,
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=20,
-    ).returncode != 0
-
-    if has_staged_change:
-        subprocess.run(
-            [git_bin, "commit", "-m", f"Re-render {ticker} operation report"],
-            cwd=parent_dir,
-            env=env,
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-        subprocess.run(
-            [git_bin, "push", "origin", "main"],
-            cwd=parent_dir,
-            env=env,
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=90,
-        )
-        return True
-
-    return False
-
 def _parse_iso_time(value):
     if not value:
         return None
@@ -716,15 +639,17 @@ def handle_message(event):
             image_path = os.path.join(parent_dir, "data", "summaries", filename)
             if not os.path.exists(image_path):
                 raise FileNotFoundError(image_path)
-            pushed = _publish_summary_to_github(ticker, image_path)
 
             history_path = os.path.join(parent_dir, "data", f"etf_{ticker}_history.json")
             with open(history_path, "r", encoding="utf-8") as fh:
                 date_str = max(json.load(fh).keys())
 
+            # Serve via webhook's own /api/webhook/summaries endpoint, not
+            # GitHub raw URL — see scripts/update_and_notify.sh for the same
+            # simplification. No git push, no CDN wait, no gitignore traps.
             img_url = (
-                f"https://raw.githubusercontent.com/{_github_repo()}/main/"
-                f"data/summaries/{filename}?t={int(time.time())}"
+                f"https://linechatbot.duckdns.org/api/webhook/summaries/"
+                f"{filename}?t={int(time.time())}"
             )
             messages = [
                 {
@@ -751,8 +676,7 @@ def handle_message(event):
                 timeout=20,
             )
             res.raise_for_status()
-            status_text = "已重新渲染並廣播。" if pushed else "圖片無變更，已廣播最新版本。"
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{ticker} 操作日報{status_text}"))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{ticker} 操作日報已重新渲染並廣播。"))
         except Exception as e:
             print("ETF operation report broadcast failed:", e)
             line_bot_api.reply_message(
