@@ -377,7 +377,6 @@ async def market_text(req: SnapshotRequest):
         return _market_text_payload(req.key, quote)
     except Exception as e:
         print(f"❌ Error parsing market text for {req.key}: {e}")
-        await init_browser()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/market-debug")
@@ -465,7 +464,6 @@ async def take_snapshot(req: SnapshotRequest):
         return {"status": "success", "url": filename, "path": filepath}
     except Exception as e:
         print(f"❌ Error during snapshot for {req.key}: {e}")
-        await init_browser()
         raise HTTPException(status_code=500, detail=str(e))
 
 
