@@ -27,6 +27,23 @@ retrieve rule pulls them back to cash.
 
 From repo root:
 
+Fast Numba engine, recommended:
+
+```bash
+python -m strategy_experiment_v2.run_v2_fast --tickers 0050 SPY QQQ --years 5 10
+```
+
+For one ETF:
+
+```bash
+python -m strategy_experiment_v2.run_v2_fast --tickers 0050 --years 5 10
+```
+
+The first run compiles the Numba engine, so the first ticker/window has a
+one-time warm-up cost. Later evaluations are much faster.
+
+Original pure-Python runner, kept for debugging:
+
 ```bash
 python -m strategy_experiment_v2.run_v2 --tickers 0050 SPY QQQ --years 5 10 --workers 0 --chunk-size 1000 --progress-every 1000
 ```
