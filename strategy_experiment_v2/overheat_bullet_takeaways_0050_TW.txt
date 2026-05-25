@@ -35,3 +35,36 @@ wait_40d_then_all: n=8, median=9.09%, avg=10.37%, win=88%, avgDD=-7.32%, worstDD
 time_10_monthly: n=8, median=8.89%, avg=10.08%, win=88%, avgDD=-7.76%, worstDD=-15.02%
 dip_5_10_15_or_end: n=8, median=8.07%, avg=9.90%, win=88%, avgDD=-6.92%, worstDD=-17.17%
 cash_wait: n=8, median=5.94%, avg=6.86%, win=75%, avgDD=-6.08%, worstDD=-12.91%
+
+warm_near_high
+--------------
+immediate_40: n=12, median=6.51%, avg=9.91%, win=92%, avgDD=-8.41%, worstDD=-21.30%
+wait_40d_then_all: n=12, median=5.73%, avg=7.45%, win=92%, avgDD=-6.51%, worstDD=-17.68%
+dip_3_6_10_time: n=12, median=5.47%, avg=8.22%, win=92%, avgDD=-7.23%, worstDD=-20.42%
+time_5_weekly: n=12, median=5.17%, avg=8.03%, win=92%, avgDD=-7.47%, worstDD=-19.82%
+time_10_monthly: n=12, median=4.97%, avg=7.81%, win=92%, avgDD=-7.02%, worstDD=-18.60%
+wait_20d_then_all: n=12, median=4.93%, avg=7.96%, win=92%, avgDD=-7.93%, worstDD=-21.30%
+dip_5_10_15_or_end: n=12, median=4.46%, avg=6.93%, win=92%, avgDD=-6.04%, worstDD=-18.33%
+cash_wait: n=12, median=3.90%, avg=5.95%, win=92%, avgDD=-5.28%, worstDD=-13.57%
+
+momentum_near_high
+------------------
+immediate_40: n=11, median=6.19%, avg=7.43%, win=64%, avgDD=-9.31%, worstDD=-21.30%
+time_10_monthly: n=11, median=4.04%, avg=5.71%, win=64%, avgDD=-7.78%, worstDD=-18.64%
+cash_wait: n=11, median=3.71%, avg=4.46%, win=64%, avgDD=-5.83%, worstDD=-13.64%
+wait_40d_then_all: n=11, median=3.69%, avg=5.10%, win=64%, avgDD=-7.45%, worstDD=-17.99%
+time_5_weekly: n=11, median=3.41%, avg=5.62%, win=64%, avgDD=-8.34%, worstDD=-19.77%
+dip_3_6_10_time: n=11, median=3.28%, avg=5.93%, win=73%, avgDD=-8.19%, worstDD=-20.42%
+dip_5_10_15_or_end: n=11, median=3.23%, avg=5.27%, win=73%, avgDD=-6.80%, worstDD=-18.35%
+wait_20d_then_all: n=11, median=3.14%, avg=5.76%, win=73%, avgDD=-8.88%, worstDD=-21.30%
+
+near_high_positive_momentum
+---------------------------
+wait_20d_then_all: n=25, median=4.57%, avg=6.48%, win=88%, avgDD=-7.57%, worstDD=-26.81%
+immediate_40: n=25, median=4.28%, avg=7.40%, win=84%, avgDD=-8.41%, worstDD=-28.22%
+dip_3_6_10_time: n=25, median=3.22%, avg=6.38%, win=92%, avgDD=-7.20%, worstDD=-26.53%
+dip_5_10_15_or_end: n=25, median=3.10%, avg=5.44%, win=92%, avgDD=-6.08%, worstDD=-24.99%
+wait_40d_then_all: n=25, median=2.94%, avg=5.76%, win=84%, avgDD=-6.62%, worstDD=-25.18%
+time_10_monthly: n=25, median=2.89%, avg=6.04%, win=88%, avgDD=-6.88%, worstDD=-23.97%
+time_5_weekly: n=25, median=2.77%, avg=6.50%, win=92%, avgDD=-7.25%, worstDD=-25.45%
+cash_wait: n=25, median=2.57%, avg=4.44%, win=84%, avgDD=-5.19%, worstDD=-17.00%

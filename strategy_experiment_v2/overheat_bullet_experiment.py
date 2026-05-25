@@ -28,6 +28,12 @@ EVENT_CONFIGS = [
     EventConfig("similar_now_strict", min_z=1.8, min_ret30=15.0, min_ret60=15.0, min_dist_high=-1.0),
     EventConfig("hot_near_high", min_z=1.5, min_ret30=10.0, min_ret60=12.0, min_dist_high=-1.5),
     EventConfig("stretch_only", min_z=1.8, min_ret30=5.0, min_ret60=8.0, min_dist_high=-2.0),
+    # Broader "hot but not necessarily extreme" samples. These are designed
+    # to answer the allocation question with enough historical events instead
+    # of overfitting to only the most dramatic overheating episodes.
+    EventConfig("warm_near_high", min_z=1.0, min_ret30=6.0, min_ret60=8.0, min_dist_high=-3.0, cooldown_days=42),
+    EventConfig("momentum_near_high", min_z=0.8, min_ret30=8.0, min_ret60=10.0, min_dist_high=-3.0, cooldown_days=42),
+    EventConfig("near_high_positive_momentum", min_z=0.5, min_ret30=4.0, min_ret60=6.0, min_dist_high=-2.0, cooldown_days=42),
 ]
 
 
@@ -35,7 +41,8 @@ def fetch(ticker: str, start: str = "2003-01-01") -> pd.DataFrame:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cache = CACHE_DIR / f"{ticker.replace('^', 'IDX_').replace('.', '_')}_{start}.csv"
     if cache.exists():
-        df = pd.read_csv(cache, parse_dates=["Date"], index_col="Date")
+        df = pd.read_csv(cache, index_col=0, parse_dates=True)
+        df.index.name = "Date"
         return df
     df = yf.download(ticker, start=start, auto_adjust=False, progress=False, threads=False)
     if isinstance(df.columns, pd.MultiIndex):
