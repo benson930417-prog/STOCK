@@ -501,17 +501,18 @@ async def take_snapshot(req: SnapshotRequest):
                 const style = window.getComputedStyle(el);
                 return style && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0;
             };
-            const elements = chartContainer
-                ? [chartContainer, ...Array.from(chartContainer.querySelectorAll('canvas, svg, iframe'))]
+            const graphicElements = chartContainer
+                ? Array.from(chartContainer.querySelectorAll('canvas, svg, iframe')).filter(visibleChartLike)
+                : Array.from(document.querySelectorAll('canvas, svg, iframe')).filter(visibleChartLike);
+            const containerElements = chartContainer
+                ? [chartContainer]
                 : Array.from(document.querySelectorAll([
-                    'canvas',
-                    'svg',
-                    'iframe',
                     'div[class*="chart"]',
                     'div[class*="Chart"]',
                     'div[data-name*="chart"]',
                     'div[data-name*="Chart"]'
                 ].join(','))).filter(visibleChartLike);
+            const elements = graphicElements.length ? graphicElements : containerElements;
             const rects = elements
                 .map(el => el.getBoundingClientRect())
                 .filter(r => r.width > 250 && r.height > 120 && r.top > 40 && r.top < 700);
