@@ -1,0 +1,53 @@
+# Strategy Experiment V2
+
+Separate single-ETF tactical deployment tests for `0050`, `SPY`, and `QQQ`.
+
+This experiment asks one question at a time:
+
+> For one ETF, is tactical cash deployment better than simply buying and
+> holding the ETF?
+
+No currency conversion is used. Each ETF is tested in its native price series.
+
+## Strategy Families
+
+- Baselines:
+  - all-in from day 1
+  - 5% monthly DCA until fully invested
+  - static ETF/cash allocations with monthly rebalance
+- Tactical:
+  - permanent core allocation plus cash bullets
+  - fire bullets on weakness
+  - optionally retrieve bullets on overextension
+
+The tactical engine is intentionally stateful: bullets remain deployed until a
+retrieve rule pulls them back to cash.
+
+## Run
+
+From repo root:
+
+```bash
+python -m strategy_experiment_v2.run_v2 --tickers 0050 SPY QQQ --years 5 10 --progress-every 250
+```
+
+For a faster first pass:
+
+```bash
+python -m strategy_experiment_v2.run_v2 --tickers 0050 --years 5 10 --progress-every 250
+```
+
+The progress bar shows percent complete, elapsed time, and ETA for each
+ticker/window pair.
+
+Outputs:
+
+- `results_v2_all.csv`
+- `summary_v2.csv`
+- `top_v2.txt`
+
+## Interpretation
+
+A tactical strategy is only interesting if it beats the simple baselines on
+holdout and does not require extreme turnover or fragile parameters. Full-sample
+winners are treated as candidates, not proof.

@@ -1,0 +1,5 @@
+.yfinance_cache/
+__pycache__/
+results_v2_all.csv
+summary_v2.csv
+top_v2.txt
