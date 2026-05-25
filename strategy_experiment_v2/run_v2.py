@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 import sys
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -49,6 +51,10 @@ FIRE_SIGNALS = ["percentile_low", "drawdown_from_high", "rsi_low", "ma_stretch_l
 RETRIEVE_SIGNALS = ["none", "percentile_high", "recovery_from_low", "rsi_high", "ma_stretch_high"]
 
 STATIC_EXPOSURES = [0.5, 0.7, 0.8]
+
+_WORKER_PRICES: pd.Series | None = None
+_WORKER_TICKER: str | None = None
+_WORKER_META: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -471,6 +477,35 @@ def train_holdout_metrics(prices: pd.Series, ticker: str, spec: StrategySpec) ->
     }
 
 
+def build_row(prices: pd.Series, ticker: str, years: int, spec: StrategySpec) -> dict:
+    curve, costs, trades = simulate(prices, ticker, spec)
+    row = metrics(curve, costs, trades, spec)
+    row.update(train_holdout_metrics(prices, ticker, spec))
+    row.update(
+        {
+            "ticker": ticker,
+            "years": years,
+            "start": prices.index.min().date().isoformat(),
+            "end": prices.index.max().date().isoformat(),
+            "n_days": len(prices),
+        }
+    )
+    return row
+
+
+def init_worker(prices: pd.Series, ticker: str, meta: dict) -> None:
+    global _WORKER_PRICES, _WORKER_TICKER, _WORKER_META
+    _WORKER_PRICES = prices
+    _WORKER_TICKER = ticker
+    _WORKER_META = meta
+
+
+def worker_build_row(spec: StrategySpec) -> dict:
+    if _WORKER_PRICES is None or _WORKER_TICKER is None or _WORKER_META is None:
+        raise RuntimeError("worker not initialized")
+    return build_row(_WORKER_PRICES, _WORKER_TICKER, int(_WORKER_META["years"]), spec)
+
+
 def format_duration(seconds: float) -> str:
     seconds = max(0, int(seconds))
     h, rem = divmod(seconds, 3600)
@@ -496,29 +531,29 @@ def print_progress(label: str, idx: int, total: int, start_time: float, force_ne
     print(msg, end="\n" if force_newline else "", flush=True)
 
 
-def run_one(ticker: str, years: int, specs: list[StrategySpec], progress_every: int) -> pd.DataFrame:
+def run_one(ticker: str, years: int, specs: list[StrategySpec], progress_every: int, workers: int) -> pd.DataFrame:
     prices = load_prices(ticker, years)
     rows = []
     label = f"[{ticker} {years}y]"
     print(f"{label} rows={len(prices)} {prices.index.min().date()} -> {prices.index.max().date()}")
     start_time = time.time()
     print_progress(label, 0, len(specs), start_time)
-    for idx, spec in enumerate(specs, 1):
-        curve, costs, trades = simulate(prices, ticker, spec)
-        row = metrics(curve, costs, trades, spec)
-        row.update(train_holdout_metrics(prices, ticker, spec))
-        row.update(
-            {
-                "ticker": ticker,
-                "years": years,
-                "start": prices.index.min().date().isoformat(),
-                "end": prices.index.max().date().isoformat(),
-                "n_days": len(prices),
-            }
-        )
-        rows.append(row)
-        if idx % progress_every == 0 or idx == len(specs):
-            print_progress(label, idx, len(specs), start_time, force_newline=idx == len(specs))
+
+    if workers <= 1:
+        for idx, spec in enumerate(specs, 1):
+            rows.append(build_row(prices, ticker, years, spec))
+            if idx % progress_every == 0 or idx == len(specs):
+                print_progress(label, idx, len(specs), start_time, force_newline=idx == len(specs))
+        return pd.DataFrame(rows)
+
+    print(f"{label} using {workers} worker processes")
+    meta = {"years": years}
+    with ProcessPoolExecutor(max_workers=workers, initializer=init_worker, initargs=(prices, ticker, meta)) as executor:
+        futures = [executor.submit(worker_build_row, spec) for spec in specs]
+        for idx, fut in enumerate(as_completed(futures), 1):
+            rows.append(fut.result())
+            if idx % progress_every == 0 or idx == len(specs):
+                print_progress(label, idx, len(specs), start_time, force_newline=idx == len(specs))
     return pd.DataFrame(rows)
 
 
@@ -609,18 +644,26 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--years", nargs="+", type=int, default=[5, 10])
     parser.add_argument("--limit-specs", type=int, default=0, help="Debug: only run first N specs")
     parser.add_argument("--progress-every", type=int, default=250, help="Refresh progress every N strategies")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Parallel worker processes. Use 0 for all logical cores, 1 for serial.",
+    )
     args = parser.parse_args(argv)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     specs = make_specs()
     if args.limit_specs:
         specs = specs[: args.limit_specs]
+    workers = (os.cpu_count() or 1) if args.workers == 0 else max(1, args.workers)
     print(f"Specs: {len(specs):,}")
+    print(f"Workers: {workers}")
 
     frames = []
     for ticker in args.tickers:
         for years in args.years:
-            frames.append(run_one(ticker, years, specs, max(1, args.progress_every)))
+            frames.append(run_one(ticker, years, specs, max(1, args.progress_every), workers))
 
     results = pd.concat(frames, ignore_index=True)
     summary = summarize(results)
