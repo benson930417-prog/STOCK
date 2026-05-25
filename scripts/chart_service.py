@@ -56,6 +56,12 @@ TRADINGVIEW_SCANNER_QUOTES = {
     "usdtwd": {"scanner": "forex", "symbol": "FX_IDC:USDTWD"},
     "usdjpy": {"scanner": "forex", "symbol": "OANDA:USDJPY"},
     "usdchf": {"scanner": "forex", "symbol": "OANDA:USDCHF"},
+    "bond": {
+        "candidates": [
+            {"scanner": "bond", "symbol": "TVC:US10Y"},
+        ],
+        "columns": ["name", "close", "change", "change_abs", "currency"],
+    },
 }
 
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')
@@ -232,7 +238,7 @@ async def _fetch_tradingview_scanner_quote(page, key):
     config = TRADINGVIEW_SCANNER_QUOTES.get(key)
     if not config:
         return None
-    columns = ["name", "close", "change", "change_abs", "currency", "Perf.W", "Perf.1M", "Perf.6M"]
+    columns = config.get("columns") or ["name", "close", "change", "change_abs", "currency", "Perf.W", "Perf.1M", "Perf.6M"]
     errors = []
     candidates = config.get("candidates") or [
         {"scanner": scanner, "symbol": config["symbol"]}
