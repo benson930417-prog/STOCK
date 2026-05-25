@@ -46,6 +46,13 @@ PERFORMANCE_LABELS = {
 }
 
 TRADINGVIEW_SCANNER_QUOTES = {
+    "oil": {
+        "candidates": [
+            {"scanner": "futures", "symbol": "NYMEX:CL1!"},
+            {"scanner": "cfd", "symbol": "TVC:USOIL"},
+            {"scanner": "cfd", "symbol": "FXCM:USOIL"},
+        ],
+    },
     "usdtwd": {"scanner": "forex", "symbol": "FX_IDC:USDTWD"},
     "usdjpy": {"scanner": "forex", "symbol": "OANDA:USDJPY"},
     "usdchf": {"scanner": "forex", "symbol": "OANDA:USDCHF"},
@@ -227,27 +234,33 @@ async def _fetch_tradingview_scanner_quote(page, key):
         return None
     columns = ["name", "close", "change", "change_abs", "currency", "Perf.W", "Perf.1M", "Perf.6M"]
     errors = []
-    for scanner in config.get("scanners") or [config["scanner"]]:
+    candidates = config.get("candidates") or [
+        {"scanner": scanner, "symbol": config["symbol"]}
+        for scanner in (config.get("scanners") or [config["scanner"]])
+    ]
+    for candidate in candidates:
+        scanner = candidate["scanner"]
+        symbol = candidate["symbol"]
         response = await page.request.post(
             f"https://scanner.tradingview.com/{scanner}/scan",
             data={
-                "symbols": {"tickers": [config["symbol"]], "query": {"types": []}},
+                "symbols": {"tickers": [symbol], "query": {"types": []}},
                 "columns": columns,
             },
             headers={"User-Agent": "Mozilla/5.0"},
             timeout=10000,
         )
         if not response.ok:
-            errors.append(f"{scanner}: HTTP {response.status} {await response.text()}")
+            errors.append(f"{scanner}/{symbol}: HTTP {response.status} {await response.text()}")
             continue
         payload = await response.json()
         rows = payload.get("data") or []
         if not rows:
-            errors.append(f"{scanner}: no rows")
+            errors.append(f"{scanner}/{symbol}: no rows")
             continue
         values = rows[0].get("d") or []
         if len(values) < 4 or values[1] is None:
-            errors.append(f"{scanner}: missing close/change {values}")
+            errors.append(f"{scanner}/{symbol}: missing close/change {values}")
             continue
         return {
             "price": float(values[1]),
@@ -261,7 +274,8 @@ async def _fetch_tradingview_scanner_quote(page, key):
                 "6m": float(values[7]) if len(values) > 7 and values[7] is not None else None,
             },
         }
-    raise ValueError(f"TradingView scanner failed for {config['symbol']}: {'; '.join(errors)}")
+    requested = ", ".join(f"{item['scanner']}/{item['symbol']}" for item in candidates)
+    raise ValueError(f"TradingView scanner failed for {requested}: {'; '.join(errors)}")
 
 
 def _format_change(change_pct, label):
