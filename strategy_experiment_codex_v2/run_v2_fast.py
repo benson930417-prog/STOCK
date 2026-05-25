@@ -1,4 +1,4 @@
-"""Fast Numba engine for strategy_experiment_v2.
+"""Fast Numba engine for strategy_experiment_codex_v2.
 
 This script keeps the same strategy grid idea as run_v2.py, but moves the hot
 path out of Python:
@@ -8,7 +8,7 @@ path out of Python:
 - evaluate all strategies in one Numba parallel loop
 
 Run:
-    python -m strategy_experiment_v2.run_v2_fast --tickers 0050 --years 5 10
+    python -m strategy_experiment_codex_v2.run_v2_fast --tickers 0050 --years 5 10
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 from numba import njit, prange, set_num_threads
 
-from strategy_experiment_v2.run_v2 import (
+from strategy_experiment_codex_v2.run_v2 import (
     COMMISSION,
     CORE_PCTS,
     COOLDOWNS,

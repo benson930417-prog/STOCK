@@ -137,9 +137,13 @@ def _format_distance_from_low(dist_pct: float | None) -> str:
 
 
 def _stretch_zscore(prices: pd.Series,
-                    ma_window: int = 200,
-                    lookback: int = 504) -> tuple[float | None, float | None]:
-    """Returns (current_stretch_pct, z_score_of_current_stretch_vs_history).
+                    ma_window:    int = 200,
+                    lookback_max: int = 504) -> tuple[float | None, float | None]:
+    """Returns (current_stretch_pct, z_score_of_current_stretch_vs_history,
+                effective_sample_size).
+
+    Wait — for backwards compatibility I'm still returning just 2 values.
+    The effective sample size is implicit: max(0, len(prices) - ma_window).
 
     Normalises by the asset's OWN historical stretch distribution so SOX
     (naturally high-vol) and DJI (low-vol) live on the same emotional
@@ -148,11 +152,12 @@ def _stretch_zscore(prices: pd.Series,
     of the raw percentage.
 
     Two correctness details:
-    1. The current day is EXCLUDED from its own historical distribution
-       (was a bug: previously it was inflating its own mean/std).
-    2. With a 2y price DB the first 199 days are NaN for MA200, so the
-       effective historical sample is ~305 obs — narrower than the
-       "lookback=504" name suggests. Caller captions document this.
+    1. The current day is EXCLUDED from its own historical distribution.
+    2. `lookback_max` is an upper bound, not a guaranteed sample size.
+       With a 2y price DB the first 199 days are NaN for MA200, so the
+       effective historical sample is ~305 obs (~14 months of stretches),
+       narrower than the 504-day max suggests. Renamed from `lookback`
+       to make this honest.
     """
     if prices is None or len(prices) < ma_window + 30:
         return None, None
@@ -162,7 +167,10 @@ def _stretch_zscore(prices: pd.Series,
 
     # Exclude today from the historical reference distribution
     hist_series = stretch.iloc[:-1]
-    hist = hist_series.iloc[-lookback:].dropna() if len(hist_series) > lookback else hist_series.dropna()
+    if len(hist_series) > lookback_max:
+        hist = hist_series.iloc[-lookback_max:].dropna()
+    else:
+        hist = hist_series.dropna()
     if len(hist) < 30:
         return cur_stretch, None
     mean = float(hist.mean())
@@ -555,7 +563,7 @@ def _render_stretch_normalized() -> dict:
                          "距 MA200": None, "z-score": None, "判斷": "—"})
             continue
         prices = df.set_index("date")["close"].dropna()
-        stretch, z = _stretch_zscore(prices, ma_window=200, lookback=504)
+        stretch, z = _stretch_zscore(prices, ma_window=200, lookback_max=504)
         rows.append({
             "指數":     f"{name} ({ticker})",
             "距 MA200": stretch,

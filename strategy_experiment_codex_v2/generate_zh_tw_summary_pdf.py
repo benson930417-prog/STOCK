@@ -9,8 +9,8 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent
 SUMMARY = ROOT / "summary_v2.csv"
-PDF = ROOT / "strategy_experiment_v2_trader_summary_zh_tw.pdf"
-PREVIEW = ROOT / "strategy_experiment_v2_trader_summary_zh_tw_preview.png"
+PDF = ROOT / "strategy_experiment_codex_v2_trader_summary_zh_tw.pdf"
+PREVIEW = ROOT / "strategy_experiment_codex_v2_trader_summary_zh_tw_preview.png"
 
 
 def pct(value: float) -> str:
@@ -99,10 +99,10 @@ def build_html() -> str:
 <html lang="zh-Hant">
 <head><meta charset="utf-8"><title>策略實驗 V2：新手交易者摘要</title><style>{css}</style></head>
 <body>
-  <div class="footer"><span>策略實驗 V2 - 新手交易者摘要</span><span>strategy_experiment_v2</span></div>
+  <div class="footer"><span>策略實驗 Codex V2 - 新手交易者摘要</span><span>strategy_experiment_codex_v2</span></div>
   <section class="page">
     <h1>策略實驗 V2：新手交易者摘要</h1>
-    <p class="subtitle">根據 strategy_experiment_v2 的 0050、SPY、QQQ 回測輸出整理。產生日期：2026-05-25。本文件是研究摘要，不是投資建議。</p>
+    <p class="subtitle">根據 strategy_experiment_codex_v2 的 0050、SPY、QQQ 回測輸出整理。產生日期：2026-05-25。本文件是研究摘要，不是投資建議。</p>
     <div class="callout"><strong>一句話結論</strong>買進持有仍然是最重要的基準。定期定額通常讓過程比較好承受。戰術型逢低買進規則有時能改善 Sharpe 與最大回撤，但常常會犧牲部分長期複利。這份實驗真正提醒我們的是：控風險有成本，所以必須誠實衡量這個成本。</div>
     <div class="grid4">
       <div><b>對比</b>用深色標題與藍色重點框，把結論和表格數字分開。</div>

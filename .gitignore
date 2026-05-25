@@ -43,3 +43,9 @@ data/etf_bench/*.sqlite-shm
 strategy_experiment/*.csv
 strategy_experiment/*.log
 strategy_experiment/results/
+strategy_experiment_v2/.yfinance_cache/
+strategy_experiment_v2/__pycache__/
+strategy_experiment_codex_v2/.yfinance_cache/
+strategy_experiment_codex_v2/__pycache__/
+strategy_experiment_codex_v2/results_v2_all.csv
+strategy_experiment_codex_v2/*_preview.png
