@@ -14,6 +14,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from scripts.monitor_etf_quotes import (
     TSMC_PROXY_TARGETS,
+    _adjusted_market_session,
     _apply_tsmc_night_futures_proxy,
     _is_live_market_session,
     _select_tsmc_proxy,
@@ -254,7 +255,12 @@ def enrich_positions_with_quotes(positions):
             datetime.fromtimestamp(int(quote_time), timezone.utc).isoformat().replace("+00:00", "Z")
             if quote_time else quote.get("regularMarketTimeUtc")
         )
-        item["market_session"] = quote.get("marketSession") or quote.get("market_session")
+        # Override Yahoo's session for US holidays — Yahoo would say PRE/REG/POST
+        # by time-of-day even on Memorial Day. _adjusted_market_session forces CLOSE.
+        item["market_session"] = _adjusted_market_session(
+            item.get("country"),
+            quote.get("marketSession") or quote.get("market_session"),
+        )
         item["proxy"] = quote.get("proxy")
         item["market_value"] = item["shares"] * item["price"] if item["price"] is not None else None
         item["est_sell_fee"] = item["market_value"] * SELL_FEE_RATE if item["market_value"] is not None else None

@@ -4,7 +4,8 @@ import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from functools import lru_cache
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from zoneinfo import ZoneInfo
@@ -604,10 +605,100 @@ def _fetch_twse_realtime_quote(symbol, country=None, timeout=5):
     return None
 
 
+# ─── NYSE holiday calendar ─────────────────────────────────────────────────
+# Yahoo's `marketSession` field is purely time-based (4-9:30 AM ET = "PRE",
+# 9:30-16:00 = "REG", 16:00-20:00 = "POST"). It does NOT account for US
+# market holidays — on Memorial Day, Independence Day, etc. Yahoo still
+# reports "PRE" at 6 AM ET even though the market is fully closed all day.
+# These helpers add the holiday calendar so we can override session to
+# "CLOSE" on full-closure days.
+
+def _easter_sunday(year: int) -> date:
+    """Computus (Gauss) algorithm — Easter Sunday for Gregorian year."""
+    a = year % 19
+    b, c = divmod(year, 100)
+    d, e = divmod(b, 4)
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = divmod(c, 4)
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    day = ((h + l - 7 * m + 114) % 31) + 1
+    return date(year, month, day)
+
+
+def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
+    """Nth occurrence of weekday (Mon=0) in year/month."""
+    first = date(year, month, 1)
+    offset = (weekday - first.weekday()) % 7
+    return first + timedelta(days=offset + 7 * (n - 1))
+
+
+def _last_weekday(year: int, month: int, weekday: int) -> date:
+    if month == 12:
+        last = date(year, 12, 31)
+    else:
+        last = date(year, month + 1, 1) - timedelta(days=1)
+    offset = (last.weekday() - weekday) % 7
+    return last - timedelta(days=offset)
+
+
+def _observed_date(d: date) -> date:
+    """Sat → observed Fri; Sun → observed Mon. NYSE convention."""
+    if d.weekday() == 5:                  # Saturday
+        return d - timedelta(days=1)
+    if d.weekday() == 6:                  # Sunday
+        return d + timedelta(days=1)
+    return d
+
+
+@lru_cache(maxsize=32)
+def _nyse_full_close_dates(year: int) -> frozenset:
+    """Set of dates when NYSE is fully closed (does NOT include half-days)."""
+    days = {
+        _observed_date(date(year, 1, 1)),                    # New Year's Day
+        _nth_weekday(year, 1, weekday=0, n=3),               # MLK Day
+        _nth_weekday(year, 2, weekday=0, n=3),               # Presidents' Day
+        _easter_sunday(year) - timedelta(days=2),            # Good Friday
+        _last_weekday(year, 5, weekday=0),                   # Memorial Day
+        _observed_date(date(year, 7, 4)),                    # Independence Day
+        _nth_weekday(year, 9, weekday=0, n=1),               # Labor Day
+        _nth_weekday(year, 11, weekday=3, n=4),              # Thanksgiving
+        _observed_date(date(year, 12, 25)),                  # Christmas
+    }
+    if year >= 2022:
+        days.add(_observed_date(date(year, 6, 19)))          # Juneteenth (since 2022)
+    return frozenset(days)
+
+
+def _is_us_market_closed_today(now_et: datetime | None = None) -> bool:
+    """Return True if today (US Eastern) is a weekend OR NYSE full-closure day."""
+    now = now_et or datetime.now(ZoneInfo("America/New_York"))
+    if now.weekday() >= 5:                              # Sat or Sun
+        return True
+    return now.date() in _nyse_full_close_dates(now.year)
+
+
+def _adjusted_market_session(country, raw_session):
+    """Override Yahoo's time-based marketSession to 'CLOSE' on US holidays.
+    Yahoo doesn't know about Memorial Day etc. — it'll happily say 'PRE'
+    at 6 AM ET even when the market is fully closed for the day. Without
+    this override the LINE card shows '盤前' with a stale Friday change %."""
+    if str(country or "").upper() == "US" and _is_us_market_closed_today():
+        return "CLOSE"
+    return raw_session
+
+
 def _session_for_us_timestamp(timestamp):
     try:
         dt = datetime.fromtimestamp(int(timestamp), ZoneInfo("America/New_York"))
     except Exception:
+        return "CLOSE"
+    # Holiday short-circuit — Yahoo's session classification ignores the
+    # calendar, so even on Memorial Day it'd return PRE/REG/POST by time.
+    if dt.date() in _nyse_full_close_dates(dt.year):
         return "CLOSE"
     minutes = dt.hour * 60 + dt.minute
     if dt.weekday() < 5 and 4 * 60 <= minutes < 9 * 60 + 30:
@@ -990,7 +1081,9 @@ def build_cache(ticker, previous_cache=None):
 
         if quote and not quote.get("error"):
             day_change_pct = quote.get("regularMarketChangePercent")
-            market_session = quote.get("marketSession")
+            # Override Yahoo's session — it's purely time-based and doesn't
+            # know about US market holidays (would say PRE on Memorial Day).
+            market_session = _adjusted_market_session(country, quote.get("marketSession"))
             quote_time = quote.get("regularMarketTime")
             if quote_time:
                 quote_time_utc = datetime.fromtimestamp(quote_time, timezone.utc).isoformat().replace("+00:00", "Z")
