@@ -229,28 +229,29 @@ def _apply_tsmc_night_futures_proxy(quote, yahoo_symbol, proxy):
         return proxied
     if not proxy.get("active"):
         return quote
-    baseline = quote.get("regularMarketPrice")
     try:
-        baseline = float(baseline)
         proxy_price = float(proxy["price"])
     except (TypeError, ValueError, KeyError):
         return quote
-    if baseline <= 0:
-        return quote
+    try:
+        tv_change_pct = float(proxy["tradingview_change_pct"])
+    except (TypeError, ValueError, KeyError):
+        tv_change_pct = None
 
     proxied = dict(quote)
     proxied["regularMarketPrice"] = proxy_price
-    proxied["previousClose"] = baseline
+    proxied["previousClose"] = None
     proxied["regularMarketTime"] = proxy["quote_time"]
-    proxied["regularMarketChangePercent"] = (proxy_price - baseline) / baseline * 100.0
+    proxied["regularMarketChangePercent"] = tv_change_pct
     proxied["marketSession"] = proxy.get("market_session") or "FUT_NIGHT"
     proxied["composite_scope"] = "TSMC_FUT"
     proxied["proxy"] = {
         "source": "tsmc_night_futures",
         "symbol": proxy["proxy_symbol"],
         "name": proxy["proxy_name"],
-        "baseline_symbol": "2330.TW",
-        "baseline_price": baseline,
+        "change_source": "tradingview_print",
+        "tradingview_change_pct": tv_change_pct,
+        "tradingview_change_abs": proxy.get("tradingview_change_abs"),
         "delay_seconds": proxy["delay_seconds"],
         "volume": proxy.get("volume"),
         "update_mode": proxy.get("update_mode"),
@@ -285,6 +286,8 @@ def _tsmc_proxy_cache_status(has_target, proxy):
         "delay_seconds",
         "update_mode",
         "volume",
+        "tradingview_change_pct",
+        "tradingview_change_abs",
     ]
     status = {key: proxy.get(key) for key in keys if key in proxy}
     status["window_taipei"] = "17:40-05:15"
@@ -339,6 +342,8 @@ def _proxy_status_from_cached_row(row):
         "market_session": "FUT_NIGHT_CLOSE",
         "quote_time": int(quote_dt.timestamp()) if quote_dt else None,
         "quote_time_utc": quote_time_utc,
+        "tradingview_change_pct": proxy.get("tradingview_change_pct", row.get("day_change_pct")),
+        "tradingview_change_abs": proxy.get("tradingview_change_abs"),
     }
 
 

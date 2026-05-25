@@ -141,6 +141,8 @@ curl -s -X POST http://127.0.0.1:5005/snapshot \
 | `scripts/setup_rich_menu.py` | Creates/updates the LINE rich menu. |
 | `scripts/update_and_notify.sh` | Daily orchestrator for fetchers, benchmark refresh, market pulse image, Git update, LINE broadcast, and admin email. |
 
+TSMC night-session handling: when a holding maps to `2330` / `2330.TW` during the QFF1! night futures window, the monitor uses TradingView's printed `TAIFEX:QFF1!` change percent. It does not calculate the percent against the 2330.TW day close, because that mixes different markets and baselines.
+
 ## ETF Benchmark Pipeline
 
 The ETF comparison tab reads a local SQLite database generated under `data/etf_bench/`. The database is intentionally ignored by Git and rebuilt on each host.
