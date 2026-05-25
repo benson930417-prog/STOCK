@@ -286,6 +286,7 @@ def simulate_metrics_range(
     retrieve_idx: np.ndarray,
     start: int,
     end: int,
+    years_span: float,
     sell_tax: float,
     out: np.ndarray,
     row: int,
@@ -320,7 +321,7 @@ def simulate_metrics_range(
                 should_rebalance = target != exposure
         elif fam == 2:
             target = core[row]
-            should_rebalance = exec_masks[1, i]
+            should_rebalance = k == 0 or exec_masks[1, i]
         else:
             if exec_masks[execution[row], i] and k > 0:
                 f_level = fire_levels[fire_idx[row], i]
@@ -356,7 +357,7 @@ def simulate_metrics_range(
         curve[k] = value
 
     total_return = curve[n - 1] / curve[0] - 1.0
-    years = n / 252.0
+    years = years_span
     cagr = curve[n - 1] / curve[0]
     if cagr > 0 and years > 0:
         cagr = cagr ** (1.0 / years) - 1.0
@@ -431,6 +432,9 @@ def evaluate_all(
     fire_idx: np.ndarray,
     retrieve_idx: np.ndarray,
     split: int,
+    full_years: float,
+    train_years: float,
+    holdout_years: float,
     sell_tax: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     n_specs = len(family)
@@ -438,9 +442,9 @@ def evaluate_all(
     train = np.empty((n_specs, 10), dtype=np.float64)
     holdout = np.empty((n_specs, 10), dtype=np.float64)
     for row in prange(n_specs):
-        simulate_metrics_range(rets, exec_masks, fire_levels, retrieve_levels, family, core, tiers, execution, cooldown, fire_idx, retrieve_idx, 0, len(rets), sell_tax, full, row)
-        simulate_metrics_range(rets, exec_masks, fire_levels, retrieve_levels, family, core, tiers, execution, cooldown, fire_idx, retrieve_idx, 0, split, sell_tax, train, row)
-        simulate_metrics_range(rets, exec_masks, fire_levels, retrieve_levels, family, core, tiers, execution, cooldown, fire_idx, retrieve_idx, split, len(rets), sell_tax, holdout, row)
+        simulate_metrics_range(rets, exec_masks, fire_levels, retrieve_levels, family, core, tiers, execution, cooldown, fire_idx, retrieve_idx, 0, len(rets), full_years, sell_tax, full, row)
+        simulate_metrics_range(rets, exec_masks, fire_levels, retrieve_levels, family, core, tiers, execution, cooldown, fire_idx, retrieve_idx, 0, split, train_years, sell_tax, train, row)
+        simulate_metrics_range(rets, exec_masks, fire_levels, retrieve_levels, family, core, tiers, execution, cooldown, fire_idx, retrieve_idx, split, len(rets), holdout_years, sell_tax, holdout, row)
     return full, train, holdout
 
 
@@ -495,6 +499,9 @@ def run_one_fast(ticker: str, years: int, specs: list[StrategySpec]) -> pd.DataF
     masks = execution_masks(prices.index)
     split = int(len(close) * 0.6)
     tax = TW_ETF_SELL_TAX if ticker == "0050" else 0.0
+    full_years = max((prices.index[-1] - prices.index[0]).days, 1) / 365.25
+    train_years = max((prices.index[split - 1] - prices.index[0]).days, 1) / 365.25
+    holdout_years = max((prices.index[-1] - prices.index[split]).days, 1) / 365.25
     print(
         f"  evaluating {len(specs):,} specs with numba "
         f"({fire_levels.shape[0]} fire signals, {retrieve_levels.shape[0]} retrieve signals)...",
@@ -513,6 +520,9 @@ def run_one_fast(ticker: str, years: int, specs: list[StrategySpec]) -> pd.DataF
         encoded["fire_idx"],
         encoded["retrieve_idx"],
         split,
+        full_years,
+        train_years,
+        holdout_years,
         tax,
     )
     print(f"  done in {format_duration(time.time() - t0)}", flush=True)
