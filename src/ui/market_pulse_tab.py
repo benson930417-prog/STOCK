@@ -64,6 +64,59 @@ CROSS_ASSET_INDICES: list[tuple[str, str]] = [
 ]
 
 
+# ─── threshold constants — SINGLE SOURCE OF TRUTH ─────────────────────────
+# All classifiers, composite tags, narratives, and summary-card interpretation
+# read from THIS block. If you change a threshold here it propagates everywhere;
+# previously the three layers had drifted apart (e.g. acceleration RED at +5pp
+# in composite but +20pp in classifier, causing one tile to glow red while the
+# next paragraph called it "stable").
+
+# Z-score (normalised MA200 stretch) — used by table label, breadth count, summary
+Z_ELEVATED          =  1.5   # cell labelled "偏高"; counted as stretched in breadth tally
+Z_EXTREME           =  2.5   # cell labelled "高位"
+Z_DEPRESSED         = -1.5   # cell labelled "偏低"; counted as compressed
+Z_VERY_DEPRESSED    = -2.5   # cell labelled "低位"
+
+# 30-day return %  (TAIEX 2y: p5=-8.6, p25=-0.3, p75=+9, p95=+18)
+RET_30_BIG_UP       =  9.0
+RET_30_EXTREME_UP   = 18.0
+RET_30_BIG_DOWN     = -9.0
+RET_30_EXTREME_DOWN = -18.0
+
+# 60-day return %  (TAIEX 2y: p5=-10, p25=-0.2, p75=+15.6, p95=+24.4)
+RET_60_BIG_UP       = 16.0
+RET_60_EXTREME_UP   = 25.0
+RET_60_BIG_DOWN     = -18.0
+RET_60_EXTREME_DOWN = -25.0
+
+# Acceleration (pp)  (TAIEX 2y: p25=-6, p75=+8.5, p90=+16, p95=+21)
+ACCEL_NOTABLE       = 10.0    # orange "明顯加速"; ALSO the composite-tag trigger
+ACCEL_EXTREME       = 20.0    # red "強烈加速"
+ACCEL_NOTABLE_DOWN  = -10.0
+ACCEL_EXTREME_DOWN  = -20.0
+
+# Volatility (20d annualised %)  (TAIEX 2y: p25=15.6, p50=18, p75=24, p95=47)
+VOL_LOW_ABS         = 13.0    # absolute vol below this = quiet market
+VOL_HIGH_ABS        = 24.0    # orange
+VOL_EXTREME_ABS     = 35.0    # red
+
+# Day change %  (TAIEX 2y: ±1.5% on 24% of days, ±2.5% on ~7% of days)
+DAY_NOTABLE_ABS     = 1.0
+DAY_EXTREME_ABS     = 2.5
+
+# Distance from 1y high %  (TAIEX 2y: p25=-8.4, p50=-4.9, p75=-1.2, at-high ~15% of days)
+DIST_HIGH_AT         = -0.5
+DIST_HIGH_NEAR       = -1.5
+DIST_HIGH_NORMAL_LO  = -8.5
+DIST_HIGH_CORRECTION = -16.0
+
+# Distance from 60d low %
+DIST_LOW_AT_LOW   = 2.0
+DIST_LOW_NORMAL_HI = 20.0
+DIST_LOW_STRONG    = 25.0
+DIST_LOW_EXTREME   = 30.0
+
+
 # ─── helpers ──────────────────────────────────────────────────────────────
 def _format_distance_from_high(dist_pct: float | None) -> str:
     """Distance-from-high is naturally ≤ 0. Render 0 as 'at the high' to
@@ -93,14 +146,23 @@ def _stretch_zscore(prices: pd.Series,
     scale. A z of +2 means "current stretch is 2 standard deviations
     above this asset's typical stretch" — genuinely unusual regardless
     of the raw percentage.
+
+    Two correctness details:
+    1. The current day is EXCLUDED from its own historical distribution
+       (was a bug: previously it was inflating its own mean/std).
+    2. With a 2y price DB the first 199 days are NaN for MA200, so the
+       effective historical sample is ~305 obs — narrower than the
+       "lookback=504" name suggests. Caller captions document this.
     """
     if prices is None or len(prices) < ma_window + 30:
         return None, None
-    ma     = prices.rolling(ma_window).mean()
+    ma      = prices.rolling(ma_window).mean()
     stretch = (prices - ma) / ma * 100.0
     cur_stretch = float(stretch.iloc[-1])
 
-    hist = stretch.iloc[-lookback:].dropna() if len(stretch) > lookback else stretch.dropna()
+    # Exclude today from the historical reference distribution
+    hist_series = stretch.iloc[:-1]
+    hist = hist_series.iloc[-lookback:].dropna() if len(hist_series) > lookback else hist_series.dropna()
     if len(hist) < 30:
         return cur_stretch, None
     mean = float(hist.mean())
@@ -111,22 +173,22 @@ def _stretch_zscore(prices: pd.Series,
 
 
 def _zscore_label(z: float | None) -> str:
-    """Soft descriptive label — no emoji, no alarm."""
-    if z is None: return "—"
-    if z >=  2.0: return "高位"
-    if z >=  1.5: return "偏高"
-    if z >= -1.0: return "中性"
-    if z >= -2.0: return "偏低"
+    """Soft descriptive label — uses module-level Z_* constants."""
+    if z is None:                return "—"
+    if z >= Z_EXTREME:           return "高位"
+    if z >= Z_ELEVATED:          return "偏高"
+    if z >  Z_DEPRESSED:         return "中性"
+    if z >  Z_VERY_DEPRESSED:    return "偏低"
     return "低位"
 
 
 def _zscore_style(z: float | None) -> str:
     """Subtle pandas Styler color — softer than the old red/green walls."""
-    if z is None or pd.isna(z): return ""
-    if z >=  2.0: return "background-color: rgba(220,38,38,0.18); font-weight: 600"
-    if z >=  1.5: return "background-color: rgba(249,115,22,0.13)"
-    if z >= -1.0: return ""
-    if z >= -2.0: return "background-color: rgba(14,165,233,0.12)"
+    if z is None or pd.isna(z):  return ""
+    if z >= Z_EXTREME:           return "background-color: rgba(220,38,38,0.18); font-weight: 600"
+    if z >= Z_ELEVATED:          return "background-color: rgba(249,115,22,0.13)"
+    if z >  Z_DEPRESSED:         return ""
+    if z >  Z_VERY_DEPRESSED:    return "background-color: rgba(14,165,233,0.12)"
     return "background-color: rgba(30,64,175,0.18)"
 
 
@@ -188,16 +250,20 @@ def _section_insight(text: str) -> None:
 
 # ─── per-metric classifiers (value → color, status tag, reference range) ──
 def _classify_day_change(pct: float) -> tuple[str, str, str]:
-    """Calibrated to TAIEX 2y distribution: |daily| ≤ 1% on 50% of days,
-    ±2.5% covers ~p95. Old ±1.5% triggered RED on 1-in-4 days (too noisy)."""
-    ref = "正常 ±1% / 大漲 >+2.5% / 大跌 <-2.5%（基於加權指數 2 年分布）"
-    if pct >=  2.5:  return HEALTH_COLORS["red"],     "大漲", ref
-    if pct >=  1.0:  return HEALTH_COLORS["orange"],  "上漲偏大", ref
-    if pct >=  0.3:  return HEALTH_COLORS["green"],   "上漲", ref
-    if pct >  -0.3:  return HEALTH_COLORS["gray"],    "持平", ref
-    if pct >  -1.0:  return HEALTH_COLORS["green"],   "下跌", ref
-    if pct >  -2.5:  return HEALTH_COLORS["yellow"],  "下跌偏大", ref
-    return HEALTH_COLORS["red"], "大跌", ref
+    """Symmetric color: same magnitude up/down gets same severity color.
+    Calibrated to TAIEX 2y: |daily| ≤ 1% on 50% of days, ±2.5% ~ p95."""
+    ref = f"正常 ±{DAY_NOTABLE_ABS:.0f}% / 偏大 ±{DAY_NOTABLE_ABS:.0f}~{DAY_EXTREME_ABS:.1f}% / 極端 >±{DAY_EXTREME_ABS:.1f}%（基於加權指數 2 年分布）"
+    abs_pct = abs(pct)
+    if abs_pct >= DAY_EXTREME_ABS:
+        tag = "大漲" if pct > 0 else "大跌"
+        return HEALTH_COLORS["red"], tag, ref
+    if abs_pct >= DAY_NOTABLE_ABS:
+        tag = "上漲偏大" if pct > 0 else "下跌偏大"
+        return HEALTH_COLORS["orange"], tag, ref
+    if abs_pct >= 0.3:
+        tag = "上漲" if pct > 0 else "下跌"
+        return HEALTH_COLORS["gray"], tag, ref     # gray = small daily noise, no signal
+    return HEALTH_COLORS["gray"], "持平", ref
 
 
 def _classify_regime(label_zh: str, days: int | None,
@@ -232,80 +298,74 @@ def _classify_regime(label_zh: str, days: int | None,
 
 
 def _classify_distance_from_high(dist_pct: float) -> tuple[str, str, str]:
-    # Calibrated to TAIEX 2y distribution:
-    # p25=-8.4%, p50=-4.9%, p75=-1.2%, exact/near 1y high ~15% of days,
-    # p05=-15.8%. Being at a high is notable, but not a top-5% alarm by itself.
-    ref = "常態約 -8%~-1% / 近高點 >-1% / 低位 <-16%（基於加權指數 2 年分布）"
-    if dist_pct >= -0.5:   return HEALTH_COLORS["orange"], "近高點",   ref
-    if dist_pct >= -1.5:   return HEALTH_COLORS["yellow"], "高位區",   ref
-    if dist_pct >= -8.5:   return HEALTH_COLORS["green"],  "常態區",   ref
-    if dist_pct >= -16:    return HEALTH_COLORS["blue"],   "回檔區",   ref
+    """Calibrated to TAIEX 2y: p25=-8.4%, p50=-4.9%, p75=-1.2%, at-high ~15% of days."""
+    ref = (f"常態約 {DIST_HIGH_NORMAL_LO:.0f}%~{DIST_HIGH_NEAR:.1f}% / "
+           f"近高點 ≥{DIST_HIGH_AT:.1f}% / "
+           f"回檔 <{DIST_HIGH_NORMAL_LO:.0f}% / 低位 <{DIST_HIGH_CORRECTION:.0f}%（基於加權指數 2 年分布）")
+    if dist_pct >= DIST_HIGH_AT:           return HEALTH_COLORS["orange"], "近高點",   ref
+    if dist_pct >= DIST_HIGH_NEAR:         return HEALTH_COLORS["yellow"], "高位區",   ref
+    if dist_pct >= DIST_HIGH_NORMAL_LO:    return HEALTH_COLORS["green"],  "常態區",   ref
+    if dist_pct >= DIST_HIGH_CORRECTION:   return HEALTH_COLORS["blue"],   "回檔區",   ref
     return HEALTH_COLORS["deep_blue"], "低位區", ref
 
 
 def _classify_distance_from_low(dist_pct: float) -> tuple[str, str, str]:
-    # Calibrated to TAIEX 2y distribution:
-    # p25=+8.7%, p50=+14.2%, p75=+19.8%, p90=+25.0%, p95=+28.7%, p99=+32.1%.
-    ref = "常態約 +9%~+20% / 強漲 >+25% / 急漲 >+30%（基於加權指數 2 年分布）"
-    if dist_pct >= 30:     return HEALTH_COLORS["red"],    "急漲",     ref
-    if dist_pct >= 25:     return HEALTH_COLORS["orange"], "強漲",     ref
-    if dist_pct >= 20:     return HEALTH_COLORS["yellow"], "偏高反彈", ref
-    if dist_pct >= 8:      return HEALTH_COLORS["green"],  "常態反彈", ref
-    if dist_pct >= 2:      return HEALTH_COLORS["blue"],   "近低位",   ref
+    """Calibrated to TAIEX 2y: p25=+8.7%, p50=+14.2%, p75=+19.8%, p95=+28.7%."""
+    ref = (f"常態約 8%~{DIST_LOW_NORMAL_HI:.0f}% / "
+           f"強漲 >{DIST_LOW_STRONG:.0f}% / 急漲 >{DIST_LOW_EXTREME:.0f}%（基於加權指數 2 年分布）")
+    if dist_pct >= DIST_LOW_EXTREME:   return HEALTH_COLORS["red"],    "急漲",     ref
+    if dist_pct >= DIST_LOW_STRONG:    return HEALTH_COLORS["orange"], "強漲",     ref
+    if dist_pct >= DIST_LOW_NORMAL_HI: return HEALTH_COLORS["yellow"], "偏高反彈", ref
+    if dist_pct >= 8:                  return HEALTH_COLORS["green"],  "常態反彈", ref
+    if dist_pct >= DIST_LOW_AT_LOW:    return HEALTH_COLORS["blue"],   "近低位",   ref
     return HEALTH_COLORS["deep_blue"], "貼近低點", ref
 
 
 def _classify_return(pct: float, window: str) -> tuple[str, str, str]:
-    """Calibrated to TAIEX 2y distribution percentiles, not arbitrary round
-    numbers. Red ≈ top/bottom 5% (truly rare), orange ≈ top/bottom 15%
-    (notable), green = middle 70% (normal trend behavior)."""
+    """Symmetric coloring: same-magnitude up/down get same severity color.
+    Removed the old 'GREEN appears on BOTH sides of GRAY' bug.
+
+    Color sequence (descending value):
+        red → orange → green → gray → yellow → orange → red
+    """
     if window == "30d":
-        # TAIEX 30d: p5=-8.6, p25=-0.3, p75=+9, p95=+18
-        ref = "正常 -5%~+9% / 大漲 >+9% / 急漲 >+18%（基於加權指數 2 年分布）"
-        thresholds = [(18, "red",    "急漲"),
-                      ( 9, "orange", "大漲"),
-                      ( 3, "green",  "穩健上漲"),
-                      (-3, "gray",   "盤整"),
-                      (-5, "green",  "小跌"),
-                      (-10, "yellow","下跌"),
-                      (-18, "orange","大跌")]
+        big_up, extreme_up   = RET_30_BIG_UP,   RET_30_EXTREME_UP
+        big_down, extreme_dn = RET_30_BIG_DOWN, RET_30_EXTREME_DOWN
+        ref = (f"常態 -3%~+{RET_30_BIG_UP:.0f}% / 大漲 >+{RET_30_BIG_UP:.0f}% / "
+               f"急漲 >+{RET_30_EXTREME_UP:.0f}%（基於加權指數 2 年分布）")
     else:  # 60d
-        # TAIEX 60d: p5=-10, p25=-0.2, p75=+15.6, p95=+24.4
-        ref = "正常 -7%~+16% / 大漲 >+16% / 急漲 >+25%（基於加權指數 2 年分布）"
-        thresholds = [(25, "red",    "急漲"),
-                      (16, "orange", "大漲"),
-                      ( 5, "green",  "穩健上漲"),
-                      (-5, "gray",   "盤整"),
-                      (-10, "green", "小跌"),
-                      (-18, "yellow","下跌"),
-                      (-25, "orange","大跌")]
-    for thresh, color_key, tag in thresholds:
-        if pct >= thresh:
-            return HEALTH_COLORS[color_key], tag, ref
+        big_up, extreme_up   = RET_60_BIG_UP,   RET_60_EXTREME_UP
+        big_down, extreme_dn = RET_60_BIG_DOWN, RET_60_EXTREME_DOWN
+        ref = (f"常態 -6%~+{RET_60_BIG_UP:.0f}% / 大漲 >+{RET_60_BIG_UP:.0f}% / "
+               f"急漲 >+{RET_60_EXTREME_UP:.0f}%（基於加權指數 2 年分布）")
+
+    if pct >= extreme_up:     return HEALTH_COLORS["red"],    "急漲",     ref
+    if pct >= big_up:         return HEALTH_COLORS["orange"], "大漲",     ref
+    if pct >=  3.0:           return HEALTH_COLORS["green"],  "穩健上漲", ref
+    if pct >  -3.0:           return HEALTH_COLORS["gray"],   "盤整",     ref
+    if pct >   big_down:      return HEALTH_COLORS["yellow"], "下跌",     ref      # was green (bug)
+    if pct >   extreme_dn:    return HEALTH_COLORS["orange"], "大跌",     ref
     return HEALTH_COLORS["red"], "重挫", ref
 
 
 def _classify_acceleration(accel: float) -> tuple[str, str, str]:
-    """Calibrated to TAIEX 2y acceleration distribution:
-        p25=-6, p75=+8.5, p90=+16, p95=+21, p99=+30.
-
-    Old +5pp = RED fired on 60% of days. New +20pp = RED is the actual
-    top ~5% (genuinely rare parabolic move)."""
-    ref = "正常 -8~+9pp / 明顯加速 >+10pp / 強烈加速 >+20pp（基於加權指數 2 年分布）"
-    if accel >=  20: return HEALTH_COLORS["red"],       "強烈加速", ref
-    if accel >=  10: return HEALTH_COLORS["orange"],    "明顯加速", ref
-    if accel >=  -9: return HEALTH_COLORS["green"],     "穩定",     ref
-    if accel >= -16: return HEALTH_COLORS["blue"],      "明顯減速", ref
+    """Uses ACCEL_* constants (same ones consumed by composite tag + insight)."""
+    ref = (f"常態 ±10pp / 明顯加速 >+{ACCEL_NOTABLE:.0f}pp / "
+           f"強烈加速 >+{ACCEL_EXTREME:.0f}pp（基於加權指數 2 年分布）")
+    if accel >= ACCEL_EXTREME:        return HEALTH_COLORS["red"],       "強烈加速", ref
+    if accel >= ACCEL_NOTABLE:        return HEALTH_COLORS["orange"],    "明顯加速", ref
+    if accel >  ACCEL_NOTABLE_DOWN:   return HEALTH_COLORS["green"],     "穩定",     ref
+    if accel >  ACCEL_EXTREME_DOWN:   return HEALTH_COLORS["blue"],      "明顯減速", ref
     return HEALTH_COLORS["deep_blue"], "急轉", ref
 
 
 def _classify_volatility(vol_pct: float, vol_percentile: float | None) -> tuple[str, str, str]:
-    """Calibrated to TAIEX 2y 20d-vol: p25=15.6, p50=18, p75=24, p95=47.
-    Old 30%=RED fired on 12% of days; new 35%=RED is closer to top 10%."""
-    ref = "加權指數中位 ~18% / 偏高 >24% / 高波動 >35%（基於 2 年分布）"
-    if vol_pct >= 35:   return HEALTH_COLORS["red"],    "高波動",     ref
-    if vol_pct >= 24:   return HEALTH_COLORS["orange"], "偏高",       ref
-    if vol_pct >= 13:   return HEALTH_COLORS["green"],  "正常",       ref
+    """Uses VOL_* constants. Insight thresholds match classifier exactly."""
+    ref = (f"加權指數中位 ~18% / 偏高 >{VOL_HIGH_ABS:.0f}% / "
+           f"高波動 >{VOL_EXTREME_ABS:.0f}%（基於 2 年分布）")
+    if vol_pct >= VOL_EXTREME_ABS:    return HEALTH_COLORS["red"],    "高波動",     ref
+    if vol_pct >= VOL_HIGH_ABS:       return HEALTH_COLORS["orange"], "偏高",       ref
+    if vol_pct >= VOL_LOW_ABS:        return HEALTH_COLORS["green"],  "正常",       ref
     # Low vol — check percentile for "complacent top" warning
     if vol_percentile is not None and vol_percentile < 25:
         return HEALTH_COLORS["yellow"], "低波動（複雜頂風險）", ref
@@ -316,26 +376,26 @@ def _classify_volatility(vol_pct: float, vol_percentile: float | None) -> tuple[
 def _momentum_composite(ret_30: float, ret_60: float, accel: float) -> tuple[str, str]:
     """Collapse three momentum numbers into one descriptive tag.
 
-    Returns (tag, color_hex). Tone is descriptive, not alarming —
-    'high speed + accelerating' instead of '🚨 parabolic warning'.
+    Uses the SAME thresholds as _classify_return / _classify_acceleration so
+    the composite tag can never contradict the per-metric tiles. (Old version
+    used standalone +2pp / +5pp thresholds while the classifier had moved to
+    +10pp / +20pp — same accel value would show GREEN '穩定' in the tile and
+    RED '加速中' in the composite.)
     """
-    if ret_30 > 8 and accel > 2:
-        return ("高速且加速", "#dc2626")
-    if ret_30 > 8 and accel < -2:
-        return ("高速但減速",  "#f97316")
-    if ret_30 > 8:
-        return ("穩定高速",   "#facc15")
-    if ret_30 < -8 and accel < -5:
-        return ("急跌且加速",  "#dc2626")
-    if ret_30 < -8 and accel > 2:
-        return ("急跌但減速",  "#0ea5e9")
-    if ret_30 < -8:
-        return ("穩定下行",   "#0ea5e9")
-    if accel > 5:
-        return ("加速中",      "#f97316")
-    if accel < -5:
-        return ("減速中",      "#0ea5e9")
-    return ("穩定",            "#22c55e")
+    big_up   = ret_30 >  RET_30_BIG_UP
+    big_down = ret_30 <  RET_30_BIG_DOWN
+    accel_up   = accel >  ACCEL_NOTABLE
+    accel_down = accel <  ACCEL_NOTABLE_DOWN
+
+    if big_up and accel_up:                  return ("高速且加速", "#dc2626")
+    if big_up and accel_down:                return ("高速但減速", "#f97316")
+    if big_up:                               return ("穩定高速",   "#facc15")
+    if big_down and accel_down:              return ("急跌且加速", "#dc2626")
+    if big_down and accel_up:                return ("急跌但減速", "#0ea5e9")
+    if big_down:                             return ("穩定下行",   "#0ea5e9")
+    if accel_up:                             return ("加速中",     "#f97316")
+    if accel_down:                           return ("減速中",     "#0ea5e9")
+    return ("穩定",                                                 "#22c55e")
 
 
 # ─── rendering blocks ─────────────────────────────────────────────────────
@@ -447,7 +507,8 @@ def _breadth_narrative(stretched_names: list[str],
         return (f"**{_join(compressed_names)}** 處於自身歷史低位區間；"
                 f"其餘 {total - n_compressed} 個指數中性 — 全球大盤偏冷。")
 
-    # Stretch cases — the common ones
+    # Stretch cases — graded by share of indices stretched (smoother than the
+    # old "<=total//2 → 局部, > total//2 → 接近全面" jump at exactly 3/5).
     if n_stretched == 0:
         return f"{total} 個指數全部位於中性區間 — 全球大盤未過熱。"
     if n_stretched == total:
@@ -455,12 +516,16 @@ def _breadth_narrative(stretched_names: list[str],
     if n_stretched == 1:
         return (f"**僅 {_join(stretched_names)}** 處於自身歷史高位區間；"
                 f"其餘 {total - 1} 個指數仍中性 — **局部現象，非全球同步**。")
-    if n_stretched <= total // 2:
+    share = n_stretched / total
+    if share <= 0.40:        # 1-2 of 5
         return (f"**熱點集中於 {_join(stretched_names)}**；"
                 f"**{_join(neutral_names)}** 仍在中性區間 — "
                 f"**全球大盤尚未全面過熱**。")
+    if share <= 0.70:        # 3-4 of 5
+        return (f"**{_join(stretched_names)}** 已拉伸（多市場同步）；"
+                f"{_join(neutral_names)} 仍中性 — 偏熱範圍正在擴大。")
     return (f"**{_join(stretched_names)}** 已拉伸；"
-            f"僅 {_join(neutral_names) or '少數'} 仍中性 — 接近全面偏熱。")
+            f"僅 {_join(neutral_names) or '少數'} 仍中性 — **接近全面偏熱**。")
 
 
 def _render_stretch_normalized() -> dict:
@@ -479,9 +544,10 @@ def _render_stretch_normalized() -> dict:
     )
 
     rows: list[dict] = []
-    stretched_names:  list[str] = []   # z >= +2.0, roughly top 5% for TAIEX trailing stretch z
-    neutral_names:    list[str] = []   # -2.0 < z < +2.0
-    compressed_names: list[str] = []   # z <= -2.0
+    stretched_names:  list[str] = []   # z >= Z_ELEVATED → cell labeled "偏高" / "高位"
+    neutral_names:    list[str] = []   # in between
+    compressed_names: list[str] = []   # z <= Z_DEPRESSED → cell labeled "偏低" / "低位"
+    tw_z_score: float | None = None
     for ticker, name in CROSS_ASSET_INDICES:
         df = db.get_prices(ticker)
         if df.empty:
@@ -496,11 +562,17 @@ def _render_stretch_normalized() -> dict:
             "z-score":  z,
             "判斷":     _zscore_label(z),
         })
+        if ticker == "^TWII":
+            tw_z_score = z
         if z is None:
             continue
-        if z >=  2.0:
+        # Counts use the SAME threshold the cell-label uses, so the breadth
+        # narrative can never disagree with the visible table. (Bug 2 fix:
+        # was z>=2.0 here but cell labelled "偏高" at z>=1.5, causing
+        # 'all normal' narrative beneath an orange-tinted row.)
+        if z >= Z_ELEVATED:
             stretched_names.append(name)
-        elif z <= -2.0:
+        elif z <= Z_DEPRESSED:
             compressed_names.append(name)
         else:
             neutral_names.append(name)
@@ -554,6 +626,7 @@ def _render_stretch_normalized() -> dict:
         "neutral_names":    neutral_names,
         "compressed_names": compressed_names,
         "rows":             rows,
+        "tw_z":             tw_z_score,   # explicit, no string-match fragility
     }
 
 
@@ -623,21 +696,22 @@ def _render_speed_panel(taiex: pd.Series) -> dict:
         unsafe_allow_html=True,
     )
 
-    # End-of-section insight — synthesize the four momentum metrics
+    # End-of-section insight — uses the SAME constants as the tile classifiers
+    # so insight text and tile color/tag never contradict each other.
     speed_parts = []
-    if ret_30 > 15:
+    if ret_30 >= RET_30_EXTREME_UP:
         speed_parts.append(f"近 30 天 +{ret_30:.1f}% 屬急漲區間")
-    elif ret_30 > 8:
+    elif ret_30 >= RET_30_BIG_UP:
         speed_parts.append(f"近 30 天 +{ret_30:.1f}% 漲幅偏大")
-    elif ret_30 < -8:
+    elif ret_30 <= RET_30_BIG_DOWN:
         speed_parts.append(f"近 30 天 {ret_30:+.1f}% 跌幅偏大")
-    if accel > 5:
+    if accel >= ACCEL_NOTABLE:
         speed_parts.append(f"加速度 +{accel:.1f}pp 顯示拋物線型上漲（近期比前期更快）")
-    elif accel < -5:
+    elif accel <= ACCEL_NOTABLE_DOWN:
         speed_parts.append(f"加速度 {accel:+.1f}pp 顯示動能急速轉弱")
-    if cur_vol is not None and vol_pct is not None and cur_vol < 12 and vol_pct < 25:
+    if cur_vol is not None and vol_pct is not None and cur_vol < VOL_LOW_ABS and vol_pct < 25:
         speed_parts.append("波動率位於 1 年低位，市場集體鬆懈（複雜頂風險）")
-    elif cur_vol is not None and cur_vol > 25:
+    elif cur_vol is not None and cur_vol >= VOL_HIGH_ABS:
         speed_parts.append(f"波動率 {cur_vol:.0f}% 偏高，市場意見分歧")
 
     if speed_parts:
@@ -717,30 +791,32 @@ def _render_chart_with_regimes(taiex: pd.Series) -> None:
 
 def _render_summary_card(taiex: pd.Series,
                          stretch_info: dict,
-                         speed_info: dict) -> None:
+                         speed_info: dict,
+                         headline_info: dict | None = None) -> None:
     """Single plain-text interpretation combining all section signals.
+
+    Receives precomputed values from upstream sections so it never
+    re-derives metrics that might drift from the headline tile display.
 
     No alarms, no 🚨 — descriptive only. The page deliberately stops
     short of saying "buy" or "sell"; it leaves that to the reader.
     """
     st.markdown("### 📋 綜合解讀")
 
-    # Pull TAIEX's own z-score out of the stretch table
-    tw_z = None
-    tw_stretch = None
-    for r in stretch_info.get("rows", []):
-        if "TWII" in r["指數"]:
-            tw_z = r["z-score"]
-            tw_stretch = r["距 MA200"]
-            break
+    # Pull TAIEX z-score directly (no fragile string match on row labels)
+    tw_z: float | None = stretch_info.get("tw_z")
 
     # Compose state line + interpretation
     parts: list[str] = []
 
-    # Level descriptor
-    h_252 = float(taiex.iloc[-252:].max()) if len(taiex) >= 252 else float(taiex.max())
-    cur   = float(taiex.iloc[-1])
-    dist_1y = (cur - h_252) / h_252 * 100 if h_252 > 0 else 0
+    # Level descriptor — use headline's precomputed dist_1y_hi if available,
+    # otherwise recompute. (Bug 11: previously always recomputed and risked
+    # divergence if the formula in _render_headline ever changed.)
+    dist_1y = headline_info.get("dist_1y_hi") if headline_info else None
+    if dist_1y is None:
+        h_252 = float(taiex.iloc[-252:].max()) if len(taiex) >= 252 else float(taiex.max())
+        cur   = float(taiex.iloc[-1])
+        dist_1y = (cur - h_252) / h_252 * 100 if h_252 > 0 else 0
     if dist_1y >= -0.5:
         parts.append("接近 1 年高點")
     elif dist_1y >= -5:
@@ -750,21 +826,24 @@ def _render_summary_card(taiex: pd.Series,
     else:
         parts.append("遠離 1 年高點")
 
-    # Speed descriptor — pull from the composite tag
+    # Speed descriptor — drop dead .lower() (no-op on Chinese)
     tag = speed_info.get("tag")
     if tag:
-        parts.append(tag.lower())
+        parts.append(tag)
 
-    # TAIEX stretch descriptor
-    if tw_z is not None:
-        if tw_z >= 2:
-            parts.append(f"加權指數拉伸 z={tw_z:+.1f}（自身高位）")
-        elif tw_z >= 1:
-            parts.append(f"加權指數拉伸 z={tw_z:+.1f}（自身偏高）")
-        elif tw_z >= -1:
-            parts.append(f"加權指數拉伸 z={tw_z:+.1f}（中性）")
-        else:
-            parts.append(f"加權指數拉伸 z={tw_z:+.1f}（偏低）")
+    # TAIEX stretch descriptor — uses SAME Z_* constants as the table
+    if tw_z is None:
+        parts.append("加權指數 z-score 暫不可用")
+    elif tw_z >= Z_EXTREME:
+        parts.append(f"加權指數拉伸 z={tw_z:+.1f}（自身高位）")
+    elif tw_z >= Z_ELEVATED:
+        parts.append(f"加權指數拉伸 z={tw_z:+.1f}（自身偏高）")
+    elif tw_z >  Z_DEPRESSED:
+        parts.append(f"加權指數拉伸 z={tw_z:+.1f}（中性）")
+    elif tw_z >  Z_VERY_DEPRESSED:
+        parts.append(f"加權指數拉伸 z={tw_z:+.1f}（偏低）")
+    else:
+        parts.append(f"加權指數拉伸 z={tw_z:+.1f}（低位）")
 
     # Breadth descriptor — use the same data-driven names as the section above
     stretched = stretch_info.get("stretched_names", [])
@@ -784,16 +863,21 @@ def _render_summary_card(taiex: pd.Series,
 
     state_line = "**市場狀態**：" + "　·　".join(parts)
 
-    # Interpretation paragraph — graded based on how many signals align
-    accel = speed_info.get("accel", 0) or 0
-    high_stretch    = tw_z is not None and tw_z >=  1.5
-    extreme_stretch = tw_z is not None and tw_z >=  2.0
-    low_stretch     = tw_z is not None and tw_z <= -1.5
-    fast            = accel >  2
-    declining_fast  = accel < -5
+    # Interpretation — uses unified Z_* and ACCEL_* constants so it cannot
+    # contradict the per-metric tiles. (Bug 3 fix: previously had its own
+    # 1.5 / 2.0 / 1.0 thresholds, drifting from the table.)
+    accel    = speed_info.get("accel", 0) or 0
+    high_stretch    = tw_z is not None and tw_z >= Z_ELEVATED
+    extreme_stretch = tw_z is not None and tw_z >= Z_EXTREME
+    low_stretch     = tw_z is not None and tw_z <= Z_DEPRESSED
+    fast            = accel >= ACCEL_NOTABLE
+    declining_fast  = accel <= ACCEL_NOTABLE_DOWN
     breadth_ok      = ns >= 2
 
-    if extreme_stretch and fast and breadth_ok:
+    if tw_z is None:
+        # Bug 6 fix: don't silently fall to "neutral" when data is missing
+        interp = "**解讀**：加權指數 z-score 暫不可用（資料不足），無法綜合判讀。"
+    elif extreme_stretch and fast and breadth_ok:
         interp = (
             "**解讀**：拉伸高位 + 加速上漲 + 多市場同步三者俱備。"
             "歷史上類似情境的拉回風險顯著升高，但**並非單一賣出訊號**，"
@@ -851,10 +935,12 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
         return
     taiex = taiex_df.set_index("date")["close"].dropna()
 
-    # "As of" date banner — important because viewing on a weekend / holiday
-    # could mislead readers into thinking this is intraday data
+    # "As of" date banner — TZ-aware so a US-deployed server still uses TW
+    # market day (Bug 15). Chinese weekday so the banner matches the page (Bug 16).
+    WEEKDAY_ZH = {0: "週一", 1: "週二", 2: "週三", 3: "週四",
+                  4: "週五", 5: "週六", 6: "週日"}
     as_of_date = taiex.index[-1].date()
-    today      = pd.Timestamp.today().date()
+    today      = pd.Timestamp.now(tz="Asia/Taipei").date()
     days_stale = (today - as_of_date).days
     if days_stale == 0:
         freshness = "今日收盤"
@@ -868,17 +954,18 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
     else:
         freshness = f"⚠ {days_stale} 天前收盤（資料可能未更新，請檢查 step3 排程）"
         bg_color, text_color = "rgba(249,115,22,0.15)", "#fdba74"
+    weekday_zh = WEEKDAY_ZH[as_of_date.weekday()]
     st.markdown(
         f"""<div style="padding:0.55rem 1rem; margin:0.4rem 0 1rem 0;
                       background:{bg_color}; border-radius:4px;
                       font-size:0.92rem; color:{text_color};">
-              📅 <b>資料截至</b>　{as_of_date.strftime('%Y-%m-%d')}　({as_of_date.strftime('%A')})　·　{freshness}
+              📅 <b>資料截至</b>　{as_of_date.strftime('%Y-%m-%d')}　({weekday_zh})　·　{freshness}
             </div>""",
         unsafe_allow_html=True,
     )
 
-    # 1. Market Level
-    _render_headline(taiex)
+    # 1. Market Level — capture return dict so summary can reuse it (Bug 11)
+    headline_info = _render_headline(taiex)
     st.markdown("---")
 
     # 2. Stretch (normalised) + breadth tally
@@ -893,5 +980,5 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
     _render_chart_with_regimes(taiex)
     st.markdown("---")
 
-    # 5. Summary card — combines all section signals into plain text
-    _render_summary_card(taiex, stretch_info, speed_info)
+    # 5. Summary card — receives precomputed headline/stretch/speed values
+    _render_summary_card(taiex, stretch_info, speed_info, headline_info)
