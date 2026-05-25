@@ -4,8 +4,7 @@ import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date, datetime, timedelta, timezone
-from functools import lru_cache
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from zoneinfo import ZoneInfo
@@ -605,100 +604,119 @@ def _fetch_twse_realtime_quote(symbol, country=None, timeout=5):
     return None
 
 
-# ─── NYSE holiday calendar ─────────────────────────────────────────────────
-# Yahoo's `marketSession` field is purely time-based (4-9:30 AM ET = "PRE",
-# 9:30-16:00 = "REG", 16:00-20:00 = "POST"). It does NOT account for US
-# market holidays — on Memorial Day, Independence Day, etc. Yahoo still
-# reports "PRE" at 6 AM ET even though the market is fully closed all day.
-# These helpers add the holiday calendar so we can override session to
-# "CLOSE" on full-closure days.
+# ─── US trading-day detection via Yahoo heartbeat ──────────────────────────
+# Instead of maintaining a hardcoded holiday calendar (which needs yearly
+# updates as new holidays are added — Juneteenth in 2022, etc.), check
+# whether NVDA shows any market activity today. NVDA is the most-traded
+# US stock with continuous pre/regular/post sessions every trading day,
+# so its quote timestamps are a reliable heartbeat:
+#   • Today's pre/regular/post timestamp exists → today IS a trading day
+#   • Only timestamps from previous days → today is holiday/weekend
+# Cached per-day so we don't hit Yahoo on every quote refresh.
 
-def _easter_sunday(year: int) -> date:
-    """Computus (Gauss) algorithm — Easter Sunday for Gregorian year."""
-    a = year % 19
-    b, c = divmod(year, 100)
-    d, e = divmod(b, 4)
-    f = (b + 8) // 25
-    g = (b - f + 1) // 3
-    h = (19 * a + b - d - g + 15) % 30
-    i, k = divmod(c, 4)
-    l = (32 + 2 * e + 2 * i - h - k) % 7
-    m = (a + 11 * h + 22 * l) // 451
-    month = (h + l - 7 * m + 114) // 31
-    day = ((h + l - 7 * m + 114) % 31) + 1
-    return date(year, month, day)
+# Cache structure: {date: us_date, result: bool, fetched_at: utc_datetime}
+_US_TRADING_CACHE: dict = {}
+# Re-check after this long when cached result is False — handles the edge
+# case where the bot starts at 3 AM ET (before pre-market opens at 4 AM)
+# and would otherwise cache "closed" for the rest of the day.
+_NEGATIVE_CACHE_TTL = timedelta(minutes=15)
 
 
-def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
-    """Nth occurrence of weekday (Mon=0) in year/month."""
-    first = date(year, month, 1)
-    offset = (weekday - first.weekday()) % 7
-    return first + timedelta(days=offset + 7 * (n - 1))
+def _is_us_trading_today():
+    """Return True if NVDA shows any timestamp from today's US date.
+    Returns False on holidays/weekends. Returns None if we can't reach
+    Yahoo (caller should treat as "unknown — fail open / assume open")."""
+    now_et = datetime.now(ZoneInfo("America/New_York"))
+    today_us = now_et.date()
 
+    # Weekend short-circuit (no Yahoo call needed)
+    if now_et.weekday() >= 5:
+        return False
 
-def _last_weekday(year: int, month: int, weekday: int) -> date:
-    if month == 12:
-        last = date(year, 12, 31)
-    else:
-        last = date(year, month + 1, 1) - timedelta(days=1)
-    offset = (last.weekday() - weekday) % 7
-    return last - timedelta(days=offset)
+    cached_date   = _US_TRADING_CACHE.get("date")
+    cached_result = _US_TRADING_CACHE.get("result")
+    cached_at     = _US_TRADING_CACHE.get("fetched_at")
 
-
-def _observed_date(d: date) -> date:
-    """Sat → observed Fri; Sun → observed Mon. NYSE convention."""
-    if d.weekday() == 5:                  # Saturday
-        return d - timedelta(days=1)
-    if d.weekday() == 6:                  # Sunday
-        return d + timedelta(days=1)
-    return d
-
-
-@lru_cache(maxsize=32)
-def _nyse_full_close_dates(year: int) -> frozenset:
-    """Set of dates when NYSE is fully closed (does NOT include half-days)."""
-    days = {
-        _observed_date(date(year, 1, 1)),                    # New Year's Day
-        _nth_weekday(year, 1, weekday=0, n=3),               # MLK Day
-        _nth_weekday(year, 2, weekday=0, n=3),               # Presidents' Day
-        _easter_sunday(year) - timedelta(days=2),            # Good Friday
-        _last_weekday(year, 5, weekday=0),                   # Memorial Day
-        _observed_date(date(year, 7, 4)),                    # Independence Day
-        _nth_weekday(year, 9, weekday=0, n=1),               # Labor Day
-        _nth_weekday(year, 11, weekday=3, n=4),              # Thanksgiving
-        _observed_date(date(year, 12, 25)),                  # Christmas
-    }
-    if year >= 2022:
-        days.add(_observed_date(date(year, 6, 19)))          # Juneteenth (since 2022)
-    return frozenset(days)
-
-
-def _is_us_market_closed_today(now_et: datetime | None = None) -> bool:
-    """Return True if today (US Eastern) is a weekend OR NYSE full-closure day."""
-    now = now_et or datetime.now(ZoneInfo("America/New_York"))
-    if now.weekday() >= 5:                              # Sat or Sun
+    # Positive cache: trusted for the whole day (NVDA can't un-trade)
+    if cached_date == today_us and cached_result is True:
         return True
-    return now.date() in _nyse_full_close_dates(now.year)
+    # Negative cache: trusted briefly — re-check after TTL in case pre-market
+    # just opened since our last check (e.g. checked at 3:55 AM, market opens
+    # at 4:00 AM, we don't want to keep returning False all day)
+    if (cached_date == today_us
+        and cached_result is False
+        and cached_at
+        and (datetime.now(timezone.utc) - cached_at) < _NEGATIVE_CACHE_TTL):
+        return False
+
+    # Ask Yahoo for NVDA's current quote
+    try:
+        res = requests.get(
+            YAHOO_CHART_URL.format(symbol="NVDA"),
+            params={"range": "1d", "interval": "1m"},
+            headers=HEADERS, timeout=10,
+        )
+        res.raise_for_status()
+        result = (res.json().get("chart", {}).get("result") or [None])[0]
+        if not result:
+            return None
+        meta = result.get("meta", {})
+        # Any of these timestamps falling on today's US date proves activity
+        for field in ("preMarketTime", "regularMarketTime", "postMarketTime"):
+            ts = meta.get(field)
+            if not ts:
+                continue
+            try:
+                ts_dt = datetime.fromtimestamp(int(ts), ZoneInfo("America/New_York"))
+            except (ValueError, OSError):
+                continue
+            if ts_dt.date() == today_us:
+                _US_TRADING_CACHE.update({
+                    "date": today_us, "result": True,
+                    "fetched_at": datetime.now(timezone.utc),
+                })
+                return True
+        # No activity today on NVDA → today is a holiday / weekend / pre-open
+        _US_TRADING_CACHE.update({
+            "date": today_us, "result": False,
+            "fetched_at": datetime.now(timezone.utc),
+        })
+        return False
+    except Exception as exc:
+        print(f"[us-trading-check] NVDA heartbeat failed: {exc}")
+        return None    # fail open — caller treats None as "unknown, assume open"
+
+
+def _is_us_market_closed_today() -> bool:
+    """True if US market is DEFINITIVELY closed today (holiday or weekend).
+    Returns False on uncertainty so we never accidentally mark a trading
+    day as closed."""
+    result = _is_us_trading_today()
+    if result is None:
+        return False    # unknown → fail open (don't risk mislabelling a real session)
+    return not result
 
 
 def _adjusted_market_session(country, raw_session):
     """Override Yahoo's time-based marketSession to 'CLOSE' on US holidays.
-    Yahoo doesn't know about Memorial Day etc. — it'll happily say 'PRE'
-    at 6 AM ET even when the market is fully closed for the day. Without
-    this override the LINE card shows '盤前' with a stale Friday change %."""
+    Yahoo's marketSession is purely time-of-day based — at 6 AM ET on
+    Memorial Day it still says 'PRE'. We override using a real heartbeat
+    check against NVDA's timestamps (see _is_us_trading_today)."""
     if str(country or "").upper() == "US" and _is_us_market_closed_today():
         return "CLOSE"
     return raw_session
 
 
 def _session_for_us_timestamp(timestamp):
+    """Classify a US quote timestamp into PRE/REG/POST/CLOSE by time-of-day.
+    Doesn't itself need a holiday check — if Yahoo returned a stale Friday
+    timestamp because today is a holiday, this function correctly classifies
+    that Friday timestamp as POST_CLOSE. The holiday override only matters
+    for Yahoo's marketSession field, which IS time-of-day based and would
+    say PRE on a holiday morning. See _adjusted_market_session."""
     try:
         dt = datetime.fromtimestamp(int(timestamp), ZoneInfo("America/New_York"))
     except Exception:
-        return "CLOSE"
-    # Holiday short-circuit — Yahoo's session classification ignores the
-    # calendar, so even on Memorial Day it'd return PRE/REG/POST by time.
-    if dt.date() in _nyse_full_close_dates(dt.year):
         return "CLOSE"
     minutes = dt.hour * 60 + dt.minute
     if dt.weekday() < 5 and 4 * 60 <= minutes < 9 * 60 + 30:
