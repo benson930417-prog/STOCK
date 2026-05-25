@@ -287,21 +287,21 @@ def _classify_regime(label_zh: str, days: int | None,
         mature    = (days is not None and days >= 180)
         moderate  = (days is not None and days >= 90)
         if near_high and mature:
-            return HEALTH_COLORS["red"],    "成熟多頭近高點", "多頭近高點+持續>180天 → 拉回機率明顯升高"
+            return HEALTH_COLORS["red"],    "成熟多頭近高點", "多頭近高點 + 持續 >180 交易日 → 拉回機率明顯升高"
         if near_high:
-            return HEALTH_COLORS["orange"], "多頭近高點",     "多頭近 1 年高點 → 拉回風險偏高"
+            return HEALTH_COLORS["orange"], "多頭近高點",     "多頭接近 1 年高點 → 拉回風險偏高"
         if mature:
-            return HEALTH_COLORS["yellow"], "延長多頭",       "多頭持續超過 180 天屬延長階段"
+            return HEALTH_COLORS["yellow"], "延長多頭",       "多頭持續超過 180 交易日屬延長階段"
         if moderate:
-            return HEALTH_COLORS["green"],  "成熟多頭",       "多頭通常持續 50~200 天"
-        return HEALTH_COLORS["green"],      "健康上升",       "多頭通常持續 50~200 天"
+            return HEALTH_COLORS["green"],  "成熟多頭",       "多頭通常持續 50~200 個交易日"
+        return HEALTH_COLORS["green"],      "健康上升",       "多頭通常持續 50~200 個交易日"
 
     if label_zh == "小熊":
-        return HEALTH_COLORS["yellow"], "短期修正", "小熊通常 5~20 天"
+        return HEALTH_COLORS["yellow"], "短期修正", "小熊通常 5~20 個交易日"
     if label_zh == "中熊":
-        return HEALTH_COLORS["orange"], "中期回檔", "中熊通常 20~60 天"
+        return HEALTH_COLORS["orange"], "中期回檔", "中熊通常 20~60 個交易日"
     if label_zh == "大熊":
-        return HEALTH_COLORS["red"],    "深度熊市", "大熊通常 30~150 天"
+        return HEALTH_COLORS["red"],    "深度熊市", "大熊通常 30~150 個交易日"
     return HEALTH_COLORS["gray"], label_zh, ""
 
 
@@ -407,9 +407,11 @@ def _momentum_composite(ret_30: float, ret_60: float, accel: float) -> tuple[str
 
 
 # ─── rendering blocks ─────────────────────────────────────────────────────
-def _render_headline(taiex: pd.Series) -> dict:
+def _render_headline(taiex: pd.Series, regimes_df: pd.DataFrame) -> dict:
     """Market Level — colored lab-report metrics + end-of-section insight.
-    Returns a dict so the summary card can reuse the computed values."""
+    Returns a dict so the summary card can reuse the computed values.
+    `regimes_df` is computed once upstream and passed in (Bug 13 fix:
+    was being recomputed in every render function)."""
     if taiex is None or len(taiex) < 2:
         st.warning("加權指數資料不足，無法顯示。")
         return {}
@@ -418,17 +420,22 @@ def _render_headline(taiex: pd.Series) -> dict:
     prev    = float(taiex.iloc[-2])
     day_pct = (current - prev) / prev * 100.0
 
-    regimes_df = _compute_regimes_live(threshold_pct=4.0)
     cur_regime_label = "—"
     cur_regime_days  = None
-    if not regimes_df.empty:
+    if regimes_df is not None and not regimes_df.empty:
         today_ts = taiex.index[-1]
         ongoing = regimes_df[
             (regimes_df["start_date"] <= today_ts) & (regimes_df["end_date"] >= today_ts)
         ]
         leg = ongoing.iloc[-1] if not ongoing.empty else regimes_df.iloc[-1]
         cur_regime_label = REGIME_LABELS_ZH.get(leg["regime"], leg["regime"])
-        cur_regime_days  = (today_ts - pd.Timestamp(leg["start_date"])).days
+        # Bug 18 fix: count TRADING days (not calendar days) by intersecting
+        # the leg window with the price-series index. Aligns with how
+        # _classify_regime's "mature ≥ 180" threshold was actually meant.
+        leg_start_ts = pd.Timestamp(leg["start_date"])
+        cur_regime_days = int(
+            ((taiex.index >= leg_start_ts) & (taiex.index <= today_ts)).sum()
+        )
 
     h_252 = float(taiex.iloc[-252:].max()) if len(taiex) >= 252 else float(taiex.max())
     l_60  = float(taiex.iloc[-60:].min())  if len(taiex) >=  60 else float(taiex.min())
@@ -450,7 +457,7 @@ def _render_headline(taiex: pd.Series) -> dict:
             c_day, s_day, r_day,
         )
     with c2:
-        days_str = f"已 {cur_regime_days} 天" if cur_regime_days is not None else "—"
+        days_str = f"已 {cur_regime_days} 交易日" if cur_regime_days is not None else "—"
         _render_health_metric(
             "當前規制（擺動 4%）",
             f"{cur_regime_label}　<span style='font-size:1.0rem'>{days_str}</span>",
@@ -478,7 +485,7 @@ def _render_headline(taiex: pd.Series) -> dict:
     elif dist_1y_hi <= -20:
         insight_parts.append(f"加權指數較高點回落 {abs(dist_1y_hi):.0f}%（已進入熊市區間）")
     if cur_regime_label == "多頭" and cur_regime_days and cur_regime_days >= 30:
-        insight_parts.append(f"處於多頭第 {cur_regime_days} 天，趨勢延續中")
+        insight_parts.append(f"處於多頭第 {cur_regime_days} 交易日，趨勢延續中")
     elif cur_regime_label in ("中熊", "大熊"):
         insight_parts.append(f"處於{cur_regime_label}規制，趨勢偏空")
     if dist_60_lo >= 25:
@@ -546,9 +553,10 @@ def _render_stretch_normalized() -> dict:
     st.markdown("### 🌍 趨勢拉伸（跨資產，自身分布標準化）")
     st.caption(
         "**距 MA200** = 與 200 日均線的距離。"
-        "**z-score** = 該距離在自身過去 2 年分布中的標準差位置。"
+        "**z-score** = 該距離在自身過去拉伸值分布中的標準差位置。"
         "因為 SOX 天生比道瓊波動大，比較原始百分比不公平 — "
         "z-score 把它們放在同一個量尺：**>+2 = 該資產自己歷史上的高位**。"
+        f"（樣本：MA200 起算後 ~14 個月的擺動分布；資料庫保留 2 年，前 200 天用於 MA 暖機。）"
     )
 
     rows: list[dict] = []
@@ -590,13 +598,23 @@ def _render_stretch_normalized() -> dict:
     df_show["_sort"] = df_show["z-score"].fillna(-9999)
     df_show = df_show.sort_values("_sort", ascending=False).drop(columns="_sort")
 
+    # Color BOTH the 距 MA200 and z-score columns using the row's z-score band,
+    # not the cell's raw value. Within one asset stretch% and z-score are
+    # colinear, so applying the z-band to the MA200 column gives consistent
+    # visual signal (Bug 19 fix: previously MA200 column had no color cue,
+    # which made the most visceral number on the row the least flagged).
+    def _row_style(row: pd.Series) -> list[str]:
+        z = row["z-score"]
+        style = _zscore_style(z)
+        return [style if col in ("距 MA200", "z-score") else "" for col in row.index]
+
     styled = (
         df_show.style
         .format({
             "距 MA200": lambda v: f"{v:+.1f}%" if pd.notna(v) else "—",
             "z-score":  lambda v: f"{v:+.2f}"  if pd.notna(v) else "—",
         })
-        .map(_zscore_style, subset=["z-score"])
+        .apply(_row_style, axis=1)
     )
     st.dataframe(styled, hide_index=True, width="stretch")
 
@@ -730,21 +748,11 @@ def _render_speed_panel(taiex: pd.Series) -> dict:
             "vol": cur_vol, "vol_pct": vol_pct, "tag": tag}
 
 
-def _render_chart_with_regimes(taiex: pd.Series) -> None:
+def _render_chart_with_regimes(taiex: pd.Series, regimes_df: pd.DataFrame) -> None:
+    """`regimes_df` passed in from upstream (Bug 13 fix: was being
+    recomputed here). Insight variables now computed inline at the
+    end where they're used (Bug 20)."""
     st.markdown("### 📊 加權指數 2 年走勢（含規制色塊）")
-    regimes_df = _compute_regimes_live(threshold_pct=4.0)
-
-    # End-of-chart insight — describe what the regime breakdown shows
-    if not regimes_df.empty:
-        n_bull   = (regimes_df["regime"] == "bull").sum()
-        n_corr   = (regimes_df["regime"] == "correction").sum()
-        n_minib  = (regimes_df["regime"] == "mini_bear").sum()
-        n_bigb   = (regimes_df["regime"] == "bear").sum()
-        # Find current (last) leg
-        last = regimes_df.iloc[-1]
-        cur_label = REGIME_LABELS_ZH.get(last["regime"], last["regime"])
-        cur_mag   = float(last["severity"])
-        days = (pd.Timestamp(last["end_date"]) - pd.Timestamp(last["start_date"])).days
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -788,12 +796,25 @@ def _render_chart_with_regimes(taiex: pd.Series) -> None:
     )
     st.plotly_chart(fig, width="stretch")
 
-    # End-of-chart insight — describe the regime breakdown
-    if not regimes_df.empty:
+    # End-of-chart insight — vars computed inline at point of use (Bug 20)
+    if regimes_df is not None and not regimes_df.empty:
+        n_bull  = int((regimes_df["regime"] == "bull").sum())
+        n_corr  = int((regimes_df["regime"] == "correction").sum())
+        n_minib = int((regimes_df["regime"] == "mini_bear").sum())
+        n_bigb  = int((regimes_df["regime"] == "bear").sum())
+        last      = regimes_df.iloc[-1]
+        cur_label = REGIME_LABELS_ZH.get(last["regime"], last["regime"])
+        cur_mag   = float(last["severity"])
+        # Bug 18: trading days, not calendar days
+        leg_start = pd.Timestamp(last["start_date"])
+        leg_end   = pd.Timestamp(last["end_date"])
+        n_trading_days = int(
+            ((taiex.index >= leg_start) & (taiex.index <= leg_end)).sum()
+        )
         _section_insight(
             f"過去 2 年加權指數共經歷 **{n_bull} 段多頭 / {n_corr} 段小熊 / "
             f"{n_minib} 段中熊 / {n_bigb} 段大熊**。"
-            f"目前處於最新的 **{cur_label}** 段（已 {days} 天，振幅 {cur_mag:+.1f}%）。"
+            f"目前處於最新的 **{cur_label}** 段（已 {n_trading_days} 交易日，振幅 {cur_mag:+.1f}%）。"
         )
 
 
@@ -972,8 +993,12 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
         unsafe_allow_html=True,
     )
 
+    # Compute regimes ONCE per render and pass to both sections that need it
+    # (Bug 13: was being recomputed 2-3 times, ~100ms wasted each call)
+    regimes_df = _compute_regimes_live(threshold_pct=4.0)
+
     # 1. Market Level — capture return dict so summary can reuse it (Bug 11)
-    headline_info = _render_headline(taiex)
+    headline_info = _render_headline(taiex, regimes_df)
     st.markdown("---")
 
     # 2. Stretch (normalised) + breadth tally
@@ -985,7 +1010,7 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
     st.markdown("---")
 
     # 4. Chart with regime overlay
-    _render_chart_with_regimes(taiex)
+    _render_chart_with_regimes(taiex, regimes_df)
     st.markdown("---")
 
     # 5. Summary card — receives precomputed headline/stretch/speed values
