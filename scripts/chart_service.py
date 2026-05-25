@@ -53,6 +53,16 @@ TRADINGVIEW_SCANNER_QUOTES = {
             {"scanner": "cfd", "symbol": "FXCM:USOIL"},
         ],
     },
+    # Bond (US 10Y yield) — symbol per user request is CBOT_MINI:10Y1! (micro
+    # 10-yr yield futures). TVC:US10Y is the cash yield CFD as a fallback —
+    # tracks within ~0.005 of the futures and uses TradingView's standard
+    # widget structure so scanner data is more reliable.
+    "bond": {
+        "candidates": [
+            {"scanner": "futures", "symbol": "CBOT_MINI:10Y1!"},
+            {"scanner": "cfd",     "symbol": "TVC:US10Y"},
+        ],
+    },
     "usdtwd": {"scanner": "forex", "symbol": "FX_IDC:USDTWD"},
     "usdjpy": {"scanner": "forex", "symbol": "OANDA:USDJPY"},
     "usdchf": {"scanner": "forex", "symbol": "OANDA:USDCHF"},
@@ -517,56 +527,83 @@ async def take_snapshot(req: SnapshotRequest):
         if "403 ERROR" in page_text or "The request could not be satisfied" in page_text:
             raise ValueError(f"TradingView page is blocked: {page_text[:300]}")
 
-        # Clip ONLY the chart canvas area (no header). Different TradingView
-        # symbol pages use different container names, so fall back to visible
-        # chart-like elements when the performance-chart wrapper is absent.
+        # Clip the chart area. TradingView uses DIFFERENT page templates for
+        # different symbol types:
+        #   • Forex / equities → "performance-chart-id" container
+        #   • Futures (e.g. CBOT_MINI:10Y1!) → "symbol-overview-chart" or
+        #     no named container, just a canvas inside the body
+        # So: try named containers in priority, then fall back to the LARGEST
+        # visible canvas on the page. Don't restrict by y-position (was 700)
+        # because futures pages render the price chart lower on the page.
         clip = await page.evaluate("""() => {
-            const chartContainer = document.querySelector('div[data-container-name="performance-chart-id"]');
             const visibleChartLike = (el) => {
                 const r = el.getBoundingClientRect();
-                if (r.width < 250 || r.height < 120 || r.top < 40 || r.top > 700) return false;
+                if (r.width < 250 || r.height < 120) return false;
+                if (r.top < 40) return false;   // skip the hidden header zone
                 const style = window.getComputedStyle(el);
-                return style && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0;
+                return style
+                    && style.display !== 'none'
+                    && style.visibility !== 'hidden'
+                    && Number(style.opacity || 1) > 0;
             };
+
+            // Try named containers in priority order — covers forex/equity AND
+            // futures/index page templates.
+            const containerSelectors = [
+                'div[data-container-name="performance-chart-id"]',
+                'div[data-container-name="symbol-overview-chart-container"]',
+                'div[data-container-name="symbol-page-chart"]',
+                'div[data-name="symbol-page-chart-section"]',
+                'div[class*="chartContainer"]',
+            ];
+            let chartContainer = null;
+            for (const sel of containerSelectors) {
+                const el = document.querySelector(sel);
+                if (el && visibleChartLike(el)) { chartContainer = el; break; }
+            }
+
+            // Get candidate graphic elements
             const graphicElements = chartContainer
                 ? Array.from(chartContainer.querySelectorAll('canvas, svg, iframe')).filter(visibleChartLike)
                 : Array.from(document.querySelectorAll('canvas, svg, iframe')).filter(visibleChartLike);
-            const containerElements = chartContainer
-                ? [chartContainer]
-                : Array.from(document.querySelectorAll([
-                    'div[class*="chart"]',
-                    'div[class*="Chart"]',
-                    'div[data-name*="chart"]',
-                    'div[data-name*="Chart"]'
-                ].join(','))).filter(visibleChartLike);
-            const elements = graphicElements.length ? graphicElements : containerElements;
-            const rects = elements
-                .map(el => el.getBoundingClientRect())
-                .filter(r => r.width > 250 && r.height > 120 && r.top > 40 && r.top < 700);
-            if (!rects.length) return null;
 
+            // Sort by area (largest first) — the price chart canvas is almost
+            // always the biggest graphic element on a symbol page.
+            const sorted = graphicElements
+                .map(el => ({el, r: el.getBoundingClientRect()}))
+                .sort((a, b) => (b.r.width * b.r.height) - (a.r.width * a.r.height));
+            if (!sorted.length) return null;
+
+            // Prefer the named container's rect if we found one (gives cleaner
+            // padding); otherwise the largest visible canvas.
             const bestRect = chartContainer
                 ? chartContainer.getBoundingClientRect()
-                : rects.sort((a, b) => (b.width * b.height) - (a.width * a.height))[0];
+                : sorted[0].r;
+
             const pad = 10;
-            const top = Math.max(0, bestRect.top - pad);
+            const top    = Math.max(0, bestRect.top - pad);
             const bottom = Math.min(window.innerHeight, bestRect.bottom + pad);
-            const left = Math.max(0, bestRect.left - pad);
-            const right = Math.min(window.innerWidth, bestRect.right + pad);
-            
-            return {
-                x: left,
-                y: top,
-                width: Math.max(250, right - left),
-                height: bottom - top
-            };
+            const left   = Math.max(0, bestRect.left - pad);
+            const right  = Math.min(window.innerWidth, bestRect.right + pad);
+
+            if (bottom - top < 120 || right - left < 250) return null;
+            return {x: left, y: top, width: right - left, height: bottom - top};
         }""")
-        
+
         if clip:
             await page.screenshot(path=filepath, clip=clip)
             print(f"  ✅ Snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
         else:
-            raise ValueError("TradingView performance chart container was not found")
+            # One last-resort attempt: scroll to top, give the chart a moment
+            # to render, then take a viewport screenshot. Better to show
+            # something than fail outright.
+            try:
+                await page.evaluate("window.scrollTo(0, 0)")
+                await asyncio.sleep(0.3)
+                await page.screenshot(path=filepath, full_page=False)
+                print(f"  ⚠ Snapshot fallback to full viewport: {filename}")
+            except Exception:
+                raise ValueError("TradingView performance chart container was not found")
         
         # --- Overlay Chinese title ---
         meta = CHART_META.get(req.key)
