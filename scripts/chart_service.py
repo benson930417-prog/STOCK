@@ -16,9 +16,9 @@ CHART_TABS = {
     "brent": "https://www.tradingview.com/symbols/RUS-BR1!/?timeframe=5D",
     "bond": "https://www.tradingview.com/symbols/TVC-US10Y/?timeframe=5D",
     "gold": "https://www.tradingview.com/symbols/GOLD/?timeframe=5D",
-    "usdtwd": "https://s.tradingview.com/widgetembed/?symbol=FX_IDC%3AUSDTWD&interval=60&range=5D&theme=light&style=1&timezone=Asia%2FTaipei&withdateranges=1&hide_side_toolbar=1&hide_top_toolbar=1&save_image=0&studies=[]",
-    "usdjpy": "https://s.tradingview.com/widgetembed/?symbol=OANDA%3AUSDJPY&interval=60&range=5D&theme=light&style=1&timezone=Asia%2FTaipei&withdateranges=1&hide_side_toolbar=1&hide_top_toolbar=1&save_image=0&studies=[]",
-    "usdchf": "https://s.tradingview.com/widgetembed/?symbol=OANDA%3AUSDCHF&interval=60&range=5D&theme=light&style=1&timezone=Asia%2FTaipei&withdateranges=1&hide_side_toolbar=1&hide_top_toolbar=1&save_image=0&studies=[]"
+    "usdtwd": "https://www.tradingview.com/symbols/FX_IDC-USDTWD/?timeframe=5D",
+    "usdjpy": "https://www.tradingview.com/symbols/OANDA-USDJPY/?timeframe=5D",
+    "usdchf": "https://www.tradingview.com/symbols/OANDA-USDCHF/?timeframe=5D"
 }
 
 # Chinese titles for each chart key
@@ -49,6 +49,10 @@ TRADINGVIEW_SCANNER_QUOTES = {
     "usdtwd": {"scanner": "forex", "symbol": "FX_IDC:USDTWD"},
     "usdjpy": {"scanner": "forex", "symbol": "OANDA:USDJPY"},
     "usdchf": {"scanner": "forex", "symbol": "OANDA:USDCHF"},
+    "bond": {
+        "scanners": ["bond", "america", "cfd"],
+        "symbol": "TVC:US10Y",
+    },
 }
 
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')
@@ -223,32 +227,43 @@ async def _fetch_tradingview_scanner_quote(page, key):
     config = TRADINGVIEW_SCANNER_QUOTES.get(key)
     if not config:
         return None
-    response = await page.request.post(
-        f"https://scanner.tradingview.com/{config['scanner']}/scan",
-        data={
-            "symbols": {"tickers": [config["symbol"]], "query": {"types": []}},
-            "columns": ["name", "close", "change", "change_abs", "currency"],
-        },
-        headers={"User-Agent": "Mozilla/5.0"},
-        timeout=10000,
-    )
-    if not response.ok:
-        raise ValueError(f"TradingView scanner HTTP {response.status}: {await response.text()}")
-    payload = await response.json()
-    rows = payload.get("data") or []
-    if not rows:
-        raise ValueError(f"TradingView scanner returned no rows for {config['symbol']}")
-    values = rows[0].get("d") or []
-    if len(values) < 4 or values[1] is None:
-        raise ValueError(f"TradingView scanner row missing close/change for {config['symbol']}: {values}")
-    return {
-        "price": float(values[1]),
-        "currency": values[4] if len(values) > 4 and values[4] else "",
-        "change_pct": float(values[2]) if values[2] is not None else None,
-        "change_abs": float(values[3]) if values[3] is not None else None,
-        "as_of_text": None,
-        "performance": {},
-    }
+    columns = ["name", "close", "change", "change_abs", "currency", "Perf.W", "Perf.1M", "Perf.6M"]
+    errors = []
+    for scanner in config.get("scanners") or [config["scanner"]]:
+        response = await page.request.post(
+            f"https://scanner.tradingview.com/{scanner}/scan",
+            data={
+                "symbols": {"tickers": [config["symbol"]], "query": {"types": []}},
+                "columns": columns,
+            },
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=10000,
+        )
+        if not response.ok:
+            errors.append(f"{scanner}: HTTP {response.status} {await response.text()}")
+            continue
+        payload = await response.json()
+        rows = payload.get("data") or []
+        if not rows:
+            errors.append(f"{scanner}: no rows")
+            continue
+        values = rows[0].get("d") or []
+        if len(values) < 4 or values[1] is None:
+            errors.append(f"{scanner}: missing close/change {values}")
+            continue
+        return {
+            "price": float(values[1]),
+            "currency": values[4] if len(values) > 4 and values[4] else "",
+            "change_pct": float(values[2]) if values[2] is not None else None,
+            "change_abs": float(values[3]) if values[3] is not None else None,
+            "as_of_text": None,
+            "performance": {
+                "5d": float(values[5]) if len(values) > 5 and values[5] is not None else None,
+                "1m": float(values[6]) if len(values) > 6 and values[6] is not None else None,
+                "6m": float(values[7]) if len(values) > 7 and values[7] is not None else None,
+            },
+        }
+    raise ValueError(f"TradingView scanner failed for {config['symbol']}: {'; '.join(errors)}")
 
 
 def _format_change(change_pct, label):
@@ -496,9 +511,7 @@ async def take_snapshot(req: SnapshotRequest):
             await page.screenshot(path=filepath, clip=clip)
             print(f"  ✅ Snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
         else:
-            # Fallback: just screenshot viewport
-            await page.screenshot(path=filepath)
-            print(f"  ⚠️ Fallback screenshot saved: {filename}")
+            raise ValueError("TradingView performance chart container was not found")
         
         # --- Overlay Chinese title ---
         meta = CHART_META.get(req.key)
