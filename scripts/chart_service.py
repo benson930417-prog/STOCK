@@ -363,8 +363,8 @@ def _overlay_title(image_path, title):
     print(f"  🖌️ Title overlay added: {title}")
 
 
-def _trim_bottom_whitespace(image_path, padding=18, min_trim=24):
-    """Trim blank white space below the chart while preserving axis labels."""
+def _trim_bottom_whitespace(image_path, padding=18, min_trim=24, max_body_height=430):
+    """Normalize chart snapshots by trimming oversized blank lower areas."""
     img = Image.open(image_path).convert("RGB")
     width, height = img.size
     pixels = img.load()
@@ -383,6 +383,8 @@ def _trim_bottom_whitespace(image_path, padding=18, min_trim=24):
             break
 
     crop_bottom = min(height, last_content_y + padding)
+    if height > max_body_height:
+        crop_bottom = min(crop_bottom, max_body_height)
     if height - crop_bottom >= min_trim:
         img.crop((0, 0, width, crop_bottom)).save(image_path)
         print(f"  ✂️ Trimmed bottom whitespace: {height - crop_bottom}px")
