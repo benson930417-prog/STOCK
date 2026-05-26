@@ -714,6 +714,17 @@ def _is_us_trading_today():
                     "fetched_at": datetime.now(timezone.utc),
                 })
                 return True
+        for ts in result.get("timestamp") or []:
+            try:
+                ts_dt = datetime.fromtimestamp(int(ts), ZoneInfo("America/New_York"))
+            except (TypeError, ValueError, OSError):
+                continue
+            if ts_dt.date() == today_us:
+                _US_TRADING_CACHE.update({
+                    "date": today_us, "result": True,
+                    "fetched_at": datetime.now(timezone.utc),
+                })
+                return True
         # No activity today on NVDA → today is a holiday / weekend / pre-open
         _US_TRADING_CACHE.update({
             "date": today_us, "result": False,
