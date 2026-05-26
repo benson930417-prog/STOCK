@@ -58,8 +58,8 @@ TRADINGVIEW_SCANNER_QUOTES = {
     # tracks within ~0.005 of the futures and uses TradingView's standard
     # widget structure so scanner data is more reliable.
     "bond": {
-        "allow_dom_fallback": True,
         "candidates": [
+            {"scanner": "futures", "symbol": "CBOT_MINI:10Y1!"},
             {"scanner": "cfd",     "symbol": "TVC:US10Y"},
         ],
     },
