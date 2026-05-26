@@ -721,7 +721,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         "大熊平均 %":  lambda v: f"{v:+.2f}" if pd.notna(v) else "—",
                         "上漲捕獲 %":  lambda v: f"{v:.0f}"  if pd.notna(v) else "—",
                         "下跌捕獲 %":  lambda v: f"{v:.0f}"  if pd.notna(v) else "—",
-                        "捕獲比":      lambda v: f"{v:.2f}"  if pd.notna(v) else "—",
+                        "捕獲比":      lambda v: f"{v:.2f} 倍" if pd.notna(v) else "—",
                     })
                     .map(_color_pct,           subset=["多頭平均 %", "小熊平均 %", "中熊平均 %", "大熊平均 %"])
                     .map(_color_up_capture,    subset=["上漲捕獲 %"])
@@ -735,7 +735,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                     "- 📊 **多頭 / 小熊 / 中熊 / 大熊平均 %**：該 ETF 在同類擺動期間，每段交易日加權平均報酬率\n"
                     "- 🚀 **上漲捕獲 %**：ETF 多頭平均 ÷ 大盤 × 100 →  **越大越會漲**（>100 = 跑贏大盤）\n"
                     "- 🛡️ **下跌捕獲 %**：ETF 下跌平均 ÷ 大盤 × 100 →  **越小越抗跌**（90 = 只跌大盤的九成）\n"
-                    "- 🏆 **捕獲比 = 上漲 ÷ 下跌** →  **>1.0 = 防禦型優勢**，>1.10 = 優秀防禦"
+                    "- 🏆 **捕獲比 = 上漲捕獲 ÷ 下跌捕獲**，單位是「倍」→  **>1.0 倍 = 防禦型優勢**，>1.10 倍 = 優秀防禦"
                 )
 
             # ── Detail expander: per-leg breakdown ─────────────────────────
