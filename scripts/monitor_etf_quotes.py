@@ -17,6 +17,7 @@ DATA_DIR = ROOT_DIR / "data"
 QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 
 YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+YAHOO_QUOTE_URL = "https://query1.finance.yahoo.com/v7/finance/quote"
 TWSE_STOCKINFO_URL = "https://mis.twse.com.tw/stock/api/getStockInfo.jsp"
 TRADINGVIEW_SCAN_URL = "https://scanner.tradingview.com/futures/scan"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
@@ -770,6 +771,18 @@ def _session_for_us_timestamp(timestamp):
     return "CLOSE"
 
 
+def _current_us_clock_session(now=None):
+    now = now or datetime.now(ZoneInfo("America/New_York"))
+    minutes = now.hour * 60 + now.minute
+    if now.weekday() < 5 and 4 * 60 <= minutes < 9 * 60 + 30:
+        return "PRE"
+    if now.weekday() < 5 and 9 * 60 + 30 <= minutes < 16 * 60:
+        return "REG"
+    if now.weekday() < 5 and 16 * 60 <= minutes < 20 * 60:
+        return "POST"
+    return "CLOSE"
+
+
 def _previous_us_regular_close(symbol, quote_time, timeout=10):
     if not quote_time:
         return None
@@ -930,15 +943,12 @@ def _quote_belongs_to_current_regular_session(country, timestamp):
 
 def _session_quote_from_meta(meta, country):
     if country == "US":
-        now_et = datetime.now(ZoneInfo("America/New_York"))
-        minutes = now_et.hour * 60 + now_et.minute
-        weekday = now_et.weekday()
-
-        if weekday < 5 and 4 * 60 <= minutes < 9 * 60 + 30:
+        clock_session = _current_us_clock_session()
+        if clock_session == "PRE":
             session, price, timestamp = "PRE", meta.get("preMarketPrice"), _market_time(meta, "preMarketTime")
-        elif weekday < 5 and 9 * 60 + 30 <= minutes < 16 * 60:
+        elif clock_session == "REG":
             session, price, timestamp = "REG", meta.get("regularMarketPrice"), _market_time(meta, "regularMarketTime")
-        elif weekday < 5 and 16 * 60 <= minutes < 20 * 60:
+        elif clock_session == "POST":
             session, price, timestamp = "POST", meta.get("postMarketPrice"), _market_time(meta, "postMarketTime")
         else:
             session, price, timestamp = "CLOSE", meta.get("regularMarketPrice"), _market_time(meta, "regularMarketTime")
@@ -1001,11 +1011,94 @@ def _regular_close_from_meta(meta):
     return None, None
 
 
+def _fetch_yahoo_quote_endpoint(symbol, country=None, timeout=10):
+    if country != "US":
+        return None
+
+    try:
+        res = requests.get(
+            YAHOO_QUOTE_URL,
+            params={"symbols": symbol},
+            headers=HEADERS,
+            timeout=timeout,
+        )
+        res.raise_for_status()
+        rows = res.json().get("quoteResponse", {}).get("result") or []
+        if not rows:
+            return {"symbol": symbol, "error": "Yahoo quote endpoint returned no rows"}
+        quote = rows[0]
+        session = _current_us_clock_session()
+        if _is_us_market_closed_today():
+            session = "CLOSE"
+
+        if session == "PRE":
+            price = quote.get("preMarketPrice")
+            quote_time = _market_time(quote, "preMarketTime")
+            change_pct = quote.get("preMarketChangePercent")
+        elif session == "REG":
+            price = quote.get("regularMarketPrice")
+            quote_time = _market_time(quote, "regularMarketTime")
+            change_pct = quote.get("regularMarketChangePercent")
+        elif session == "POST":
+            price = quote.get("postMarketPrice")
+            quote_time = _market_time(quote, "postMarketTime")
+            change_pct = quote.get("postMarketChangePercent")
+        else:
+            price = quote.get("regularMarketPrice")
+            quote_time = _market_time(quote, "regularMarketTime")
+            change_pct = quote.get("regularMarketChangePercent")
+
+        if price is None or quote_time is None:
+            return {
+                "symbol": symbol,
+                "error": f"Yahoo quote endpoint has no {session} price/time for {symbol}",
+                "marketSession": session,
+            }
+
+        if _is_live_market_session(session):
+            quote_date = datetime.fromtimestamp(int(quote_time), ZoneInfo("America/New_York")).date()
+            today_us = datetime.now(ZoneInfo("America/New_York")).date()
+            if quote_date != today_us:
+                return {
+                    "symbol": symbol,
+                    "error": f"Yahoo quote endpoint returned stale {session} quote for {symbol}: {quote_date}",
+                    "marketSession": session,
+                }
+
+        if change_pct is None:
+            return {
+                "symbol": symbol,
+                "error": f"Yahoo quote endpoint has no {session} change percent for {symbol}",
+                "marketSession": session,
+            }
+
+        previous = (
+            quote.get("regularMarketPreviousClose")
+            or quote.get("regularMarketPreviousCloseRaw")
+            or quote.get("previousClose")
+        )
+
+        return {
+            "symbol": symbol,
+            "regularMarketPrice": price,
+            "previousClose": previous,
+            "regularMarketTime": quote_time,
+            "regularMarketChangePercent": change_pct,
+            "marketSession": session,
+            "currency": quote.get("currency"),
+            "source": "yahoo_quote",
+        }
+    except Exception as exc:
+        return {"symbol": symbol, "error": f"Yahoo quote endpoint failed for {symbol}: {exc}"}
+
+
 def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
     try:
-        params = {"range": "5d", "interval": "1d"}
+        quote_endpoint = _fetch_yahoo_quote_endpoint(symbol, country=country, timeout=timeout)
         if country == "US":
-            params = {"range": "1d", "interval": "1m", "includePrePost": "true"}
+            return quote_endpoint
+
+        params = {"range": "5d", "interval": "1d"}
 
         res = requests.get(
             YAHOO_CHART_URL.format(symbol=symbol),
