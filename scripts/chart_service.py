@@ -58,6 +58,7 @@ TRADINGVIEW_SCANNER_QUOTES = {
     # tracks within ~0.005 of the futures and uses TradingView's standard
     # widget structure so scanner data is more reliable.
     "bond": {
+        "allow_dom_fallback": True,
         "candidates": [
             {"scanner": "cfd",     "symbol": "TVC:US10Y"},
         ],
@@ -284,6 +285,9 @@ async def _fetch_tradingview_scanner_quote(page, key):
             },
         }
     requested = ", ".join(f"{item['scanner']}/{item['symbol']}" for item in candidates)
+    if config.get("allow_dom_fallback"):
+        print(f"⚠️ TradingView scanner unavailable for {requested}; falling back to page text: {'; '.join(errors)}")
+        return None
     raise ValueError(f"TradingView scanner failed for {requested}: {'; '.join(errors)}")
 
 
