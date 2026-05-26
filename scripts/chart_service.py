@@ -59,7 +59,6 @@ TRADINGVIEW_SCANNER_QUOTES = {
     # widget structure so scanner data is more reliable.
     "bond": {
         "candidates": [
-            {"scanner": "futures", "symbol": "CBOT_MINI:10Y1!"},
             {"scanner": "cfd",     "symbol": "TVC:US10Y"},
         ],
     },
