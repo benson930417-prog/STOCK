@@ -58,9 +58,9 @@ TRADINGVIEW_SCANNER_QUOTES = {
     # tracks within ~0.005 of the futures and uses TradingView's standard
     # widget structure so scanner data is more reliable.
     "bond": {
-        "candidates": [
-            {"scanner": "futures", "symbol": "CBOT_MINI:10Y1!"},
-        ],
+        "price_candidate": {"scanner": "cfd", "symbol": "TVC:US10Y"},
+        "performance_candidate": {"scanner": "futures", "symbol": "CBOT_MINI:10Y1!"},
+        "skip_dom_performance_overlay": True,
     },
     "usdtwd": {"scanner": "forex", "symbol": "FX_IDC:USDTWD"},
     "usdjpy": {"scanner": "forex", "symbol": "OANDA:USDJPY"},
@@ -237,10 +237,60 @@ async def _extract_market_quote(page):
     return _parse_market_text(await _get_body_text(page))
 
 
+async def _fetch_tradingview_scanner_values(page, scanner, symbol, columns):
+    response = await page.request.post(
+        f"https://scanner.tradingview.com/{scanner}/scan",
+        data={
+            "symbols": {"tickers": [symbol], "query": {"types": []}},
+            "columns": columns,
+        },
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=10000,
+    )
+    if not response.ok:
+        raise ValueError(f"TradingView scanner failed for {scanner}/{symbol}: HTTP {response.status} {await response.text()}")
+    payload = await response.json()
+    rows = payload.get("data") or []
+    if not rows:
+        raise ValueError(f"TradingView scanner failed for {scanner}/{symbol}: no rows")
+    return rows[0].get("d") or []
+
+
 async def _fetch_tradingview_scanner_quote(page, key):
     config = TRADINGVIEW_SCANNER_QUOTES.get(key)
     if not config:
         return None
+    if config.get("price_candidate") and config.get("performance_candidate"):
+        price_candidate = config["price_candidate"]
+        performance_candidate = config["performance_candidate"]
+        price_values = await _fetch_tradingview_scanner_values(
+            page,
+            price_candidate["scanner"],
+            price_candidate["symbol"],
+            ["name", "close", "change", "change_abs", "currency"],
+        )
+        performance_values = await _fetch_tradingview_scanner_values(
+            page,
+            performance_candidate["scanner"],
+            performance_candidate["symbol"],
+            ["name", "close", "change", "change_abs", "currency", "Perf.W", "Perf.1M", "Perf.6M"],
+        )
+        if len(price_values) < 4 or price_values[1] is None:
+            raise ValueError(f"TradingView scanner missing price for {price_candidate['scanner']}/{price_candidate['symbol']}: {price_values}")
+        if len(performance_values) < 4 or performance_values[1] is None:
+            raise ValueError(f"TradingView scanner missing performance for {performance_candidate['scanner']}/{performance_candidate['symbol']}: {performance_values}")
+        return {
+            "price": float(price_values[1]),
+            "currency": price_values[4] if len(price_values) > 4 and price_values[4] else "",
+            "change_pct": float(performance_values[2]) if performance_values[2] is not None else None,
+            "change_abs": float(performance_values[3]) if performance_values[3] is not None else None,
+            "as_of_text": None,
+            "performance": {
+                "5d": float(performance_values[5]) if len(performance_values) > 5 and performance_values[5] is not None else None,
+                "1m": float(performance_values[6]) if len(performance_values) > 6 and performance_values[6] is not None else None,
+                "6m": float(performance_values[7]) if len(performance_values) > 7 and performance_values[7] is not None else None,
+            },
+        }
     columns = config.get("columns") or ["name", "close", "change", "change_abs", "currency", "Perf.W", "Perf.1M", "Perf.6M"]
     errors = []
     candidates = config.get("candidates") or [
@@ -480,7 +530,7 @@ async def market_text(req: SnapshotRequest):
                 print(f"⚠️ DOM quote extraction failed for {req.key}: {dom_error}")
                 text = await _get_body_text(page)
                 quote = _parse_market_text(text)
-        else:
+        elif not (TRADINGVIEW_SCANNER_QUOTES.get(req.key) or {}).get("skip_dom_performance_overlay"):
             # Scanner data is fast but its `Perf.W` is week-to-date (since
             # Monday), NOT the last 5 trading days. TradingView's on-page
             # widget displays "5 days" which IS the trailing 5d. To match
