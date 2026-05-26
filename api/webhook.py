@@ -46,7 +46,6 @@ line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
 ETF_QUOTE_NAMES = {
     "00981A": "主動統一台股增長",
     "00988A": "主動統一全球創新",
-    "00997A": "主動群益美國增長",
     "0050": "元大台灣50",
     "00830": "國泰費城半導體",
     "00878": "國泰永續高股息",
@@ -60,8 +59,6 @@ def parse_etf_quote_command(text):
     compact = re.sub(r"[^0-9a-z]", "", compact)
     if "988" in compact:
         return "00988A"
-    if "997" in compact:
-        return "00997A"
     if "981" in compact:
         return "00981A"
     if "0050" in compact or compact == "50":
@@ -113,8 +110,6 @@ def parse_operation_report_ticker(text):
     compact = re.sub(r"[^0-9a-z]", "", compact)
     if "988" in compact:
         return "00988A"
-    if "997" in compact:
-        return "00997A"
     if "981" in compact:
         return "00981A"
     return None
@@ -638,7 +633,7 @@ def handle_message(event):
             if not ticker:
                 line_bot_api.reply_message(
                     event.reply_token,
-                    TextSendMessage(text="請在操作日報訊息中指定 981、988 或 997。")
+                    TextSendMessage(text="請在操作日報訊息中指定 981 或 988。")
                 )
                 return
 
@@ -757,7 +752,6 @@ def handle_message(event):
                 "📢 管理員廣播（需手動輸入）\n"
                 "• 操作日報 981 — 重新渲染並廣播 00981A 操作日報\n"
                 "• 操作日報 988 — 重新渲染並廣播 00988A 操作日報\n"
-                "• 操作日報 997 — 重新渲染並廣播 00997A 操作日報\n\n"
                 "🥚 彩蛋\n"
                 "• 欸嘿 — ( ͡° ͜ʖ ͡°)\n\n"
                 "ℹ️ 以上指令均需手動輸入，不在選單中顯示。"
@@ -792,7 +786,6 @@ def handle_message(event):
             "• 市場脈動 — 加權指數市場狀態截圖\n"
             "• 981 — 00981A 持股即時表\n"
             "• 988 — 00988A 持股即時表\n"
-            "• 997 — 00997A 持股即時表\n"
             "• 0050 — 元大台灣50 持股即時表\n"
             "• 830 — 00830 持股即時表\n"
             "• 878 — 00878 持股即時表\n"

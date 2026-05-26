@@ -6,7 +6,6 @@ SUMMARY_DIR = os.path.join("data", "summaries")
 ETFS = [
     ("00981A", "主動統一台股增長 (00981A)"),
     ("00988A", "主動統一全球創新 (00988A)"),
-    ("00997A", "主動群益美國增長 (00997A)"),
 ]
 
 def load_data(json_path):
@@ -27,12 +26,17 @@ def fmt_money(am):
 
 def share_change_text(ticker, share_diff):
     sign = "+" if share_diff > 0 else ""
-    if ticker in {"00988A", "00997A"}:
+    if ticker in {"00988A"}:
         return f"{sign}{share_diff:,.0f} 股"
     return f"{sign}{share_diff // 1000:,} 張"
 
 def render_html(title, data_curr, date_curr, data_prev, date_prev):
-    if not data_curr or not data_prev: return False
+    if not data_curr:
+        return False
+    first_snapshot = not data_prev or not date_prev
+    if first_snapshot:
+        data_prev = data_curr
+        date_prev = date_curr
     ticker = title.split("(")[-1].split(")")[0] if "(" in title and ")" in title else ""
     
     meta_c = data_curr.get('meta', {})
@@ -86,6 +90,8 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
     
     name_part = title.split(' (')[0]
     ticker_part = f"({title.split(' (')[1]}" if ' (' in title else ""
+    report_badge = "首次建檔" if first_snapshot else "操作日報"
+    empty_message = "首次建檔，尚無前一日可比較" if first_snapshot else "無資金變動 / No Changes"
     
     html = f"""
     <!DOCTYPE html>
@@ -109,7 +115,7 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
                     {ticker_part}
                 </h1>
                 <div class="flex items-center space-x-3 mt-1">
-                    <p class="text-lg font-bold text-gray-500 tracking-wide">{date_curr} 操作日報</p>
+                    <p class="text-lg font-bold text-gray-500 tracking-wide">{date_curr} {report_badge}</p>
                     <span class="px-3 py-1 border border-gray-100 text-[13px] tracking-wide font-bold rounded-full {prem_color_class}">折溢價 {prem_str}</span>
                 </div>
             </div>
@@ -157,7 +163,7 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
     """
     
     if not rows:
-        html += '<p class="text-center text-gray-400 font-medium py-10">無資金變動 / No Changes</p>'
+        html += f'<p class="text-center text-gray-400 font-medium py-10">{empty_message}</p>'
     else:
         for r in rows:
             w_pct = abs(r['am']) / max_am * 100
@@ -223,11 +229,14 @@ def generate(selected_tickers=None):
             if selected_tickers and ticker not in selected_tickers:
                 continue
             date_curr, data_curr, date_prev, data_prev = load_data(f"data/etf_{ticker}_history.json")
-            html = render_html(title, data_curr, date_curr, data_prev or data_curr, date_prev or date_curr)
+            html = render_html(title, data_curr, date_curr, data_prev, date_prev)
             if html:
-                page.set_content(html)
-                # wait for network idle to ensure fonts load
-                page.wait_for_load_state("networkidle")
+                page.set_content(html, wait_until="domcontentloaded")
+                try:
+                    page.wait_for_function("document.fonts ? document.fonts.status === 'loaded' : true", timeout=10000)
+                except Exception:
+                    pass
+                page.wait_for_timeout(500)
                 element = page.locator("body")
                 element.screenshot(
                     path=os.path.join(SUMMARY_DIR, f"etf_{ticker}_summary_latest.jpg"),

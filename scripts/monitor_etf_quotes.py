@@ -1358,7 +1358,7 @@ def monitor(ticker, interval):
 
 def main():
     parser = argparse.ArgumentParser(description="Continuously monitor ETF holding quotes into a server-only cache.")
-    parser.add_argument("ticker", nargs="?", default="00997A")
+    parser.add_argument("ticker", nargs="?", default="00988A")
     parser.add_argument("--interval", type=int, default=60)
     args = parser.parse_args()
 

@@ -42,7 +42,6 @@ SELL_ETF_TAX_RATE = 0.001
 ETF_NAME_TO_TICKER = {
     "主動統一台股增長": "00981A",
     "主動統一全球創新": "00988A",
-    "主動群益美國增長": "00997A",
     "元大台灣50": "0050",
     "國泰費城半導體": "00830",
     "國泰永續高股息": "00878",
@@ -347,7 +346,7 @@ def build_expanded_exposure(position_quotes):
         if pos.get("stock") == CASH_LABEL or pos.get("code") == CASH_LABEL:
             continue
         ticker = pos.get("ticker")
-        if ticker not in {"00981A", "00988A", "00997A", "0050", "00830", "00878", "00891", "009805", "009820"}:
+        if ticker not in {"00981A", "00988A", "0050", "00830", "00878", "00891", "009805", "009820"}:
             key, country, code = _normalize_underlying_key(pos.get("code"), pos.get("country"))
             exposures[key] = {
                 "key": key,

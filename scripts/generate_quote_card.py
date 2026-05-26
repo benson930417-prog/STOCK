@@ -18,7 +18,6 @@ QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 ETF_NAMES = {
     "00981A": "主動統一台股增長",
     "00988A": "主動統一全球創新",
-    "00997A": "主動群益美國增長",
     "0050": "元大台灣50",
     "00830": "國泰費城半導體",
     "00878": "國泰永續高股息",
@@ -501,7 +500,7 @@ def generate_quote_card_from_cache(ticker, cache, output_prefix=None):
     return output_paths
 
 
-def generate_quote_card(ticker="00997A"):
+def generate_quote_card(ticker="00988A"):
     ticker = ticker.upper()
     cache_path = QUOTE_CACHE_DIR / f"etf_{ticker}_quotes.json"
     history_prefix = "passive" if ticker in PASSIVE_TICKERS else "etf"
@@ -528,7 +527,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("ticker", nargs="?", default="00997A")
+    parser.add_argument("ticker", nargs="?", default="00988A")
     args = parser.parse_args()
     for path in generate_quote_card(args.ticker):
         print(path)
