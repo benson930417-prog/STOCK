@@ -452,14 +452,14 @@ def _render_headline(taiex: pd.Series, regimes_df: pd.DataFrame) -> dict:
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         _render_health_metric(
-            "加權指數",
+            "今日漲跌（加權指數）",
             f"{current:,.0f}　<span style='font-size:1.0rem'>{day_pct:+.2f}%</span>",
-            c_day, s_day, r_day,
+            c_day, s_day, "今日漲跌單獨看：" + r_day,
         )
     with c2:
-        days_str = f"已 {cur_regime_days} 交易日" if cur_regime_days is not None else "—"
+        days_str = f"{cur_regime_label}已 {cur_regime_days} 交易日" if cur_regime_days is not None else "—"
         _render_health_metric(
-            "當前規制（擺動 4%）",
+            "目前規制（ZigZag 4%）",
             f"{cur_regime_label}　<span style='font-size:1.0rem'>{days_str}</span>",
             c_reg, s_reg, r_reg,
         )
@@ -492,7 +492,7 @@ def _render_headline(taiex: pd.Series, regimes_df: pd.DataFrame) -> dict:
         insight_parts.append(f"近 60 日已反彈 {dist_60_lo:.0f}%（漲幅偏大）")
 
     if insight_parts:
-        _section_insight("，".join(insight_parts) + "。")
+        _section_insight(f"今日 {day_pct:+.2f}%（{s_day}），" + "，".join(insight_parts) + "。")
 
     return {
         "current": current, "day_pct": day_pct,

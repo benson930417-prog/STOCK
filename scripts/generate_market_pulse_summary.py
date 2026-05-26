@@ -141,7 +141,8 @@ def latest_regime(series: pd.Series, threshold_pct: float = 4.0) -> tuple[str, i
     active = df[(df["start_date"] <= date) & (df["end_date"] >= date)]
     row = active.iloc[-1] if not active.empty else df.iloc[-1]
     label = REGIME_LABELS.get(str(row["regime"]), str(row["regime"]))
-    days = int((date - pd.Timestamp(row["start_date"])).days)
+    start = pd.Timestamp(row["start_date"])
+    days = int(((series.index >= start) & (series.index <= date)).sum())
     return label, days
 
 
@@ -367,7 +368,7 @@ def render_html(snapshot: dict) -> str:
     vol_color, vol_tag = classify_vol(snapshot["vol_20"])
 
     regime_days = snapshot["regime_days"]
-    regime_suffix = f"已 {regime_days} 天" if regime_days is not None else ""
+    regime_suffix = f"{snapshot['regime']}已 {regime_days} 交易日" if regime_days is not None else ""
     regime_color, regime_tag, regime_ref = classify_regime(snapshot["regime"], regime_days, snapshot["dist_high"])
     breadth = f"{len(snapshot['stretched'])} / {len(snapshot['stretch_rows'])} 個指數處於自身高位"
     if snapshot["stretched"]:
@@ -386,7 +387,8 @@ def render_html(snapshot: dict) -> str:
     )
 
     summary = (
-        f"加權指數目前為 {snapshot['regime']}，"
+        f"加權指數今日 {snapshot['day_pct']:+.2f}%（{day_tag}），"
+        f"目前規制為 {snapshot['regime']}，"
         f"距 1 年高點 {fmt_pct(snapshot['dist_high'])}，"
         f"近 30 日報酬 {fmt_pct(snapshot['ret_30'])}。"
         f"廣度顯示 {breadth}。"
@@ -458,7 +460,7 @@ def render_html(snapshot: dict) -> str:
   <div class="subtitle">數字是市場體溫計，不是買賣訊號。</div>
 
   <div class="grid">
-    {metric_card("加權指數", f"{snapshot['current']:,.0f}　<span style='font-size:28px'>{snapshot['day_pct']:+.2f}%</span>", day_color, day_tag, "日漲跌：正常約 ±1%，±2.5% 以上才算少見")}
+    {metric_card("今日漲跌（加權指數）", f"{snapshot['current']:,.0f}　<span style='font-size:28px'>{snapshot['day_pct']:+.2f}%</span>", day_color, day_tag, "今日漲跌單獨看：正常約 ±1%，±2.5% 以上才算少見")}
     {metric_card("目前規制", f"{html.escape(snapshot['regime'])}　<span style='font-size:28px'>{html.escape(regime_suffix)}</span>", regime_color, regime_tag, regime_ref)}
     {metric_card("距 1 年高點", fmt_pct(snapshot['dist_high']), high_color, high_tag, "接近 0 代表貼近一年高點；越負代表離高點越遠")}
     {metric_card("距 60 日低點", fmt_pct(snapshot['dist_low']), low_color, low_tag, "反彈幅度；過高代表短期速度偏快")}
