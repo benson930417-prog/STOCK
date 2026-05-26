@@ -53,6 +53,34 @@ fail_count=0
     echo
 } > "$SUMMARY_FILE"
 
+fetch_summary_line() {
+    local label="$1"
+    LABEL="$label" python - <<'PY'
+import json
+import os
+import re
+from pathlib import Path
+
+label = os.environ["LABEL"]
+match = re.search(r"fetch\s+([0-9A-Z]+)", label)
+if not match:
+    raise SystemExit
+ticker = match.group(1)
+passive = ticker in {"0050", "00830", "00878", "00891", "009805", "009820"}
+prefix = "passive" if passive else "etf"
+log_path = Path(f"data/{prefix}_{ticker}_log.json")
+history_path = Path(f"data/{prefix}_{ticker}_history.json")
+
+try:
+    log = json.loads(log_path.read_text(encoding="utf-8"))
+except Exception:
+    log = {}
+
+status = log.get("status") or log.get("message") or "unknown"
+print(f"          status={status}")
+PY
+}
+
 # Run a labeled command; append OK/FAIL to summary, capture full stderr+stdout
 # to a per-step log file, and on failure copy the tail into errors file.
 run_step() {
@@ -63,18 +91,21 @@ run_step() {
         # Pull useful metrics out of step3/step4/step5 output
         local metrics=""
         case "$label" in
+            fetch*)
+                metrics=$(fetch_summary_line "$label")
+                ;;
             step3*)
-                metrics=$(grep -E "^\s*(OK|EMPTY|FAIL|rows:)" "$logfile" | tr '\n' ' ' | sed 's/  */ /g')
+                metrics=$(grep -E "^[[:space:]]*(OK|EMPTY|FAIL|rows:)" "$logfile" | sed 's/^/          /')
                 ;;
             step4*)
-                metrics=$(grep -E "^\s*(pass|warn|fail|skip)" "$logfile" | tr '\n' ' ' | sed 's/  */ /g')
+                metrics=$(grep -E "^[[:space:]]*(pass|warn|fail|skip|FAIL details:|WARN details:|[0-9A-Z^._-]+[[:space:]]+max_endpoint_drift=)" "$logfile" | sed 's/^/          /')
                 ;;
             step5*)
-                metrics=$(grep -E "^\s*[0-9A-Z]+\s+\[(PASS|INFO|WARN|FAIL)\]" "$logfile" | tr '\n' '|' | sed 's/|$//')
+                metrics=$(grep -E "^[[:space:]]*[0-9A-Z]+[[:space:]]+\[(PASS|INFO|WARN|FAIL)\]" "$logfile" | sed 's/^/          /')
                 ;;
         esac
         if [ -n "$metrics" ]; then
-            printf "  [OK]   %-40s  %s\n" "$label" "$metrics" >> "$SUMMARY_FILE"
+            printf "  [OK]   %s\n%s\n" "$label" "$metrics" >> "$SUMMARY_FILE"
         else
             printf "  [OK]   %s\n" "$label" >> "$SUMMARY_FILE"
         fi
