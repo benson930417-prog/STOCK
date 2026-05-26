@@ -606,8 +606,17 @@ def fetch_portfolio_quotes(symbol_country_pairs_tuple):
 
 
 LIVE_MARKET_SESSIONS = {"PRE", "REG", "POST"}
-MARKET_LABELS = {"TW": "台", "US": "美", "JP": "日", "HK": "港"}
-MARKET_ORDER = ["TW", "US", "JP", "HK"]
+MARKET_LABELS = {
+    "TW": "台",
+    "US": "美",
+    "JP": "日",
+    "HK": "港",
+    "KR": "韓",
+    "CN": "中",
+    "DE": "德",
+    "FR": "法",
+}
+MARKET_ORDER = ["TW", "US", "JP", "HK", "KR", "CN", "DE", "FR"]
 MARKET_TIMEZONES = {
     "TW": "Asia/Taipei",
     "US": "America/New_York",

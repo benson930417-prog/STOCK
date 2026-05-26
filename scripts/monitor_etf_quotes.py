@@ -26,9 +26,13 @@ COUNTRY_LABELS = {
     "US": "美",
     "JP": "日",
     "HK": "港",
+    "KR": "韓",
+    "CN": "中",
+    "DE": "德",
+    "FR": "法",
     "TSMC_FUT": "台積電期貨",
 }
-COUNTRY_ORDER = ["TW", "JP", "TSMC_FUT", "US", "HK"]
+COUNTRY_ORDER = ["TW", "JP", "TSMC_FUT", "US", "HK", "KR", "CN", "DE", "FR"]
 TSMC_PROXY_SYMBOL = "TAIFEX:QFF1!"
 TSMC_PROXY_TARGETS = {"2330", "2330.TW"}
 PASSIVE_ETF_TICKERS = {"0050", "00830", "00878", "00891", "009805", "009820"}
