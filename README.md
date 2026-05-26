@@ -67,14 +67,14 @@ Common LINE commands:
 
 | Command | Response |
 |---|---|
-| `981`, `997`, `0050`, `830`, `878`, `9805`, `9820` | ETF quote card/report for the mapped ETF. |
+| `981`, `988`, `997`, `0050`, `830`, `878`, `9805`, `9820` | ETF quote card/report for the mapped ETF. |
 | `吳大師` | Master holding portfolio card. |
 | `市場脈動` | Latest generated market pulse image. |
 | `油價` | WTI and Brent TradingView text quotes plus charts. |
 | `匯率` | USD/TWD, USD/CHF, and USD/JPY TradingView text quotes plus charts. |
 | `債券` or `債卷` | US 10-year yield text quote and chart. |
 | `黃金` / `gold` / `xau` / `xauusd` | GOLD text quote and chart. |
-| `操作日報 981`, `操作日報 997` | Re-render and broadcast an active ETF operation report. |
+| `操作日報 981`, `操作日報 988`, `操作日報 997` | Re-render and broadcast an active ETF operation report. |
 | `id` | Return LINE user/group/room identifiers. |
 | `admin` | Show admin command help. |
 
@@ -123,6 +123,7 @@ curl -s -X POST http://127.0.0.1:5005/snapshot \
 | `scripts/admin_email.py` | Sends daily run summaries through Gmail SMTP. Exits successfully when email secrets are missing so the daily job is not blocked. |
 | `scripts/chart_service.py` | TradingView quote/chart FastAPI service used by the LINE webhook. |
 | `scripts/fetch_etf_00981A.py` | Fetches official 00981A holdings/NAV data into tracked history/log JSON. |
+| `scripts/fetch_etf_00988A.py` | Fetches official 00988A holdings/NAV data from Unified's `fundCode=61YTW` Excel endpoint. |
 | `scripts/fetch_etf_00997A.py` | Fetches official 00997A holdings/NAV data into tracked history/log JSON. |
 | `scripts/fetch_passive_0050.py` | Fetches 0050 passive ETF holdings/history. |
 | `scripts/fetch_passive_00830.py` | Fetches 00830 passive ETF holdings/history from the official Cathay source. |
@@ -140,6 +141,8 @@ curl -s -X POST http://127.0.0.1:5005/snapshot \
 | `scripts/rebroadcast_line.py` | Manual helper for rebroadcasting generated LINE report images. |
 | `scripts/setup_rich_menu.py` | Creates/updates the LINE rich menu. |
 | `scripts/update_and_notify.sh` | Daily orchestrator for fetchers, benchmark refresh, market pulse image, Git update, LINE broadcast, and admin email. |
+
+00988A global-holding quote handling: the holdings sheet uses global market suffixes such as `NVDA US`, `7203 JP`, or Hong Kong/Taiwan codes. `scripts/monitor_etf_quotes.py` normalizes those into Yahoo Finance symbols (`NVDA`, `7203.T`, `0005.HK`, `2330.TW`, etc.) and applies the existing exchange-session watcher logic.
 
 TSMC night-session handling: when a holding maps to `2330` / `2330.TW` during the QFF1! night futures window, the monitor uses TradingView's printed `TAIFEX:QFF1!` change percent. It does not calculate the percent against the 2330.TW day close, because that mixes different markets and baselines.
 
@@ -186,8 +189,8 @@ Tracked files in `data/` are source/history state that should move with the repo
 
 | File pattern | Purpose |
 |---|---|
-| `data/etf_00981A_history.json`, `data/etf_00997A_history.json` | Active ETF official history snapshots. |
-| `data/etf_00981A_log.json`, `data/etf_00997A_log.json` | Active ETF fetch logs/status. |
+| `data/etf_00981A_history.json`, `data/etf_00988A_history.json`, `data/etf_00997A_history.json` | Active ETF official history snapshots. |
+| `data/etf_00981A_log.json`, `data/etf_00988A_log.json`, `data/etf_00997A_log.json` | Active ETF fetch logs/status. |
 | `data/passive_*_history.json` | Passive ETF official history snapshots for 0050, 00830, 00878, 009805, and 009820. |
 | `data/passive_*_log.json` | Passive ETF fetch logs/status. |
 | `data/master_manual_positions.json` | Manual master portfolio positions. |
@@ -228,6 +231,7 @@ All service templates live in `services/` and assume:
 | `services/stock-quote-monitor-00878.service` | `stock-quote-monitor-00878.service` | 00878 quote monitor. |
 | `services/stock-quote-monitor-009805.service` | `stock-quote-monitor-009805.service` | 009805 quote monitor. |
 | `services/stock-quote-monitor-00981a.service` | `stock-quote-monitor-00981a.service` | 00981A quote monitor. |
+| `services/stock-quote-monitor-00988a.service` | `stock-quote-monitor-00988a.service` | 00988A quote monitor. |
 | `services/stock-quote-monitor-009820.service` | `stock-quote-monitor-009820.service` | 009820 quote monitor. |
 | `services/stock-quote-monitor-00997a.service` | `stock-quote-monitor-00997a.service` | 00997A quote monitor. |
 
@@ -243,7 +247,7 @@ sudo systemctl enable stock-fetch-1730-tw.timer
 sudo systemctl enable stock-gold-monitor.service stock-master-holding-monitor.service
 sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-00830.service
 sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-009805.service
-sudo systemctl enable stock-quote-monitor-00981a.service stock-quote-monitor-009820.service
+sudo systemctl enable stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
 sudo systemctl enable stock-quote-monitor-00997a.service
 ```
 
@@ -259,7 +263,7 @@ Restart all monitors:
 sudo systemctl restart stock-gold-monitor.service stock-master-holding-monitor.service
 sudo systemctl restart stock-quote-monitor-0050.service stock-quote-monitor-00830.service
 sudo systemctl restart stock-quote-monitor-00878.service stock-quote-monitor-009805.service
-sudo systemctl restart stock-quote-monitor-00981a.service stock-quote-monitor-009820.service
+sudo systemctl restart stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
 sudo systemctl restart stock-quote-monitor-00997a.service
 ```
 
@@ -359,7 +363,7 @@ Manual run:
 ```bash
 cd /home/ubuntu/STOCK
 source venv/bin/activate
-bash scripts/update_and_notify.sh 00981A 00997A 0050 00830 00878 009805 009820
+bash scripts/update_and_notify.sh 00981A 00988A 00997A 0050 00830 00878 009805 009820
 ```
 
 ## Rich Menu
@@ -379,6 +383,7 @@ Fetch official holdings:
 
 ```bash
 python scripts/fetch_etf_00981A.py
+python scripts/fetch_etf_00988A.py
 python scripts/fetch_etf_00997A.py
 python scripts/fetch_passive_0050.py
 python scripts/fetch_passive_00830.py
@@ -449,6 +454,8 @@ app.py
 api/webhook.py
 data/etf_00981A_history.json
 data/etf_00981A_log.json
+data/etf_00988A_history.json
+data/etf_00988A_log.json
 data/etf_00997A_history.json
 data/etf_00997A_log.json
 data/master_manual_positions.json
@@ -467,6 +474,7 @@ data/passive_009820_log.json
 scripts/admin_email.py
 scripts/chart_service.py
 scripts/fetch_etf_00981A.py
+scripts/fetch_etf_00988A.py
 scripts/fetch_etf_00997A.py
 scripts/fetch_passive_0050.py
 scripts/fetch_passive_00830.py
@@ -505,6 +513,7 @@ services/stock-quote-monitor-00830.service
 services/stock-quote-monitor-00878.service
 services/stock-quote-monitor-009805.service
 services/stock-quote-monitor-00981a.service
+services/stock-quote-monitor-00988a.service
 services/stock-quote-monitor-009820.service
 services/stock-quote-monitor-00997a.service
 services/stock-webhook.service

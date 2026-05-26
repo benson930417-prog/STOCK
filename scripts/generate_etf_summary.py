@@ -5,6 +5,7 @@ from playwright.sync_api import sync_playwright
 SUMMARY_DIR = os.path.join("data", "summaries")
 ETFS = [
     ("00981A", "主動統一台股增長 (00981A)"),
+    ("00988A", "主動統一全球創新 (00988A)"),
     ("00997A", "主動群益美國增長 (00997A)"),
 ]
 
@@ -26,7 +27,7 @@ def fmt_money(am):
 
 def share_change_text(ticker, share_diff):
     sign = "+" if share_diff > 0 else ""
-    if ticker == "00997A":
+    if ticker in {"00988A", "00997A"}:
         return f"{sign}{share_diff:,.0f} 股"
     return f"{sign}{share_diff // 1000:,} 張"
 

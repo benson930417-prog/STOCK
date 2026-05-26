@@ -46,6 +46,14 @@ HK_REGULAR_OFFICIAL_BREAK_END_MINUTES = 13 * 60
 HK_REGULAR_OFFICIAL_CLOSE_MINUTES = 16 * 60
 JP_REGULAR_OFFICIAL_BREAK_START_MINUTES = 11 * 60 + 30
 JP_REGULAR_OFFICIAL_BREAK_END_MINUTES = 12 * 60 + 30
+KR_REGULAR_OFFICIAL_OPEN_MINUTES = 9 * 60
+KR_REGULAR_OFFICIAL_CLOSE_MINUTES = 15 * 60 + 30
+CN_REGULAR_OFFICIAL_OPEN_MINUTES = 9 * 60 + 30
+CN_REGULAR_OFFICIAL_BREAK_START_MINUTES = 11 * 60 + 30
+CN_REGULAR_OFFICIAL_BREAK_END_MINUTES = 13 * 60
+CN_REGULAR_OFFICIAL_CLOSE_MINUTES = 15 * 60
+EU_REGULAR_OFFICIAL_OPEN_MINUTES = 9 * 60
+EU_REGULAR_OFFICIAL_CLOSE_MINUTES = 17 * 60 + 30
 TSMC_PROXY_CACHE_PATH = QUOTE_CACHE_DIR / "tsmc_qff_proxy.json"
 
 
@@ -475,6 +483,16 @@ def normalize_yahoo_symbol(raw_id):
         country = "JP"
     elif market in {"TW", "TT", "TWO"}:
         country = "TW"
+    elif market in {"KS", "KR"}:
+        country = "KR"
+    elif market in {"KQ"}:
+        country = "KR"
+    elif market in {"GY", "GR", "DE"}:
+        country = "DE"
+    elif market in {"FP", "FR"}:
+        country = "FR"
+    elif market in {"CH", "CN", "SS", "SZ"}:
+        country = "CN"
     elif market:
         country = market[:2]
 
@@ -503,6 +521,21 @@ def normalize_yahoo_symbol(raw_id):
     if country == "TW":
         suffix = ".TWO" if market == "TWO" else ".TW"
         return f"{symbol}{suffix}", "TW"
+
+    if country == "KR":
+        suffix = ".KQ" if market == "KQ" else ".KS"
+        return f"{symbol}{suffix}", "KR"
+
+    if country == "DE":
+        return f"{symbol}.DE", "DE"
+
+    if country == "FR":
+        return f"{symbol}.PA", "FR"
+
+    if country == "CN":
+        if market == "SZ" or symbol.startswith(("0", "3")):
+            return f"{symbol}.SZ", "CN"
+        return f"{symbol}.SS", "CN"
 
     if symbol.isdigit():
         return f"{symbol}.TW", "TW"
@@ -827,11 +860,58 @@ def _regular_session_bounds(country, now=None):
             return afternoon_start, afternoon_end
         return None
 
+    if country == "KR":
+        now = now or datetime.now(ZoneInfo("Asia/Seoul"))
+        if now.weekday() >= 5:
+            return None
+        start, end = _session_bounds(now, KR_REGULAR_OFFICIAL_OPEN_MINUTES, KR_REGULAR_OFFICIAL_CLOSE_MINUTES)
+        if start <= now < end:
+            return start, end
+        return None
+
+    if country == "CN":
+        now = now or datetime.now(ZoneInfo("Asia/Shanghai"))
+        if now.weekday() >= 5:
+            return None
+        morning_start, morning_end = _session_bounds(
+            now,
+            CN_REGULAR_OFFICIAL_OPEN_MINUTES,
+            CN_REGULAR_OFFICIAL_BREAK_START_MINUTES,
+        )
+        afternoon_start, afternoon_end = _session_bounds(
+            now,
+            CN_REGULAR_OFFICIAL_BREAK_END_MINUTES,
+            CN_REGULAR_OFFICIAL_CLOSE_MINUTES,
+        )
+        if morning_start <= now < morning_end:
+            return morning_start, morning_end
+        if afternoon_start <= now < afternoon_end:
+            return afternoon_start, afternoon_end
+        return None
+
+    if country == "DE":
+        now = now or datetime.now(ZoneInfo("Europe/Berlin"))
+        if now.weekday() >= 5:
+            return None
+        start, end = _session_bounds(now, EU_REGULAR_OFFICIAL_OPEN_MINUTES, EU_REGULAR_OFFICIAL_CLOSE_MINUTES)
+        if start <= now < end:
+            return start, end
+        return None
+
+    if country == "FR":
+        now = now or datetime.now(ZoneInfo("Europe/Paris"))
+        if now.weekday() >= 5:
+            return None
+        start, end = _session_bounds(now, EU_REGULAR_OFFICIAL_OPEN_MINUTES, EU_REGULAR_OFFICIAL_CLOSE_MINUTES)
+        if start <= now < end:
+            return start, end
+        return None
+
     return None
 
 
 def _exchange_session(country):
-    if country in {"TW", "JP", "HK"}:
+    if country in {"TW", "JP", "HK", "KR", "CN", "DE", "FR"}:
         return "REG" if _regular_session_bounds(country) else "CLOSE"
     return "REG"
 

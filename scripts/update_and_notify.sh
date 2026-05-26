@@ -106,7 +106,7 @@ run_step() {
 if [ "$#" -gt 0 ]; then
     ETFS=("$@")
 else
-    ETFS=("00981A" "00997A" "0050" "00830" "00878" "009805" "009820")
+    ETFS=("00981A" "00988A" "00997A" "0050" "00830" "00878" "009805" "009820")
 fi
 
 echo "ETF list: ${ETFS[*]}"
@@ -117,7 +117,7 @@ FAILED_ETFS=()
 
 for ETF in "${ETFS[@]}"; do
     case "$ETF" in
-        00981A|00997A)
+        00981A|00988A|00997A)
             run_step "fetch $ETF (active)" python "scripts/fetch_etf_${ETF}.py" || FAILED_ETFS+=("$ETF")
             ;;
         0050|00830|00878|009805|009820)
@@ -171,7 +171,7 @@ PY
 
 for ETF in "${CHANGED_ETFS[@]}"; do
     case "$ETF" in
-        00981A|00997A)
+        00981A|00988A|00997A)
             ACTIVE_NEW_ETFS+=("$ETF")
             ;;
     esac
@@ -245,6 +245,7 @@ token = os.environ["LINE_TOKEN"]
 tickers = os.environ["LINE_ETFS"].split()
 names = {
     "00981A": "主動統一台股增長",
+    "00988A": "主動統一全球創新",
     "00997A": "主動群益美國增長",
 }
 

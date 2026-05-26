@@ -1,11 +1,11 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Two-page LINE Bot Rich Menu setup.
 
 Page 1 top:    0050  | 009805 | 009820 | 吳大師
 Page 1 bottom: 油價  | 匯率   | 債券   | ▶更多
 Page 2 top:    00878 | 00981A | 00830  | 00997A
-Page 2 bottom: ◀返回 | 黃金   | Coming soon | Coming soon
+Page 2 bottom: ◀返回 | 黃金   | market pulse | 00988A
 
 Colour convention
   TW stocks  →  blue  (37, 99, 235)
@@ -79,7 +79,7 @@ PAGE2 = [
     (0,    843, 625, 843, "<", "上一頁", "回主選單",        ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),   # nav slate ◀ LEFT
     (625,  843, 625, 843, "金", "黃金",   "黃金現貨",        (202, 138,   4), "message",        "黃金",   False),  # gold amber
     (1250, 843, 625, 843, "脈", "市場脈動", "加權狀態儀表板",  ( 99, 102, 241), "message",        "市場脈動", False),
-    (1875, 843, 625, 843, "待", "即將", "推出",              ( 18,  26,  42), "none",           None,     True),
+    (1875, 843, 625, 843, "全", "00988A", "主動全球創新",        (220,  38,  38), "message",        "988",    False),
 ]
 
 
