@@ -46,6 +46,7 @@ ETF_NAME_TO_TICKER = {
     "元大台灣50": "0050",
     "國泰費城半導體": "00830",
     "國泰永續高股息": "00878",
+    "中信關鍵半導體": "00891",
     "新光美國電力基建": "009805",
     "元大納斯達克精選": "009820",
     "期元大S&P黃金": "00635U",
@@ -282,7 +283,7 @@ def enrich_positions_with_quotes(positions):
 
 
 def _latest_history_payload(ticker):
-    path = DATA_DIR / (f"passive_{ticker}_history.json" if ticker in {"0050", "00830", "00878", "009805", "009820"} else f"etf_{ticker}_history.json")
+    path = DATA_DIR / (f"passive_{ticker}_history.json" if ticker in {"0050", "00830", "00878", "00891", "009805", "009820"} else f"etf_{ticker}_history.json")
     if not path.exists():
         return None, {}
     history = json.loads(path.read_text(encoding="utf-8"))
@@ -346,7 +347,7 @@ def build_expanded_exposure(position_quotes):
         if pos.get("stock") == CASH_LABEL or pos.get("code") == CASH_LABEL:
             continue
         ticker = pos.get("ticker")
-        if ticker not in {"00981A", "00988A", "00997A", "0050", "00830", "00878", "009805", "009820"}:
+        if ticker not in {"00981A", "00988A", "00997A", "0050", "00830", "00878", "00891", "009805", "009820"}:
             key, country, code = _normalize_underlying_key(pos.get("code"), pos.get("country"))
             exposures[key] = {
                 "key": key,

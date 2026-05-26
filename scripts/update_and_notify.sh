@@ -106,7 +106,7 @@ run_step() {
 if [ "$#" -gt 0 ]; then
     ETFS=("$@")
 else
-    ETFS=("00981A" "00988A" "00997A" "0050" "00830" "00878" "009805" "009820")
+    ETFS=("00981A" "00988A" "00997A" "0050" "00830" "00878" "00891" "009805" "009820")
 fi
 
 echo "ETF list: ${ETFS[*]}"
@@ -120,7 +120,7 @@ for ETF in "${ETFS[@]}"; do
         00981A|00988A|00997A)
             run_step "fetch $ETF (active)" python "scripts/fetch_etf_${ETF}.py" || FAILED_ETFS+=("$ETF")
             ;;
-        0050|00830|00878|009805|009820)
+        0050|00830|00878|00891|009805|009820)
             run_step "fetch $ETF (passive)" python "scripts/fetch_passive_${ETF}.py" || FAILED_ETFS+=("$ETF")
             ;;
         *)
@@ -155,7 +155,7 @@ from pathlib import Path
 
 run_started = datetime.fromisoformat(os.environ["RUN_STARTED_UTC"].replace("Z", "+00:00"))
 for etf in os.environ["ETFS"].split():
-    prefix = "passive" if etf in {"0050", "00830", "00878", "009805", "009820"} else "etf"
+    prefix = "passive" if etf in {"0050", "00830", "00878", "00891", "009805", "009820"} else "etf"
     path = Path(f"data/{prefix}_{etf}_log.json")
     try:
         log = json.loads(path.read_text(encoding="utf-8"))
@@ -188,7 +188,7 @@ from pathlib import Path
 now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 run_started = os.environ.get("RUN_STARTED_UTC") or now
 for etf in os.environ.get("FAILED_ETFS_STR", "").split():
-    prefix = "passive" if etf in {"0050", "00830", "00878", "009805", "009820"} else "etf"
+    prefix = "passive" if etf in {"0050", "00830", "00878", "00891", "009805", "009820"} else "etf"
     path = Path(f"data/{prefix}_{etf}_log.json")
     try:
         previous = json.loads(path.read_text(encoding="utf-8"))

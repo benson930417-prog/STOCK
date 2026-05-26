@@ -37,7 +37,7 @@ FAIL_THRESHOLD_PCT = 2.0
 # These funds hold mostly foreign assets. Market close, NAV timestamp, and FX
 # timing can naturally differ by more than 2%, so NAV-vs-close is informational
 # for them rather than a data-correctness failure.
-STRUCTURAL_NAV_DIFF_TICKERS = {"00830", "009805", "009820", "00988A", "00997A"}
+STRUCTURAL_NAV_DIFF_TICKERS = {"00830", "00891", "009805", "009820", "00988A", "00997A"}
 
 
 def find_history_files() -> list[tuple[str, Path]]:

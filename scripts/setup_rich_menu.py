@@ -2,10 +2,12 @@
 """
 Two-page LINE Bot Rich Menu setup.
 
-Page 1 top:    0050  | 009805 | 009820 | 吳大師
-Page 1 bottom: 油價  | 匯率   | 債券   | ▶更多
-Page 2 top:    00878 | 00981A | 00830  | 00997A
-Page 2 bottom: ◀返回 | 黃金   | market pulse | 00988A
+Page 1 top:    油價  | 黃金   | 匯率   | 債券
+Page 1 bottom: 市場脈動 | 吳大師 | 0050 | ▶更多
+Page 2 top:    00878 | 00981A | 00988A | 00997A
+Page 2 bottom: ◀上一頁 | 00891 | 00830 | ▶更多
+Page 3 top:    009805 | 009820 | future | future
+Page 3 bottom: ◀上一頁 | future | future | 首頁
 
 Colour convention
   TW stocks  →  blue  (37, 99, 235)
@@ -39,6 +41,7 @@ GAP  = 10
 
 ALIAS_P1 = "richmenu-alias-stock-page1"
 ALIAS_P2 = "richmenu-alias-stock-page2"
+ALIAS_P3 = "richmenu-alias-stock-page3"
 
 # ── Palette ───────────────────────────────────────────────────────────────
 BG       = (11,  17,  32)
@@ -55,31 +58,42 @@ DIM_TEXT = (55,  70,  95)
 # tap:         text to send  | alias id           | None
 
 PAGE1 = [
-    # Row 1 — holdings and Master Wu (625 × 4 = 2500)
-    # TW stock → blue | US stock → red | master → amber
-    (0,    0,   625, 843, "50", "0050",   "元大台灣50",      ( 37,  99, 235), "message",        "0050",   False),  # TW blue
-    (625,  0,   625, 843, "電", "009805", "美國電力基建",    (220,  38,  38), "message",        "9805",   False),  # US red
-    (1250, 0,   625, 843, "納", "009820", "元大納斯達克精選",(220,  38,  38), "message",        "9820",   False),  # US red
-    (1875, 0,   625, 843, "師", "吳大師", "主要持股總覽",    (180,  83,   9), "message",        "吳大師", False),  # amber
-    # Row 2 — macro, then navigation at bottom-RIGHT (625 × 4 = 2500)
-    (0,    843, 625, 843, "油", "油價",   "輕原油／布蘭特",  (194,  65,  12), "message",        "油價",   False),  # oil orange
-    (625,  843, 625, 843, "匯", "匯率",   "美元／日圓／瑞郎",( 13, 148, 136), "message",        "匯率",   False),  # FX teal
-    (1250, 843, 625, 843, "債", "債券",   "美10年期公債",    ( 21, 128,  61), "message",        "債券",   False),  # bond green
-    (1875, 843, 625, 843, ">", "更多",   "第二頁",          ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),   # nav slate ▶ RIGHT
+    # Row 1 — fast market
+    (0,    0,   625, 843, "油", "油價",   "輕原油／布蘭特",   (194,  65,  12), "message",        "油價",   False),
+    (625,  0,   625, 843, "金", "黃金",   "黃金現貨",         (202, 138,   4), "message",        "黃金",   False),
+    (1250, 0,   625, 843, "匯", "匯率",   "美元／日圓／瑞郎", ( 13, 148, 136), "message",        "匯率",   False),
+    (1875, 0,   625, 843, "債", "債券",   "美10年期公債",     ( 21, 128,  61), "message",        "債券",   False),
+    # Row 2 — dashboard, master, most-used ETF, next page
+    (0,    843, 625, 843, "脈", "市場脈動", "加權狀態儀表板", ( 99, 102, 241), "message",        "市場脈動", False),
+    (625,  843, 625, 843, "師", "吳大師", "主要持股總覽",     (180,  83,   9), "message",        "吳大師", False),
+    (1250, 843, 625, 843, "50", "0050",   "元大台灣50",       ( 37,  99, 235), "message",        "0050",   False),
+    (1875, 843, 625, 843, ">", "更多",   "ETF 第二頁",       ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
 ]
 
 PAGE2 = [
-    # Row 1 — ETF page (625 × 4 = 2500)
-    # TW stock → blue | US stock → red
-    (0,    0,   625, 843, "息", "00878",  "永續高股息",      ( 37,  99, 235), "message",        "878",    False),  # TW blue
-    (625,  0,   625, 843, "台", "00981A", "主動台股增長",    ( 37,  99, 235), "message",        "981",    False),  # TW blue
-    (1250, 0,   625, 843, "半", "00830",  "費城半導體",      (220,  38,  38), "message",        "830",    False),  # US red
-    (1875, 0,   625, 843, "美", "00997A", "主動美股增長",    (220,  38,  38), "message",        "997",    False),  # US red
-    # Row 2 — navigation at bottom-LEFT, then gold and reserved space (625 × 4 = 2500)
-    (0,    843, 625, 843, "<", "上一頁", "回主選單",        ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),   # nav slate ◀ LEFT
-    (625,  843, 625, 843, "金", "黃金",   "黃金現貨",        (202, 138,   4), "message",        "黃金",   False),  # gold amber
-    (1250, 843, 625, 843, "脈", "市場脈動", "加權狀態儀表板",  ( 99, 102, 241), "message",        "市場脈動", False),
-    (1875, 843, 625, 843, "全", "00988A", "主動全球創新",        (220,  38,  38), "message",        "988",    False),
+    # Row 1 — primary ETF watchlist
+    (0,    0,   625, 843, "息", "00878",  "永續高股息",       ( 37,  99, 235), "message",        "878",    False),
+    (625,  0,   625, 843, "台", "00981A", "主動台股增長",     ( 37,  99, 235), "message",        "981",    False),
+    (1250, 0,   625, 843, "全", "00988A", "主動全球創新",     (220,  38,  38), "message",        "988",    False),
+    (1875, 0,   625, 843, "美", "00997A", "主動美股增長",     (220,  38,  38), "message",        "997",    False),
+    # Row 2 — previous at bottom-left, next at bottom-right
+    (0,    843, 625, 843, "<", "上一頁", "回主選單",         ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),
+    (625,  843, 625, 843, "晶", "00891",  "中信關鍵半導體",   ( 37,  99, 235), "message",        "891",    False),
+    (1250, 843, 625, 843, "半", "00830",  "費城半導體",       (220,  38,  38), "message",        "830",    False),
+    (1875, 843, 625, 843, ">", "更多",   "ETF 第三頁",       ( 71,  85, 105), "richmenuswitch", ALIAS_P3, True),
+]
+
+PAGE3 = [
+    # Row 1 — ETF overflow
+    (0,    0,   625, 843, "電", "009805", "美國電力基建",     (220,  38,  38), "message",        "9805",   False),
+    (625,  0,   625, 843, "納", "009820", "元大納斯達克精選", (220,  38,  38), "message",        "9820",   False),
+    (1250, 0,   625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),
+    (1875, 0,   625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),
+    # Row 2 — previous at bottom-left, home only because there is no next page yet
+    (0,    843, 625, 843, "<", "上一頁", "ETF 第二頁",       ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
+    (625,  843, 625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),
+    (1250, 843, 625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),
+    (1875, 843, 625, 843, "家", "首頁",   "回主選單",         ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),
 ]
 
 
@@ -296,34 +310,40 @@ def main():
     print("Building images...")
     img1 = build_image(PAGE1)
     img2 = build_image(PAGE2)
+    img3 = build_image(PAGE3)
 
     preview_dir = DATA_DIR / "images"
     preview_dir.mkdir(parents=True, exist_ok=True)
     img1.save(preview_dir / "rich_menu_page1.jpg", format="JPEG", quality=93)
     img2.save(preview_dir / "rich_menu_page2.jpg", format="JPEG", quality=93)
-    print("  Previews saved → data/images/rich_menu_page1.jpg + page2.jpg")
+    img3.save(preview_dir / "rich_menu_page3.jpg", format="JPEG", quality=93)
+    print("  Previews saved → data/images/rich_menu_page1.jpg + page2.jpg + page3.jpg")
 
     print("Cleaning up old menus & aliases...")
     delete_alias(token, ALIAS_P1)
     delete_alias(token, ALIAS_P2)
+    delete_alias(token, ALIAS_P3)
     delete_all_menus(token)
 
     print("Creating menus...")
     mid1 = create_menu(token, PAGE1, "Stock Menu Page 1", "查詢選單 ▲")
     mid2 = create_menu(token, PAGE2, "Stock Menu Page 2", "查詢選單 ▲")
+    mid3 = create_menu(token, PAGE3, "Stock Menu Page 3", "查詢選單 ▲")
 
     print("Uploading images...")
     upload_image(token, mid1, img1)
     upload_image(token, mid2, img2)
+    upload_image(token, mid3, img3)
 
     print("Creating aliases...")
     create_alias(token, ALIAS_P1, mid1)
     create_alias(token, ALIAS_P2, mid2)
+    create_alias(token, ALIAS_P3, mid3)
 
     print("Setting page 1 as default...")
     set_default(token, mid1)
 
-    print(f"\nDone.\n  Page 1: {mid1}\n  Page 2: {mid2}")
+    print(f"\nDone.\n  Page 1: {mid1}\n  Page 2: {mid2}\n  Page 3: {mid3}")
 
 
 if __name__ == "__main__":
