@@ -691,7 +691,7 @@ def _is_us_trading_today():
     try:
         res = requests.get(
             YAHOO_CHART_URL.format(symbol="NVDA"),
-            params={"range": "1d", "interval": "1m"},
+            params={"range": "1d", "interval": "1m", "includePrePost": "true"},
             headers=HEADERS, timeout=10,
         )
         res.raise_for_status()
