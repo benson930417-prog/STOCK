@@ -296,7 +296,7 @@ def _session_text(session):
 def _session_label(session, country=None):
     session = str(session or "").upper()
     country = str(country or "").upper()
-    if country in {"TW", "JP", "HK"}:
+    if country in {"TW", "JP", "HK", "KR", "CN", "DE", "FR"}:
         if session == "REG":
             return "盤中"
         if session in {"CLOSE", "POST_CLOSE"}:
