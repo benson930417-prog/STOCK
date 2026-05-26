@@ -3708,21 +3708,7 @@ try:
                                         )
                                     with button_col:
                                         if st.button("刷新資料", key=f"btn_refresh_contribution_data_{title_prefix}", use_container_width=True):
-                                            etf_tickers = []
-                                            if "ticker" in portfolio_positions.columns:
-                                                etf_tickers = [
-                                                    str(ticker)
-                                                    for ticker in portfolio_positions["ticker"].dropna().unique()
-                                                    if str(ticker) in {"00981A", "00988A", "0050", "00830", "00878", "00891", "009805", "009820"}
-                                                ]
-                                            with st.spinner("更新報價資料中..."):
-                                                refreshed, errors = refresh_master_quote_data(etf_tickers)
-                                            if errors:
-                                                st.warning("部分資料更新失敗：" + "；".join(errors))
-                                            elif refreshed:
-                                                st.toast("報價資料已更新：" + "、".join(refreshed), icon="✅")
-                                            else:
-                                                st.toast("直接持股報價快取已清除。", icon="✅")
+                                            st.toast("已重新讀取現有快取。", icon="✅")
                                             st.rerun()
 
                             chart_df["custom_text"] = chart_df.apply(format_custom_text, axis=1)
