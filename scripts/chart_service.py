@@ -58,7 +58,7 @@ TRADINGVIEW_SCANNER_QUOTES = {
     # tracks within ~0.005 of the futures and uses TradingView's standard
     # widget structure so scanner data is more reliable.
     "bond": {
-        "price_candidate": {"scanner": "cfd", "symbol": "TVC:US10Y"},
+        "price_from_page": True,
         "performance_candidate": {"scanner": "futures", "symbol": "CBOT_MINI:10Y1!"},
         "skip_dom_performance_overlay": True,
     },
@@ -260,37 +260,25 @@ async def _fetch_tradingview_scanner_quote(page, key):
     config = TRADINGVIEW_SCANNER_QUOTES.get(key)
     if not config:
         return None
-    if config.get("price_candidate") and config.get("performance_candidate"):
-        price_candidate = config["price_candidate"]
+    if config.get("price_from_page") and config.get("performance_candidate"):
         performance_candidate = config["performance_candidate"]
-        price_values = await _fetch_tradingview_scanner_values(
-            page,
-            price_candidate["scanner"],
-            price_candidate["symbol"],
-            ["name", "close", "change", "change_abs", "currency"],
-        )
+        quote = await _extract_market_quote(page)
         performance_values = await _fetch_tradingview_scanner_values(
             page,
             performance_candidate["scanner"],
             performance_candidate["symbol"],
             ["name", "close", "change", "change_abs", "currency", "Perf.W", "Perf.1M", "Perf.6M"],
         )
-        if len(price_values) < 4 or price_values[1] is None:
-            raise ValueError(f"TradingView scanner missing price for {price_candidate['scanner']}/{price_candidate['symbol']}: {price_values}")
         if len(performance_values) < 4 or performance_values[1] is None:
             raise ValueError(f"TradingView scanner missing performance for {performance_candidate['scanner']}/{performance_candidate['symbol']}: {performance_values}")
-        return {
-            "price": float(price_values[1]),
-            "currency": price_values[4] if len(price_values) > 4 and price_values[4] else "",
-            "change_pct": float(performance_values[2]) if performance_values[2] is not None else None,
-            "change_abs": float(performance_values[3]) if performance_values[3] is not None else None,
-            "as_of_text": None,
-            "performance": {
-                "5d": float(performance_values[5]) if len(performance_values) > 5 and performance_values[5] is not None else None,
-                "1m": float(performance_values[6]) if len(performance_values) > 6 and performance_values[6] is not None else None,
-                "6m": float(performance_values[7]) if len(performance_values) > 7 and performance_values[7] is not None else None,
-            },
+        quote["change_pct"] = float(performance_values[2]) if performance_values[2] is not None else None
+        quote["change_abs"] = float(performance_values[3]) if performance_values[3] is not None else None
+        quote["performance"] = {
+            "5d": float(performance_values[5]) if len(performance_values) > 5 and performance_values[5] is not None else None,
+            "1m": float(performance_values[6]) if len(performance_values) > 6 and performance_values[6] is not None else None,
+            "6m": float(performance_values[7]) if len(performance_values) > 7 and performance_values[7] is not None else None,
         }
+        return quote
     columns = config.get("columns") or ["name", "close", "change", "change_abs", "currency", "Perf.W", "Perf.1M", "Perf.6M"]
     errors = []
     candidates = config.get("candidates") or [
