@@ -60,7 +60,6 @@ TRADINGVIEW_SCANNER_QUOTES = {
     "bond": {
         "candidates": [
             {"scanner": "futures", "symbol": "CBOT_MINI:10Y1!"},
-            {"scanner": "cfd",     "symbol": "TVC:US10Y"},
         ],
     },
     "usdtwd": {"scanner": "forex", "symbol": "FX_IDC:USDTWD"},
