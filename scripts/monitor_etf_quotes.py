@@ -623,6 +623,8 @@ def _fetch_twse_realtime_quote(symbol, country=None, timeout=5):
         quote_time = _twse_quote_timestamp(row)
         if price is None and previous is None:
             continue
+        if price is None and previous is not None:
+            price = previous
 
         session = _exchange_session("TW")
         if quote_time and session == "REG" and not _quote_belongs_to_current_regular_session("TW", quote_time):
@@ -1110,8 +1112,11 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
             )
 
         change_pct = None
+        meta_change_pct = meta.get("regularMarketChangePercent")
         if price is not None and previous:
             change_pct = (float(price) - float(previous)) / float(previous) * 100.0
+        elif meta_change_pct is not None:
+            change_pct = float(meta_change_pct)
 
         return {
             "symbol": symbol,

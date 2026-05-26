@@ -3672,6 +3672,14 @@ try:
                             chart_df = rows.copy().sort_values("今日貢獻", ascending=True)
                             scope = _market_scope_label(chart_df["市場"])
                             weight_sum = float(chart_df["權重"].dropna().sum()) if "權重" in chart_df else 0.0
+                            contrib_sum = float(chart_df["今日貢獻"].dropna().sum()) if "今日貢獻" in chart_df else 0.0
+                            weighted_move = None
+                            if weight_sum and "今日漲跌%" in chart_df:
+                                valid_move = chart_df.dropna(subset=["今日漲跌%", "權重"])
+                                if not valid_move.empty:
+                                    weighted_move = float((valid_move["今日漲跌%"] * valid_move["權重"]).sum() / valid_move["權重"].sum())
+                            weighted_text = f"・加權漲跌{weighted_move:+.2f}%" if weighted_move is not None else ""
+                            contrib_text = f"・估計貢獻{contrib_sum:+,.0f}"
                             time_summary = _market_time_summary(chart_df)
                             card_class = "contrib-card muted" if muted else "contrib-card"
                             note_html = f"<div class='contrib-note'>{note}</div>" if note else ""
@@ -3680,7 +3688,7 @@ try:
                                     f"""
 <div class="{card_class}">
   <div class="contrib-title">{title_prefix}（{scope}）</div>
-  <div class="contrib-meta">{detail_prefix}{len(chart_df)}檔・{coverage_word}{weight_sum:.1f}%・{time_summary}</div>
+  <div class="contrib-meta">{detail_prefix}{len(chart_df)}檔・{coverage_word}{weight_sum:.1f}%{weighted_text}{contrib_text}・{time_summary}</div>
   {note_html}
 </div>
 """,
@@ -3693,7 +3701,7 @@ try:
                                         st.markdown(
                                             f"""
 <div class="contrib-title">{title_prefix}（{scope}）</div>
-<div class="contrib-meta">{detail_prefix}{len(chart_df)}檔・{coverage_word}{weight_sum:.1f}%・{time_summary}</div>
+<div class="contrib-meta">{detail_prefix}{len(chart_df)}檔・{coverage_word}{weight_sum:.1f}%{weighted_text}{contrib_text}・{time_summary}</div>
 {note_html}
 """,
                                             unsafe_allow_html=True,

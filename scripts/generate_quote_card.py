@@ -339,6 +339,8 @@ def _draw_col_header(draw, x, y, w, scale):
 
 def _draw_row(draw, row, x, y, w, rank, scale):
     change = row.get("day_change_pct")
+    if change is None and row.get("status") == "ok":
+        change = 0.0
     country = row.get("country") or "--"
     session = row.get("market_session") or "--"
     session_key = str(session or "").upper()
