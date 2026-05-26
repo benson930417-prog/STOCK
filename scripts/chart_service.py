@@ -557,10 +557,18 @@ async def take_snapshot(req: SnapshotRequest):
         # portion of the page where the price chart actually renders.
         clip = await page.evaluate("""() => {
             const inUpperPage = (r) => r.top >= 40 && r.top <= 600;
+            const footerTextPattern = /(Look first\\s*\\/\\s*Then leap|Select market data|©\\s*20\\d{2}\\s*TradingView|Copyright\\s*©)/i;
+            const footerLike = Array.from(document.querySelectorAll('footer, [class*="footer"], [class*="Footer"], body *'))
+                .map(el => ({el, r: el.getBoundingClientRect(), text: (el.textContent || '').slice(0, 500)}))
+                .filter(item => item.r.width > 200 && item.r.height > 40 && footerTextPattern.test(item.text))
+                .sort((a, b) => a.r.top - b.r.top)[0];
+            const footerTop = footerLike ? footerLike.r.top : window.innerHeight;
             const visibleChartLike = (el, ymax) => {
                 const r = el.getBoundingClientRect();
                 if (r.width < 250 || r.height < 120) return false;
                 if (r.top < 40 || r.top > ymax) return false;
+                if ((el.textContent || '').match(footerTextPattern)) return false;
+                if (r.top >= footerTop - 20) return false;
                 const style = window.getComputedStyle(el);
                 return style
                     && style.display !== 'none'
@@ -580,15 +588,17 @@ async def take_snapshot(req: SnapshotRequest):
             for (const sel of containerSelectors) {
                 const el = document.querySelector(sel);
                 if (el && visibleChartLike(el, 800)) {
-                    const r = el.getBoundingClientRect();
-                    const pad = 10;
-                    return {
-                        x: Math.max(0, r.left - pad),
-                        y: Math.max(0, r.top  - pad),
-                        width:  Math.min(window.innerWidth,  r.right  + pad) - Math.max(0, r.left - pad),
-                        height: Math.min(window.innerHeight, r.bottom + pad) - Math.max(0, r.top  - pad),
-                    };
-                }
+                const r = el.getBoundingClientRect();
+                const pad = 10;
+                const y = Math.max(0, r.top - pad);
+                const bottom = Math.min(window.innerHeight, footerTop - pad, r.bottom + pad);
+                return {
+                    x: Math.max(0, r.left - pad),
+                    y,
+                    width:  Math.min(window.innerWidth,  r.right  + pad) - Math.max(0, r.left - pad),
+                    height: Math.max(120, bottom - y),
+                };
+            }
             }
 
             // 2) Fallback: largest CANVAS in upper page (futures page case).
@@ -601,11 +611,13 @@ async def take_snapshot(req: SnapshotRequest):
             if (canvases.length) {
                 const r = canvases[0].r;
                 const pad = 10;
+                const y = Math.max(0, r.top - pad);
+                const bottom = Math.min(window.innerHeight, footerTop - pad, r.bottom + pad);
                 return {
                     x: Math.max(0, r.left - pad),
-                    y: Math.max(0, r.top  - pad),
+                    y,
                     width:  Math.min(window.innerWidth,  r.right  + pad) - Math.max(0, r.left - pad),
-                    height: Math.min(window.innerHeight, r.bottom + pad) - Math.max(0, r.top  - pad),
+                    height: Math.max(120, bottom - y),
                 };
             }
             return null;
