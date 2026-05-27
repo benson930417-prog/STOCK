@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timezone
 
 import requests
+import urllib3
 
 
 DATA_DIR = "data"
@@ -12,8 +13,9 @@ FID = "E0017"
 HISTORY_FILE = os.path.join(DATA_DIR, f"passive_{TICKER}_history.json")
 LOG_FILE = os.path.join(DATA_DIR, f"passive_{TICKER}_log.json")
 URL = "https://www.ctbcinvestments.com/Etf/88182265/Combination"
-API_BASE = "https://www.ctbcinvestments.com.tw/API"
+API_BASE = "https://www.ctbcinvestments.com/API"
 TOKEN_SEED = "www.ctbcinvestments.com"
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def _num(value):
@@ -63,10 +65,11 @@ def _post(endpoint, token, payload=None, timeout=20):
             ),
             "Accept": "application/json, text/plain, */*",
             "Content-Type": "application/json; charset=utf-8",
-            "Origin": "https://www.ctbcinvestments.com.tw",
+            "Origin": "https://www.ctbcinvestments.com",
             "Referer": URL,
         },
         timeout=timeout,
+        verify=False,
     )
     res.raise_for_status()
     data = res.json()
