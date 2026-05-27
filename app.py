@@ -755,7 +755,11 @@ def enrich_positions_with_quotes(positions: pd.DataFrame) -> pd.DataFrame:
             if item["market_value"] is not None else None
         )
         item["unrealized_pnl"] = (item["liquidation_value"] - item["cost"]) if item["liquidation_value"] is not None else None
-        item["unrealized_pct"] = (item["unrealized_pnl"] / item["cost"] * 100.0) if item.get("cost") else None
+        item["unrealized_pct"] = (
+            item["unrealized_pnl"] / item["cost"] * 100.0
+            if item["unrealized_pnl"] is not None and item.get("cost")
+            else None
+        )
 
     out = pd.DataFrame(rows)
     if "market_value" in out:
