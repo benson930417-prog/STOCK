@@ -1102,14 +1102,20 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
         previous = None
         if country == "US":
             previous = _previous_us_regular_close(symbol, quote_time, timeout=timeout)
-        if len(valid_points) >= 2 and country != "US":
-            _, previous = valid_points[-2]
-        if previous is None:
+        if previous is None and country != "US":
+            # Prefer meta's previousClose over chart's second-to-last bar.
+            # valid_points[-2] is wrong when today's bar is missing from the
+            # chart (data lag at open, public-holiday gap, etc.) — in that case
+            # valid_points[-1] == yesterday and [-2] == two days ago, giving a
+            # 2-day return instead of today's.  meta.regularMarketPreviousClose
+            # is always yesterday's close, so use it first.
             previous = (
                 meta.get("regularMarketPreviousClose")
                 or meta.get("previousClose")
                 or meta.get("chartPreviousClose")
             )
+            if previous is None and len(valid_points) >= 2:
+                _, previous = valid_points[-2]
 
         change_pct = None
         meta_change_pct = meta.get("regularMarketChangePercent")
