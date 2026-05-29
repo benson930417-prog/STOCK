@@ -383,6 +383,223 @@ python scripts/setup_rich_menu.py
 
 The rich menu uses three LINE rich-menu aliases. Page 1 is fast market/macro, Page 2 is the primary ETF watchlist, and Page 3 is ETF overflow. Navigation convention is fixed: previous page is bottom-left, next page is bottom-right, and the last page uses bottom-right `首頁` until another page is needed.
 
+## ETF Maintenance Playbook For Agents
+
+This section is written for future AI/code agents. Treat an ETF add/delete as a cross-system change, not as a single fetcher edit. The same ticker appears in the dashboard, LINE webhook, rich menu, quote monitors, daily fetch orchestration, benchmark seed logic, master holding expansion, service templates, generated/tracked data, and this README.
+
+Use consistent casing:
+
+- Ticker in user-facing text/data: uppercase, e.g. `00403A`, `00981A`, `009820`.
+- Quote-monitor service filename: lowercase suffix, e.g. `services/stock-quote-monitor-00403a.service`.
+- LINE short command: compact numeric alias, e.g. `403`, `981`, `9820`.
+- Active ETF data files: `data/etf_<TICKER>_history.json` and `data/etf_<TICKER>_log.json`.
+- Passive ETF data files: `data/passive_<TICKER>_history.json` and `data/passive_<TICKER>_log.json`.
+
+### Add One ETF
+
+1. Classify the ETF.
+   - Active ETFs with issuer operation reports use `scripts/fetch_etf_<TICKER>.py`, `data/etf_<TICKER>_*`, summary images, and LINE operation broadcasts.
+   - Passive ETFs use `scripts/fetch_passive_<TICKER>.py`, `data/passive_<TICKER>_*`, and usually do not join active operation-report broadcasts.
+   - Global-holding ETFs need quote normalization support in `scripts/monitor_etf_quotes.py` if holdings include non-Taiwan suffixes such as `US`, `JP`, `KS`, `HK`, or issuer-specific symbols.
+
+2. Add the official fetcher.
+   - Create `scripts/fetch_etf_<TICKER>.py` or `scripts/fetch_passive_<TICKER>.py`.
+   - Fetch from the official issuer/API endpoint only. Do not invent holdings from Yahoo.
+   - Write the same normalized history shape used by existing ETF files: date-keyed JSON with holdings containing at least `id`, `name`, and `weight_pct`.
+   - Write a log JSON with fetch status so the daily email can say `NEW DATA FOUND`, `NO CHANGE`, or an explicit error.
+   - Run the fetcher locally/server-side with the project venv: `./venv/bin/python scripts/fetch_etf_<TICKER>.py`.
+
+3. Add tracked data files.
+   - Commit the initial `data/etf_<TICKER>_history.json` and `data/etf_<TICKER>_log.json` for active ETFs.
+   - Commit the initial `data/passive_<TICKER>_history.json` and `data/passive_<TICKER>_log.json` for passive ETFs.
+   - Do not commit `data/images/`, `data/summaries/`, `data/quote_cache/`, or `data/etf_bench/*.sqlite`.
+
+4. Wire daily fetch orchestration in `scripts/update_and_notify.sh`.
+   - Add the ticker to the default `ETFS=(...)` list.
+   - Add the ticker to the fetcher dispatch `case`.
+   - For an active ETF, include it in the active ETF branch used for summary image generation and LINE broadcast.
+   - Add the display name to the embedded Python `names = {...}` map used for daily LINE broadcasts.
+   - Ensure failure details print the ETF fetch log clearly in the admin email.
+
+5. Wire dashboard ETF views.
+   - Add the ticker to `src/ui/etf_tab.py` ETF selectors/lists.
+   - If the ETF is active, include it beside other active ETFs in active report sections.
+   - If any display name appears in `app.py`, add the new ticker/name there too.
+   - Run the dashboard after edits and verify the ETF page loads from tracked history, not quote cache alone.
+
+6. Wire LINE webhook commands in `api/webhook.py`.
+   - Add the ticker to `ETF_QUOTE_NAMES`.
+   - Add the command parser alias, such as `403 -> 00403A`.
+   - Add the command to admin/help text and any user-facing command list.
+   - If it has operation reports, add support for `操作日報 <alias>`.
+   - Keep errors explicit. Do not silently fall back to stale data when a quote/fetch fails.
+
+7. Wire LINE rich menu in `scripts/setup_rich_menu.py`.
+   - Place the ETF in the page layout according to current menu organization.
+   - Preserve navigation convention: previous page bottom-left, next page bottom-right, and final page bottom-right `首頁` only when there is no future item/page.
+   - Add/update the tap command to match webhook parsing.
+   - Re-run `scripts/setup_rich_menu.py` on the server after deployment if the menu changed.
+
+8. Add a quote monitor service.
+   - Create `services/stock-quote-monitor-<ticker-lower>.service`.
+   - The service should run `/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py <TICKER> --interval 60`.
+   - Add it to README service tables, enable commands, restart commands, and Current File Inventory.
+   - After deployment, copy services and enable it with systemd.
+
+9. Verify quote monitor compatibility.
+   - Run `./venv/bin/python scripts/monitor_etf_quotes.py <TICKER> --interval 60` once and stop after it writes `data/quote_cache/etf_<TICKER>_quotes.json`.
+   - Check global holdings have correct `country`, `market_session`, `day_change_pct`, and no misleading stale fallback.
+   - For markets without pre/post trading, closed status should be `已收盤`; reserve `盤後收` only for markets/instruments with post-market sessions.
+
+10. Wire quote card rendering.
+    - Add the display name to `scripts/generate_quote_card.py`.
+    - Confirm LINE card generation works even when a constituent has no trade today; cards should still show a valid percent if the monitor has an exact current quote/change.
+
+11. Wire active ETF summary reports when applicable.
+    - Add the ticker/title to `scripts/generate_etf_summary.py`.
+    - Add the ticker/name to `scripts/rebroadcast_line.py`.
+    - For a brand-new ETF with only one history date, summary generation must not crash; it should render a meaningful first-day/no-prior-data state or skip cleanly with an explicit status.
+
+12. Wire Master Wu / master holding expansion.
+    - Add the ETF product name and ticker to `ETF_NAME_TO_TICKER` in both `app.py` and `scripts/master_holding_quote_card.py`.
+    - Add aliases only if the trade ledger may contain old names. Put the intended display name last when building reverse maps so `ETF_TICKER_TO_NAME` resolves to the current name.
+    - Add the ticker to the expansion allow-list in `app.py` and `scripts/master_holding_quote_card.py`.
+    - Test that `全部成分股絕對權重` expands into underlying holdings and does not leave the ETF itself as a `直接持股` row.
+
+13. Wire ETF benchmark.
+    - Add the ticker to `scripts/etf_benchmark/step1_universe.py` required/seed logic when the ETF should appear in comparison/market-pulse data.
+    - If needed, add it to `scripts/etf_benchmark/seed_tpex_etfs.csv`.
+    - Rebuild or incrementally refresh benchmark data and run verification.
+
+14. Update README.
+    - Update Scripts table, Data Directory, Services table, enable/restart commands, Daily Job manual command, Manual Fetch commands, Current File Inventory, and any command/help examples.
+    - If the ETF has special source behavior, document it in the Scripts notes.
+
+15. Run verification before committing.
+    - Syntax:
+      ```bash
+      python -m py_compile app.py api/webhook.py scripts/fetch_etf_<TICKER>.py scripts/monitor_etf_quotes.py scripts/generate_quote_card.py scripts/master_holding_quote_card.py scripts/setup_rich_menu.py
+      bash -n scripts/update_and_notify.sh
+      ```
+    - Fetch:
+      ```bash
+      ./venv/bin/python scripts/fetch_etf_<TICKER>.py
+      ```
+    - Quote cache:
+      ```bash
+      ./venv/bin/python scripts/monitor_etf_quotes.py <TICKER> --interval 60
+      ```
+    - Master expansion:
+      ```bash
+      ./venv/bin/python scripts/master_holding_quote_card.py
+      ```
+    - Active report if applicable:
+      ```bash
+      ./venv/bin/python scripts/generate_etf_summary.py
+      ```
+    - Benchmark if applicable:
+      ```bash
+      ./venv/bin/python -m scripts.etf_benchmark.step1_universe
+      ./venv/bin/python -m scripts.etf_benchmark.step3_backfill --incremental
+      ./venv/bin/python -m scripts.etf_benchmark.step4_verify
+      ./venv/bin/python -m scripts.etf_benchmark.step5_verify_nav
+      ./venv/bin/python -m scripts.etf_benchmark.step6_regimes
+      ```
+
+16. Deployment commands after merging/pulling on the server.
+    ```bash
+    cd /home/ubuntu/STOCK
+    git pull origin main --rebase --autostash
+    source venv/bin/activate
+    pip install -r requirements.txt -q
+    sudo cp services/*.service services/*.timer /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now stock-quote-monitor-<ticker-lower>.service
+    sudo systemctl restart stock-dashboard.service stock-webhook.service stock-master-holding-monitor.service stock-quote-monitor-<ticker-lower>.service
+    ```
+    If the rich menu changed:
+    ```bash
+    source /home/ubuntu/.stock_secrets
+    ./venv/bin/python scripts/setup_rich_menu.py
+    ```
+
+### Delete One ETF
+
+1. Remove it from daily orchestration.
+   - Delete the ticker from `ETFS=(...)` in `scripts/update_and_notify.sh`.
+   - Delete its fetcher dispatch branch.
+   - Delete it from active summary/LINE broadcast lists and embedded name maps.
+
+2. Remove LINE access.
+   - Delete its display name and command parser alias from `api/webhook.py`.
+   - Delete it from admin/help text.
+   - Delete operation-report command support if it existed.
+   - Delete or replace its rich-menu cell in `scripts/setup_rich_menu.py`.
+   - Preserve page navigation rules after reshuffling.
+
+3. Remove dashboard references.
+   - Delete it from `src/ui/etf_tab.py` selectors/lists.
+   - Delete display-name mappings and allow-lists in `app.py`.
+   - Confirm the dashboard no longer expects its history/log/quote-cache files.
+
+4. Remove Master Wu references.
+   - Delete product-name aliases from `ETF_NAME_TO_TICKER` in both `app.py` and `scripts/master_holding_quote_card.py`.
+   - Delete the ticker from ETF expansion allow-lists.
+   - If the master trade ledger still contains the ETF, decide explicitly whether to keep it as a direct holding or remove/rename the trade data. Do not silently leave a deleted ETF in expansion logic.
+
+5. Remove quote monitor service.
+   - Delete `services/stock-quote-monitor-<ticker-lower>.service`.
+   - Remove it from README service table, enable commands, restart commands, and Current File Inventory.
+   - On the server:
+     ```bash
+     sudo systemctl disable --now stock-quote-monitor-<ticker-lower>.service
+     sudo rm -f /etc/systemd/system/stock-quote-monitor-<ticker-lower>.service
+     sudo systemctl daemon-reload
+     ```
+
+6. Remove fetcher and tracked data.
+   - Delete `scripts/fetch_etf_<TICKER>.py` or `scripts/fetch_passive_<TICKER>.py`.
+   - Delete tracked `data/etf_<TICKER>_history.json` and `data/etf_<TICKER>_log.json`, or `data/passive_<TICKER>_history.json` and `data/passive_<TICKER>_log.json`.
+   - Do not chase ignored generated files unless the user explicitly wants local cleanup. `data/quote_cache/`, `data/images/`, and `data/summaries/` are generated.
+
+7. Remove active report references.
+   - Delete from `scripts/generate_etf_summary.py`.
+   - Delete from `scripts/rebroadcast_line.py`.
+   - Delete any generated summary references in webhook routes if present.
+
+8. Remove ETF benchmark references.
+   - Delete from `scripts/etf_benchmark/step1_universe.py`.
+   - Delete from `scripts/etf_benchmark/seed_tpex_etfs.csv` if it was manually seeded.
+   - Rebuild or refresh benchmark outputs on the server. The SQLite DB is ignored and can be regenerated.
+
+9. Update README.
+   - Remove the ticker from Scripts, Data Directory, Services, Daily Job manual command, Manual Fetch commands, Current File Inventory, and any special notes.
+   - If deleting an ETF creates a rich-menu empty slot, document or fill the slot according to current menu policy.
+
+10. Run deletion verification.
+    ```bash
+    rg "<TICKER>|<ticker-lower>|<LINE_ALIAS>|<ETF_DISPLAY_NAME>"
+    python -m py_compile app.py api/webhook.py scripts/monitor_etf_quotes.py scripts/generate_quote_card.py scripts/master_holding_quote_card.py scripts/setup_rich_menu.py
+    bash -n scripts/update_and_notify.sh
+    ```
+    Expected `rg` leftovers should only be in Git history or intentional documentation. No runtime file should still require the deleted ETF.
+
+11. Deployment commands after deleting an ETF.
+    ```bash
+    cd /home/ubuntu/STOCK
+    git pull origin main --rebase --autostash
+    sudo systemctl disable --now stock-quote-monitor-<ticker-lower>.service
+    sudo rm -f /etc/systemd/system/stock-quote-monitor-<ticker-lower>.service
+    sudo cp services/*.service services/*.timer /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl restart stock-dashboard.service stock-webhook.service stock-master-holding-monitor.service
+    ```
+    If the rich menu changed:
+    ```bash
+    source /home/ubuntu/.stock_secrets
+    ./venv/bin/python scripts/setup_rich_menu.py
+    ```
+
 ## Manual Fetch and Cache Checks
 
 Fetch official holdings:
