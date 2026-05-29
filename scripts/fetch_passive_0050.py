@@ -213,6 +213,7 @@ def fetch_and_update_0050():
     )
 
     previous = history.get(date_key)
+    is_new_date = date_key not in history
     changed = previous != payload
     history[date_key] = payload
     _write_json(HISTORY_FILE, dict(sorted(history.items())))
@@ -220,16 +221,19 @@ def fetch_and_update_0050():
         LOG_FILE,
         {
             "last_checked_utc": now_utc,
-            "last_updated_utc": now_utc if changed else previous_log.get("last_updated_utc"),
+            "last_updated_utc": now_utc if is_new_date else previous_log.get("last_updated_utc"),
             "latest_date": date_key,
-            "status": "NEW DATA FOUND" if changed else "NO CHANGE",
+            "status": "NEW DATA FOUND" if is_new_date else "NO CHANGE",
             "source": URL,
             "holdings_count": len(payload["holdings"]),
+            "payload_changed": changed,
         },
     )
 
-    if changed:
+    if is_new_date:
         print(f"Successfully updated {TICKER} holdings for {date_key}. Total stocks: {len(payload['holdings'])}")
+    elif changed:
+        print(f"Updated same-date {TICKER} payload for {date_key}; status remains NO CHANGE.")
     else:
         print(f"No holding changes detected for {TICKER}. Latest stored date remains {date_key}.")
 
