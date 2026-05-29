@@ -629,15 +629,6 @@ def _fetch_twse_realtime_quote(symbol, country=None, timeout=5):
         session = _exchange_session("TW")
         if quote_time and session == "REG" and not _quote_belongs_to_current_regular_session("TW", quote_time):
             continue
-        # After TW close, TWSE's real-time endpoint sometimes still serves
-        # yesterday's settlement data.  Reject anything timestamped before
-        # today so we fall through to Yahoo (which always has today's close).
-        if quote_time and session == "CLOSE":
-            _tw_tz = ZoneInfo("Asia/Taipei")
-            _today_tw = datetime.now(_tw_tz).date()
-            _quote_date = datetime.fromtimestamp(int(quote_time), _tw_tz).date()
-            if _quote_date < _today_tw:
-                continue
 
         change_pct = None
         if price is not None and previous:

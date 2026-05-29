@@ -599,10 +599,32 @@ def _stock_name_symbol_map():
 
 @st.cache_data(ttl=60)
 def fetch_portfolio_quotes(symbol_country_pairs_tuple):
+    """Fetch direct-holding quotes from Yahoo Finance only (no TWSE).
+    TWSE's real-time endpoint sometimes serves yesterday's settlement data
+    after market close, causing wrong day-change values."""
     try:
-        from scripts.monitor_etf_quotes import fetch_yahoo_quotes
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        from scripts.monitor_etf_quotes import _fetch_yahoo_chart_quote
 
-        return fetch_yahoo_quotes(list(symbol_country_pairs_tuple), max_workers=10)
+        pairs = list(symbol_country_pairs_tuple)
+        unique: dict[str, str] = {}
+        for symbol, country in pairs:
+            if symbol and symbol not in unique:
+                unique[symbol] = country
+
+        results: dict[str, dict] = {}
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            future_map = {
+                executor.submit(_fetch_yahoo_chart_quote, sym, country): sym
+                for sym, country in unique.items()
+            }
+            for future in as_completed(future_map):
+                sym = future_map[future]
+                try:
+                    results[sym] = future.result()
+                except Exception as exc:
+                    results[sym] = {"symbol": sym, "error": str(exc)}
+        return results
     except Exception:
         return {}
 
