@@ -34,6 +34,17 @@ def _write_json(path, payload):
         json.dump(payload, fh, ensure_ascii=False, indent=2)
         fh.write("\n")
 
+def _holdings_signature(holdings):
+    return [
+        (
+            str(item.get("id") or "").strip().upper(),
+            str(item.get("name") or "").strip(),
+            item.get("weight_pct"),
+            item.get("shares"),
+        )
+        for item in holdings or []
+    ]
+
 def fetch_and_update_009805():
     now_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     history = _load_json(HISTORY_FILE, {})
@@ -125,6 +136,26 @@ def fetch_and_update_009805():
 
     if len(holdings) < 10:
         raise ValueError(f"Only parsed {len(holdings)} 009805 holdings from page.")
+
+    latest_existing_date = max(history) if history else None
+    if latest_existing_date and date_key > latest_existing_date:
+        latest_payload = history.get(latest_existing_date) or {}
+        if _holdings_signature(holdings) == _holdings_signature(latest_payload.get("holdings")):
+            _write_json(
+                LOG_FILE,
+                {
+                    "last_checked_utc": now_utc,
+                    "last_updated_utc": previous_log.get("last_updated_utc"),
+                    "latest_date": latest_existing_date,
+                    "provider_date": date_key,
+                    "status": "NO CHANGE",
+                    "source": URL,
+                    "holdings_count": len(holdings),
+                    "message": f"Ignored provider date {date_key}: holdings table still matches {latest_existing_date}",
+                },
+            )
+            print(f"Ignored 009805 provider date {date_key}; holdings still match {latest_existing_date}.")
+            return
 
     payload = {
         "date": date_key,

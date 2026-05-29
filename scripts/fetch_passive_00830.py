@@ -114,6 +114,8 @@ def fetch_and_update_00830():
     nav = _num(result_assets.get("fundPerNav"))
     outstanding_units = int(_num(result_assets.get("fundOutstandingShares")) or 0) or None
     closing_price = _get_yahoo_closing_price("00830.TW", date_key)
+    if closing_price is None:
+        closing_price = (history.get(date_key, {}).get("meta") or {}).get("closing_price")
 
     meta = {
         "fund_size": fund_size,

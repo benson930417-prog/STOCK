@@ -1457,7 +1457,7 @@
       "fund_size": 567399616459.0,
       "nav": 30.16,
       "outstanding_units": 18812290000,
-      "closing_price": null,
+      "closing_price": 30.0,
       "source_url": "https://www.cathaysite.com.tw/ETF/detail/ECN?tab=etf3"
     },
     "holdings": [
