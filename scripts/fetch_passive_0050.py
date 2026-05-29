@@ -131,7 +131,44 @@ def _pct_change(curr, prev):
     return ((curr - prev) / prev) * 100.0
 
 
+def _wait_for_nav_table(page):
+    """The NAV-history page is a SPA whose table hydrates after networkidle, and
+    sometimes only once the table view is selected. Poll for the header, nudging
+    the table tab into view between attempts, instead of reading the body blindly."""
+    for attempt in range(6):
+        try:
+            page.wait_for_function(
+                "() => document.body.innerText.includes('\\u6de8\\u503c\\u65e5\\u671f')",
+                timeout=5000,
+            )
+            return
+        except Exception:
+            pass
+        # Best-effort: click a visible "表格" (table) tab/button if the view
+        # defaults to a chart, then let it render.
+        try:
+            page.evaluate(
+                """() => {
+                    const tab = [...document.querySelectorAll('a, button, .tab, li, span')]
+                        .find(node => node.offsetParent !== null
+                            && node.innerText
+                            && node.innerText.includes('\\u8868\\u683c'));
+                    if (tab) tab.click();
+                }"""
+            )
+        except Exception:
+            pass
+        page.wait_for_timeout(1500)
+        if attempt == 3:
+            # Last resort: reload once in case the first render stalled.
+            try:
+                page.reload(wait_until="networkidle", timeout=60000)
+            except Exception:
+                pass
+
+
 def _extract_nav_history(page):
+    _wait_for_nav_table(page)
     text = page.locator("body").inner_text(timeout=10000)
     table_start = text.find("淨值日期")
     if table_start < 0:
