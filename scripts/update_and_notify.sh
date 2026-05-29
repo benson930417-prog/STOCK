@@ -280,7 +280,12 @@ names = {
     "00988A": "主動統一全球創新",
 }
 
-messages = []
+# Free LINE quota is counted as messages x recipients, so keep the object
+# count low: one combined text header listing every report, then the images.
+# (LINE still caps a broadcast at 5 message objects; with at most 3 active
+# ETFs that is 1 text + 3 images = 4, comfortably under the limit.)
+header_lines = []
+image_messages = []
 cache_buster = int(time.time())
 for ticker in tickers:
     history_path = f"data/etf_{ticker}_history.json"
@@ -290,15 +295,14 @@ for ticker in tickers:
         f"https://linechatbot.duckdns.org/api/webhook/summaries/"
         f"etf_{ticker}_summary_latest.jpg?t={cache_buster}"
     )
-    messages.append({
-        "type": "text",
-        "text": f"{date_str} {names.get(ticker, ticker)} ({ticker}) 操作日報",
-    })
-    messages.append({
+    header_lines.append(f"{date_str} {names.get(ticker, ticker)} ({ticker}) 操作日報")
+    image_messages.append({
         "type": "image",
         "originalContentUrl": img_url,
         "previewImageUrl": img_url,
     })
+
+messages = [{"type": "text", "text": "\n".join(header_lines)}] + image_messages
 
 payload = json.dumps({"messages": messages}, ensure_ascii=False).encode("utf-8")
 req = request.Request(
