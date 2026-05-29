@@ -24,7 +24,7 @@ def render_etf_tab(
     
     etf_ticker = st.selectbox(
         T(lang, "Select ETF", "選擇 ETF"),
-        ["00981A", "00988A"]
+        ["00403A", "00981A", "00988A"]
     )
 
     share_unit = T(lang, "Shares", "股") if etf_ticker in {"00988A"} else T(lang, "Lots", "張")

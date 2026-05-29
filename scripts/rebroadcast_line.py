@@ -8,8 +8,8 @@ Images are served directly by the webhook via duckdns.org — NO git push
 needed (the daily flow was simplified to drop GitHub as middleman).
 
 Usage:
-    python scripts/rebroadcast_line.py 00981A 00988A
-    python scripts/rebroadcast_line.py --regen 00981A 00988A
+    python scripts/rebroadcast_line.py 00403A 00981A 00988A
+    python scripts/rebroadcast_line.py --regen 00403A 00981A 00988A
 """
 from __future__ import annotations
 
@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 
 ACTIVE_NAMES = {
+    "00403A": "主動統一台股優息",
     "00981A": "主動統一台股增長",
     "00988A": "主動統一全球創新",
 }
@@ -114,7 +115,7 @@ def _broadcast(tickers: list[str], token: str) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("tickers", nargs="+",
-                    help="Active ETF tickers to broadcast (e.g. 00981A 00988A)")
+                    help="Active ETF tickers to broadcast (e.g. 00403A 00981A 00988A)")
     ap.add_argument("--regen", action="store_true",
                     help="Run scripts/generate_etf_summary.py first to refresh JPGs")
     args = ap.parse_args()

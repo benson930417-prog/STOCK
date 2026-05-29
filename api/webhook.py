@@ -44,6 +44,7 @@ line_bot_api = LineBotApi(get_secret('LINE_CHANNEL_ACCESS_TOKEN'))
 line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
 
 ETF_QUOTE_NAMES = {
+    "00403A": "主動統一台股優息",
     "00981A": "主動統一台股增長",
     "00988A": "主動統一全球創新",
     "0050": "元大台灣50",
@@ -57,6 +58,8 @@ ETF_QUOTE_NAMES = {
 def parse_etf_quote_command(text):
     compact = unicodedata.normalize("NFKC", text).lower()
     compact = re.sub(r"[^0-9a-z]", "", compact)
+    if "00403" in compact or "403" in compact:
+        return "00403A"
     if "988" in compact:
         return "00988A"
     if "981" in compact:
@@ -108,6 +111,8 @@ def latest_market_pulse_date():
 def parse_operation_report_ticker(text):
     compact = unicodedata.normalize("NFKC", text).lower()
     compact = re.sub(r"[^0-9a-z]", "", compact)
+    if "00403" in compact or "403" in compact:
+        return "00403A"
     if "988" in compact:
         return "00988A"
     if "981" in compact:
@@ -750,6 +755,7 @@ def handle_message(event):
                 "📊 一般隱藏指令\n"
                 "• id — 查詢 LINE 使用者 ID 及群組 ID\n\n"
                 "📢 管理員廣播（需手動輸入）\n"
+                "• 操作日報 403 — 重新渲染並廣播 00403A 操作日報\n"
                 "• 操作日報 981 — 重新渲染並廣播 00981A 操作日報\n"
                 "• 操作日報 988 — 重新渲染並廣播 00988A 操作日報\n"
                 "🥚 彩蛋\n"
@@ -784,6 +790,7 @@ def handle_message(event):
             "• 債券 — 美國10年期公債殖利率\n"
             "• 黃金 — TradingView GOLD 報價與圖\n"
             "• 市場脈動 — 加權指數市場狀態截圖\n"
+            "• 403 — 00403A 持股即時表\n"
             "• 981 — 00981A 持股即時表\n"
             "• 988 — 00988A 持股即時表\n"
             "• 0050 — 元大台灣50 持股即時表\n"

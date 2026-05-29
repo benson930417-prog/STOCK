@@ -122,6 +122,7 @@ curl -s -X POST http://127.0.0.1:5005/snapshot \
 |---|---|
 | `scripts/admin_email.py` | Sends daily run summaries through Gmail SMTP. Exits successfully when email secrets are missing so the daily job is not blocked. |
 | `scripts/chart_service.py` | TradingView quote/chart FastAPI service used by the LINE webhook. |
+| `scripts/fetch_etf_00403A.py` | Fetches official 00403A holdings/NAV data from Unified's `fundCode=63YTW` Excel endpoint. |
 | `scripts/fetch_etf_00981A.py` | Fetches official 00981A holdings/NAV data into tracked history/log JSON. |
 | `scripts/fetch_etf_00988A.py` | Fetches official 00988A holdings/NAV data from Unified's `fundCode=61YTW` Excel endpoint. |
 | `scripts/fetch_passive_0050.py` | Fetches 0050 passive ETF holdings/history. |
@@ -191,8 +192,8 @@ Tracked files in `data/` are source/history state that should move with the repo
 
 | File pattern | Purpose |
 |---|---|
-| `data/etf_00981A_history.json`, `data/etf_00988A_history.json` | Active ETF official history snapshots. |
-| `data/etf_00981A_log.json`, `data/etf_00988A_log.json` | Active ETF fetch logs/status. |
+| `data/etf_00403A_history.json`, `data/etf_00981A_history.json`, `data/etf_00988A_history.json` | Active ETF official history snapshots. |
+| `data/etf_00403A_log.json`, `data/etf_00981A_log.json`, `data/etf_00988A_log.json` | Active ETF fetch logs/status. |
 | `data/passive_*_history.json` | Passive ETF official history snapshots for 0050, 00830, 00878, 00891, 009805, and 009820. |
 | `data/passive_*_log.json` | Passive ETF fetch logs/status. |
 | `data/master_manual_positions.json` | Manual master portfolio positions. |
@@ -228,6 +229,7 @@ All service templates live in `services/` and assume:
 | `services/stock-fetch-1730-tw.timer` | `stock-fetch-1730-tw.timer` | Runs the daily job at 09:30 UTC / 17:30 Taiwan time. |
 | `services/stock-gold-monitor.service` | `stock-gold-monitor.service` | GOLD quote monitor. |
 | `services/stock-master-holding-monitor.service` | `stock-master-holding-monitor.service` | Master holdings monitor. |
+| `services/stock-quote-monitor-00403a.service` | `stock-quote-monitor-00403a.service` | 00403A quote monitor. |
 | `services/stock-quote-monitor-0050.service` | `stock-quote-monitor-0050.service` | 0050 quote monitor. |
 | `services/stock-quote-monitor-00830.service` | `stock-quote-monitor-00830.service` | 00830 quote monitor. |
 | `services/stock-quote-monitor-00878.service` | `stock-quote-monitor-00878.service` | 00878 quote monitor. |
@@ -250,7 +252,7 @@ sudo systemctl enable stock-gold-monitor.service stock-master-holding-monitor.se
 sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-00830.service
 sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-00891.service
 sudo systemctl enable stock-quote-monitor-009805.service
-sudo systemctl enable stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
+sudo systemctl enable stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
 ```
 
 Restart common production services after code changes:
@@ -266,7 +268,7 @@ sudo systemctl restart stock-gold-monitor.service stock-master-holding-monitor.s
 sudo systemctl restart stock-quote-monitor-0050.service stock-quote-monitor-00830.service
 sudo systemctl restart stock-quote-monitor-00878.service stock-quote-monitor-00891.service
 sudo systemctl restart stock-quote-monitor-009805.service
-sudo systemctl restart stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
+sudo systemctl restart stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
 ```
 
 ## Server Setup
@@ -365,7 +367,7 @@ Manual run:
 ```bash
 cd /home/ubuntu/STOCK
 source venv/bin/activate
-bash scripts/update_and_notify.sh 00981A 00988A 0050 00830 00878 00891 009805 009820
+bash scripts/update_and_notify.sh 00403A 00981A 00988A 0050 00830 00878 00891 009805 009820
 ```
 
 ## Rich Menu
@@ -388,6 +390,7 @@ Fetch official holdings:
 ```bash
 python scripts/fetch_etf_00981A.py
 python scripts/fetch_etf_00988A.py
+python scripts/fetch_etf_00403A.py
 python scripts/fetch_passive_0050.py
 python scripts/fetch_passive_00830.py
 python scripts/fetch_passive_00878.py
@@ -399,7 +402,7 @@ python scripts/fetch_passive_009820.py
 Seed one ETF quote cache:
 
 ```bash
-python scripts/monitor_etf_quotes.py 00981A --interval 60
+python scripts/monitor_etf_quotes.py 00403A --interval 60
 ```
 
 Render master holding card once:
@@ -460,6 +463,8 @@ data/etf_00981A_history.json
 data/etf_00981A_log.json
 data/etf_00988A_history.json
 data/etf_00988A_log.json
+data/etf_00403A_history.json
+data/etf_00403A_log.json
 data/master_manual_positions.json
 data/master_meta.json
 data/master_trades.csv
@@ -479,6 +484,7 @@ scripts/admin_email.py
 scripts/chart_service.py
 scripts/fetch_etf_00981A.py
 scripts/fetch_etf_00988A.py
+scripts/fetch_etf_00403A.py
 scripts/fetch_passive_0050.py
 scripts/fetch_passive_00830.py
 scripts/fetch_passive_00878.py
@@ -512,6 +518,7 @@ services/stock-fetch-1730-tw.service
 services/stock-fetch-1730-tw.timer
 services/stock-gold-monitor.service
 services/stock-master-holding-monitor.service
+services/stock-quote-monitor-00403a.service
 services/stock-quote-monitor-0050.service
 services/stock-quote-monitor-00830.service
 services/stock-quote-monitor-00878.service

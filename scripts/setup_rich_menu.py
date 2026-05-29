@@ -4,7 +4,7 @@ Two-page LINE Bot Rich Menu setup.
 
 Page 1 top:    油價  | 黃金   | 匯率   | 債券
 Page 1 bottom: 市場脈動 | 吳大師 | 0050 | ▶更多
-Page 2 top:    00878 | 00981A | 00988A | future
+Page 2 top:    00878 | 00981A | 00988A | 00403A
 Page 2 bottom: ◀上一頁 | 00891 | 00830 | ▶更多
 Page 3 top:    009805 | 009820 | future | future
 Page 3 bottom: ◀上一頁 | future | future | 首頁
@@ -75,7 +75,7 @@ PAGE2 = [
     (0,    0,   625, 843, "息", "00878",  "永續高股息",       ( 37,  99, 235), "message",        "878",    False),
     (625,  0,   625, 843, "台", "00981A", "主動台股增長",     ( 37,  99, 235), "message",        "981",    False),
     (1250, 0,   625, 843, "全", "00988A", "主動全球創新",     (220,  38,  38), "message",        "988",    False),
-    (1875, 0,   625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),
+    (1875, 0,   625, 843, "優", "00403A", "主動台股優息",     ( 37,  99, 235), "message",        "403",    False),
     # Row 2 — previous at bottom-left, next at bottom-right
     (0,    843, 625, 843, "<", "上一頁", "回主選單",         ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),
     (625,  843, 625, 843, "晶", "00891",  "中信關鍵半導體",   ( 37,  99, 235), "message",        "891",    False),

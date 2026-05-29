@@ -1,0 +1,16 @@
+[Unit]
+Description=00403A Holding Quote Monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/STOCK
+EnvironmentFile=-/home/ubuntu/.stock_secrets
+ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py 00403A --interval 60
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
