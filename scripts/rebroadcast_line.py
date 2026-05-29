@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 
 ACTIVE_NAMES = {
-    "00403A": "主動統一台股優息",
+    "00403A": "主動統一升級50",
     "00981A": "主動統一台股增長",
     "00988A": "主動統一全球創新",
 }

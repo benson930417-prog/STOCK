@@ -16,7 +16,7 @@ IMAGE_DIR = DATA_DIR / "images"
 QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 
 ETF_NAMES = {
-    "00403A": "主動統一台股優息",
+    "00403A": "主動統一升級50",
     "00981A": "主動統一台股增長",
     "00988A": "主動統一全球創新",
     "0050": "元大台灣50",

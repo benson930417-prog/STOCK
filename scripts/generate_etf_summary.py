@@ -4,7 +4,7 @@ from playwright.sync_api import sync_playwright
 
 SUMMARY_DIR = os.path.join("data", "summaries")
 ETFS = [
-    ("00403A", "主動統一台股優息 (00403A)"),
+    ("00403A", "主動統一升級50 (00403A)"),
     ("00981A", "主動統一台股增長 (00981A)"),
     ("00988A", "主動統一全球創新 (00988A)"),
 ]

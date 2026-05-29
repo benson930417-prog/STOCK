@@ -44,7 +44,7 @@ line_bot_api = LineBotApi(get_secret('LINE_CHANNEL_ACCESS_TOKEN'))
 line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
 
 ETF_QUOTE_NAMES = {
-    "00403A": "主動統一台股優息",
+    "00403A": "主動統一升級50",
     "00981A": "主動統一台股增長",
     "00988A": "主動統一全球創新",
     "0050": "元大台灣50",

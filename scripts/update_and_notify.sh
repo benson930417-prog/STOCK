@@ -275,7 +275,7 @@ from urllib import request
 token = os.environ["LINE_TOKEN"]
 tickers = os.environ["LINE_ETFS"].split()
 names = {
-    "00403A": "主動統一台股優息",
+    "00403A": "主動統一升級50",
     "00981A": "主動統一台股增長",
     "00988A": "主動統一全球創新",
 }
