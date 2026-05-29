@@ -1039,6 +1039,45 @@ def _stale_us_quote_error(symbol, session, quote_time):
     return None
 
 
+_EXCHANGE_TZ = {
+    "TW": "Asia/Taipei",
+    "JP": "Asia/Tokyo",
+    "HK": "Asia/Hong_Kong",
+    "KR": "Asia/Seoul",
+    "CN": "Asia/Shanghai",
+    "DE": "Europe/Berlin",
+    "FR": "Europe/Paris",
+    "US": "America/New_York",
+}
+
+
+def _previous_close_from_daily_bars(valid_points, quote_time, country):
+    """Previous close = the daily bar immediately preceding the quote's own date.
+
+    Yahoo's meta.chartPreviousClose is the close just before the chart range
+    begins (e.g. 5 trading days ago), not yesterday — using it gives a multi-day
+    return. Newer Taiwan ETFs also return null regularMarketPreviousClose, so we
+    must read it off the daily series. The latest bar matches the quote's day
+    (or the quote is intraday for today while the last bar is yesterday), so the
+    most recent bar strictly before the quote date is yesterday's close in both
+    cases."""
+    if not valid_points or not quote_time:
+        return None
+    tz = ZoneInfo(_EXCHANGE_TZ.get(country, "UTC"))
+    try:
+        quote_date = datetime.fromtimestamp(int(quote_time), tz).date()
+    except Exception:
+        return None
+    for timestamp, close in reversed(valid_points):
+        try:
+            bar_date = datetime.fromtimestamp(int(timestamp), tz).date()
+        except Exception:
+            continue
+        if bar_date < quote_date:
+            return close
+    return None
+
+
 def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
     try:
         params = {"range": "5d", "interval": "1d"}
@@ -1103,19 +1142,11 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
         if country == "US":
             previous = _previous_us_regular_close(symbol, quote_time, timeout=timeout)
         if previous is None and country != "US":
-            # Prefer meta's previousClose over chart's second-to-last bar.
-            # valid_points[-2] is wrong when today's bar is missing from the
-            # chart (data lag at open, public-holiday gap, etc.) — in that case
-            # valid_points[-1] == yesterday and [-2] == two days ago, giving a
-            # 2-day return instead of today's.  meta.regularMarketPreviousClose
-            # is always yesterday's close, so use it first.
-            previous = (
-                meta.get("regularMarketPreviousClose")
-                or meta.get("previousClose")
-                or meta.get("chartPreviousClose")
-            )
-            if previous is None and len(valid_points) >= 2:
-                _, previous = valid_points[-2]
+            # Today's % is just the latest close vs the previous trading day's
+            # close, read straight off the daily series. Don't use meta's
+            # previousClose / chartPreviousClose — those point at the start of
+            # the chart range (~5 trading days ago) and give a multi-day return.
+            previous = _previous_close_from_daily_bars(valid_points, quote_time, country)
 
         change_pct = None
         meta_change_pct = meta.get("regularMarketChangePercent")
