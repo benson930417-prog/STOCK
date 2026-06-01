@@ -10,6 +10,7 @@ import re
 import unicodedata
 import json
 import subprocess
+import threading
 import sqlite3
 from datetime import datetime, timezone
 
@@ -82,9 +83,9 @@ def is_master_holding_command(text):
     normalized = unicodedata.normalize("NFKC", text).strip()
     return "吳大師" in normalized
 
-def is_operation_report_command(text):
-    normalized = unicodedata.normalize("NFKC", text).strip()
-    return "操作日報" in normalized
+def is_daily_update_command(text):
+    # Admin command: exact match only (no aliases/fuzzy matching).
+    return unicodedata.normalize("NFKC", text).strip() == "每日更新"
 
 def is_gold_command(text):
     normalized = unicodedata.normalize("NFKC", text).strip().lower()
@@ -108,16 +109,101 @@ def latest_market_pulse_date():
         raise RuntimeError("No ^TWII price date found in etf_bench DB")
     return str(row[0])
 
-def parse_operation_report_ticker(text):
-    compact = unicodedata.normalize("NFKC", text).lower()
-    compact = re.sub(r"[^0-9a-z]", "", compact)
-    if "00403" in compact or "403" in compact:
-        return "00403A"
-    if "988" in compact:
-        return "00988A"
-    if "981" in compact:
-        return "00981A"
-    return None
+def _run_daily_update():
+    """Fire-and-forget re-run of the full daily orchestrator. The script is
+    self-contained (cd's to repo, activates venv, sources secrets, defaults to
+    all ETFs, and emails its own summary), so there is no LINE feedback here."""
+    try:
+        subprocess.run(
+            ["bash", "scripts/update_and_notify.sh"],
+            cwd=parent_dir,
+            timeout=1800,
+        )
+    except Exception as e:
+        print("Daily update run failed:", e)
+
+ACTIVE_ETF_TICKERS = {"00403A", "00981A", "00988A"}
+
+# Admin re-fetch aliases — exactly the tokens shown in the admin command list.
+REFETCH_ALIASES = {
+    "403": "00403A",
+    "981": "00981A",
+    "988": "00988A",
+    "0050": "0050",
+    "830": "00830",
+    "878": "00878",
+    "891": "00891",
+    "9805": "009805",
+    "9820": "009820",
+    "全部": "ALL",
+}
+
+def parse_refetch_command(text):
+    """Admin command: exact '抓取 <alias>' only (e.g. '抓取 891', '抓取 全部').
+    Returns a ticker, 'ALL', or None — no fuzzy matching."""
+    normalized = unicodedata.normalize("NFKC", text).strip()
+    parts = normalized.split()
+    if len(parts) != 2 or parts[0] != "抓取":
+        return None
+    return REFETCH_ALIASES.get(parts[1])
+
+def _fetcher_script_for(ticker):
+    if ticker in ACTIVE_ETF_TICKERS:
+        return f"scripts/fetch_etf_{ticker}.py"
+    return f"scripts/fetch_passive_{ticker}.py"
+
+def _read_fetch_log(ticker):
+    name = (
+        f"etf_{ticker}_log.json" if ticker in ACTIVE_ETF_TICKERS
+        else f"passive_{ticker}_log.json"
+    )
+    try:
+        with open(os.path.join(parent_dir, "data", name), encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+def _push_target(event):
+    src = event.source
+    if getattr(src, "type", None) == "group":
+        return src.group_id
+    if getattr(src, "type", None) == "room":
+        return src.room_id
+    return src.user_id
+
+def _run_fetch_and_report(target_id, tickers):
+    lines = []
+    for ticker in tickers:
+        script = _fetcher_script_for(ticker)
+        try:
+            proc = subprocess.run(
+                [sys.executable, script],
+                cwd=parent_dir,
+                capture_output=True,
+                text=True,
+                timeout=180,
+            )
+            if proc.returncode == 0:
+                log = _read_fetch_log(ticker)
+                status = log.get("status", "UNKNOWN")
+                latest = log.get("latest_date", "----")
+                count = log.get("holdings_count", "?")
+                lines.append(
+                    f"✅ {ticker} {ETF_QUOTE_NAMES.get(ticker, '')}｜{status}｜{latest}｜{count}檔"
+                )
+            else:
+                tail = (proc.stderr or proc.stdout or "").strip().splitlines()
+                detail = tail[-1][:120] if tail else f"exit={proc.returncode}"
+                lines.append(f"❌ {ticker} 失敗：{detail}")
+        except subprocess.TimeoutExpired:
+            lines.append(f"❌ {ticker} 逾時（>180秒）")
+        except Exception as e:
+            lines.append(f"❌ {ticker} 失敗：{type(e).__name__}: {e}")
+    msg = "📥 重新抓取結果\n" + "\n".join(lines)
+    try:
+        line_bot_api.push_message(target_id, TextSendMessage(text=msg))
+    except Exception as e:
+        print("Refetch push failed:", e)
 
 def _line_access_token():
     return get_secret('LINE_CHANNEL_ACCESS_TOKEN') or get_secret('LINE_TOKEN')
@@ -543,11 +629,12 @@ def webhook():
 def handle_message(event):
     user_msg = event.message.text.strip()
     is_master_holding = is_master_holding_command(user_msg)
-    is_operation_report = is_operation_report_command(user_msg)
+    is_daily_update = is_daily_update_command(user_msg)
     is_gold = is_gold_command(user_msg)
     is_market_pulse = is_market_pulse_command(user_msg)
-    etf_quote_ticker = None if is_operation_report or is_master_holding or is_gold or is_market_pulse else parse_etf_quote_command(user_msg)
-    print(f"LINE text={user_msg!r} parsed_etf={etf_quote_ticker}", flush=True)
+    refetch_target = parse_refetch_command(user_msg)
+    etf_quote_ticker = None if is_daily_update or is_master_holding or is_gold or is_market_pulse or refetch_target else parse_etf_quote_command(user_msg)
+    print(f"LINE text={user_msg!r} parsed_etf={etf_quote_ticker} refetch={refetch_target} daily_update={is_daily_update}", flush=True)
     
     if is_master_holding:
         try:
@@ -630,67 +717,31 @@ def handle_message(event):
                 TextSendMessage(text=f"{etf_quote_ticker} 報價圖暫時無法產生：{type(e).__name__}: {e}")
             )
 
-    elif is_operation_report:
-        try:
-            from scripts.generate_etf_summary import generate
+    elif is_daily_update:
+        # Re-run the full daily orchestrator (fetch + benchmark + git + LINE
+        # broadcast + admin email). Fire-and-forget: the email is the report,
+        # so the bot only acks that it started (a free reply, not a paid push).
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="⏳ 已開始重新執行每日更新，結果將寄至 email。")
+        )
+        threading.Thread(target=_run_daily_update, daemon=True).start()
 
-            ticker = parse_operation_report_ticker(user_msg)
-            if not ticker:
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text="請在操作日報訊息中指定 981 或 988。")
-                )
-                return
-
-            generate([ticker])
-            filename = f"etf_{ticker}_summary_latest.jpg"
-            image_path = os.path.join(parent_dir, "data", "summaries", filename)
-            if not os.path.exists(image_path):
-                raise FileNotFoundError(image_path)
-
-            history_path = os.path.join(parent_dir, "data", f"etf_{ticker}_history.json")
-            with open(history_path, "r", encoding="utf-8") as fh:
-                date_str = max(json.load(fh).keys())
-
-            # Serve via webhook's own /api/webhook/summaries endpoint, not
-            # GitHub raw URL — see scripts/update_and_notify.sh for the same
-            # simplification. No git push, no CDN wait, no gitignore traps.
-            img_url = (
-                f"https://linechatbot.duckdns.org/api/webhook/summaries/"
-                f"{filename}?t={int(time.time())}"
-            )
-            messages = [
-                {
-                    "type": "text",
-                    "text": f"{date_str} {ETF_QUOTE_NAMES.get(ticker, ticker)} ({ticker}) 操作日報",
-                },
-                {
-                    "type": "image",
-                    "originalContentUrl": img_url,
-                    "previewImageUrl": img_url,
-                },
-            ]
-            token = _line_access_token()
-            if not token:
-                raise RuntimeError("LINE access token is not configured")
-
-            res = requests.post(
-                "https://api.line.me/v2/bot/message/broadcast",
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
-                },
-                data=json.dumps({"messages": messages}, ensure_ascii=False).encode("utf-8"),
-                timeout=20,
-            )
-            res.raise_for_status()
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{ticker} 操作日報已重新渲染並廣播。"))
-        except Exception as e:
-            print("ETF operation report broadcast failed:", e)
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text="操作日報廣播暫時無法送出，請稍後再試。")
-            )
+    elif refetch_target:
+        if refetch_target == "ALL":
+            tickers = list(ETF_QUOTE_NAMES.keys())
+        else:
+            tickers = [refetch_target]
+        target_id = _push_target(event)
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=f"⏳ 開始重新抓取：{'、'.join(tickers)}\n完成後回報結果（每檔約需數十秒）。")
+        )
+        threading.Thread(
+            target=_run_fetch_and_report,
+            args=(target_id, tickers),
+            daemon=True,
+        ).start()
 
     elif user_msg == "油價":
         reply_msg = get_oil_price()
@@ -754,10 +805,11 @@ def handle_message(event):
                 "━━━━━━━━━━━━━━\n\n"
                 "📊 一般隱藏指令\n"
                 "• id — 查詢 LINE 使用者 ID 及群組 ID\n\n"
-                "📢 管理員廣播（需手動輸入）\n"
-                "• 操作日報 403 — 重新渲染並廣播 00403A 操作日報\n"
-                "• 操作日報 981 — 重新渲染並廣播 00981A 操作日報\n"
-                "• 操作日報 988 — 重新渲染並廣播 00988A 操作日報\n"
+                "🔁 每日更新（背景執行，結果寄 email）\n"
+                "• 每日更新 — 重新執行完整每日流程（抓取＋benchmark＋git＋廣播＋email）\n\n"
+                "🔄 重新抓取官方持股（完成後回報狀態）\n"
+                "• 抓取 891 — 重新抓取單一 ETF（403/981/988/0050/830/878/891/9805/9820）\n"
+                "• 抓取 全部 — 重新抓取所有 ETF\n"
                 "🥚 彩蛋\n"
                 "• 欸嘿 — ( ͡° ͜ʖ ͡°)\n\n"
                 "ℹ️ 以上指令均需手動輸入，不在選單中顯示。"
