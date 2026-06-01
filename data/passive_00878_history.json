@@ -1882,5 +1882,221 @@
         "shares": 28461000
       }
     ]
+  },
+  "2026-06-01": {
+    "date": "2026-06-01",
+    "meta": {
+      "fund_size": 601663907513.0,
+      "nav": 32.03,
+      "outstanding_units": 18783290000,
+      "closing_price": 31.99,
+      "source_url": "https://www.cathaysite.com.tw/ETF/detail/ECN?tab=etf3"
+    },
+    "holdings": [
+      {
+        "id": "2891.TW",
+        "name": "中信金",
+        "weight_pct": 8.92,
+        "shares": 864473000
+      },
+      {
+        "id": "2382.TW",
+        "name": "廣達",
+        "weight_pct": 8.39,
+        "shares": 135453000
+      },
+      {
+        "id": "2303.TW",
+        "name": "聯電",
+        "weight_pct": 7.53,
+        "shares": 310202000
+      },
+      {
+        "id": "2882.TW",
+        "name": "國泰金",
+        "weight_pct": 6.54,
+        "shares": 446339486
+      },
+      {
+        "id": "2454.TW",
+        "name": "聯發科",
+        "weight_pct": 5.39,
+        "shares": 7122000
+      },
+      {
+        "id": "2357.TW",
+        "name": "華碩",
+        "weight_pct": 4.88,
+        "shares": 35084000
+      },
+      {
+        "id": "2881.TW",
+        "name": "富邦金",
+        "weight_pct": 4.06,
+        "shares": 221157945
+      },
+      {
+        "id": "3711.TW",
+        "name": "日月光投控",
+        "weight_pct": 3.95,
+        "shares": 39592000
+      },
+      {
+        "id": "4958.TW",
+        "name": "臻鼎-KY",
+        "weight_pct": 3.08,
+        "shares": 33811000
+      },
+      {
+        "id": "2603.TW",
+        "name": "長榮",
+        "weight_pct": 2.88,
+        "shares": 77376000
+      },
+      {
+        "id": "2301.TW",
+        "name": "光寶科",
+        "weight_pct": 2.61,
+        "shares": 66893000
+      },
+      {
+        "id": "5347.TW",
+        "name": "世界先進",
+        "weight_pct": 2.58,
+        "shares": 86858442
+      },
+      {
+        "id": "2885.TW",
+        "name": "元大金",
+        "weight_pct": 2.51,
+        "shares": 254850516
+      },
+      {
+        "id": "2379.TW",
+        "name": "瑞昱",
+        "weight_pct": 2.5,
+        "shares": 24717000
+      },
+      {
+        "id": "3034.TW",
+        "name": "聯詠",
+        "weight_pct": 2.37,
+        "shares": 28750000
+      },
+      {
+        "id": "3045.TW",
+        "name": "台灣大",
+        "weight_pct": 2.35,
+        "shares": 124245000
+      },
+      {
+        "id": "2886.TW",
+        "name": "兆豐金",
+        "weight_pct": 2.24,
+        "shares": 324727964
+      },
+      {
+        "id": "4904.TW",
+        "name": "遠傳",
+        "weight_pct": 2.2,
+        "shares": 136554000
+      },
+      {
+        "id": "1216.TW",
+        "name": "統一",
+        "weight_pct": 2.19,
+        "shares": 178818000
+      },
+      {
+        "id": "2356.TW",
+        "name": "英業達",
+        "weight_pct": 2.14,
+        "shares": 166531000
+      },
+      {
+        "id": "3231.TW",
+        "name": "緯創",
+        "weight_pct": 2.13,
+        "shares": 73529000
+      },
+      {
+        "id": "2412.TW",
+        "name": "中華電",
+        "weight_pct": 2.12,
+        "shares": 90729000
+      },
+      {
+        "id": "2376.TW",
+        "name": "技嘉",
+        "weight_pct": 2.0,
+        "shares": 31035000
+      },
+      {
+        "id": "3293.TW",
+        "name": "鈊  象",
+        "weight_pct": 1.8,
+        "shares": 14106000
+      },
+      {
+        "id": "2887.TW",
+        "name": "台新新光金",
+        "weight_pct": 1.62,
+        "shares": 395962000
+      },
+      {
+        "id": "5876.TW",
+        "name": "上海商銀",
+        "weight_pct": 1.55,
+        "shares": 234851590
+      },
+      {
+        "id": "5871.TW",
+        "name": "中租-KY",
+        "weight_pct": 1.5,
+        "shares": 83238080
+      },
+      {
+        "id": "2618.TW",
+        "name": "長榮航",
+        "weight_pct": 1.04,
+        "shares": 166629000
+      },
+      {
+        "id": "2912.TW",
+        "name": "統一超",
+        "weight_pct": 1.02,
+        "shares": 27097000
+      },
+      {
+        "id": "2880.TW",
+        "name": "華南金",
+        "weight_pct": 0.95,
+        "shares": 173657000
+      },
+      {
+        "id": "2449.TW",
+        "name": "京元電子",
+        "weight_pct": 0.38,
+        "shares": 7168000
+      },
+      {
+        "id": "1402.TW",
+        "name": "遠東新",
+        "weight_pct": 0.25,
+        "shares": 60487000
+      },
+      {
+        "id": "2324.TW",
+        "name": "仁寶",
+        "weight_pct": 0.11,
+        "shares": 16530000
+      },
+      {
+        "id": "2474.TW",
+        "name": "可成",
+        "weight_pct": 0.1,
+        "shares": 2768000
+      }
+    ]
   }
 }
