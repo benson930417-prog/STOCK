@@ -56,28 +56,22 @@ ETF_QUOTE_NAMES = {
     "009820": "元大納斯達克精選",
 }
 
+# The rich menu sends these exact tokens; quote commands are exact-match only
+# (no aliases) so e.g. "抓取891" never leaks into the 891 quote card.
+ETF_QUOTE_ALIASES = {
+    "403": "00403A",
+    "981": "00981A",
+    "988": "00988A",
+    "0050": "0050",
+    "830": "00830",
+    "878": "00878",
+    "891": "00891",
+    "9805": "009805",
+    "9820": "009820",
+}
+
 def parse_etf_quote_command(text):
-    compact = unicodedata.normalize("NFKC", text).lower()
-    compact = re.sub(r"[^0-9a-z]", "", compact)
-    if "00403" in compact or "403" in compact:
-        return "00403A"
-    if "988" in compact:
-        return "00988A"
-    if "981" in compact:
-        return "00981A"
-    if "0050" in compact or compact == "50":
-        return "0050"
-    if "00830" in compact or compact in {"830", "0830"}:
-        return "00830"
-    if "00878" in compact or compact in {"878", "0878"}:
-        return "00878"
-    if "00891" in compact or compact in {"891", "0891"}:
-        return "00891"
-    if "009805" in compact or compact in {"9805", "09805", "9805"}:
-        return "009805"
-    if "009820" in compact or compact in {"9820", "09820"}:
-        return "009820"
-    return None
+    return ETF_QUOTE_ALIASES.get(unicodedata.normalize("NFKC", text).strip())
 
 def is_master_holding_command(text):
     normalized = unicodedata.normalize("NFKC", text).strip()
@@ -124,28 +118,17 @@ def _run_daily_update():
 
 ACTIVE_ETF_TICKERS = {"00403A", "00981A", "00988A"}
 
-# Admin re-fetch aliases — exactly the tokens shown in the admin command list.
-REFETCH_ALIASES = {
-    "403": "00403A",
-    "981": "00981A",
-    "988": "00988A",
-    "0050": "0050",
-    "830": "00830",
-    "878": "00878",
-    "891": "00891",
-    "9805": "009805",
-    "9820": "009820",
-    "全部": "ALL",
-}
-
 def parse_refetch_command(text):
-    """Admin command: exact '抓取 <alias>' only (e.g. '抓取 891', '抓取 全部').
+    """Admin command: exact '抓取 <token>' only (e.g. '抓取 891', '抓取 全部').
+    Tokens are the same exact strings as the quote commands, plus 全部 for all.
     Returns a ticker, 'ALL', or None — no fuzzy matching."""
     normalized = unicodedata.normalize("NFKC", text).strip()
     parts = normalized.split()
     if len(parts) != 2 or parts[0] != "抓取":
         return None
-    return REFETCH_ALIASES.get(parts[1])
+    if parts[1] == "全部":
+        return "ALL"
+    return ETF_QUOTE_ALIASES.get(parts[1])
 
 def _fetcher_script_for(ticker):
     if ticker in ACTIVE_ETF_TICKERS:
