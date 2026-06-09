@@ -44,6 +44,26 @@ def get_secret(key):
 line_bot_api = LineBotApi(get_secret('LINE_CHANNEL_ACCESS_TOKEN'))
 line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
 
+def reply_line(reply_token, messages, attempts=3):
+    if not isinstance(messages, list):
+        messages = [messages]
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            line_bot_api.reply_message(reply_token, messages)
+            return True
+        except Exception as exc:
+            last_error = exc
+            print(
+                f"LINE reply failed attempt {attempt}/{attempts}: "
+                f"{type(exc).__name__}: {exc}",
+                flush=True,
+            )
+            if attempt < attempts:
+                time.sleep(0.75 * attempt)
+    print(f"LINE reply permanently failed: {type(last_error).__name__}: {last_error}", flush=True)
+    return False
+
 ETF_QUOTE_NAMES = {
     "00403A": "主動統一升級50",
     "00981A": "主動統一台股增長",
@@ -635,10 +655,10 @@ def handle_message(event):
             for output_path in output_paths[:image_slots]:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
-            line_bot_api.reply_message(event.reply_token, messages)
+            reply_line(event.reply_token, messages)
         except Exception as e:
             print("Master holding card generation failed:", e)
-            line_bot_api.reply_message(
+            reply_line(
                 event.reply_token,
                 TextSendMessage(text="吳大師持股暫時無法產生，請稍後再試。")
             )
@@ -652,7 +672,7 @@ def handle_message(event):
 
             latest_date = latest_market_pulse_date()
             img_url = f"https://linechatbot.duckdns.org/api/webhook/summaries/{filename}?t={int(time.time())}"
-            line_bot_api.reply_message(
+            reply_line(
                 event.reply_token,
                 [
                     TextSendMessage(text=f"市場脈動｜資料截至 {latest_date}"),
@@ -661,7 +681,7 @@ def handle_message(event):
             )
         except Exception as e:
             print("Market pulse cached image reply failed:", e)
-            line_bot_api.reply_message(
+            reply_line(
                 event.reply_token,
                 TextSendMessage(text="市場脈動截圖尚未更新完成，請稍後再試。")
             )
@@ -671,7 +691,7 @@ def handle_message(event):
         try:
             res = get_chart_snapshot("gold")
             img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
-            line_bot_api.reply_message(
+            reply_line(
                 event.reply_token,
                 [
                     TextSendMessage(text=reply_msg),
@@ -681,7 +701,7 @@ def handle_message(event):
         except Exception as e:
             print("Gold Chart generation failed:", e)
             error_msg = _tradingview_error_text("gold", "圖表", e)
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
+            reply_line(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
 
     elif etf_quote_ticker:
         try:
@@ -692,10 +712,10 @@ def handle_message(event):
             for output_path in output_paths[:4]:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
-            line_bot_api.reply_message(event.reply_token, messages)
+            reply_line(event.reply_token, messages)
         except Exception as e:
             print("ETF quote card generation failed:", e)
-            line_bot_api.reply_message(
+            reply_line(
                 event.reply_token,
                 TextSendMessage(text=f"{etf_quote_ticker} 報價圖暫時無法產生：{type(e).__name__}: {e}")
             )
@@ -704,7 +724,7 @@ def handle_message(event):
         # Re-run the full daily orchestrator (fetch + benchmark + git + LINE
         # broadcast + admin email). Fire-and-forget: the email is the report,
         # so the bot only acks that it started (a free reply, not a paid push).
-        line_bot_api.reply_message(
+        reply_line(
             event.reply_token,
             TextSendMessage(text="⏳ 已開始重新執行每日更新，結果將寄至 email。")
         )
@@ -716,7 +736,7 @@ def handle_message(event):
         else:
             tickers = [refetch_target]
         target_id = _push_target(event)
-        line_bot_api.reply_message(
+        reply_line(
             event.reply_token,
             TextSendMessage(text=f"⏳ 開始重新抓取：{'、'.join(tickers)}\n完成後回報結果（每檔約需數十秒）。")
         )
@@ -738,11 +758,11 @@ def handle_message(event):
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             
-            line_bot_api.reply_message(event.reply_token, messages)
+            reply_line(event.reply_token, messages)
         except Exception as e:
             print("Oil Chart generation failed:", e)
             error_msg = _tradingview_error_text(key, "圖表", e)
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
+            reply_line(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
 
     elif user_msg in ["債卷", "債券"]:
         reply_msg = get_10yf_price()
@@ -751,7 +771,7 @@ def handle_message(event):
             
             img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
             
-            line_bot_api.reply_message(
+            reply_line(
                 event.reply_token,
                 [
                     TextSendMessage(text=reply_msg),
@@ -761,7 +781,7 @@ def handle_message(event):
         except Exception as e:
             print("Bond Chart generation failed:", e)
             error_msg = _tradingview_error_text("bond", "圖表", e)
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
+            reply_line(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
 
     elif user_msg == "匯率":
         reply_msg = get_exchange_rates()
@@ -775,13 +795,13 @@ def handle_message(event):
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             
-            line_bot_api.reply_message(event.reply_token, messages)
+            reply_line(event.reply_token, messages)
         except Exception as e:
             print("Forex Chart generation failed:", e)
             error_msg = _tradingview_error_text(key, "圖表", e)
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
+            reply_line(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
     elif user_msg.lower() == "admin":
-        line_bot_api.reply_message(
+        reply_line(
             event.reply_token,
             TextSendMessage(text=(
                 "🔑 隱藏指令清單\n"
@@ -806,17 +826,17 @@ def handle_message(event):
         elif event.source.type == "room":
             reply_parts.append(f"聊天室 ID：{event.source.room_id}")
             
-        line_bot_api.reply_message(
+        reply_line(
             event.reply_token,
             TextSendMessage(text="\n".join(reply_parts))
         )
     elif user_msg == "欸嘿":
-        line_bot_api.reply_message(
+        reply_line(
             event.reply_token,
             TextSendMessage(text="欸嘿")
         )
     else:
-        line_bot_api.reply_message(
+        reply_line(
             event.reply_token,
             TextSendMessage(text=(
             "可用關鍵字：\n"
@@ -841,7 +861,7 @@ def handle_message(event):
 
 @line_handler.add(FollowEvent)
 def handle_follow(event):
-    line_bot_api.reply_message(
+    reply_line(
         event.reply_token,
         TextSendMessage(text="歡迎加入！🤖\n請點選下方選單查詢報價與財經資訊，或直接在對話框輸入關鍵字。\n輸入「id」可取得您的 LINE 使用者 ID 與群組 ID。")
     )
@@ -853,7 +873,7 @@ def handle_postback(event):
 
 @line_handler.add(JoinEvent)
 def handle_join(event):
-    line_bot_api.reply_message(
+    reply_line(
         event.reply_token,
         TextSendMessage(text="大家好！🤖\n我已加入這個群組。請點選下方選單查詢報價與財經資訊，或直接輸入關鍵字。\n輸入「id」可取得目前的使用者 ID 與群組 ID。")
     )
