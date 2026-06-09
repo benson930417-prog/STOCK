@@ -170,15 +170,7 @@ def _read_fetch_log(ticker):
     except Exception:
         return {}
 
-def _push_target(event):
-    src = event.source
-    if getattr(src, "type", None) == "group":
-        return src.group_id
-    if getattr(src, "type", None) == "room":
-        return src.room_id
-    return src.user_id
-
-def _run_fetch_and_report(target_id, tickers):
+def _run_fetch_and_report(tickers):
     lines = []
     for ticker in tickers:
         script = _fetcher_script_for(ticker)
@@ -641,15 +633,9 @@ def handle_message(event):
     print(f"LINE text={user_msg!r} parsed_etf={etf_quote_ticker} refetch={refetch_target} daily_update={is_daily_update}", flush=True)
     if is_master_holding:
         try:
-            from scripts.master_holding_quote_card import (
-                generate_master_quote_card,
-                load_cached_master_quote_card,
-            )
+            from scripts.master_holding_quote_card import load_cached_master_quote_card
 
-            try:
-                text, output_paths, cache = load_cached_master_quote_card()
-            except Exception:
-                text, output_paths = generate_master_quote_card(limit=50)
+            text, output_paths, cache = load_cached_master_quote_card()
             messages = [TextSendMessage(text=text)]
             for output_path in output_paths[:2]:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
@@ -704,11 +690,11 @@ def handle_message(event):
 
     elif etf_quote_ticker:
         try:
-            from scripts.generate_quote_card import cached_quote_card_paths, generate_quote_card
+            from scripts.generate_quote_card import cached_quote_card_paths
 
             output_paths = cached_quote_card_paths(etf_quote_ticker, max_pages=2)
             if not output_paths:
-                output_paths = generate_quote_card(etf_quote_ticker, max_pages=2)
+                raise FileNotFoundError(f"Missing cached quote card images for {etf_quote_ticker}")
             messages = [TextSendMessage(text=build_etf_quote_text(etf_quote_ticker))]
             for output_path in output_paths[:2]:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
@@ -736,14 +722,13 @@ def handle_message(event):
             tickers = list(ETF_QUOTE_NAMES.keys())
         else:
             tickers = [refetch_target]
-        target_id = _push_target(event)
         reply_line(
             event.reply_token,
-            TextSendMessage(text=f"⏳ 開始重新抓取：{'、'.join(tickers)}\n完成後回報結果（每檔約需數十秒）。")
+            TextSendMessage(text=f"⏳ 開始重新抓取：{'、'.join(tickers)}\n結果會寫入 stock_webhook.log（每檔約需數十秒）。")
         )
         threading.Thread(
             target=_run_fetch_and_report,
-            args=(target_id, tickers),
+            args=(tickers,),
             daemon=True,
         ).start()
 

@@ -1382,11 +1382,14 @@ def monitor(ticker, interval):
                     previous_cache = None
             cache = build_cache(ticker, previous_cache=previous_cache)
             atomic_write_json(cache_path, cache)
+            from scripts.generate_quote_card import generate_quote_card_from_cache
+
+            card_paths = generate_quote_card_from_cache(ticker, cache, max_pages=2)
             counts = cache["counts"]
             print(
                 f"{utc_now_iso()} updated {ticker} quote cache: "
                 f"{counts['total']} holdings, ok={counts['up'] + counts['down'] + counts['flat']}, "
-                f"missing={counts['missing']}",
+                f"missing={counts['missing']}, images={len(card_paths)}",
                 flush=True,
             )
         except Exception as exc:

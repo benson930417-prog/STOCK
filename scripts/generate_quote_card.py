@@ -510,7 +510,6 @@ def cached_quote_card_paths(ticker="00988A", max_pages=2):
     cache_path = QUOTE_CACHE_DIR / f"etf_{ticker}_quotes.json"
     if not cache_path.exists():
         return []
-    cache_mtime = cache_path.stat().st_mtime
     try:
         with cache_path.open("r", encoding="utf-8") as fh:
             cache = json.load(fh)
@@ -522,7 +521,7 @@ def cached_quote_card_paths(ticker="00988A", max_pages=2):
     output_paths = []
     for index in range(1, expected_pages + 1):
         output_path = IMAGE_DIR / f"etf_{ticker}_quote_card_{index}.jpg"
-        if not output_path.exists() or output_path.stat().st_mtime < cache_mtime:
+        if not output_path.exists():
             return []
         output_paths.append(output_path)
     return output_paths
