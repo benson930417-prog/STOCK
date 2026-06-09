@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import re
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
@@ -13,6 +14,8 @@ import requests
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 DATA_DIR = ROOT_DIR / "data"
 QUOTE_CACHE_DIR = DATA_DIR / "quote_cache"
 

@@ -513,7 +513,10 @@ def cached_quote_card_paths(ticker="00988A", max_pages=2):
     try:
         with cache_path.open("r", encoding="utf-8") as fh:
             cache = json.load(fh)
-        expected_pages = max(1, math.ceil(len(cache.get("holdings", [])) / 25))
+        holdings = cache.get("holdings") or []
+        if cache.get("status") == "error" or not holdings:
+            return []
+        expected_pages = max(1, math.ceil(len(holdings) / 25))
     except Exception:
         expected_pages = max_pages
     if max_pages is not None:

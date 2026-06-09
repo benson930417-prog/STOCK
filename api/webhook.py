@@ -231,10 +231,14 @@ def build_etf_quote_text(ticker):
     cache_path = os.path.join(parent_dir, "data", "quote_cache", f"etf_{ticker}_quotes.json")
     with open(cache_path, "r", encoding="utf-8") as fh:
         cache = json.load(fh)
+    holdings = cache.get("holdings") or []
+    if cache.get("status") == "error":
+        raise RuntimeError(f"Quote cache error for {ticker}: {cache.get('error', 'unknown error')}")
+    if not holdings:
+        raise RuntimeError(f"Quote cache has no holdings for {ticker}")
     counts = cache.get("counts", {})
     composite = cache.get("composite_move_pct")
     etf_name = ETF_QUOTE_NAMES.get(ticker, "")
-    holdings = cache.get("holdings", [])
     fallback_rows = [row for row in holdings if row.get("day_change_pct") is not None and row.get("weight_pct") is not None]
     country_labels = {"TW": "台", "US": "美", "JP": "日", "HK": "港", "TSMC_FUT": "期"}
     country_order = ["TW", "US", "JP", "HK", "TSMC_FUT"]
@@ -692,16 +696,17 @@ def handle_message(event):
         try:
             from scripts.generate_quote_card import cached_quote_card_paths
 
+            text = build_etf_quote_text(etf_quote_ticker)
             output_paths = cached_quote_card_paths(etf_quote_ticker, max_pages=2)
             if not output_paths:
                 raise FileNotFoundError(f"Missing cached quote card images for {etf_quote_ticker}")
-            messages = [TextSendMessage(text=build_etf_quote_text(etf_quote_ticker))]
+            messages = [TextSendMessage(text=text)]
             for output_path in output_paths[:2]:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             reply_line(event.reply_token, messages)
         except Exception as e:
-            print("ETF quote card generation failed:", e)
+            print("ETF quote cache reply failed:", e)
             reply_line(
                 event.reply_token,
                 TextSendMessage(text=f"{etf_quote_ticker} 報價圖暫時無法產生：{type(e).__name__}: {e}")
