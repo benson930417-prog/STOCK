@@ -468,7 +468,7 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     return img
 
 
-def generate_quote_card_from_cache(ticker, cache, output_prefix=None):
+def generate_quote_card_from_cache(ticker, cache, output_prefix=None, max_pages=2):
     ticker = str(ticker).upper()
     rows = cache.get("holdings", [])
     has_live_rows = any(row.get("is_live_market") for row in rows)
@@ -494,6 +494,8 @@ def generate_quote_card_from_cache(ticker, cache, output_prefix=None):
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
     output_paths = []
     pages = [all_rows[index:index + 25] for index in range(0, len(all_rows), 25)] or [[]]
+    if max_pages is not None:
+        pages = pages[:max_pages]
     output_prefix = output_prefix or f"etf_{ticker}_quote_card"
     for index, page_rows in enumerate(pages, start=1):
         img = _draw_quote_card_page(ticker, cache, page_rows, scale, index, len(pages))
@@ -503,7 +505,30 @@ def generate_quote_card_from_cache(ticker, cache, output_prefix=None):
     return output_paths
 
 
-def generate_quote_card(ticker="00988A"):
+def cached_quote_card_paths(ticker="00988A", max_pages=2):
+    ticker = ticker.upper()
+    cache_path = QUOTE_CACHE_DIR / f"etf_{ticker}_quotes.json"
+    if not cache_path.exists():
+        return []
+    cache_mtime = cache_path.stat().st_mtime
+    try:
+        with cache_path.open("r", encoding="utf-8") as fh:
+            cache = json.load(fh)
+        expected_pages = max(1, math.ceil(len(cache.get("holdings", [])) / 25))
+    except Exception:
+        expected_pages = max_pages
+    if max_pages is not None:
+        expected_pages = min(expected_pages, max_pages)
+    output_paths = []
+    for index in range(1, expected_pages + 1):
+        output_path = IMAGE_DIR / f"etf_{ticker}_quote_card_{index}.jpg"
+        if not output_path.exists() or output_path.stat().st_mtime < cache_mtime:
+            return []
+        output_paths.append(output_path)
+    return output_paths
+
+
+def generate_quote_card(ticker="00988A", max_pages=2):
     ticker = ticker.upper()
     cache_path = QUOTE_CACHE_DIR / f"etf_{ticker}_quotes.json"
     history_prefix = "passive" if ticker in PASSIVE_TICKERS else "etf"
@@ -523,7 +548,7 @@ def generate_quote_card(ticker="00988A"):
 
         cache = build_cache(ticker, previous_cache=cache)
         atomic_write_json(cache_path, cache)
-    return generate_quote_card_from_cache(ticker, cache)
+    return generate_quote_card_from_cache(ticker, cache, max_pages=max_pages)
 
 
 if __name__ == "__main__":

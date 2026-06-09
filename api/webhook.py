@@ -43,9 +43,9 @@ def get_secret(key):
 
 line_bot_api = LineBotApi(get_secret('LINE_CHANNEL_ACCESS_TOKEN'))
 line_handler = WebhookHandler(get_secret('LINE_CHANNEL_SECRET'))
-_reply_fallback_targets = {}
 
 def reply_line(reply_token, messages, attempts=3):
+    global line_bot_api
     if not isinstance(messages, list):
         messages = [messages]
     last_error = None
@@ -63,25 +63,9 @@ def reply_line(reply_token, messages, attempts=3):
                 flush=True,
             )
             if attempt < attempts:
-                time.sleep(0.75 * attempt)
+                line_bot_api = LineBotApi(get_secret('LINE_CHANNEL_ACCESS_TOKEN'))
+                time.sleep(0.4 * attempt)
     print(f"LINE reply permanently failed: {type(last_error).__name__}: {last_error}", flush=True)
-    fallback_target = _reply_fallback_targets.get(reply_token)
-    if fallback_target:
-        for attempt in range(1, attempts + 1):
-            try:
-                line_bot_api.push_message(fallback_target, messages)
-                print(f"LINE push fallback succeeded attempt {attempt}/{attempts}", flush=True)
-                return True
-            except Exception as exc:
-                last_error = exc
-                print(
-                    f"LINE push fallback failed attempt {attempt}/{attempts}: "
-                    f"{type(exc).__name__}: {exc}",
-                    flush=True,
-                )
-                if attempt < attempts:
-                    time.sleep(0.75 * attempt)
-        print(f"LINE push fallback permanently failed: {type(last_error).__name__}: {last_error}", flush=True)
     return False
 
 ETF_QUOTE_NAMES = {
@@ -223,10 +207,7 @@ def _run_fetch_and_report(target_id, tickers):
         except Exception as e:
             lines.append(f"❌ {ticker} 失敗：{type(e).__name__}: {e}")
     msg = "📥 重新抓取結果\n" + "\n".join(lines)
-    try:
-        line_bot_api.push_message(target_id, TextSendMessage(text=msg))
-    except Exception as e:
-        print("Refetch push failed:", e)
+    print(msg, flush=True)
 
 def _line_access_token():
     return get_secret('LINE_CHANNEL_ACCESS_TOKEN') or get_secret('LINE_TOKEN')
@@ -658,10 +639,6 @@ def handle_message(event):
     refetch_target = parse_refetch_command(user_msg)
     etf_quote_ticker = None if is_daily_update or is_master_holding or is_gold or is_market_pulse or refetch_target else parse_etf_quote_command(user_msg)
     print(f"LINE text={user_msg!r} parsed_etf={etf_quote_ticker} refetch={refetch_target} daily_update={is_daily_update}", flush=True)
-    _reply_fallback_targets[event.reply_token] = _push_target(event)
-    if len(_reply_fallback_targets) > 500:
-        _reply_fallback_targets.pop(next(iter(_reply_fallback_targets)), None)
-    
     if is_master_holding:
         try:
             from scripts.master_holding_quote_card import (
@@ -674,8 +651,7 @@ def handle_message(event):
             except Exception:
                 text, output_paths = generate_master_quote_card(limit=50)
             messages = [TextSendMessage(text=text)]
-            image_slots = max(0, 5 - len(messages))
-            for output_path in output_paths[:image_slots]:
+            for output_path in output_paths[:2]:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             reply_line(event.reply_token, messages)
@@ -728,11 +704,13 @@ def handle_message(event):
 
     elif etf_quote_ticker:
         try:
-            from scripts.generate_quote_card import generate_quote_card
+            from scripts.generate_quote_card import cached_quote_card_paths, generate_quote_card
 
-            output_paths = generate_quote_card(etf_quote_ticker)
+            output_paths = cached_quote_card_paths(etf_quote_ticker, max_pages=2)
+            if not output_paths:
+                output_paths = generate_quote_card(etf_quote_ticker, max_pages=2)
             messages = [TextSendMessage(text=build_etf_quote_text(etf_quote_ticker))]
-            for output_path in output_paths[:4]:
+            for output_path in output_paths[:2]:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
             reply_line(event.reply_token, messages)
