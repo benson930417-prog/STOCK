@@ -1,9 +1,10 @@
 {
-  "last_checked_utc": "2026-06-12T09:31:10.628956Z",
+  "last_checked_utc": "2026-06-13T09:31:47.913571Z",
   "last_updated_utc": "2026-06-12T09:31:10.628956Z",
   "latest_date": "2026-06-11",
-  "status": "NEW DATA FOUND",
+  "status": "FETCH FAILED",
   "source": "https://www.yuantaetfs.com/product/detail/009820/ratio",
   "holdings_count": 28,
-  "payload_changed": true
+  "payload_changed": true,
+  "error": "009820 fetch failed during daily job started at 2026-06-13T09:30:24.765568Z"
 }
