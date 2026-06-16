@@ -49,3 +49,7 @@ data/etf_bench/*.sqlite-shm
 
 # Local research/backtest sandboxes do not belong in the production repo
 strategy_experiment*/
+
+# Local verification / analysis sandboxes — each lives in its own folder, never tracked
+score_verify/
+verify_*/
