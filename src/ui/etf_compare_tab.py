@@ -458,19 +458,24 @@ def _build_score_table(
     etf_universe: pd.DataFrame,
     baseline_date: pd.Timestamp,
     weights: dict[str, float],
+    as_of: pd.Timestamp | None = None,
 ) -> pd.DataFrame:
     """One row per selected ETF with pillar sub-scores + the fair composite.
 
     Computed on adj_close (total return) regardless of the chart's display toggle,
     so high-dividend funds are compared fairly and split artefacts are avoided.
+
+    `as_of` caps the data at a past date so the very same scorer can reproduce the
+    score "as it would have looked then" — used by the history backfill and step7.
     """
+    end = pd.Timestamp(as_of) if as_of is not None else None
     bench_cache: dict[str, pd.Series | None] = {}
 
     def _bench_returns(idx: str | None) -> pd.Series | None:
         if idx is None:
             return None
         if idx not in bench_cache:
-            bdf = db.get_prices(idx, start=baseline_date)
+            bdf = db.get_prices(idx, start=baseline_date, end=end)
             if bdf.empty:
                 bench_cache[idx] = None
             else:
@@ -491,7 +496,7 @@ def _build_score_table(
             "benchmark": None, "r2": None,
         }
 
-        df = db.get_prices(t, start=baseline_date)
+        df = db.get_prices(t, start=baseline_date, end=end)
         if df.empty:
             recs.append(rec)
             continue
@@ -907,6 +912,25 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                 "評分採總報酬（adj_close）計算，與上方圖表的顯示選項無關。"
             )
 
+            # Regime coverage of the scoring window — so the score self-documents
+            # whether it has actually seen a bear yet.
+            _cov = regimes_df if not regimes_df.empty else _compute_regimes_live(zigzag_threshold)
+            _rc = {"bull": 0, "correction": 0, "mini_bear": 0, "bear": 0}
+            for _, _rr in _cov.iterrows():
+                if (pd.Timestamp(_rr["end_date"]) < baseline_date
+                        or pd.Timestamp(_rr["start_date"]) > today_ts):
+                    continue
+                if _rr["regime"] in _rc:
+                    _rc[_rr["regime"]] += 1
+            _no_bear = (_rc["mini_bear"] + _rc["bear"]) == 0
+            st.caption(
+                f"📐 評分期間市場樣本："
+                f"多頭 {_rc['bull']} 段 · 小熊 {_rc['correction']} 段 · "
+                f"中熊 {_rc['mini_bear']} 段 · 大熊 {_rc['bear']} 段"
+                + ("　⚠️ 尚未經歷真正空頭，**抗跌/防禦能力未受考驗**，排名僅反映多頭效率。"
+                   if _no_bear else "")
+            )
+
             with st.expander("⚙️ 調整支柱權重（預設等權＝最公平）", expanded=False):
                 cw = st.columns(3)
                 w_eff = cw[0].slider("效率",   0.0, 3.0, 1.0, 0.5, key="etfc_w_eff")
@@ -935,6 +959,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         "不對稱": r.get("不對稱"),
                         "一致性": r.get("一致性"),
                         "同類排名": r.get("同類排名", ""),
+                        "交易日數": int(r["n_days"]),
                         "信賴":   _conf_label(int(r["n_days"])),
                         "完整度": f"{r['_completeness'] * 100:.0f}%",
                     })
@@ -943,6 +968,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         "排名": "—", "代號": r["代號"], "名稱": r["名稱"], "類別": r["類別"],
                         "綜合評分": None, "評等": "", "效率": None, "不對稱": None,
                         "一致性": None, "同類排名": "",
+                        "交易日數": int(r["n_days"]),
                         "信賴": _conf_label(int(r["n_days"])), "完整度": "—",
                     })
                 disp = pd.DataFrame(disp_rows)
