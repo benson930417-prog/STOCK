@@ -21,6 +21,7 @@ except Exception:
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DB_PATH  = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
+SCORE_HISTORY_CSV = ROOT_DIR / "data" / "etf_bench" / "score_history.csv"
 
 
 def _db_mtime() -> float:
@@ -176,6 +177,25 @@ def get_ingest_status(mtime: float | None = None) -> pd.DataFrame:
             FROM ingest_log
             GROUP BY ticker
         """, conn)
+    return df
+
+
+@_cache_data(ttl=600)
+def get_score_history(mtime: float | None = None) -> pd.DataFrame:
+    """Daily fair-score pillars per ETF, written by step7_score.
+
+    Columns: date, ticker, asset_class, n_days, eff, asy, con
+    (eff/asy/con = 效率/不對稱/一致性 percentile sub-scores 0-100; NaN if unavailable).
+    The website derives the weighted composite from these so weights stay live.
+    """
+    _ = mtime if mtime is not None else (
+        SCORE_HISTORY_CSV.stat().st_mtime if SCORE_HISTORY_CSV.exists() else 0.0
+    )
+    if not SCORE_HISTORY_CSV.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(SCORE_HISTORY_CSV)
+    if not df.empty:
+        df["date"] = pd.to_datetime(df["date"])
     return df
 
 
