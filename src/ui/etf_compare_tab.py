@@ -1082,6 +1082,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         "或非股票／債券／商品型）。")
             else:
                 sub = score_hist[score_hist["ticker"].isin(hist_tickers)].copy()
+                sub = sub[(sub["date"] >= baseline_date) & (sub["date"] <= today_ts)]
                 sub["score"] = _history_composite(sub, w_eff, w_asy, w_con)
                 if compress_hist:
                     conf = (sub["n_days"] / 252.0).clip(0, 1)
@@ -1112,7 +1113,8 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                     height=440, margin=dict(l=10, r=20, t=30, b=10),
                     yaxis=dict(title="綜合評分（同類百分位）", range=[0, 100],
                                ticksuffix="", showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
-                    xaxis=dict(title="", showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
+                    xaxis=dict(title="", showgrid=True, gridcolor="rgba(255,255,255,0.08)",
+                               range=[baseline_date, max(today_ts, baseline_date)]),
                     legend=dict(x=0.01, y=0.99, xanchor="left", yanchor="top",
                                 bgcolor="rgba(0,0,0,0.5)"),
                     hovermode="x unified",
