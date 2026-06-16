@@ -919,7 +919,8 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
     # ─────────── 綜合評分排名（公平、與市場多空方向無關）───────────
     if selected_tickers:
-        with st.container(border=True):
+        tab_rank, tab_hist = st.tabs(["🏆 綜合評分排名", "📈 評分歷史"])
+        with tab_rank:
             st.markdown("### 🏆 綜合評分排名")
             st.caption(
                 "以三大支柱在你選的 ETF 之間排名，**所有指標皆與市場多空方向無關**："
@@ -1051,27 +1052,20 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                     )
                     st.dataframe(pd.DataFrame(bench_rows), hide_index=True, width="stretch")
 
-    # ─────────── 綜合評分歷史（互動式）───────────
-    score_hist = db.get_score_history()
-    if not score_hist.empty:
-        with st.container(border=True):
+        with tab_hist:
             st.markdown("### 📈 綜合評分歷史")
             st.caption(
-                "每日記錄全市場 ETF 的公平評分——在「同資產類別」（股票／債券／商品）內的百分位，"
-                "越高＝同類中越好。挑選任意 ETF 看其評分走勢；三大支柱權重沿用上方排名設定。"
+                "上方所選 ETF 的每日公平評分走勢——在「同資產類別」（股票／債券／商品）內的"
+                "百分位，越高＝同類中越好。三大支柱權重沿用「綜合評分排名」分頁的設定。"
             )
-
-            avail = sorted(score_hist["ticker"].unique())
+            score_hist = db.get_score_history()
             name_map = dict(zip(universe["ticker"], universe["name"]))
 
             def _hist_disp(t: str) -> str:
                 return f"{t}  {name_map.get(t, '')}"
 
-            default_pick = [t for t in selected_tickers if t in set(avail)] or avail[:3]
-            picked_hist = st.multiselect(
-                "選擇 ETF（可多選）", options=avail, default=default_pick,
-                format_func=_hist_disp, key="etfc_hist_pick",
-            )
+            avail = set(score_hist["ticker"].unique()) if not score_hist.empty else set()
+            hist_tickers = [t for t in selected_tickers if t in avail]
             compress_hist = st.checkbox(
                 "依信賴度壓縮（新基金分數往中位 50 收斂）", value=False, key="etfc_hist_compress",
                 help="勾選後，資料越短的基金分數越往 50 靠攏，避免新基金的高分被過度解讀。",
@@ -1081,10 +1075,14 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
             w_asy = st.session_state.get("etfc_w_asy", 1.0)
             w_con = st.session_state.get("etfc_w_con", 1.0)
 
-            if not picked_hist:
-                st.info("請選擇至少一檔 ETF。")
+            if score_hist.empty:
+                st.info("尚無評分歷史資料。請先在伺服器執行 "
+                        "`python -m scripts.etf_benchmark.step7_score --backfill`。")
+            elif not hist_tickers:
+                st.info("上方所選的 ETF 尚無評分歷史（可能為新上市未滿 30 個交易日，"
+                        "或非股票／債券／商品型）。")
             else:
-                sub = score_hist[score_hist["ticker"].isin(picked_hist)].copy()
+                sub = score_hist[score_hist["ticker"].isin(hist_tickers)].copy()
                 sub["score"] = _history_composite(sub, w_eff, w_asy, w_con)
                 if compress_hist:
                     conf = (sub["n_days"] / 252.0).clip(0, 1)
@@ -1092,7 +1090,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
                 hist_palette = px.colors.qualitative.Plotly + px.colors.qualitative.Vivid
                 figh = go.Figure()
-                for i, t in enumerate(picked_hist):
+                for i, t in enumerate(hist_tickers):
                     s = sub[sub["ticker"] == t].sort_values("date")
                     if s.empty:
                         continue
