@@ -84,10 +84,18 @@ def plot_history(hist: pd.DataFrame, universe: pd.DataFrame) -> None:
     import matplotlib.pyplot as plt
     from matplotlib import font_manager
 
-    # Best-effort CJK font so the legend shows fund names (Windows / common Linux paths).
-    for fp in (r"C:\Windows\Fonts\msjh.ttc", r"C:\Windows\Fonts\mingliu.ttc",
-               "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-               "/usr/share/fonts/opentype/noto/NotoSansCJKtc-Regular.otf"):
+    # Best-effort CJK font (same proven search list as scripts/generate_quote_card.py).
+    for fp in (
+        str(ROOT_DIR / "data" / "fonts" / "NotoSansCJK-Regular.ttc"),
+        str(ROOT_DIR / "data" / "fonts" / "NotoSansTC-Regular.otf"),
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/opentype/noto/NotoSansCJKtc-Regular.otf",
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+        "/usr/share/fonts/truetype/arphic/uming.ttc",
+        "/usr/share/fonts/truetype/arphic/ukai.ttc",
+        r"C:\Windows\Fonts\msjh.ttc",
+    ):
         if Path(fp).exists():
             font_manager.fontManager.addfont(fp)
             matplotlib.rcParams["font.family"] = font_manager.FontProperties(fname=fp).get_name()
