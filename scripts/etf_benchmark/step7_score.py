@@ -20,8 +20,9 @@ Persisted to data/etf_bench/score_history.csv (long format), tracked in git so i
 survives DB rebuilds and syncs to local checkouts.
 
 Run:
-    python -m scripts.etf_benchmark.step7_score                      # append today
-    python -m scripts.etf_benchmark.step7_score --backfill           # history from START
+    python -m scripts.etf_benchmark.step7_score                      # append today only
+    python -m scripts.etf_benchmark.step7_score --backfill           # last 1 year (default)
+    python -m scripts.etf_benchmark.step7_score --backfill --years 2
     python -m scripts.etf_benchmark.step7_score --backfill --start 2026-02-23
 """
 from __future__ import annotations
@@ -46,11 +47,12 @@ from scripts.etf_benchmark import db                       # noqa: E402
 from src.ui.etf_compare_tab import _build_score_table      # noqa: E402
 
 # ── knobs ────────────────────────────────────────────────────────────────────
-HIST_CSV     = ROOT_DIR / "data" / "etf_bench" / "score_history.csv"
-DEFAULT_START = "2026-02-23"                 # earliest date to backfill the history
-LOOKBACK      = pd.DateOffset(years=1)       # trailing window for the metrics
-MIN_DAYS      = 30                           # ≥ this many of the fund's OWN trading days
-WEIGHTS       = {"efficiency": 1.0, "asymmetry": 1.0, "consistency": 1.0}  # only pillars are stored
+HIST_CSV       = ROOT_DIR / "data" / "etf_bench" / "score_history.csv"
+DEFAULT_YEARS  = 1                           # backfill this many years of history by default
+LOOKBACK       = pd.DateOffset(years=1)      # trailing window for the metrics
+MIN_DAYS       = 30                          # ≥ this many of the fund's OWN trading days
+WEIGHTS        = {"efficiency": 1.0, "asymmetry": 1.0, "consistency": 1.0}  # only pillars stored
+REF_INDICES    = ("^TWII", "^IXIC", "^GSPC", "^DJI")  # benchmarks used by the asymmetry pillar
 
 # fund_type → asset class the fund is ranked within
 ASSET_CLASS = {
@@ -117,7 +119,29 @@ def _trading_dates(start: pd.Timestamp, end: pd.Timestamp | None) -> list[pd.Tim
     return sorted(pd.to_datetime(taiex["date"]).tolist())
 
 
-def run(backfill: bool, start: str, end: str | None) -> int:
+def _prefetch_cache(tickers: list[str], start: pd.Timestamp, end: pd.Timestamp):
+    """Load each ticker's full series once and serve in-memory slices, so a long
+    backfill doesn't re-query SQLite for every (ticker, as-of) pair. Returns
+    (cached_get_prices, real_get_prices) — caller restores the real one when done.
+    """
+    real = db.get_prices
+    store = {t: real(t, start=start, end=end) for t in tickers}
+
+    def cached(ticker, start=None, end=None, mtime=None):
+        df = store.get(ticker)
+        if df is None or df.empty:
+            return pd.DataFrame()
+        out = df
+        if start is not None:
+            out = out[out["date"] >= pd.Timestamp(start)]
+        if end is not None:
+            out = out[out["date"] <= pd.Timestamp(end)]
+        return out.reset_index(drop=True)
+
+    return cached, real
+
+
+def run(backfill: bool, start: str | None, end: str | None, years: int) -> int:
     if not db.DB_PATH.exists():
         print(f"DB not found at {db.DB_PATH}. Build/backfill it first.")
         return 1
@@ -128,37 +152,51 @@ def run(backfill: bool, start: str, end: str | None) -> int:
         print("No eligible ETFs with prices.")
         return 1
 
-    if backfill:
-        dates = _trading_dates(pd.Timestamp(start), pd.Timestamp(end) if end else None)
-        if not dates:
-            print("No trading dates in range.")
-            return 1
+    latest = pd.Timestamp(end) if end else pd.Timestamp(db.db_summary()["date_max"])
+
+    if not backfill:
+        df_new = scores_as_of(universe, eligible, latest)
+        total = _upsert(df_new)
+        print(f"[step7] recorded {len(df_new)} ETFs for {latest.date()}; "
+              f"store now has {total} rows → {HIST_CSV}")
+        return 0
+
+    start_ts = pd.Timestamp(start) if start else (latest - pd.DateOffset(years=years))
+    dates = _trading_dates(start_ts, latest)
+    if not dates:
+        print("No trading dates in range.")
+        return 1
+
+    # Pre-fetch every series once (eligible ETFs + benchmark indices), then slice.
+    tickers = list(dict.fromkeys(eligible["ticker"].tolist() + list(REF_INDICES)))
+    cached, real = _prefetch_cache(tickers, dates[0] - LOOKBACK, dates[-1])
+    db.get_prices = cached
+    try:
         frames = []
         for i, d in enumerate(dates, 1):
             frames.append(scores_as_of(universe, eligible, d))
-            if i % 10 == 0 or i == len(dates):
+            if i % 20 == 0 or i == len(dates):
                 print(f"  [{i}/{len(dates)}] {d.date()}", flush=True)
-        df_new = pd.concat(frames, ignore_index=True)
-        total = _upsert(df_new)
-        print(f"[step7] backfilled {df_new['date'].nunique()} dates "
-              f"({len(df_new)} rows); store now has {total} rows → {HIST_CSV}")
-    else:
-        as_of = pd.Timestamp(end) if end else pd.Timestamp(db.db_summary()["date_max"])
-        df_new = scores_as_of(universe, eligible, as_of)
-        total = _upsert(df_new)
-        print(f"[step7] recorded {len(df_new)} ETFs for {as_of.date()}; "
-              f"store now has {total} rows → {HIST_CSV}")
+    finally:
+        db.get_prices = real
+
+    df_new = pd.concat(frames, ignore_index=True)
+    total = _upsert(df_new)
+    print(f"[step7] backfilled {df_new['date'].nunique()} dates ({len(df_new)} rows) "
+          f"from {start_ts.date()}; store now has {total} rows → {HIST_CSV}")
     return 0
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--backfill", action="store_true",
-                    help="recompute the whole history from --start (default: just today)")
-    ap.add_argument("--start", default=DEFAULT_START, help=f"backfill start (default {DEFAULT_START})")
+                    help="recompute history (default: append today only)")
+    ap.add_argument("--years", type=int, default=DEFAULT_YEARS,
+                    help=f"backfill this many years of history (default {DEFAULT_YEARS})")
+    ap.add_argument("--start", default=None, help="explicit backfill start date (overrides --years)")
     ap.add_argument("--end", default=None, help="as-of / backfill end date (default: latest in DB)")
     args = ap.parse_args()
-    return run(backfill=args.backfill, start=args.start, end=args.end)
+    return run(backfill=args.backfill, start=args.start, end=args.end, years=args.years)
 
 
 if __name__ == "__main__":
