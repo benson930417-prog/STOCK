@@ -668,23 +668,39 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     selected_tickers: list[str] = []
     st.markdown("**選擇要比較的 ETF**　(總計上限 10 檔)")
 
-    for ftype in FUND_TYPE_LABELS.keys():
-        type_rows = etf_universe[etf_universe["fund_type"] == ftype]
-        if type_rows.empty:
+    # Grouped by the four scoring baskets; 股票 splits into 主動/被動/槓桿 sub-lines
+    # (still ONE 股票 basket for scoring — these are just picking conveniences).
+    ASSET_GROUPS = [
+        ("股票型", ["active_equity", "passive_equity", "leveraged"]),
+        ("債券型", ["bond"]),
+        ("商品期貨型", ["commodity"]),
+        ("其他", ["other"]),
+    ]
+    for group_label, ftypes in ASSET_GROUPS:
+        present = [f for f in ftypes
+                   if not etf_universe[etf_universe["fund_type"] == f].empty]
+        if not present:
             continue
-        label = FUND_TYPE_LABELS.get(ftype, ftype)
-        d2t = dict(zip(type_rows["display"], type_rows["ticker"]))
-        options = type_rows["display"].tolist()
-        default_tickers = TYPE_DEFAULTS.get(ftype, [])
-        default_picks = [d for d in options
-                         if any(d.startswith(t + "  ") for t in default_tickers)]
-        picked = st.multiselect(
-            f"{label}　({len(options)} 檔可選)",
-            options=options,
-            default=default_picks,
-            key=f"etfc_pick_{ftype}",
-        )
-        selected_tickers.extend(d2t[d] for d in picked)
+        multi = len(present) > 1
+        if multi:
+            st.markdown(f"**{group_label}**")
+        for ftype in present:
+            type_rows = etf_universe[etf_universe["fund_type"] == ftype]
+            d2t = dict(zip(type_rows["display"], type_rows["ticker"]))
+            options = type_rows["display"].tolist()
+            default_tickers = TYPE_DEFAULTS.get(ftype, [])
+            default_picks = [d for d in options
+                             if any(d.startswith(t + "  ") for t in default_tickers)]
+            # sub-line label under a 股票型 header; otherwise the group label itself
+            sub = FUND_TYPE_LABELS.get(ftype, ftype)
+            label = f"　└ {sub}" if multi else group_label
+            picked = st.multiselect(
+                f"{label}　({len(options)} 檔可選)",
+                options=options,
+                default=default_picks,
+                key=f"etfc_pick_{ftype}",
+            )
+            selected_tickers.extend(d2t[d] for d in picked)
 
     if len(selected_tickers) > 10:
         st.warning(f"已選 {len(selected_tickers)} 檔，超過上限，僅取前 10 檔繪圖。")
@@ -915,29 +931,9 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         with st.container(border=True):
             st.markdown("### 🏆 綜合評分排名")
             st.caption(
-                "以三大支柱在你選的 ETF 之間排名，**所有指標皆與市場多空方向無關**："
-                "不獎勵單純漲多、也不獎勵單純抗跌，只獎勵「同樣風險下賺更多、"
-                "相對基準留住更多漲幅卻少跌、表現穩定」。"
-                "評分採總報酬（adj_close）計算，與上方圖表的顯示選項無關。"
-            )
-
-            # Regime coverage of the scoring window — so the score self-documents
-            # whether it has actually seen a bear yet.
-            _cov = regimes_df if not regimes_df.empty else _compute_regimes_live(zigzag_threshold)
-            _rc = {"bull": 0, "correction": 0, "mini_bear": 0, "bear": 0}
-            for _, _rr in _cov.iterrows():
-                if (pd.Timestamp(_rr["end_date"]) < baseline_date
-                        or pd.Timestamp(_rr["start_date"]) > today_ts):
-                    continue
-                if _rr["regime"] in _rc:
-                    _rc[_rr["regime"]] += 1
-            _no_bear = (_rc["mini_bear"] + _rc["bear"]) == 0
-            st.caption(
-                f"📐 評分期間市場樣本："
-                f"多頭 {_rc['bull']} 段 · 小熊 {_rc['correction']} 段 · "
-                f"中熊 {_rc['mini_bear']} 段 · 大熊 {_rc['bear']} 段"
-                + ("　⚠️ 尚未經歷真正空頭，**抗跌/防禦能力未受考驗**，排名僅反映多頭效率。"
-                   if _no_bear else "")
+                "分數＝該 ETF 在「同資產類別」（股票／債券／商品）籃子內的百分位，"
+                "與下方「綜合評分歷史」走勢線**同一套標準**。三大支柱皆與市場多空方向無關，"
+                "只獎勵「同樣風險下賺更多、相對基準留住更多漲幅卻少跌、表現穩定」。"
             )
 
             with st.expander("⚙️ 調整支柱權重（預設等權＝最公平）", expanded=False):
@@ -945,104 +941,97 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                 w_eff = cw[0].slider("效率",   0.0, 3.0, 1.0, 0.5, key="etfc_w_eff")
                 w_asy = cw[1].slider("不對稱", 0.0, 3.0, 1.0, 0.5, key="etfc_w_asy")
                 w_con = cw[2].slider("一致性", 0.0, 3.0, 1.0, 0.5, key="etfc_w_con")
-            weights = {"efficiency": w_eff, "asymmetry": w_asy, "consistency": w_con}
 
-            score_df = _build_score_table(selected_tickers, etf_universe,
-                                          baseline_date, weights)
-
-            ranked = score_df[score_df["綜合評分"].notna()].sort_values(
-                "綜合評分", ascending=False)
-            insufficient = score_df[score_df["綜合評分"].isna()]
-
-            if ranked.empty:
-                st.info("沒有足夠資料可評分（所選 ETF 皆資料不足或缺基準）。")
+            score_hist = db.get_score_history()
+            if score_hist.empty:
+                st.info("尚無評分資料。請在伺服器執行 "
+                        "`python -m scripts.etf_benchmark.step7_score --backfill`。")
             else:
-                disp_rows: list[dict] = []
-                for i, (_, r) in enumerate(ranked.iterrows(), 1):
-                    disp_rows.append({
-                        "排名":   i,
-                        "代號":   r["代號"], "名稱": r["名稱"], "類別": r["類別"],
-                        "綜合評分": round(float(r["綜合評分"]), 1),
-                        "評等":   _stars(r["綜合評分"]),
-                        "效率":   r.get("效率"),
-                        "不對稱": r.get("不對稱"),
-                        "一致性": r.get("一致性"),
-                        "同類排名": r.get("同類排名", ""),
-                        "交易日數": int(r["n_days"]),
-                        "信賴":   _conf_label(int(r["n_days"])),
-                        "完整度": f"{r['_completeness'] * 100:.0f}%",
-                    })
-                for _, r in insufficient.iterrows():
-                    disp_rows.append({
-                        "排名": "—", "代號": r["代號"], "名稱": r["名稱"], "類別": r["類別"],
-                        "綜合評分": None, "評等": "", "效率": None, "不對稱": None,
-                        "一致性": None, "同類排名": "",
-                        "交易日數": int(r["n_days"]),
-                        "信賴": _conf_label(int(r["n_days"])), "完整度": "—",
-                    })
-                disp = pd.DataFrame(disp_rows)
+                latest = score_hist["date"].max()
+                snap = score_hist[score_hist["date"] == latest].copy()
+                snap["score"] = _history_composite(snap, w_eff, w_asy, w_con)
+                # rank within the WHOLE asset-class basket (籃內名次，不只你選的)
+                snap["_rank"] = snap.groupby("asset_class")["score"].rank(
+                    ascending=False, method="min")
+                snap["_size"] = snap.groupby("asset_class")["ticker"].transform("count")
 
-                def _score_color(v):
-                    if pd.isna(v):
+                name_map = dict(zip(universe["ticker"], universe["name"]))
+                ac_zh = {"equity": "股票", "bond": "債券", "commodity": "商品", "other": "其他"}
+                sel = snap[snap["ticker"].isin(selected_tickers)].sort_values(
+                    "score", ascending=False)
+                missing = [t for t in selected_tickers if t not in set(snap["ticker"])]
+
+                if sel.empty and not missing:
+                    st.info("所選 ETF 尚無評分（新上市未滿 30 個交易日，或非股票/債券/商品型）。")
+                else:
+                    rows: list[dict] = []
+                    for i, (_, r) in enumerate(sel.iterrows(), 1):
+                        rk = (f"{int(r['_rank'])}/{int(r['_size'])}"
+                              if pd.notna(r["_rank"]) else "—")
+                        rows.append({
+                            "排名": i,
+                            "代號": r["ticker"], "名稱": name_map.get(r["ticker"], r["ticker"]),
+                            "類別": ac_zh.get(r["asset_class"], r["asset_class"]),
+                            "綜合評分": round(float(r["score"]), 1) if pd.notna(r["score"]) else None,
+                            "評等": _stars(r["score"]),
+                            "效率": r["eff"], "不對稱": r["asy"], "一致性": r["con"],
+                            "同類排名": rk,
+                            "交易日數": int(r["n_days"]),
+                            "信賴": _conf_label(int(r["n_days"])),
+                        })
+                    for t in missing:
+                        rows.append({
+                            "排名": "—", "代號": t, "名稱": name_map.get(t, t), "類別": "—",
+                            "綜合評分": None, "評等": "", "效率": None, "不對稱": None,
+                            "一致性": None, "同類排名": "", "交易日數": 0, "信賴": "資料不足",
+                        })
+                    disp = pd.DataFrame(rows)
+
+                    def _score_color(v):
+                        if pd.isna(v):
+                            return ""
+                        if v >= 70:
+                            return "background-color: rgba(74,222,128,0.18); font-weight: 700"
+                        if v >= 50:
+                            return "background-color: rgba(74,222,128,0.07)"
+                        if v >= 30:
+                            return "background-color: rgba(251,191,36,0.10)"
+                        return "background-color: rgba(248,113,113,0.14)"
+
+                    def _pillar_color(v):
+                        if pd.isna(v):
+                            return "color: #6b7280"
+                        if v >= 66:
+                            return "color: #4ade80"
+                        if v <= 33:
+                            return "color: #f87171"
                         return ""
-                    if v >= 70:
-                        return "background-color: rgba(74,222,128,0.18); font-weight: 700"
-                    if v >= 50:
-                        return "background-color: rgba(74,222,128,0.07)"
-                    if v >= 30:
-                        return "background-color: rgba(251,191,36,0.10)"
-                    return "background-color: rgba(248,113,113,0.14)"
 
-                def _pillar_color(v):
-                    if pd.isna(v):
-                        return "color: #6b7280"
-                    if v >= 66:
-                        return "color: #4ade80"
-                    if v <= 33:
-                        return "color: #f87171"
-                    return ""
-
-                styled = (
-                    disp.style
-                    .format({
-                        "綜合評分": lambda v: f"{v:.1f}" if pd.notna(v) else "—",
-                        "效率":   lambda v: f"{v:.0f}" if pd.notna(v) else "—",
-                        "不對稱": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
-                        "一致性": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
-                    })
-                    .map(_score_color, subset=["綜合評分"])
-                    .map(_pillar_color, subset=["效率", "不對稱", "一致性"])
-                )
-                st.dataframe(styled, hide_index=True, width="stretch")
-
-                st.markdown(
-                    "**📖 讀法**（每欄 0–100，僅在你目前選的 ETF 之間相對排名）\n\n"
-                    "- ⚙️ **效率**：風險調整後報酬（Sortino＋Calmar）→ 同樣下跌風險下，賺得越多越高\n"
-                    "- ⚖️ **不對稱**：相對基準的「上漲捕獲 − 下跌捕獲」→ 留住越多漲幅、少跌越多越高\n"
-                    "- 🎯 **一致性**：勝率＋低追蹤誤差＋低波動 → 表現越穩定越高\n"
-                    "- 🏆 **綜合評分**：三支柱加權平均（預設等權），已依資料長度調整信賴度\n"
-                    "- 🛈 **不對稱「—」**：該 ETF 與基準關聯太低（R² < 0.2，常見於債券/商品）"
-                    "或無對應基準，不以捕獲評分，改由其餘支柱計分\n"
-                    "- 🆕 **信賴 / 完整度**：新上市或資料不足者，分數會自動往中位收斂並標示"
-                )
-
-                # Transparency: which benchmark each fund was scored against
-                bench_rows = [
-                    {
-                        "代號": r["代號"], "名稱": r["名稱"],
-                        "評分基準": r.get("benchmark") or "（無，未用捕獲）",
-                        "R²": (round(float(r["r2"]), 2)
-                               if pd.notna(r.get("r2")) else "—"),
-                        "交易日數": int(r["n_days"]),
-                    }
-                    for _, r in score_df.iterrows()
-                ]
-                with st.expander("🔍 評分基準與相關性（R²）", expanded=False):
-                    st.caption(
-                        "R² = 該 ETF 日報酬被基準解釋的比例。低於 0.2 時不採計捕獲類指標，"
-                        "避免拿大盤行情去評斷債券 / 商品 / 低相關 ETF。"
+                    styled = (
+                        disp.style
+                        .format({
+                            "綜合評分": lambda v: f"{v:.1f}" if pd.notna(v) else "—",
+                            "效率":   lambda v: f"{v:.0f}" if pd.notna(v) else "—",
+                            "不對稱": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
+                            "一致性": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
+                        })
+                        .map(_score_color, subset=["綜合評分"])
+                        .map(_pillar_color, subset=["效率", "不對稱", "一致性"])
                     )
-                    st.dataframe(pd.DataFrame(bench_rows), hide_index=True, width="stretch")
+                    st.dataframe(styled, hide_index=True, width="stretch")
+                    st.caption(
+                        f"基準日 {pd.Timestamp(latest).date()}　·　"
+                        "同類排名＝在整個資產類別籃子內的名次（不只你選的這幾檔）"
+                    )
+                    st.markdown(
+                        "**📖 讀法**（每欄 0–100＝在同類別籃子內的百分位）\n\n"
+                        "- ⚙️ **效率**：風險調整後報酬（Sortino＋Calmar）→ 同樣下跌風險下賺越多越高\n"
+                        "- ⚖️ **不對稱**：相對基準的「上漲捕獲 − 下跌捕獲」→ 留住越多漲幅、少跌越多越高\n"
+                        "- 🎯 **一致性**：勝率＋低追蹤誤差＋低波動 → 越穩定越高\n"
+                        "- 🏆 **綜合評分**：三支柱加權平均（預設等權），分數與下方走勢線一致\n"
+                        "- 🛈 **不對稱「—」**：該 ETF 與基準關聯太低或無對應基準，改由其餘支柱計分\n"
+                        "- 🆕 **信賴**：交易日越少越不穩定（新上市自上市 30 個交易日後才計分）"
+                    )
 
         with st.container(border=True):
             st.markdown("### 📈 綜合評分歷史")
