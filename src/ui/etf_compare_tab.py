@@ -48,6 +48,28 @@ REGIME_LABELS_ZH = {
 COMMON_PRICE_ADJUSTMENT_RATIOS = (2, 3, 4, 5, 6, 7, 10)
 PRICE_ADJUSTMENT_TOLERANCE = 0.08
 
+# ── 綜合評分 (fair, regime-neutral composite) constants ──────────────────────
+TRADING_DAYS_PER_YEAR = 252.0
+SCORE_RISK_FREE_ANNUAL = 0.0        # MAR for Sortino; raise once a TW rf series is ingested
+SCORE_MIN_DAYS         = 20         # < this → 資料不足, excluded from ranking
+SCORE_FULL_CONF_DAYS   = 252        # ≥ this → full confidence (no shrinkage toward median)
+SCORE_R2_MIN           = 0.20       # benchmark must explain ≥20% of variance to score asymmetry
+SCORE_RET_CLIP         = 0.50       # winsorise daily returns (guards split / bad-print artefacts)
+TW_EQUITY_FUND_TYPES   = {"passive_equity", "active_equity", "leveraged"}
+
+SCORE_PILLAR_KEYS   = ("efficiency", "asymmetry", "consistency")
+SCORE_PILLAR_LABELS = {"efficiency": "效率", "asymmetry": "不對稱", "consistency": "一致性"}
+SCORE_PILLAR_MEMBERS = {
+    "efficiency":  ["sortino", "calmar"],
+    "asymmetry":   ["capture_spread"],
+    "consistency": ["batting", "tracking_err", "ann_vol"],
+}
+# direction per metric: True = higher is better
+SCORE_METRIC_DIRECTION = {
+    "sortino": True, "calmar": True, "capture_spread": True,
+    "batting": True, "tracking_err": False, "ann_vol": False,
+}
+
 
 def _group_consecutive_missing(missing_dates: list, ref_dates: list) -> list[tuple]:
     if not missing_dates:
@@ -314,6 +336,248 @@ def _corporate_action_warnings(ticker: str, name: str, prices: pd.DataFrame) -> 
     parts = [warning] if warning else ["偵測到可能的價格調整，該段期間請用人工判斷。"]
     parts.extend(list(dict.fromkeys(details)))
     return [f"**{ticker} {name}**：{'；'.join(parts)}。"]
+
+
+# ── 綜合評分 helpers — all metrics are direction-neutral by construction ─────
+def _score_benchmark_for(urow: pd.Series) -> str | None:
+    """Category-appropriate reference index for capture / tracking math.
+
+    Conservative: only re-route to a US index on an explicit name match; TW-equity
+    → ^TWII; non-equity (bond / commodity / other) → None. A None benchmark, or a
+    later R² < SCORE_R2_MIN, drops the benchmark-relative metrics and reweights the
+    remaining pillars — so a bond ETF is never judged on TAIEX behaviour.
+    """
+    blob = " ".join(
+        str(urow.get(c, "") or "")
+        for c in ("name", "full_name", "en_name", "tracked_index")
+    ).upper()
+    if "那斯達克" in blob or "NASDAQ" in blob:
+        return "^IXIC"
+    if "標普" in blob or "S&P" in blob or "SP500" in blob:
+        return "^GSPC"
+    if "道瓊" in blob or "DOW JONES" in blob:
+        return "^DJI"
+    if urow.get("fund_type") in TW_EQUITY_FUND_TYPES:
+        return "^TWII"
+    return None
+
+
+def _daily_returns(price: pd.Series) -> pd.Series:
+    r = price.astype(float).pct_change().dropna()
+    return r.clip(lower=-SCORE_RET_CLIP, upper=SCORE_RET_CLIP)
+
+
+def _ann_return(price: pd.Series, n_periods: int) -> float | None:
+    if len(price) < 2 or n_periods <= 0:
+        return None
+    total = float(price.iloc[-1]) / float(price.iloc[0])
+    if total <= 0:
+        return None
+    years = n_periods / TRADING_DAYS_PER_YEAR
+    return total ** (1.0 / years) - 1.0 if years > 0 else None
+
+
+def _max_drawdown(price: pd.Series) -> float:
+    peak = price.cummax()
+    return float((price / peak - 1.0).min())
+
+
+def _downside_dev(returns: pd.Series, mar_daily: float = 0.0) -> float | None:
+    """Annualised downside deviation vs a daily MAR (target-semivariance, N in denom)."""
+    if returns.empty:
+        return None
+    below = (returns - mar_daily).clip(upper=0.0)
+    val = float((below ** 2).mean()) ** 0.5 * (TRADING_DAYS_PER_YEAR ** 0.5)
+    return val if val > 0 else None
+
+
+def _capture_stats(fund_r: pd.Series, bench_r: pd.Series) -> dict | None:
+    """Daily up/down capture, R², batting average and tracking error vs benchmark.
+
+    Up- and down-capture are each computed only over their own side, so the score's
+    up/down combination is naturally 50/50 weighted — the sample's bull/bear mix
+    does not tilt it.
+    """
+    joined = pd.concat(
+        [fund_r.rename("f"), bench_r.rename("b")], axis=1, join="inner"
+    ).dropna()
+    if len(joined) < 10:
+        return None
+    f, b = joined["f"], joined["b"]
+    up, dn = b > 0, b < 0
+
+    def _cum(x: pd.Series) -> float:
+        return float((1.0 + x).prod() - 1.0)
+
+    up_b, dn_b = _cum(b[up]), _cum(b[dn])
+    up_cap = (_cum(f[up]) / up_b) if abs(up_b) > 1e-6 else None
+    dn_cap = (_cum(f[dn]) / dn_b) if abs(dn_b) > 1e-6 else None
+    r2 = float(f.corr(b) ** 2) if (f.std(ddof=1) > 0 and b.std(ddof=1) > 0) else None
+    return {
+        "up_cap": up_cap, "dn_cap": dn_cap, "r2": r2,
+        "batting": float((f > b).mean()),
+        "tracking_err": float((f - b).std(ddof=1) * (TRADING_DAYS_PER_YEAR ** 0.5)),
+        "n": len(joined),
+    }
+
+
+def _rank_0_100(series: pd.Series, higher_better: bool) -> pd.Series:
+    """Rank non-null values into 0–100 within the current selection (best = 100).
+    A lone value scores 50 (neutral — no peer to compare against)."""
+    out = pd.Series(index=series.index, dtype=float)
+    vals = series.dropna()
+    if vals.empty:
+        return out
+    if len(vals) == 1:
+        out.loc[vals.index[0]] = 50.0
+        return out
+    rr = vals.rank(method="average", ascending=higher_better)
+    out.loc[vals.index] = (rr - 1.0) / (len(vals) - 1.0) * 100.0
+    return out
+
+
+def _conf_label(n_days: int) -> str:
+    if n_days >= SCORE_FULL_CONF_DAYS:
+        return "高"
+    if n_days >= 120:
+        return "中"
+    if n_days >= SCORE_MIN_DAYS:
+        return "低"
+    return "資料不足"
+
+
+def _stars(v: float | None) -> str:
+    if v is None or pd.isna(v):
+        return ""
+    n = 1 + int(min(4, max(0, v // 20)))
+    return "★" * n + "☆" * (5 - n)
+
+
+def _build_score_table(
+    selected_tickers: list[str],
+    etf_universe: pd.DataFrame,
+    baseline_date: pd.Timestamp,
+    weights: dict[str, float],
+) -> pd.DataFrame:
+    """One row per selected ETF with pillar sub-scores + the fair composite.
+
+    Computed on adj_close (total return) regardless of the chart's display toggle,
+    so high-dividend funds are compared fairly and split artefacts are avoided.
+    """
+    bench_cache: dict[str, pd.Series | None] = {}
+
+    def _bench_returns(idx: str | None) -> pd.Series | None:
+        if idx is None:
+            return None
+        if idx not in bench_cache:
+            bdf = db.get_prices(idx, start=baseline_date)
+            if bdf.empty:
+                bench_cache[idx] = None
+            else:
+                s = bdf["close"].astype(float)
+                s.index = pd.to_datetime(bdf["date"])
+                bench_cache[idx] = _daily_returns(s)
+        return bench_cache[idx]
+
+    recs: list[dict] = []
+    for t in selected_tickers:
+        urow_df = etf_universe[etf_universe["ticker"] == t]
+        urow = urow_df.iloc[0] if not urow_df.empty else pd.Series({"ticker": t})
+        ftype = urow.get("fund_type", "other")
+        rec = {
+            "代號": t, "名稱": urow.get("name", t),
+            "類別": FUND_TYPE_LABELS.get(ftype, ftype),
+            "n_days": 0, "_insufficient": True,
+            "benchmark": None, "r2": None,
+        }
+
+        df = db.get_prices(t, start=baseline_date)
+        if df.empty:
+            recs.append(rec)
+            continue
+        price = df["adj_close"].fillna(df["close"]).astype(float)
+        price.index = pd.to_datetime(df["date"])
+        rets = _daily_returns(price)
+        rec["n_days"] = len(rets)
+        if len(rets) < SCORE_MIN_DAYS:
+            recs.append(rec)
+            continue
+        rec["_insufficient"] = False
+
+        # Efficiency (risk-adjusted, benchmark-free)
+        ann_ret = _ann_return(price, len(rets))
+        max_dd  = _max_drawdown(price)
+        dd_dev  = _downside_dev(rets)
+        if ann_ret is not None and dd_dev:
+            rec["sortino"] = (ann_ret - SCORE_RISK_FREE_ANNUAL) / dd_dev
+        if ann_ret is not None and max_dd < 0:
+            rec["calmar"] = ann_ret / abs(max_dd)
+        rec["ann_vol"] = float(rets.std(ddof=1) * (TRADING_DAYS_PER_YEAR ** 0.5))
+
+        # Asymmetry + consistency (benchmark-relative; gated on R²)
+        bench_idx = _score_benchmark_for(urow)
+        rec["benchmark"] = bench_idx
+        cap = _capture_stats(rets, _bench_returns(bench_idx)) if bench_idx else None
+        if cap:
+            rec["r2"] = cap["r2"]
+            if cap["r2"] is not None and cap["r2"] >= SCORE_R2_MIN:
+                rec["batting"] = cap["batting"]
+                rec["tracking_err"] = cap["tracking_err"]
+                if cap["up_cap"] is not None and cap["dn_cap"] is not None:
+                    rec["capture_spread"] = cap["up_cap"] - cap["dn_cap"]
+        recs.append(rec)
+
+    score_df = pd.DataFrame(recs).set_index("代號", drop=False)
+    rankable = score_df[~score_df["_insufficient"]]
+
+    # Metric → 0–100 within the rankable selection
+    metric_scores: dict[str, pd.Series] = {}
+    for m, higher_better in SCORE_METRIC_DIRECTION.items():
+        if m in rankable.columns:
+            metric_scores[m] = _rank_0_100(rankable[m], higher_better)
+
+    # Pillar = mean of its available member scores
+    for pk, members in SCORE_PILLAR_MEMBERS.items():
+        cols = [metric_scores[m] for m in members if m in metric_scores]
+        if not cols:
+            continue
+        pillar = pd.concat(cols, axis=1).mean(axis=1, skipna=True)
+        score_df.loc[pillar.index, SCORE_PILLAR_LABELS[pk]] = pillar
+
+    # Composite = weighted mean over available pillars, then confidence shrinkage
+    pillar_cols = [SCORE_PILLAR_LABELS[k] for k in SCORE_PILLAR_KEYS]
+    wmap = {SCORE_PILLAR_LABELS[k]: float(weights.get(k, 1.0)) for k in SCORE_PILLAR_KEYS}
+    comp, conf, completeness = {}, {}, {}
+    for tkr, row in score_df.iterrows():
+        if row["_insufficient"]:
+            continue
+        num = den = 0.0
+        have = 0
+        for pc in pillar_cols:
+            v = row.get(pc)
+            if pd.notna(v):
+                num += v * wmap[pc]
+                den += wmap[pc]
+                have += 1
+        if den <= 0:
+            continue
+        raw = num / den
+        c = min(1.0, max(0.0, row["n_days"] / SCORE_FULL_CONF_DAYS))
+        comp[tkr] = 50.0 + (raw - 50.0) * c          # new funds pulled toward the median
+        conf[tkr] = c
+        completeness[tkr] = have / len(pillar_cols)
+    score_df["綜合評分"]      = pd.Series(comp)
+    score_df["_conf"]         = pd.Series(conf)
+    score_df["_completeness"] = pd.Series(completeness)
+
+    # Within-category rank among the selection (only where a peer exists)
+    score_df["同類排名"] = ""
+    scored = score_df[score_df["綜合評分"].notna()]
+    for _, grp in scored.groupby("類別"):
+        order = grp["綜合評分"].rank(ascending=False, method="min")
+        for tkr in grp.index:
+            score_df.loc[tkr, "同類排名"] = f"{int(order[tkr])}/{len(grp)}"
+    return score_df
 
 
 def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
@@ -631,6 +895,119 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     if add_zero_line:
         add_zero_line(fig, axis="y", color="#A9B1BD", width=2, dash="dash")
     st.plotly_chart(fig, width="stretch")
+
+    # ─────────── 綜合評分排名（公平、與市場多空方向無關）───────────
+    if selected_tickers:
+        with st.container(border=True):
+            st.markdown("### 🏆 綜合評分排名")
+            st.caption(
+                "以三大支柱在你選的 ETF 之間排名，**所有指標皆與市場多空方向無關**："
+                "不獎勵單純漲多、也不獎勵單純抗跌，只獎勵「同樣風險下賺更多、"
+                "相對基準留住更多漲幅卻少跌、表現穩定」。"
+                "評分採總報酬（adj_close）計算，與上方圖表的顯示選項無關。"
+            )
+
+            with st.expander("⚙️ 調整支柱權重（預設等權＝最公平）", expanded=False):
+                cw = st.columns(3)
+                w_eff = cw[0].slider("效率",   0.0, 3.0, 1.0, 0.5, key="etfc_w_eff")
+                w_asy = cw[1].slider("不對稱", 0.0, 3.0, 1.0, 0.5, key="etfc_w_asy")
+                w_con = cw[2].slider("一致性", 0.0, 3.0, 1.0, 0.5, key="etfc_w_con")
+            weights = {"efficiency": w_eff, "asymmetry": w_asy, "consistency": w_con}
+
+            score_df = _build_score_table(selected_tickers, etf_universe,
+                                          baseline_date, weights)
+
+            ranked = score_df[score_df["綜合評分"].notna()].sort_values(
+                "綜合評分", ascending=False)
+            insufficient = score_df[score_df["綜合評分"].isna()]
+
+            if ranked.empty:
+                st.info("沒有足夠資料可評分（所選 ETF 皆資料不足或缺基準）。")
+            else:
+                disp_rows: list[dict] = []
+                for i, (_, r) in enumerate(ranked.iterrows(), 1):
+                    disp_rows.append({
+                        "排名":   i,
+                        "代號":   r["代號"], "名稱": r["名稱"], "類別": r["類別"],
+                        "綜合評分": round(float(r["綜合評分"]), 1),
+                        "評等":   _stars(r["綜合評分"]),
+                        "效率":   r.get("效率"),
+                        "不對稱": r.get("不對稱"),
+                        "一致性": r.get("一致性"),
+                        "同類排名": r.get("同類排名", ""),
+                        "信賴":   _conf_label(int(r["n_days"])),
+                        "完整度": f"{r['_completeness'] * 100:.0f}%",
+                    })
+                for _, r in insufficient.iterrows():
+                    disp_rows.append({
+                        "排名": "—", "代號": r["代號"], "名稱": r["名稱"], "類別": r["類別"],
+                        "綜合評分": None, "評等": "", "效率": None, "不對稱": None,
+                        "一致性": None, "同類排名": "",
+                        "信賴": _conf_label(int(r["n_days"])), "完整度": "—",
+                    })
+                disp = pd.DataFrame(disp_rows)
+
+                def _score_color(v):
+                    if pd.isna(v):
+                        return ""
+                    if v >= 70:
+                        return "background-color: rgba(74,222,128,0.18); font-weight: 700"
+                    if v >= 50:
+                        return "background-color: rgba(74,222,128,0.07)"
+                    if v >= 30:
+                        return "background-color: rgba(251,191,36,0.10)"
+                    return "background-color: rgba(248,113,113,0.14)"
+
+                def _pillar_color(v):
+                    if pd.isna(v):
+                        return "color: #6b7280"
+                    if v >= 66:
+                        return "color: #4ade80"
+                    if v <= 33:
+                        return "color: #f87171"
+                    return ""
+
+                styled = (
+                    disp.style
+                    .format({
+                        "綜合評分": lambda v: f"{v:.1f}" if pd.notna(v) else "—",
+                        "效率":   lambda v: f"{v:.0f}" if pd.notna(v) else "—",
+                        "不對稱": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
+                        "一致性": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
+                    })
+                    .map(_score_color, subset=["綜合評分"])
+                    .map(_pillar_color, subset=["效率", "不對稱", "一致性"])
+                )
+                st.dataframe(styled, hide_index=True, width="stretch")
+
+                st.markdown(
+                    "**📖 讀法**（每欄 0–100，僅在你目前選的 ETF 之間相對排名）\n\n"
+                    "- ⚙️ **效率**：風險調整後報酬（Sortino＋Calmar）→ 同樣下跌風險下，賺得越多越高\n"
+                    "- ⚖️ **不對稱**：相對基準的「上漲捕獲 − 下跌捕獲」→ 留住越多漲幅、少跌越多越高\n"
+                    "- 🎯 **一致性**：勝率＋低追蹤誤差＋低波動 → 表現越穩定越高\n"
+                    "- 🏆 **綜合評分**：三支柱加權平均（預設等權），已依資料長度調整信賴度\n"
+                    "- 🛈 **不對稱「—」**：該 ETF 與基準關聯太低（R² < 0.2，常見於債券/商品）"
+                    "或無對應基準，不以捕獲評分，改由其餘支柱計分\n"
+                    "- 🆕 **信賴 / 完整度**：新上市或資料不足者，分數會自動往中位收斂並標示"
+                )
+
+                # Transparency: which benchmark each fund was scored against
+                bench_rows = [
+                    {
+                        "代號": r["代號"], "名稱": r["名稱"],
+                        "評分基準": r.get("benchmark") or "（無，未用捕獲）",
+                        "R²": (round(float(r["r2"]), 2)
+                               if pd.notna(r.get("r2")) else "—"),
+                        "交易日數": int(r["n_days"]),
+                    }
+                    for _, r in score_df.iterrows()
+                ]
+                with st.expander("🔍 評分基準與相關性（R²）", expanded=False):
+                    st.caption(
+                        "R² = 該 ETF 日報酬被基準解釋的比例。低於 0.2 時不採計捕獲類指標，"
+                        "避免拿大盤行情去評斷債券 / 商品 / 低相關 ETF。"
+                    )
+                    st.dataframe(pd.DataFrame(bench_rows), hide_index=True, width="stretch")
 
     # ─────────── 市場區間績效摘要 ───────────
     if show_regimes and not regimes_df.empty and per_ticker_prices:
