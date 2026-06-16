@@ -637,7 +637,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         min_turnover = st.select_slider(
             "近三個月日均成交金額下限（新台幣 / 日）",
             options=TURNOVER_OPTIONS,
-            value=0,
+            value=100_000_000,
             format_func=_fmt_ntd,
             key="etfc_min_turnover",
         )
@@ -662,7 +662,9 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         st.caption("（流動性篩選未啟用，顯示全部 ETF）")
 
     # ─────────── 各類別獨立多選 ───────────
-    TYPE_DEFAULTS = {"passive_equity": ["0050"], "active_equity": ["00981A"]}
+    TYPE_DEFAULTS = {
+        "active_equity": ["00981A", "00988A", "00990A", "00991A", "00992A", "00997A"],
+    }
     selected_tickers: list[str] = []
     st.markdown("**選擇要比較的 ETF**　(總計上限 10 檔)")
 
@@ -690,9 +692,8 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
     # ─────────── 起始點設定 ───────────
     if "etfc_baseline" not in st.session_state:
-        st.session_state["etfc_baseline"] = (
-            pd.Timestamp.now().normalize() - pd.DateOffset(years=1)
-        ).date()
+        # Active-ETF cohort inception; clamped to the available data range below.
+        st.session_state["etfc_baseline"] = pd.Timestamp("2026-02-24").date()
 
     max_d = pd.Timestamp(summary["date_max"]).date()
     min_d = pd.Timestamp(summary["date_min"]).date()
