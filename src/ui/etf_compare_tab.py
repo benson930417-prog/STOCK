@@ -589,6 +589,18 @@ def _build_score_table(
     return score_df
 
 
+def _history_composite(df: pd.DataFrame, w_eff: float, w_asy: float, w_con: float) -> pd.Series:
+    """Weighted mean of the stored pillar sub-scores per row, over whichever
+    pillars are present (so a NaN 不對稱 reweights to 效率+一致性)."""
+    wt = {"eff": w_eff, "asy": w_asy, "con": w_con}
+    vals = df[["eff", "asy", "con"]]
+    mask = vals.notna()
+    wdf = pd.DataFrame({c: wt[c] for c in ("eff", "asy", "con")}, index=df.index)
+    num = (vals.fillna(0.0) * wdf * mask).sum(axis=1)
+    den = (wdf * mask).sum(axis=1)
+    return num / den.where(den > 0)
+
+
 def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                            get_market_data=None, add_zero_line=None,
                            hex_to_rgba=None, PROFIT_COLOR=None, LOSS_COLOR=None):
@@ -1038,6 +1050,81 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         "避免拿大盤行情去評斷債券 / 商品 / 低相關 ETF。"
                     )
                     st.dataframe(pd.DataFrame(bench_rows), hide_index=True, width="stretch")
+
+    # ─────────── 綜合評分歷史（互動式）───────────
+    score_hist = db.get_score_history()
+    if not score_hist.empty:
+        with st.container(border=True):
+            st.markdown("### 📈 綜合評分歷史")
+            st.caption(
+                "每日記錄全市場 ETF 的公平評分——在「同資產類別」（股票／債券／商品）內的百分位，"
+                "越高＝同類中越好。挑選任意 ETF 看其評分走勢；三大支柱權重沿用上方排名設定。"
+            )
+
+            avail = sorted(score_hist["ticker"].unique())
+            name_map = dict(zip(universe["ticker"], universe["name"]))
+
+            def _hist_disp(t: str) -> str:
+                return f"{t}  {name_map.get(t, '')}"
+
+            default_pick = [t for t in selected_tickers if t in set(avail)] or avail[:3]
+            picked_hist = st.multiselect(
+                "選擇 ETF（可多選）", options=avail, default=default_pick,
+                format_func=_hist_disp, key="etfc_hist_pick",
+            )
+            compress_hist = st.checkbox(
+                "依信賴度壓縮（新基金分數往中位 50 收斂）", value=False, key="etfc_hist_compress",
+                help="勾選後，資料越短的基金分數越往 50 靠攏，避免新基金的高分被過度解讀。",
+            )
+
+            w_eff = st.session_state.get("etfc_w_eff", 1.0)
+            w_asy = st.session_state.get("etfc_w_asy", 1.0)
+            w_con = st.session_state.get("etfc_w_con", 1.0)
+
+            if not picked_hist:
+                st.info("請選擇至少一檔 ETF。")
+            else:
+                sub = score_hist[score_hist["ticker"].isin(picked_hist)].copy()
+                sub["score"] = _history_composite(sub, w_eff, w_asy, w_con)
+                if compress_hist:
+                    conf = (sub["n_days"] / 252.0).clip(0, 1)
+                    sub["score"] = 50.0 + (sub["score"] - 50.0) * conf
+
+                hist_palette = px.colors.qualitative.Plotly + px.colors.qualitative.Vivid
+                figh = go.Figure()
+                for i, t in enumerate(picked_hist):
+                    s = sub[sub["ticker"] == t].sort_values("date")
+                    if s.empty:
+                        continue
+                    latest_n = int(s["n_days"].iloc[-1])
+                    figh.add_trace(go.Scatter(
+                        x=s["date"], y=s["score"], mode="lines",
+                        name=_hist_disp(t),
+                        opacity=0.45 + 0.55 * min(1.0, latest_n / 252.0),   # young funds fainter
+                        line=dict(color=hist_palette[i % len(hist_palette)], width=2),
+                        customdata=s[["eff", "asy", "con", "n_days"]].to_numpy(),
+                        hovertemplate=(
+                            "%{x|%Y-%m-%d}　評分 <b>%{y:.1f}</b><br>"
+                            "效率 %{customdata[0]:.0f}｜不對稱 %{customdata[1]:.0f}｜"
+                            "一致性 %{customdata[2]:.0f}　(交易日 %{customdata[3]})"
+                            "<extra>" + t + "</extra>"
+                        ),
+                    ))
+                figh.add_hline(y=50, line=dict(color="#A9B1BD", width=1.5, dash="dash"))
+                figh.update_layout(
+                    height=440, margin=dict(l=10, r=20, t=30, b=10),
+                    yaxis=dict(title="綜合評分（同類百分位）", range=[0, 100],
+                               ticksuffix="", showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
+                    xaxis=dict(title="", showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
+                    legend=dict(x=0.01, y=0.99, xanchor="left", yanchor="top",
+                                bgcolor="rgba(0,0,0,0.5)"),
+                    hovermode="x unified",
+                )
+                st.plotly_chart(figh, width="stretch")
+                st.caption(
+                    "線越淡＝該基金資料越短、評分越不穩定（新上市基金自上市 30 個交易日後才開始計分）。"
+                    "拖曳可縮放、點圖例可隱藏單條線。"
+                )
 
     # ─────────── 市場區間績效摘要 ───────────
     if show_regimes and not regimes_df.empty and per_ticker_prices:
