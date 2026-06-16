@@ -919,8 +919,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
     # ─────────── 綜合評分排名（公平、與市場多空方向無關）───────────
     if selected_tickers:
-        tab_rank, tab_hist = st.tabs(["🏆 綜合評分排名", "📈 評分歷史"])
-        with tab_rank:
+        with st.container(border=True):
             st.markdown("### 🏆 綜合評分排名")
             st.caption(
                 "以三大支柱在你選的 ETF 之間排名，**所有指標皆與市場多空方向無關**："
@@ -1052,11 +1051,11 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                     )
                     st.dataframe(pd.DataFrame(bench_rows), hide_index=True, width="stretch")
 
-        with tab_hist:
+        with st.container(border=True):
             st.markdown("### 📈 綜合評分歷史")
             st.caption(
                 "上方所選 ETF 的每日公平評分走勢——在「同資產類別」（股票／債券／商品）內的"
-                "百分位，越高＝同類中越好。三大支柱權重沿用「綜合評分排名」分頁的設定。"
+                "百分位，越高＝同類中越好。三大支柱權重沿用上方排名設定。"
             )
             score_hist = db.get_score_history()
             name_map = dict(zip(universe["ticker"], universe["name"]))
