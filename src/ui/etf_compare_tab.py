@@ -459,6 +459,7 @@ def _build_score_table(
     baseline_date: pd.Timestamp,
     weights: dict[str, float],
     as_of: pd.Timestamp | None = None,
+    shrink: bool = True,
 ) -> pd.DataFrame:
     """One row per selected ETF with pillar sub-scores + the fair composite.
 
@@ -568,7 +569,10 @@ def _build_score_table(
             continue
         raw = num / den
         c = min(1.0, max(0.0, row["n_days"] / SCORE_FULL_CONF_DAYS))
-        comp[tkr] = 50.0 + (raw - 50.0) * c          # new funds pulled toward the median
+        # Snapshot (shrink=True): pull new funds toward the median so a thin sample
+        # can't top the table. Trend (shrink=False): keep the raw standing so a time
+        # series shows real ranking change, not the mechanical confidence ramp.
+        comp[tkr] = (50.0 + (raw - 50.0) * c) if shrink else raw
         conf[tkr] = c
         completeness[tkr] = have / len(pillar_cols)
     score_df["綜合評分"]      = pd.Series(comp)
