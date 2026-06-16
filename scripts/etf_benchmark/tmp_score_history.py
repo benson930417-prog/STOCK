@@ -39,7 +39,8 @@ from scripts.etf_benchmark import db                       # noqa: E402
 from src.ui.etf_compare_tab import _build_score_table      # noqa: E402
 
 # ── knobs ────────────────────────────────────────────────────────────────────
-POCKET = ["0050", "00981A", "00988A", "00990A", "00991A", "00992A", "00997A"]
+# 00997A excluded — only listed from April, too short to compare on the 2/23 window.
+POCKET = ["0050", "00981A", "00988A", "00990A", "00991A", "00992A"]
 START    = pd.Timestamp("2026-02-23")   # pocket inception anchor
 MIN_DAYS = 30                           # don't plot a score until ≥ this many trading days
 WEIGHTS  = {"efficiency": 1.0, "asymmetry": 1.0, "consistency": 1.0}  # equal = fair
