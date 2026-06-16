@@ -2910,5 +2910,213 @@
         "shares": 354000
       }
     ]
+  },
+  "2026-06-16": {
+    "date": "2026-06-16",
+    "meta": {
+      "fund_size": 60920679847.0,
+      "nav": 36.87,
+      "outstanding_units": 1652090000,
+      "closing_price": null,
+      "source_url": "https://www.ctbcinvestments.com/Etf/88182265/Combination",
+      "provider": "CTBC Investments",
+      "cno": "88182265",
+      "fid": "E0017",
+      "nav_history": {
+        "source_url": "https://www.ctbcinvestments.com/API/etf/ETFDetail",
+        "latest": {
+          "date": "2026-06-16",
+          "nav": 36.87,
+          "closing_price": null,
+          "premium_discount": null,
+          "premium_discount_pct": null,
+          "fund_net_assets": 60920679847.0,
+          "outstanding_units": 1652090000,
+          "deltas": {}
+        }
+      }
+    },
+    "holdings": [
+      {
+        "id": "2330",
+        "name": "台灣積體電路製造",
+        "weight_pct": 36.77,
+        "shares": 9343000
+      },
+      {
+        "id": "2454",
+        "name": "聯發科技",
+        "weight_pct": 16.83,
+        "shares": 2247999
+      },
+      {
+        "id": "3711",
+        "name": "日月光投資控股",
+        "weight_pct": 4.97,
+        "shares": 5110000
+      },
+      {
+        "id": "2303",
+        "name": "聯華電子",
+        "weight_pct": 4.64,
+        "shares": 20046000
+      },
+      {
+        "id": "2344",
+        "name": "華邦電子",
+        "weight_pct": 3.46,
+        "shares": 10687000
+      },
+      {
+        "id": "2408",
+        "name": "南亞科技",
+        "weight_pct": 2.95,
+        "shares": 4226000
+      },
+      {
+        "id": "6223",
+        "name": "旺矽科技",
+        "weight_pct": 2.73,
+        "shares": 258000
+      },
+      {
+        "id": "3443",
+        "name": "創意電子",
+        "weight_pct": 2.31,
+        "shares": 286000
+      },
+      {
+        "id": "3661",
+        "name": "世芯電子",
+        "weight_pct": 1.93,
+        "shares": 272000
+      },
+      {
+        "id": "2379",
+        "name": "瑞昱半導體",
+        "weight_pct": 1.88,
+        "shares": 1687000
+      },
+      {
+        "id": "2449",
+        "name": "京元電子",
+        "weight_pct": 1.76,
+        "shares": 3846000
+      },
+      {
+        "id": "3653",
+        "name": "健策精密工業",
+        "weight_pct": 1.74,
+        "shares": 279688
+      },
+      {
+        "id": "3034",
+        "name": "聯詠科技",
+        "weight_pct": 1.62,
+        "shares": 1973000
+      },
+      {
+        "id": "5274",
+        "name": "信驊科技",
+        "weight_pct": 1.57,
+        "shares": 52800
+      },
+      {
+        "id": "6488",
+        "name": "環球晶圓",
+        "weight_pct": 1.51,
+        "shares": 878000
+      },
+      {
+        "id": "6515",
+        "name": "穎崴科技",
+        "weight_pct": 1.42,
+        "shares": 86900
+      },
+      {
+        "id": "6239",
+        "name": "力成科技",
+        "weight_pct": 1.38,
+        "shares": 2420000
+      },
+      {
+        "id": "3529",
+        "name": "力旺電子",
+        "weight_pct": 1.23,
+        "shares": 233300
+      },
+      {
+        "id": "6415",
+        "name": "矽力杰",
+        "weight_pct": 1.11,
+        "shares": 1146990
+      },
+      {
+        "id": "5347",
+        "name": "世界先進積體電路",
+        "weight_pct": 1.01,
+        "shares": 3588897
+      },
+      {
+        "id": "3036",
+        "name": "文曄科技",
+        "weight_pct": 1.01,
+        "shares": 2800155
+      },
+      {
+        "id": "3081",
+        "name": "聯亞光電工業",
+        "weight_pct": 0.97,
+        "shares": 259000
+      },
+      {
+        "id": "3105",
+        "name": "穩懋半導體",
+        "weight_pct": 0.95,
+        "shares": 1180000
+      },
+      {
+        "id": "3264",
+        "name": "欣銓科技",
+        "weight_pct": 0.55,
+        "shares": 1531000
+      },
+      {
+        "id": "6531",
+        "name": "愛普科技",
+        "weight_pct": 0.54,
+        "shares": 357000
+      },
+      {
+        "id": "6187",
+        "name": "萬潤科技",
+        "weight_pct": 0.48,
+        "shares": 258000
+      },
+      {
+        "id": "6510",
+        "name": "中華精測科技",
+        "weight_pct": 0.41,
+        "shares": 70800
+      },
+      {
+        "id": "3131",
+        "name": "弘塑科技",
+        "weight_pct": 0.39,
+        "shares": 71250
+      },
+      {
+        "id": "5269",
+        "name": "祥碩科技",
+        "weight_pct": 0.33,
+        "shares": 146000
+      },
+      {
+        "id": "6789",
+        "name": "采鈺科技股份有限公司",
+        "weight_pct": 0.28,
+        "shares": 352000
+      }
+    ]
   }
 }
