@@ -45,7 +45,9 @@ from src.ui.etf_compare_tab import _build_score_table      # noqa: E402
 # 00997A excluded — only listed from April, too short to compare on the 2/23 window.
 POCKET = ["0050", "00981A", "00988A", "00990A", "00991A", "00992A"]
 START    = pd.Timestamp("2026-02-23")   # pocket inception anchor
-MIN_DAYS = 30                           # don't plot a score until ≥ this many trading days
+MIN_DAYS = 30                           # each ETF is scored only after it has ≥ this many
+                                        # trading days of its OWN data (so a fund listed later
+                                        # starts 30 trading days after its own listing)
 WEIGHTS  = {"efficiency": 1.0, "asymmetry": 1.0, "consistency": 1.0}  # equal = fair
 
 OUT_CSV = ROOT_DIR / "data" / "score_history.csv"
@@ -94,10 +96,12 @@ def build_history() -> tuple[pd.DataFrame, pd.DataFrame]:
     score_by_date: dict[pd.Timestamp, pd.Series] = {}
     conf_by_date: dict[pd.Timestamp, pd.Series] = {}
     for i, d in enumerate(dates):
-        if (i + 1) < MIN_DAYS:                 # need MIN_DAYS observations in the window
+        if (i + 1) < MIN_DAYS:                 # global fast-skip: no fund can have MIN_DAYS yet
             continue
         sdf = _build_score_table(POCKET, universe, START, WEIGHTS, as_of=d, shrink=False)
-        score_by_date[d] = sdf["綜合評分"]      # Series indexed by ticker
+        # Per-fund gate: only keep a fund's score once IT has ≥ MIN_DAYS of its own data,
+        # so a later-listed ETF's line begins 30 trading days after its own listing.
+        score_by_date[d] = sdf["綜合評分"].where(sdf["n_days"] >= MIN_DAYS)
         conf_by_date[d] = sdf["_conf"]
 
     if not score_by_date:

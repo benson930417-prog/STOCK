@@ -29,7 +29,13 @@ data/debug_00997A/
 data/test_*.html
 data/test_*.js
 data/etf_*_summary_*.jpg
-data/summaries/
+# Keep the daily market-pulse image tracked so it syncs to local checkouts,
+# but still ignore the dated copies and everything else under summaries/.
+data/summaries/*
+!data/summaries/market_pulse_latest.jpg
+
+# Local design previews for the score chart (throwaway)
+data/_preview_*
 
 # etf_benchmark SQLite is built locally/on OCI, not tracked
 data/etf_bench/universe.csv
