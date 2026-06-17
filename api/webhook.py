@@ -260,11 +260,34 @@ def build_etf_quote_text(ticker):
     if composite_weight is None and fallback_rows:
         composite_weight = sum(float(row.get("weight_pct") or 0) for row in fallback_rows)
     composite_weight_text = "--" if composite_weight is None else f"{float(composite_weight):.1f}%"
+    def composite_line(label, pct_key, scope_key, count_key, weight_key):
+        pct = cache.get(pct_key)
+        if pct is None:
+            return None
+        scope = str(cache.get(scope_key) or "--").replace("台積電期貨", "期")
+        count = cache.get(count_key)
+        weight = cache.get(weight_key)
+        weight_text = "--" if weight is None else f"{float(weight):.1f}%"
+        detail_parts = []
+        if count is not None:
+            detail_parts.append(f"{count}檔")
+        if weight is not None:
+            detail_parts.append(f"權重{weight_text}")
+        detail = f"（{'／'.join(detail_parts)}）" if detail_parts else ""
+        scope_text = f" ({scope})" if scope and scope != "--" else ""
+        return f"- {label}{scope_text}：{float(pct):+.2f}%{detail}"
     lines = [
         f"{ticker} {etf_name}",
         f"持股日期：{cache.get('holdings_date', '----')}",
     ]
-    if cache.get("composite_mode") == "live" and composite is not None:
+    composite_lines = [
+        composite_line("即時加權", "composite_live_move_pct", "composite_live_scope", "composite_live_count", "composite_live_weight_pct"),
+        composite_line("收盤加權", "composite_notlive_move_pct", "composite_notlive_scope", "composite_notlive_count", "composite_notlive_weight_pct"),
+    ]
+    composite_lines = [line for line in composite_lines if line]
+    if composite_lines:
+        lines.extend(composite_lines)
+    elif cache.get("composite_mode") == "live" and composite is not None:
         comp_text = f"{composite:+.2f}%"
         composite_label = f"即時加權 ({composite_scope})"
         lines.append(f"- {composite_label}：{comp_text}")
