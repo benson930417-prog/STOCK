@@ -103,6 +103,9 @@ run_step() {
             step5*)
                 metrics=$(grep -E "^[[:space:]]*[0-9A-Z]+[[:space:]]+\[(PASS|INFO|WARN|FAIL)\]" "$logfile" | sed 's/^/          /')
                 ;;
+            step7*)
+                metrics=$(grep -E "^\[step7\] (recorded|backfilled)" "$logfile" | sed 's/^/          /')
+                ;;
         esac
         if [ -n "$metrics" ]; then
             printf "  [OK]   %s\n%s\n" "$label" "$metrics" >> "$SUMMARY_FILE"
