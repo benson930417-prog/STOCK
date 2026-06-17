@@ -656,26 +656,31 @@ async def take_snapshot(req: SnapshotRequest):
                 const canvases = Array.from(document.querySelectorAll('canvas'))
                     .filter(c => !c.closest('div[data-container-name="performance-chart-id"]'))
                     .map(c => ({el: c, r: c.getBoundingClientRect()}))
-                    .filter(item => item.r.width >= 250 && item.r.height >= 120 && item.r.top >= 220 && item.r.top <= 560)
+                    .filter(item => item.r.width >= 250 && item.r.height >= 120 && item.r.top >= 300 && item.r.top <= 560)
                     .sort((a, b) => (b.r.width * b.r.height) - (a.r.width * a.r.height));
                 if (!canvases.length) return null;
                 const r = canvases[0].r;
-                const y = Math.max(0, r.top - 36);
-                const bottom = Math.min(window.innerHeight, r.bottom + 92);
+                const pad = 12;
+                const y = Math.max(0, r.top - pad);
+                const bottom = Math.min(window.innerHeight, r.bottom + 46);
                 return {
-                    x: 0,
+                    x: Math.max(0, r.left - pad),
                     y,
-                    width: window.innerWidth,
-                    height: Math.max(240, bottom - y),
+                    width: Math.min(window.innerWidth, r.right + pad) - Math.max(0, r.left - pad),
+                    height: Math.max(220, bottom - y),
                 };
             }""")
             if not clip:
-                clip = {"x": 0, "y": 300, "width": 768, "height": 300}
+                clip = {"x": 36, "y": 330, "width": 700, "height": 260}
             await page.screenshot(
                 path=filepath,
                 clip=clip,
             )
             print(f"  ✅ NASDAQ IG page snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
+            meta = CHART_META.get(req.key)
+            if meta:
+                _trim_bottom_whitespace(filepath)
+                _overlay_title(filepath, meta["title"])
             return {"status": "success", "url": filename, "path": filepath}
 
         # Clip the chart area. TradingView uses DIFFERENT page templates for
