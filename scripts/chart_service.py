@@ -610,7 +610,8 @@ async def take_snapshot(req: SnapshotRequest):
         # So: try named containers first. Then fall back to the largest
         # CANVAS (not iframe — those are usually ads/social) in the UPPER
         # portion of the page where the price chart actually renders.
-        clip = await page.evaluate("""() => {
+        clip = await page.evaluate("""(key) => {
+            const preferOverviewChart = key === 'nasdaq';
             const inUpperPage = (r) => r.top >= 40 && r.top <= 600;
             const footerTextPattern = /(Look first\\s*\\/\\s*Then leap|Select market data|©\\s*20\\d{2}\\s*TradingView|Copyright\\s*©)/i;
             const footerLike = Array.from(document.querySelectorAll('footer, [class*="footer"], [class*="Footer"], body *'))
@@ -633,13 +634,23 @@ async def take_snapshot(req: SnapshotRequest):
 
             // 1) Try named containers in priority order — covers forex/equity
             //    AND futures/index page templates.
-            const containerSelectors = [
-                'div[data-container-name="performance-chart-id"]',
+            //
+            // NASDAQ uses the TradingView symbol overview chart for the
+            // requested IG-NASDAQ 1D page. The generic performance container
+            // can render a long-range chart, so keep it as a fallback only for
+            // this key.
+            const overviewSelectors = [
                 'div[data-container-name="symbol-overview-chart-container"]',
                 'div[data-container-name="symbol-page-chart"]',
                 'div[data-name="symbol-page-chart-section"]',
                 'div[class*="chartContainer"]',
             ];
+            const performanceSelectors = [
+                'div[data-container-name="performance-chart-id"]',
+            ];
+            const containerSelectors = preferOverviewChart
+                ? [...overviewSelectors, ...performanceSelectors]
+                : [...performanceSelectors, ...overviewSelectors];
             for (const sel of containerSelectors) {
                 const el = document.querySelector(sel);
                 if (el && visibleChartLike(el, 800)) {
@@ -676,7 +687,7 @@ async def take_snapshot(req: SnapshotRequest):
                 };
             }
             return null;
-        }""")
+        }""", req.key)
 
         if clip and clip["width"] >= 250 and clip["height"] >= 120:
             await page.screenshot(path=filepath, clip=clip)
