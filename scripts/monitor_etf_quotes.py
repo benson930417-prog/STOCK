@@ -33,9 +33,10 @@ COUNTRY_LABELS = {
     "CN": "中",
     "DE": "德",
     "FR": "法",
+    "NL": "荷",
     "TSMC_FUT": "台積電期貨",
 }
-COUNTRY_ORDER = ["TW", "JP", "TSMC_FUT", "US", "HK", "KR", "CN", "DE", "FR"]
+COUNTRY_ORDER = ["TW", "JP", "TSMC_FUT", "US", "HK", "KR", "CN", "DE", "FR", "NL"]
 TSMC_PROXY_SYMBOL = "TAIFEX:QFF1!"
 TSMC_PROXY_TARGETS = {"2330", "2330.TW"}
 PASSIVE_ETF_TICKERS = {"0050", "00830", "00878", "00891", "009805", "009820"}
@@ -498,6 +499,8 @@ def normalize_yahoo_symbol(raw_id):
         country = "DE"
     elif market in {"FP", "FR"}:
         country = "FR"
+    elif market in {"NA", "NL", "AS"}:        # Bloomberg NA = Netherlands / Euronext Amsterdam
+        country = "NL"
     elif market in {"CH", "CN", "SS", "SZ"}:
         country = "CN"
     elif market:
@@ -514,6 +517,7 @@ def normalize_yahoo_symbol(raw_id):
             "TWO": "TW",
             "HK": "HK",
             "T": "JP",
+            "AS": "NL",
         }.get(suffix, suffix[:2])
         return symbol, country
 
@@ -538,6 +542,9 @@ def normalize_yahoo_symbol(raw_id):
 
     if country == "FR":
         return f"{symbol}.PA", "FR"
+
+    if country == "NL":
+        return f"{symbol}.AS", "NL"
 
     if country == "CN":
         if market == "SZ" or symbol.startswith(("0", "3")):
@@ -939,11 +946,20 @@ def _regular_session_bounds(country, now=None):
             return start, end
         return None
 
+    if country == "NL":
+        now = now or datetime.now(ZoneInfo("Europe/Amsterdam"))
+        if now.weekday() >= 5:
+            return None
+        start, end = _session_bounds(now, EU_REGULAR_OFFICIAL_OPEN_MINUTES, EU_REGULAR_OFFICIAL_CLOSE_MINUTES)
+        if start <= now < end:
+            return start, end
+        return None
+
     return None
 
 
 def _exchange_session(country):
-    if country in {"TW", "JP", "HK", "KR", "CN", "DE", "FR"}:
+    if country in {"TW", "JP", "HK", "KR", "CN", "DE", "FR", "NL"}:
         return "REG" if _regular_session_bounds(country) else "CLOSE"
     return "REG"
 
