@@ -1090,11 +1090,20 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                             "<extra>" + t + "</extra>"
                         ),
                     ))
-                figh.add_hline(y=50, line=dict(color="#A9B1BD", width=1.5, dash="dash"))
+                # auto-zoom y to the plotted scores (padded, clamped to 0-100)
+                yv = sub["score"].dropna()
+                if not yv.empty:
+                    pad = max(2.0, (float(yv.max()) - float(yv.min())) * 0.10)
+                    y_lo = max(0.0, float(yv.min()) - pad)
+                    y_hi = min(100.0, float(yv.max()) + pad)
+                else:
+                    y_lo, y_hi = 0.0, 100.0
+                if y_lo <= 50 <= y_hi:
+                    figh.add_hline(y=50, line=dict(color="#A9B1BD", width=1.5, dash="dash"))
                 figh.update_layout(
                     height=440, margin=dict(l=10, r=20, t=30, b=10),
-                    yaxis=dict(title="綜合評分（同類百分位）", range=[0, 100],
-                               ticksuffix="", showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
+                    yaxis=dict(title="綜合評分（同類百分位）", range=[y_lo, y_hi],
+                               showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
                     xaxis=dict(title="", showgrid=True, gridcolor="rgba(255,255,255,0.08)",
                                range=[baseline_date, max(today_ts, baseline_date)]),
                     legend=dict(x=0.01, y=0.99, xanchor="left", yanchor="top",
