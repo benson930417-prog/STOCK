@@ -810,8 +810,9 @@ def _current_us_clock_session(now=None):
 
 
 def _previous_us_regular_close(symbol, quote_time, timeout=10):
+    """(close, date) of the most recent non-null US daily bar before the quote date."""
     if not quote_time:
-        return None
+        return None, None
     try:
         quote_date = datetime.fromtimestamp(int(quote_time), ZoneInfo("America/New_York")).date()
         res = requests.get(
@@ -824,7 +825,7 @@ def _previous_us_regular_close(symbol, quote_time, timeout=10):
         payload = res.json()
         result = (payload.get("chart", {}).get("result") or [None])[0]
         if not result:
-            return None
+            return None, None
         timestamps = result.get("timestamp") or []
         closes = result.get("indicators", {}).get("quote", [{}])[0].get("close", [])
         previous_points = []
@@ -833,12 +834,13 @@ def _previous_us_regular_close(symbol, quote_time, timeout=10):
                 continue
             close_date = datetime.fromtimestamp(int(timestamp), ZoneInfo("America/New_York")).date()
             if close_date < quote_date:
-                previous_points.append((timestamp, close))
+                previous_points.append((close_date, close))
         if previous_points:
-            return previous_points[-1][1]
+            close_date, close = previous_points[-1]
+            return close, close_date
     except Exception:
-        return None
-    return None
+        return None, None
+    return None, None
 
 
 def _session_bounds(dt, start_minutes, end_minutes):
@@ -1139,6 +1141,37 @@ def _previous_close_from_intraday(symbol, quote_time, country, timeout=10):
         return None, None
 
 
+def _resolve_previous_close(symbol, quote_time, country, daily_close, daily_date, timeout=10):
+    """The close of the MOST RECENT TRADING DAY before today — or None if it can't
+    be confidently determined (caller then shows no %, never a wrong one).
+
+    • If the daily bar is recent enough (≥ the naive previous business day), trust it
+      — it's the exact official close.
+    • If it looks stale (Yahoo dropped yesterday's bar, or a holiday gap), verify the
+      real previous trading day against intraday bars (which reflect actual trading):
+        - intraday finds a MORE RECENT trading day → recover it (true yesterday).
+        - intraday confirms the daily date is the latest (a real holiday) → keep the
+          exact daily close.
+        - intraday can't tell us → return None (error), never a 2-days-ago guess.
+    """
+    if not quote_time:
+        return None
+    tz = ZoneInfo(_EXCHANGE_TZ.get(country, "UTC"))
+    try:
+        quote_date = datetime.fromtimestamp(int(quote_time), tz).date()
+    except Exception:
+        return None
+    naive_prev = _naive_prev_business_day(quote_date)
+    if daily_date is not None and daily_date >= naive_prev:
+        return daily_close
+    intra_close, intra_date = _previous_close_from_intraday(symbol, quote_time, country, timeout)
+    if intra_date is None:
+        return None
+    if daily_date is not None and intra_date <= daily_date:
+        return daily_close
+    return intra_close
+
+
 def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
     try:
         params = {"range": "5d", "interval": "1d"}
@@ -1199,38 +1232,24 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
                 else:
                     session = "CLOSE"
 
-        previous = None
+        # Previous close = the most recent TRADING DAY before today, resolved
+        # strictly (daily when fresh, intraday-recovered when Yahoo dropped
+        # yesterday's bar, else None). Guarantees today's % is a true 1-day change
+        # against the last trading day — or no % at all, never a 2-days-ago value.
         if country == "US":
-            previous = _previous_us_regular_close(symbol, quote_time, timeout=timeout)
-        if previous is None and country != "US":
-            # Today's % must compare against the PREVIOUS TRADING DAY's close, read
-            # off the daily series (not meta.chartPreviousClose, which is the start
-            # of the chart range → a multi-day return).
-            previous, prev_date = _previous_close_from_daily_bars(valid_points, quote_time, country)
-            # Guarantee: never a spurious 2-day fallback. If the daily series'
-            # previous is older than the naive previous business day, Yahoo likely
-            # dropped yesterday's bar — recover the true previous trading day from
-            # intraday bars (which reflect actual trading). Only override when
-            # intraday finds a MORE RECENT trading day, so genuine holidays (where
-            # 2 days ago really is the previous trading day) keep the precise daily
-            # close and are not falsely "corrected".
-            tz = ZoneInfo(_EXCHANGE_TZ.get(country, "UTC"))
-            try:
-                quote_date = datetime.fromtimestamp(int(quote_time), tz).date()
-            except Exception:
-                quote_date = None
-            if quote_date and (prev_date is None or prev_date < _naive_prev_business_day(quote_date)):
-                intra_close, intra_date = _previous_close_from_intraday(
-                    symbol, quote_time, country, timeout)
-                if intra_close and (prev_date is None or (intra_date and intra_date > prev_date)):
-                    previous = intra_close
+            daily_prev_close, daily_prev_date = _previous_us_regular_close(
+                symbol, quote_time, timeout=timeout)
+        else:
+            daily_prev_close, daily_prev_date = _previous_close_from_daily_bars(
+                valid_points, quote_time, country)
+        previous = _resolve_previous_close(
+            symbol, quote_time, country, daily_prev_close, daily_prev_date, timeout)
 
+        # Exact or nothing: if we couldn't pin the previous trading day, leave the
+        # day-% empty rather than fall back to Yahoo's (possibly multi-day) meta value.
         change_pct = None
-        meta_change_pct = meta.get("regularMarketChangePercent")
         if price is not None and previous:
             change_pct = (float(price) - float(previous)) / float(previous) * 100.0
-        elif meta_change_pct is not None:
-            change_pct = float(meta_change_pct)
 
         return {
             "symbol": symbol,
