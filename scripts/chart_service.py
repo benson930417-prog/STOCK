@@ -647,7 +647,7 @@ async def take_snapshot(req: SnapshotRequest):
             # IG:NASDAQ; the image must come from the same symbol overview
             # chart, not TradingView's lower white performance widget.
             nasdaq_viewport = {"width": 1200, "height": 900}
-            default_clip = {"x": 0, "y": 490, "width": nasdaq_viewport["width"], "height": 380}
+            default_clip = {"x": 0, "y": 490, "width": nasdaq_viewport["width"], "height": 350}
             clip = {
                 "x": 0,
                 "y": float(req.crop_y) if req.crop_y is not None else default_clip["y"],
