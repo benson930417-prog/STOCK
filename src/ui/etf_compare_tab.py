@@ -62,12 +62,16 @@ SCORE_PILLAR_LABELS = {"efficiency": "效率", "asymmetry": "不對稱", "consis
 SCORE_PILLAR_MEMBERS = {
     "efficiency":  ["sortino", "calmar"],
     "asymmetry":   ["capture_spread"],
-    "consistency": ["batting", "tracking_err", "ann_vol"],
+    # 一致性 = low volatility only. Tracking error and batting average were dropped:
+    # both are benchmark-relative and unfairly penalise active / global funds for
+    # deviating from a benchmark they aren't trying to track. Volatility is
+    # benchmark-free, so it measures "smooth ride" fairly for every fund.
+    "consistency": ["ann_vol"],
 }
 # direction per metric: True = higher is better
 SCORE_METRIC_DIRECTION = {
     "sortino": True, "calmar": True, "capture_spread": True,
-    "batting": True, "tracking_err": False, "ann_vol": False,
+    "ann_vol": False,
 }
 
 
@@ -520,17 +524,16 @@ def _build_score_table(
             rec["calmar"] = ann_ret / abs(max_dd)
         rec["ann_vol"] = float(rets.std(ddof=1) * (TRADING_DAYS_PER_YEAR ** 0.5))
 
-        # Asymmetry + consistency (benchmark-relative; gated on R²)
+        # Asymmetry (benchmark-relative; gated on R²). Consistency is benchmark-free
+        # (volatility only), already set above as rec["ann_vol"].
         bench_idx = _score_benchmark_for(urow)
         rec["benchmark"] = bench_idx
         cap = _capture_stats(rets, _bench_returns(bench_idx)) if bench_idx else None
         if cap:
             rec["r2"] = cap["r2"]
-            if cap["r2"] is not None and cap["r2"] >= SCORE_R2_MIN:
-                rec["batting"] = cap["batting"]
-                rec["tracking_err"] = cap["tracking_err"]
-                if cap["up_cap"] is not None and cap["dn_cap"] is not None:
-                    rec["capture_spread"] = cap["up_cap"] - cap["dn_cap"]
+            if (cap["r2"] is not None and cap["r2"] >= SCORE_R2_MIN
+                    and cap["up_cap"] is not None and cap["dn_cap"] is not None):
+                rec["capture_spread"] = cap["up_cap"] - cap["dn_cap"]
         recs.append(rec)
 
     score_df = pd.DataFrame(recs).set_index("代號", drop=False)
@@ -1029,7 +1032,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         "- ⚙️ **效率**：風險調整後報酬（Sortino＋Calmar）→ 同樣下跌風險下賺越多越高\n"
                         "- ⚖️ **漲多跌少**：相對大盤，**漲時跟得上、跌時守得住**的程度"
                         "（上漲捕獲 − 下跌捕獲）→ 越高代表越「進可攻、退可守」\n"
-                        "- 🎯 **一致性**：勝率＋低追蹤誤差＋低波動 → 越穩定越高\n"
+                        "- 🎯 **一致性**：低波動（與基準無關，純看走勢平不平穩）→ 越穩、抱起來越不抖越高\n"
                         "- 🏆 **綜合評分**：三支柱加權平均（預設等權），分數與下方走勢線一致\n"
                         "- 🛈 **漲多跌少「—」**：該 ETF 與大盤關聯太低或無對應基準，改由其餘支柱計分\n"
                         "- 🆕 **信賴**：交易日越少越不穩定（新上市自上市 30 個交易日後才計分）"
