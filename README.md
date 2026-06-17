@@ -164,6 +164,7 @@ The ETF comparison tab reads a local SQLite database generated under `data/etf_b
 | `scripts/etf_benchmark/step4_verify.py` | Audits adjusted-close returns against a transparent cash-dividend total-return model. |
 | `scripts/etf_benchmark/step5_verify_nav.py` | Optional NAV diagnostic for issuer NAV snapshots. |
 | `scripts/etf_benchmark/step6_regimes.py` | Builds market regime tags used by market pulse/benchmark views. |
+| `scripts/etf_benchmark/step7_score.py` | Records each ETF's fair-score pillars (效率/不對稱/一致性) per day into `data/etf_bench/score_history.csv`, ranked within asset class. `--backfill` rebuilds history (default 1y); no args appends today. Powers the ETF compare tab's 綜合評分 ranking + history. |
 
 First-time benchmark setup:
 
@@ -175,6 +176,7 @@ python -m scripts.etf_benchmark.step2_schema --reset
 python -m scripts.etf_benchmark.step3_backfill
 python -m scripts.etf_benchmark.step4_verify
 python -m scripts.etf_benchmark.step6_regimes
+python -m scripts.etf_benchmark.step7_score --backfill
 ```
 
 Daily refresh uses:
@@ -184,6 +186,7 @@ python -m scripts.etf_benchmark.step3_backfill --incremental
 python -m scripts.etf_benchmark.step4_verify
 python -m scripts.etf_benchmark.step5_verify_nav
 python -m scripts.etf_benchmark.step6_regimes
+python -m scripts.etf_benchmark.step7_score
 ```
 
 ## Data Directory
