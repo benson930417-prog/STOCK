@@ -70,7 +70,7 @@ percentiles**; the composite is the **weighted mean of the available pillars**.
 | Pillar | Metrics | Higher means |
 |---|---|---|
 | **效率 Efficiency** | Sortino, Calmar | more return per unit of *downside* risk (regime-neutral efficiency) |
-| **不對稱 Asymmetry** | up-capture − down-capture vs benchmark | keeps more of the upside while falling less — a ratio, so direction cancels |
+| **不對稱 Asymmetry** *(UI label: 漲多跌少)* | up-capture − down-capture vs benchmark | keeps more of the upside while falling less — a ratio, so direction cancels |
 | **一致性 Consistency** | batting average (↑), tracking error (↓), volatility (↓) | steadier, more reliable behaviour |
 
 Rules:

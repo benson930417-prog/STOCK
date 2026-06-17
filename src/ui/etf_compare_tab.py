@@ -931,15 +931,15 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         with st.container(border=True):
             st.markdown("### 🏆 綜合評分排名")
             st.caption(
-                "分數＝該 ETF 在「同資產類別」（股票／債券／商品）籃子內的百分位，"
-                "與下方「綜合評分歷史」走勢線**同一套標準**。三大支柱皆與市場多空方向無關，"
-                "只獎勵「同樣風險下賺更多、相對基準留住更多漲幅卻少跌、表現穩定」。"
+                "每項分數 **0–100，越高越好**（50＝同類中位數）＝該 ETF 在「同資產類別」"
+                "（股票／債券／商品）籃子內的百分位，與下方「綜合評分歷史」走勢線**同一套標準**。"
+                "三大支柱皆與市場多空方向無關。"
             )
 
             with st.expander("⚙️ 調整支柱權重（預設等權＝最公平）", expanded=False):
                 cw = st.columns(3)
                 w_eff = cw[0].slider("效率",   0.0, 3.0, 1.0, 0.5, key="etfc_w_eff")
-                w_asy = cw[1].slider("不對稱", 0.0, 3.0, 1.0, 0.5, key="etfc_w_asy")
+                w_asy = cw[1].slider("漲多跌少", 0.0, 3.0, 1.0, 0.5, key="etfc_w_asy")
                 w_con = cw[2].slider("一致性", 0.0, 3.0, 1.0, 0.5, key="etfc_w_con")
 
             score_hist = db.get_score_history()
@@ -974,7 +974,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                             "類別": ac_zh.get(r["asset_class"], r["asset_class"]),
                             "綜合評分": round(float(r["score"]), 1) if pd.notna(r["score"]) else None,
                             "評等": _stars(r["score"]),
-                            "效率": r["eff"], "不對稱": r["asy"], "一致性": r["con"],
+                            "效率": r["eff"], "漲多跌少": r["asy"], "一致性": r["con"],
                             "同類排名": rk,
                             "交易日數": int(r["n_days"]),
                             "信賴": _conf_label(int(r["n_days"])),
@@ -982,7 +982,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                     for t in missing:
                         rows.append({
                             "排名": "—", "代號": t, "名稱": name_map.get(t, t), "類別": "—",
-                            "綜合評分": None, "評等": "", "效率": None, "不對稱": None,
+                            "綜合評分": None, "評等": "", "效率": None, "漲多跌少": None,
                             "一致性": None, "同類排名": "", "交易日數": 0, "信賴": "資料不足",
                         })
                     disp = pd.DataFrame(rows)
@@ -1012,24 +1012,26 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         .format({
                             "綜合評分": lambda v: f"{v:.1f}" if pd.notna(v) else "—",
                             "效率":   lambda v: f"{v:.0f}" if pd.notna(v) else "—",
-                            "不對稱": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
+                            "漲多跌少": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
                             "一致性": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
                         })
                         .map(_score_color, subset=["綜合評分"])
-                        .map(_pillar_color, subset=["效率", "不對稱", "一致性"])
+                        .map(_pillar_color, subset=["效率", "漲多跌少", "一致性"])
                     )
                     st.dataframe(styled, hide_index=True, width="stretch")
                     st.caption(
                         f"基準日 {pd.Timestamp(latest).date()}　·　"
+                        "每欄分數 0–100，越高越好（50＝同類中位數）　·　"
                         "同類排名＝在整個資產類別籃子內的名次（不只你選的這幾檔）"
                     )
                     st.markdown(
-                        "**📖 讀法**（每欄 0–100＝在同類別籃子內的百分位）\n\n"
+                        "**📖 讀法**（每欄都是 0–100 分，越高越好，50＝同類中位數）\n\n"
                         "- ⚙️ **效率**：風險調整後報酬（Sortino＋Calmar）→ 同樣下跌風險下賺越多越高\n"
-                        "- ⚖️ **不對稱**：相對基準的「上漲捕獲 − 下跌捕獲」→ 留住越多漲幅、少跌越多越高\n"
+                        "- ⚖️ **漲多跌少**：相對大盤，**漲時跟得上、跌時守得住**的程度"
+                        "（上漲捕獲 − 下跌捕獲）→ 越高代表越「進可攻、退可守」\n"
                         "- 🎯 **一致性**：勝率＋低追蹤誤差＋低波動 → 越穩定越高\n"
                         "- 🏆 **綜合評分**：三支柱加權平均（預設等權），分數與下方走勢線一致\n"
-                        "- 🛈 **不對稱「—」**：該 ETF 與基準關聯太低或無對應基準，改由其餘支柱計分\n"
+                        "- 🛈 **漲多跌少「—」**：該 ETF 與大盤關聯太低或無對應基準，改由其餘支柱計分\n"
                         "- 🆕 **信賴**：交易日越少越不穩定（新上市自上市 30 個交易日後才計分）"
                     )
 
@@ -1085,7 +1087,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         customdata=s[["eff", "asy", "con", "n_days"]].to_numpy(),
                         hovertemplate=(
                             "%{x|%Y-%m-%d}　評分 <b>%{y:.1f}</b><br>"
-                            "效率 %{customdata[0]:.0f}｜不對稱 %{customdata[1]:.0f}｜"
+                            "效率 %{customdata[0]:.0f}｜漲多跌少 %{customdata[1]:.0f}｜"
                             "一致性 %{customdata[2]:.0f}　(交易日 %{customdata[3]})"
                             "<extra>" + t + "</extra>"
                         ),
