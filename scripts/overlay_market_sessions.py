@@ -57,19 +57,23 @@ SESSIONS = [
 # starts below the title bar that chart_service stamps on top.
 TITLE_BAR_H = 70         # height of the title bar chart_service adds on top
 
+# Extra white strip appended below the chart so the bigger arrows/labels have
+# breathing room (the original snapshot's bottom gap is too short for them).
+ADD_BOTTOM_SPACE = 56
+
 # Shaded session bands (kept). Faint full-plot-height rectangles.
 DRAW_BANDS = True
 BAND_TOP_MARGIN = 0      # px below the title bar where the band starts
-BAND_BOTTOM_MARGIN = 6   # px from the image bottom where the band ends
+BAND_BOTTOM_MARGIN = 4   # px from the (expanded) image bottom where bands end
 BAND_ALPHA = 24
 
-# Thick double-headed dimension arrows in the white gap at the BOTTOM,
+# Thick double-headed dimension arrows in the white strip at the BOTTOM,
 # with the label sitting in a break in the middle of the shaft (CAD style).
-ARROW_BOTTOM_MARGIN = 16 # px from the image bottom to the arrow/label line
-ARROW_W = 6              # shaft thickness (px)
-ARROW_HEAD = 8           # arrowhead half-length / half-height (px)
-LABEL_GAP = 6            # gap between label and shaft on each side (px)
-FONT_SIZE = 14
+ARROW_BOTTOM_MARGIN = 26 # px from the (expanded) image bottom to the arrow line
+ARROW_W = 8              # shaft thickness (px)
+ARROW_HEAD = 13          # arrowhead half-length / half-height (px)
+LABEL_GAP = 10           # gap between label and shaft on each side (px)
+FONT_SIZE = 28           # arrow label text size
 
 
 def tw_offset_hours(chart_date):
@@ -134,8 +138,14 @@ def draw_overlay(img, chart_date=None):
     if chart_date is None:
         chart_date = datetime.now(TW).date()
     offset = tw_offset_hours(chart_date)
-    base = img.convert("RGBA")
-    height = base.height
+    src = img.convert("RGBA")
+    width, orig_h = src.size
+
+    # Append a white strip at the bottom for the enlarged arrows/labels.
+    height = orig_h + ADD_BOTTOM_SPACE
+    base = Image.new("RGBA", (width, height), (255, 255, 255, 255))
+    base.paste(src, (0, 0))
+
     band_top = TITLE_BAR_H + BAND_TOP_MARGIN
     band_bottom = height - BAND_BOTTOM_MARGIN
     arrow_y = height - ARROW_BOTTOM_MARGIN
