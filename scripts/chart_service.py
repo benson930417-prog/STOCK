@@ -445,7 +445,7 @@ def _overlay_title(image_path, title):
 
     # Load font
     try:
-        font_title = ImageFont.truetype(FONT_PATH, 24)
+        font_title = ImageFont.truetype(FONT_PATH, 20)
     except Exception:
         font_title = ImageFont.load_default()
 
