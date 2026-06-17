@@ -260,7 +260,18 @@ def build_etf_quote_text(ticker):
     if composite_weight is None and fallback_rows:
         composite_weight = sum(float(row.get("weight_pct") or 0) for row in fallback_rows)
     composite_weight_text = "--" if composite_weight is None else f"{float(composite_weight):.1f}%"
-    def composite_lines_for(label, pct_key, scope_key, count_key, weight_key):
+
+    def pct_icon(value):
+        if value is None:
+            return "⚪"
+        value = float(value)
+        if value > 0:
+            return "🔴"
+        if value < 0:
+            return "🟢"
+        return "⚪"
+
+    def composite_lines_for(icon, label, pct_key, scope_key, count_key, weight_key):
         pct = cache.get(pct_key)
         if pct is None:
             return None
@@ -274,28 +285,37 @@ def build_etf_quote_text(ticker):
         if weight is not None:
             detail_parts.append(f"權重{weight_text}")
         scope_text = f" ({scope})" if scope and scope != "--" else ""
-        lines = [f"- {label}{scope_text}：{float(pct):+.2f}%"]
+        lines = [f"{icon} {label}{scope_text}"]
+        lines.append(f"   {pct_icon(pct)} {float(pct):+.2f}%")
         if detail_parts:
-            lines.append(f"  {' / '.join(detail_parts)}")
+            lines.append(f"   {' / '.join(detail_parts)}")
         return lines
     lines = [
-        f"{ticker} {etf_name}",
-        f"持股日期：{cache.get('holdings_date', '----')}",
+        f"📊 {ticker} {etf_name}",
+        "──────────",
+        f"🗓 持股日期：{cache.get('holdings_date', '----')}",
     ]
     composite_blocks = [
-        composite_lines_for("即時加權", "composite_live_move_pct", "composite_live_scope", "composite_live_count", "composite_live_weight_pct"),
-        composite_lines_for("收盤加權", "composite_notlive_move_pct", "composite_notlive_scope", "composite_notlive_count", "composite_notlive_weight_pct"),
+        composite_lines_for("⚡", "即時加權", "composite_live_move_pct", "composite_live_scope", "composite_live_count", "composite_live_weight_pct"),
+        composite_lines_for("🧾", "收盤加權", "composite_notlive_move_pct", "composite_notlive_scope", "composite_notlive_count", "composite_notlive_weight_pct"),
     ]
     composite_blocks = [block for block in composite_blocks if block]
     if composite_blocks:
+        lines.append("")
         for block in composite_blocks:
             lines.extend(block)
     elif cache.get("composite_mode") == "live" and composite is not None:
         comp_text = f"{composite:+.2f}%"
         composite_label = f"即時加權 ({composite_scope})"
-        lines.append(f"- {composite_label}：{comp_text}")
-        lines.append(f"  {composite_count}檔 / 權重{composite_weight_text}")
-    lines.append(f"- 漲跌統計：上漲 {counts.get('up', 0)} / 下跌 {counts.get('down', 0)} / 無變動 {counts.get('flat', 0)}")
+        lines.append("")
+        lines.append(f"⚡ {composite_label}")
+        lines.append(f"   {pct_icon(composite)} {comp_text}")
+        lines.append(f"   {composite_count}檔 / 權重{composite_weight_text}")
+    lines.extend([
+        "",
+        "📌 漲跌統計",
+        f"   🔴 上漲 {counts.get('up', 0)} / 🟢 下跌 {counts.get('down', 0)} / ⚪ 無變動 {counts.get('flat', 0)}",
+    ])
     return "\n".join(lines)
 
 def _fetch_intraday_change_pct(symbol, hours=24):
