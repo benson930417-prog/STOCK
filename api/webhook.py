@@ -285,30 +285,31 @@ def build_etf_quote_text(ticker):
         if weight is not None:
             detail_parts.append(f"權重{weight_text}")
         scope_text = scope if scope and scope != "--" else "--"
-        lines = [f"{label}｜{scope_text}｜{pct_icon(pct)} {float(pct):+.2f}%"]
+        lines = [f"{label}（{scope_text}）：", f"{pct_icon(pct)} {float(pct):+.2f}%"]
         if detail_parts:
-            lines.append(f"　{'・'.join(detail_parts)}")
+            lines.append(f"（{'・'.join(detail_parts)}）")
         return lines
     lines = [
-        f"{ticker} {etf_name}",
+        f"📊{ticker} {etf_name}",
         "──────────",
         f"持股日期：{cache.get('holdings_date', '----')}",
     ]
     composite_blocks = [
-        composite_lines_for("即時", "composite_live_move_pct", "composite_live_scope", "composite_live_count", "composite_live_weight_pct"),
-        composite_lines_for("收盤", "composite_notlive_move_pct", "composite_notlive_scope", "composite_notlive_count", "composite_notlive_weight_pct"),
+        composite_lines_for("交易中漲跌", "composite_live_move_pct", "composite_live_scope", "composite_live_count", "composite_live_weight_pct"),
+        composite_lines_for("已收盤漲跌", "composite_notlive_move_pct", "composite_notlive_scope", "composite_notlive_count", "composite_notlive_weight_pct"),
     ]
     composite_blocks = [block for block in composite_blocks if block]
     if composite_blocks:
-        lines.append("")
         for block in composite_blocks:
+            lines.append("")
             lines.extend(block)
     elif cache.get("composite_mode") == "live" and composite is not None:
         comp_text = f"{composite:+.2f}%"
-        composite_label = f"即時｜{composite_scope}"
+        composite_label = f"交易中漲跌（{composite_scope}）："
         lines.append("")
-        lines.append(f"{composite_label}｜{pct_icon(composite)} {comp_text}")
-        lines.append(f"　{composite_count}檔・權重{composite_weight_text}")
+        lines.append(composite_label)
+        lines.append(f"{pct_icon(composite)} {comp_text}")
+        lines.append(f"（{composite_count}檔・權重{composite_weight_text}）")
     lines.extend([
         "",
         f"漲跌統計：🔴{counts.get('up', 0)}　🟢{counts.get('down', 0)}　⚪{counts.get('flat', 0)}",
