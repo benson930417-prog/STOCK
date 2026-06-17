@@ -1178,13 +1178,12 @@ def merge_into_master(new_month_df: pd.DataFrame, upload_filename: str):
     combined = combined.drop_duplicates(subset=["_key"], keep="last")
 
     # Robust second-pass dedup: drop rows that look identical except for a
-    # NT$1 rounding wobble in 淨收付金額. The broker can re-export the same
-    # trade later with cash off-by-one, which previously slipped through.
+    # NT$1 rounding wobble in 淨收付金額, or a later broker reclassification
+    # between 現買/現賣 and 沖買/沖賣 for the same order.
     stable_key = (
         combined["股名"].astype(str) + "|"
         + combined["日期"].astype(str).str[:10] + "|"
         + combined["成交股數"].astype(str) + "|"
-        + combined["買賣別"].astype(str) + "|"
         + combined["成交價"].map(lambda v: f"{v:.4f}") + "|"
         + combined["委託書號"].astype(str)
     )

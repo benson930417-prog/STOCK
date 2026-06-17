@@ -538,6 +538,10 @@ async def shutdown_event():
 
 class SnapshotRequest(BaseModel):
     key: str
+    crop_x: float | None = None
+    crop_y: float | None = None
+    crop_width: float | None = None
+    crop_height: float | None = None
 
 
 async def _get_page_for_key(key):
@@ -653,10 +657,18 @@ async def take_snapshot(req: SnapshotRequest):
             }""")
             await asyncio.sleep(1)
             # Fixed against the IG symbol-page layout after pressing 1 day.
-            # Server headless layout places the tabs/toolbar around y~=390,
-            # while the plotted 1D chart body starts lower. Crop the chart
-            # body directly, then apply the same title overlay as other charts.
-            clip = {"x": 36, "y": 470, "width": 700, "height": 230}
+            # Optional crop_* request fields let us tune this live with curl
+            # without restarting the Playwright service for every attempt.
+            default_clip = {"x": 36, "y": 500, "width": 700, "height": 300}
+            if all(v is not None for v in (req.crop_x, req.crop_y, req.crop_width, req.crop_height)):
+                clip = {
+                    "x": float(req.crop_x),
+                    "y": float(req.crop_y),
+                    "width": float(req.crop_width),
+                    "height": float(req.crop_height),
+                }
+            else:
+                clip = default_clip
             await page.screenshot(
                 path=filepath,
                 clip=clip,
@@ -666,7 +678,7 @@ async def take_snapshot(req: SnapshotRequest):
             if meta:
                 _trim_bottom_whitespace(filepath)
                 _overlay_title(filepath, meta["title"])
-            return {"status": "success", "url": filename, "path": filepath}
+            return {"status": "success", "url": filename, "path": filepath, "clip": clip}
 
         # Clip the chart area. TradingView uses DIFFERENT page templates for
         # different symbol types:

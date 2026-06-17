@@ -1,6 +1,6 @@
 {
   "last_update_utc_epoch": 1781675434.51823,
-  "rows": 583,
+  "rows": 580,
   "min_date": "2025-11-26",
   "max_date": "2026-06-17",
   "last_upload": {
@@ -9,7 +9,7 @@
     "old_rows": 583,
     "added_rows": 0,
     "dup_skipped": 122,
-    "after_rows": 583,
+    "after_rows": 580,
     "range_after": {
       "min_date": "2025-11-26",
       "max_date": "2026-06-17"
