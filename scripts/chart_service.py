@@ -646,7 +646,14 @@ async def take_snapshot(req: SnapshotRequest):
             # Make the IG symbol page state explicit. The text quote comes from
             # IG:NASDAQ; the image must come from the same symbol overview
             # chart, not TradingView's lower white performance widget.
-            nasdaq_viewport = {"width": 768, "height": 900}
+            nasdaq_viewport = {"width": 1200, "height": 900}
+            default_clip = {"x": 0, "y": 500, "width": nasdaq_viewport["width"], "height": 300}
+            clip = {
+                "x": 0,
+                "y": float(req.crop_y) if req.crop_y is not None else default_clip["y"],
+                "width": nasdaq_viewport["width"],
+                "height": float(req.crop_height) if req.crop_height is not None else default_clip["height"],
+            }
             await page.set_viewport_size(nasdaq_viewport)
             await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
             await page.evaluate("window.scrollTo(0, 0)")
@@ -660,16 +667,6 @@ async def take_snapshot(req: SnapshotRequest):
             # Fixed against the IG symbol-page layout after pressing 1 day.
             # Optional crop_* request fields let us tune this live with curl
             # without restarting the Playwright service for every attempt.
-            default_clip = {"x": 36, "y": 500, "width": 700, "height": 300}
-            if all(v is not None for v in (req.crop_x, req.crop_y, req.crop_width, req.crop_height)):
-                clip = {
-                    "x": float(req.crop_x),
-                    "y": float(req.crop_y),
-                    "width": float(req.crop_width),
-                    "height": float(req.crop_height),
-                }
-            else:
-                clip = default_clip
             await page.screenshot(
                 path=filepath,
                 clip=clip,
