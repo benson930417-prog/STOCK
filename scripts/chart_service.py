@@ -646,7 +646,8 @@ async def take_snapshot(req: SnapshotRequest):
             # Make the IG symbol page state explicit. The text quote comes from
             # IG:NASDAQ; the image must come from the same symbol overview
             # chart, not TradingView's lower white performance widget.
-            await page.set_viewport_size({"width": 768, "height": 620})
+            nasdaq_viewport = {"width": 768, "height": 900}
+            await page.set_viewport_size(nasdaq_viewport)
             await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
             await page.evaluate("window.scrollTo(0, 0)")
             await asyncio.sleep(1)
@@ -678,7 +679,7 @@ async def take_snapshot(req: SnapshotRequest):
             if meta:
                 _trim_bottom_whitespace(filepath)
                 _overlay_title(filepath, meta["title"])
-            return {"status": "success", "url": filename, "path": filepath, "clip": clip}
+            return {"status": "success", "url": filename, "path": filepath, "clip": clip, "viewport": nasdaq_viewport}
 
         # Clip the chart area. TradingView uses DIFFERENT page templates for
         # different symbol types:
