@@ -249,6 +249,37 @@ async def _extract_market_quote(page):
     return _parse_market_text(await _get_body_text(page))
 
 
+async def _extract_ig_nasdaq_quote(page):
+    """Parse the visible US Tech 100 Cash quote from the IG-NASDAQ page.
+
+    The TradingView scanner can return a different CFD feed for IG:NASDAQ than
+    the public symbol page displays. For this LINE command the user explicitly
+    wants the page value from https://www.tradingview.com/symbols/IG-NASDAQ/.
+    """
+    text = await _get_body_text(page)
+    marker = "US Tech 100 Cash"
+    start = text.find(marker)
+    if start < 0:
+        raise ValueError("Could not find US Tech 100 Cash on IG-NASDAQ page")
+    slice_text = text[start:start + 1000]
+    match = re.search(
+        r"US Tech 100 Cash.*?([0-9][0-9,.]*)\s*(?:D\s*)?USD\s*([+−-][0-9][0-9,.]*)\s*([+−-][0-9][0-9,.]*%)",
+        slice_text,
+        flags=re.S,
+    )
+    if not match:
+        raise ValueError(f"Could not parse IG-NASDAQ page quote: {slice_text[:300]}")
+    price, change_abs, change_pct = match.groups()
+    return {
+        "price": _num(price),
+        "currency": "USD",
+        "change_abs": _num(change_abs),
+        "change_pct": _num(change_pct),
+        "as_of_text": None,
+        "performance": {},
+    }
+
+
 async def _fetch_tradingview_scanner_values(page, scanner, symbol, columns):
     response = await page.request.post(
         f"https://scanner.tradingview.com/{scanner}/scan",
@@ -525,6 +556,13 @@ async def _get_body_text(page):
 async def market_text(req: SnapshotRequest):
     page = await _get_page_for_key(req.key)
     try:
+        if req.key == "nasdaq":
+            await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
+            await page.add_style_tag(content=HIDE_CSS)
+            await page.evaluate("window.scrollTo(0, 0)")
+            await asyncio.sleep(0.8)
+            quote = await _extract_ig_nasdaq_quote(page)
+            return _market_text_payload(req.key, quote)
         quote = await _fetch_tradingview_scanner_quote(page, req.key)
         if quote is None:
             try:
@@ -605,10 +643,17 @@ async def take_snapshot(req: SnapshotRequest):
             # Make the IG symbol page state explicit. The text quote comes from
             # IG:NASDAQ; the image must come from the same symbol overview
             # chart, not TradingView's lower white performance widget.
+            await page.set_viewport_size({"width": 768, "height": 576})
             await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
             await page.add_style_tag(content=HIDE_CSS)
             await page.evaluate("window.scrollTo(0, 0)")
             await asyncio.sleep(1)
+            await page.screenshot(
+                path=filepath,
+                clip={"x": 0, "y": 110, "width": 768, "height": 420},
+            )
+            print(f"  ✅ NASDAQ IG page snapshot saved: {filename}")
+            return {"status": "success", "url": filename, "path": filepath}
 
         # Clip the chart area. TradingView uses DIFFERENT page templates for
         # different symbol types:
