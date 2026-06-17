@@ -738,7 +738,7 @@ def handle_message(event):
             daemon=True,
         ).start()
 
-    elif user_msg in {"那斯達克", "那指", "納斯達克"} or user_msg.strip().lower() in {"nasdaq", "ndx", "nas"}:
+    elif user_msg in {"那斯達克", "那指", "納斯達克", "24小時那斯達克"} or user_msg.strip().lower() in {"nasdaq", "ndx", "nas"}:
         reply_msg = get_market_text("nasdaq")
         try:
             res = get_chart_snapshot("nasdaq")

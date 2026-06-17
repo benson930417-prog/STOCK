@@ -3,7 +3,7 @@
 Two-page LINE Bot Rich Menu setup.
 
 Page 1 top:    油價  | 黃金   | 匯率   | 債券
-Page 1 bottom: 市場脈動 | 吳大師 | 那斯達克 | ▶更多
+Page 1 bottom: 市場脈動 | 吳大師 | 24小時那斯達克 | ▶更多
 Page 2 top:    00878 | 00981A | 00988A | 00403A
 Page 2 bottom: ◀上一頁 | 00891 | 00830 | ▶更多
 Page 3 top:    009805 | 009820 | future | future
@@ -66,7 +66,7 @@ PAGE1 = [
     # Row 2 — dashboard, master, most-used ETF, next page
     (0,    843, 625, 843, "脈", "市場脈動", "加權狀態儀表板", ( 99, 102, 241), "message",        "市場脈動", False),
     (625,  843, 625, 843, "師", "吳大師", "主要持股總覽",     (180,  83,   9), "message",        "吳大師", False),
-    (1250, 843, 625, 843, "那", "那斯達克", "美科技·24h即時",   (  8, 145, 178), "message",        "那斯達克", False),
+    (1250, 843, 625, 843, "納", "24小時那斯達克", "美科技·24h即時", (  8, 145, 178), "message",        "那斯達克", False),
     (1875, 843, 625, 843, ">", "更多",   "ETF 第二頁",       ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
 ]
 
@@ -86,7 +86,7 @@ PAGE2 = [
 PAGE3 = [
     # Row 1 — ETF overflow
     (0,    0,   625, 843, "電", "009805", "美國電力基建",     (220,  38,  38), "message",        "9805",   False),
-    (625,  0,   625, 843, "納", "009820", "元大納斯達克精選", (220,  38,  38), "message",        "9820",   False),
+    (625,  0,   625, 843, "精", "009820", "元大納斯達克精選", (220,  38,  38), "message",        "9820",   False),
     (1250, 0,   625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),
     (1875, 0,   625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),
     # Row 2 — previous at bottom-left, home only because there is no next page yet
@@ -151,6 +151,19 @@ def text_h(draw, text, font) -> int:
 
 
 # ── Image builder ─────────────────────────────────────────────────────────
+def _fit_label_font(draw, text, max_width, base=86, minimum=46):
+    """Largest bold label font (≤ base) whose width fits max_width — lets longer
+    labels like 24小時那斯達克 shrink instead of overflowing the cell."""
+    size = base
+    while size > minimum:
+        font = load_font(size, bold=True)
+        bbox = draw.textbbox((0, 0), text, font=font)
+        if bbox[2] - bbox[0] <= max_width:
+            return font
+        size -= 4
+    return load_font(minimum, bold=True)
+
+
 def build_image(cells: list) -> Image.Image:
     img  = Image.new("RGB", (W, H), BG)
     draw = ImageDraw.Draw(img)
@@ -189,7 +202,8 @@ def build_image(cells: list) -> Image.Image:
         r_circle = 190 if w < 700 else 210
         gap1     = 36
         gap2     = 18
-        lh = text_h(draw, label,    font_label)
+        label_font = _fit_label_font(draw, label, (bx1 - bx0) - 32)
+        lh = text_h(draw, label,    label_font)
         sh = text_h(draw, subtitle, font_sub)
         block_h  = r_circle * 2 + gap1 + lh + gap2 + sh
         top_pad  = ((by1 - by0) - block_h) // 2
@@ -204,7 +218,7 @@ def build_image(cells: list) -> Image.Image:
 
         # Label
         label_y = icon_cy + r_circle + gap1
-        draw.text((cx, label_y), label, font=font_label, fill=WHITE, anchor="mt")
+        draw.text((cx, label_y), label, font=label_font, fill=WHITE, anchor="mt")
 
         # Subtitle
         sub_y = label_y + lh + gap2
