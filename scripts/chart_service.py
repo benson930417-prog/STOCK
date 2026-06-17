@@ -646,11 +646,36 @@ async def take_snapshot(req: SnapshotRequest):
             await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
             await page.evaluate("window.scrollTo(0, 0)")
             await asyncio.sleep(1)
+            await page.evaluate("""() => {
+                const controls = Array.from(document.querySelectorAll('button, a, [role="button"]'));
+                const oneDay = controls.find(el => (el.textContent || '').trim() === '1 day');
+                if (oneDay) oneDay.click();
+            }""")
+            await asyncio.sleep(1)
+            clip = await page.evaluate("""() => {
+                const canvases = Array.from(document.querySelectorAll('canvas'))
+                    .filter(c => !c.closest('div[data-container-name="performance-chart-id"]'))
+                    .map(c => ({el: c, r: c.getBoundingClientRect()}))
+                    .filter(item => item.r.width >= 250 && item.r.height >= 120 && item.r.top >= 220 && item.r.top <= 560)
+                    .sort((a, b) => (b.r.width * b.r.height) - (a.r.width * a.r.height));
+                if (!canvases.length) return null;
+                const r = canvases[0].r;
+                const y = Math.max(0, r.top - 36);
+                const bottom = Math.min(window.innerHeight, r.bottom + 92);
+                return {
+                    x: 0,
+                    y,
+                    width: window.innerWidth,
+                    height: Math.max(240, bottom - y),
+                };
+            }""")
+            if not clip:
+                clip = {"x": 0, "y": 300, "width": 768, "height": 300}
             await page.screenshot(
                 path=filepath,
-                clip={"x": 0, "y": 80, "width": 768, "height": 500},
+                clip=clip,
             )
-            print(f"  ✅ NASDAQ IG page snapshot saved: {filename}")
+            print(f"  ✅ NASDAQ IG page snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
             return {"status": "success", "url": filename, "path": filepath}
 
         # Clip the chart area. TradingView uses DIFFERENT page templates for
