@@ -3,7 +3,7 @@
 Two-page LINE Bot Rich Menu setup.
 
 Page 1 top:    油價  | 黃金   | 匯率   | 債券
-Page 1 bottom: 市場脈動 | 吳大師 | 0050 | ▶更多
+Page 1 bottom: 市場脈動 | 吳大師 | 那斯達克 | ▶更多
 Page 2 top:    00878 | 00981A | 00988A | 00403A
 Page 2 bottom: ◀上一頁 | 00891 | 00830 | ▶更多
 Page 3 top:    009805 | 009820 | future | future
@@ -66,7 +66,7 @@ PAGE1 = [
     # Row 2 — dashboard, master, most-used ETF, next page
     (0,    843, 625, 843, "脈", "市場脈動", "加權狀態儀表板", ( 99, 102, 241), "message",        "市場脈動", False),
     (625,  843, 625, 843, "師", "吳大師", "主要持股總覽",     (180,  83,   9), "message",        "吳大師", False),
-    (1250, 843, 625, 843, "50", "0050",   "元大台灣50",       ( 37,  99, 235), "message",        "0050",   False),
+    (1250, 843, 625, 843, "那", "那斯達克", "美科技·24h即時",   (  8, 145, 178), "message",        "那斯達克", False),
     (1875, 843, 625, 843, ">", "更多",   "ETF 第二頁",       ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
 ]
 
