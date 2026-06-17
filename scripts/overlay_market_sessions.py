@@ -73,7 +73,7 @@ ARROW_BOTTOM_MARGIN = 26 # px from the (expanded) image bottom to the arrow line
 ARROW_W = 8              # shaft thickness (px)
 ARROW_HEAD = 13          # arrowhead half-length / half-height (px)
 LABEL_GAP = 10           # gap between label and shaft on each side (px)
-FONT_SIZE = 28           # arrow label text size
+FONT_SIZE = 24           # arrow label text size
 
 
 def tw_offset_hours(chart_date):
