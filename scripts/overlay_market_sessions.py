@@ -75,6 +75,12 @@ ARROW_HEAD = 13          # arrowhead half-length / half-height (px)
 LABEL_GAP = 10           # gap between label and shaft on each side (px)
 FONT_SIZE = 24           # arrow label text size
 
+# Vertical boundary/extension lines at each end of a region's arrow (CAD style).
+DRAW_END_TICKS = True
+TICK_UP = 22             # px the vertical line rises above the arrow line
+TICK_DOWN = 14           # px the vertical line drops below the arrow line
+TICK_W = 2               # vertical line thickness (px)
+
 
 def tw_offset_hours(chart_date):
     """Hours to add to a US Eastern clock time to get the Taipei clock time."""
@@ -124,6 +130,10 @@ def dimension_with_label(d, x0, x1, y, color, label, font):
     tw_, th = tb[2] - tb[0], tb[3] - tb[1]
     lx0, lx1 = cx - tw_ / 2, cx + tw_ / 2
 
+    # vertical boundary lines at each end of the region
+    if DRAW_END_TICKS:
+        d.line([(x0, y - TICK_UP), (x0, y + TICK_DOWN)], fill=color, width=TICK_W)
+        d.line([(x1, y - TICK_UP), (x1, y + TICK_DOWN)], fill=color, width=TICK_W)
     # arrowheads pointing outward at both ends
     d.polygon([(x0, y), (x0 + h, y - h), (x0 + h, y + h)], fill=color)
     d.polygon([(x1, y), (x1 - h, y - h), (x1 - h, y + h)], fill=color)
