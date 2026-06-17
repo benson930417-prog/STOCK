@@ -634,6 +634,34 @@ def get_chart_snapshot(key, timeout=30):
         raise RuntimeError(f"Chart service returned no snapshot URL for {key}: {payload}")
     return payload
 
+def get_cached_market_chart(key, max_age_seconds=300):
+    cache_path = os.path.join(parent_dir, "data", "quote_cache", f"market_{key}.json")
+    try:
+        with open(cache_path, encoding="utf-8") as fh:
+            payload = json.load(fh)
+    except FileNotFoundError:
+        raise RuntimeError(f"Missing cached TradingView market chart: {cache_path}")
+
+    updated_at = payload.get("updated_at")
+    if not updated_at:
+        raise RuntimeError(f"Cached TradingView market chart has no updated_at: {cache_path}")
+    updated_dt = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+    age = (datetime.now(timezone.utc) - updated_dt).total_seconds()
+    if age > max_age_seconds:
+        raise RuntimeError(f"Cached TradingView market chart is stale: {key} age={age:.0f}s")
+
+    text = payload.get("text")
+    image_url = payload.get("snapshot_url")
+    if not text:
+        raise RuntimeError(f"Cached TradingView market chart has no text: {cache_path}")
+    if not image_url:
+        raise RuntimeError(f"Cached TradingView market chart has no snapshot_url: {cache_path}")
+    image_path = os.path.join(parent_dir, "data", "images", image_url)
+    if not os.path.exists(image_path):
+        raise RuntimeError(f"Cached TradingView market image is missing: {image_path}")
+
+    return payload
+
 def get_oil_price():
     return "\n\n".join(get_market_text(key) for key in ["oil", "brent"])
 
@@ -783,10 +811,10 @@ def handle_message(event):
         ).start()
 
     elif user_msg in {"那斯達克", "那指", "納斯達克", "24小時那斯達克"} or user_msg.strip().lower() in {"nasdaq", "ndx", "nas"}:
-        reply_msg = get_market_text("nasdaq")
         try:
-            res = get_chart_snapshot("nasdaq")
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
+            cache = get_cached_market_chart("nasdaq")
+            reply_msg = cache["text"]
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{cache['snapshot_url']}?t={int(time.time())}"
             reply_line(
                 event.reply_token,
                 [
@@ -795,9 +823,9 @@ def handle_message(event):
                 ],
             )
         except Exception as e:
-            print("NASDAQ Chart generation failed:", e)
-            error_msg = _tradingview_error_text("nasdaq", "圖表", e)
-            reply_line(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
+            print("NASDAQ cached chart reply failed:", e)
+            error_msg = _tradingview_error_text("nasdaq", "快取圖表", e)
+            reply_line(event.reply_token, TextSendMessage(text=error_msg))
 
     elif user_msg == "油價":
         reply_msg = get_oil_price()

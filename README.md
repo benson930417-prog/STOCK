@@ -103,6 +103,7 @@ Market keys:
 | `usdtwd` | USD/TWD |
 | `usdchf` | USD/CHF |
 | `usdjpy` | USD/JPY |
+| `nasdaq` | IG US Tech 100 Cash / NASDAQ 24-hour proxy |
 
 Manual checks on the server:
 
@@ -115,6 +116,76 @@ curl -s -X POST http://127.0.0.1:5005/snapshot \
   -H "Content-Type: application/json" \
   -d '{"key":"bond"}'
 ```
+
+### Adding a Cached Market Chart Monitor
+
+Use this procedure when adding a LINE market chart command that must reply fast and should not render TradingView during the LINE reply.
+
+1. Add the TradingView key in `scripts/chart_service.py`.
+   - Add the URL to `CHART_TABS`.
+   - Add display metadata to `CHART_META`.
+   - Add quote extraction logic if `/market-text` cannot use the generic parser.
+   - Add any symbol-specific `/snapshot` crop logic if the generic chart crop is not reliable.
+   - Keep failures explicit. Do not silently fall back to Yahoo or another provider for these TradingView commands.
+
+2. Test the chart service directly on the server.
+
+   ```bash
+   curl -s -X POST http://127.0.0.1:5005/market-text \
+     -H "Content-Type: application/json" \
+     -d '{"key":"nasdaq"}'
+
+   curl -s -X POST http://127.0.0.1:5005/snapshot \
+     -H "Content-Type: application/json" \
+     -d '{"key":"nasdaq"}'
+   ```
+
+3. Add the key to `scripts/monitor_market_charts.py`.
+   - If the existing service should monitor multiple charts, add the key to `services/stock-market-chart-monitor.service` after `monitor_market_charts.py`.
+   - The monitor writes `data/quote_cache/market_<key>.json` and refreshes the chart image in `data/images/`.
+
+4. Update `api/webhook.py`.
+   - Add the LINE command aliases.
+   - For fast replies, call `get_cached_market_chart("<key>")`.
+   - Send `cache["text"]` and `cache["snapshot_url"]`.
+   - Do not call `get_market_text()` or `get_chart_snapshot()` inside the LINE reply path for cached chart commands.
+   - If the cache is missing or stale, return the explicit cache error. Do not generate live inside the webhook.
+
+5. Add or update the systemd service.
+   - Reuse `services/stock-market-chart-monitor.service` for multiple chart keys when possible.
+   - Create a separate service only if the chart has a different interval, timeout, or isolation need.
+
+6. Update this README.
+   - Add the key to the Market keys table.
+   - Add any new script/service to the Scripts and Services tables.
+   - Add install/enable/restart commands.
+   - Add troubleshooting notes if the chart uses special crop or page parsing rules.
+
+7. Verify before pushing/deploying.
+
+   ```bash
+   python -m py_compile api/webhook.py scripts/chart_service.py scripts/monitor_market_charts.py
+   ```
+
+8. Deploy on the server.
+
+   ```bash
+   cd /home/ubuntu/STOCK
+   git pull origin main --rebase --autostash
+   sudo cp services/*.service services/*.timer /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now stock-market-chart-monitor.service
+   sudo systemctl restart stock-chart.service stock-market-chart-monitor.service stock-webhook.service
+   ```
+
+9. Verify the cache, then test LINE.
+
+   ```bash
+   python scripts/monitor_market_charts.py nasdaq --once
+   cat data/quote_cache/market_nasdaq.json
+   ls -lh data/images/nasdaq_chart.png
+   journalctl -u stock-market-chart-monitor.service -n 80 --no-pager
+   ```
 
 ## Scripts
 
@@ -138,6 +209,7 @@ curl -s -X POST http://127.0.0.1:5005/snapshot \
 | `scripts/master_manual_positions.py` | Manual position data/helpers for the master portfolio. |
 | `scripts/monitor_etf_quotes.py` | Long-running quote cache daemon for one ETF ticker. |
 | `scripts/monitor_gold_quote.py` | Long-running GOLD quote monitor. |
+| `scripts/monitor_market_charts.py` | Long-running TradingView market text/chart cache monitor for LINE chart commands such as NASDAQ. |
 | `scripts/monitor_master_holding.py` | Long-running master-holding cache monitor. |
 | `scripts/rebroadcast_line.py` | Manual helper for rebroadcasting generated LINE report images. |
 | `scripts/setup_rich_menu.py` | Creates/updates the LINE rich menu. |
@@ -241,6 +313,7 @@ All service templates live in `services/` and assume:
 | `services/stock-fetch-1730-tw.service` | `stock-fetch-1730-tw.service` | One-shot daily fetch/orchestration job. |
 | `services/stock-fetch-1730-tw.timer` | `stock-fetch-1730-tw.timer` | Runs the daily job at 09:30 UTC / 17:30 Taiwan time. |
 | `services/stock-gold-monitor.service` | `stock-gold-monitor.service` | GOLD quote monitor. |
+| `services/stock-market-chart-monitor.service` | `stock-market-chart-monitor.service` | TradingView market text/chart cache monitor for fast LINE chart replies. |
 | `services/stock-master-holding-monitor.service` | `stock-master-holding-monitor.service` | Master holdings monitor. |
 | `services/stock-quote-monitor-00403a.service` | `stock-quote-monitor-00403a.service` | 00403A quote monitor. |
 | `services/stock-quote-monitor-0050.service` | `stock-quote-monitor-0050.service` | 0050 quote monitor. |
@@ -261,7 +334,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.service
 sudo systemctl enable oci-firewall.service
 sudo systemctl enable stock-fetch-1730-tw.timer
-sudo systemctl enable stock-gold-monitor.service stock-master-holding-monitor.service
+sudo systemctl enable stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service
 sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-00830.service
 sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-00891.service
 sudo systemctl enable stock-quote-monitor-009805.service
@@ -277,7 +350,7 @@ sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard
 Restart all monitors:
 
 ```bash
-sudo systemctl restart stock-gold-monitor.service stock-master-holding-monitor.service
+sudo systemctl restart stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service
 sudo systemctl restart stock-quote-monitor-0050.service stock-quote-monitor-00830.service
 sudo systemctl restart stock-quote-monitor-00878.service stock-quote-monitor-00891.service
 sudo systemctl restart stock-quote-monitor-009805.service

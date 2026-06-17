@@ -1,0 +1,17 @@
+[Unit]
+Description=TradingView Market Chart Cache Monitor
+After=network-online.target stock-chart.service
+Wants=network-online.target stock-chart.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/STOCK
+ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_market_charts.py nasdaq --interval 60
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/ubuntu/STOCK/market_chart_monitor.log
+StandardError=append:/home/ubuntu/STOCK/market_chart_monitor.log
+
+[Install]
+WantedBy=multi-user.target
