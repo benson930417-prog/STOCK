@@ -652,26 +652,11 @@ async def take_snapshot(req: SnapshotRequest):
                 if (oneDay) oneDay.click();
             }""")
             await asyncio.sleep(1)
-            clip = await page.evaluate("""() => {
-                const canvases = Array.from(document.querySelectorAll('canvas'))
-                    .filter(c => !c.closest('div[data-container-name="performance-chart-id"]'))
-                    .map(c => ({el: c, r: c.getBoundingClientRect()}))
-                    .filter(item => item.r.width >= 250 && item.r.height >= 120 && item.r.top >= 300 && item.r.top <= 560)
-                    .sort((a, b) => (b.r.width * b.r.height) - (a.r.width * a.r.height));
-                if (!canvases.length) return null;
-                const r = canvases[0].r;
-                const pad = 12;
-                const y = Math.max(0, r.top - pad);
-                const bottom = Math.min(window.innerHeight, r.bottom + 46);
-                return {
-                    x: Math.max(0, r.left - pad),
-                    y,
-                    width: Math.min(window.innerWidth, r.right + pad) - Math.max(0, r.left - pad),
-                    height: Math.max(220, bottom - y),
-                };
-            }""")
-            if not clip:
-                clip = {"x": 36, "y": 330, "width": 700, "height": 260}
+            # Fixed against the IG symbol-page layout after pressing 1 day.
+            # Server headless layout places the tabs/toolbar around y~=390,
+            # while the plotted 1D chart body starts lower. Crop the chart
+            # body directly, then apply the same title overlay as other charts.
+            clip = {"x": 36, "y": 470, "width": 700, "height": 230}
             await page.screenshot(
                 path=filepath,
                 clip=clip,
