@@ -153,6 +153,10 @@ TSMC night-session handling: when a holding maps to `2330` / `2330.TW` during th
 
 The ETF comparison tab reads a local SQLite database generated under `data/etf_bench/`. The database is intentionally ignored by Git and rebuilt on each host.
 
+The fair ETF score (綜合評分: ranking table + history) is specified in
+`scripts/etf_benchmark/SCORING.md` — read that for the ranking logic and the
+final four-basket (股票/債券/商品/其他) design and rationale.
+
 | File | Purpose |
 |---|---|
 | `scripts/etf_benchmark/__init__.py` | Package marker. |
@@ -165,6 +169,7 @@ The ETF comparison tab reads a local SQLite database generated under `data/etf_b
 | `scripts/etf_benchmark/step5_verify_nav.py` | Optional NAV diagnostic for issuer NAV snapshots. |
 | `scripts/etf_benchmark/step6_regimes.py` | Builds market regime tags used by market pulse/benchmark views. |
 | `scripts/etf_benchmark/step7_score.py` | Records each ETF's fair-score pillars (效率/不對稱/一致性) per day into `data/etf_bench/score_history.csv`, ranked within asset class. `--backfill` rebuilds history (default 1y); no args appends today. Powers the ETF compare tab's 綜合評分 ranking + history. |
+| `scripts/etf_benchmark/SCORING.md` | Authoritative spec for the 綜合評分 score: ranking logic, the four-basket method, the three pillars, methodology, and verification. |
 
 First-time benchmark setup:
 
