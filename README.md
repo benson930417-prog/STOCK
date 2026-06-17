@@ -189,10 +189,15 @@ Daily refresh uses:
 ```bash
 python -m scripts.etf_benchmark.step3_backfill --incremental
 python -m scripts.etf_benchmark.step4_verify
-python -m scripts.etf_benchmark.step5_verify_nav
 python -m scripts.etf_benchmark.step6_regimes
 python -m scripts.etf_benchmark.step7_score
 ```
+
+`step5_verify_nav` is a write-only NAV diagnostic that feeds nothing downstream;
+it is not in the daily job. Run it by hand only when investigating a NAV issue:
+`python -m scripts.etf_benchmark.step5_verify_nav`. `step4_verify` stays in the
+daily job as the guard for Yahoo `adj_close` (which the score depends on); its
+email summary shows counts + FAIL details only (sub-2 pct-pt warns are normal).
 
 ## Data Directory
 

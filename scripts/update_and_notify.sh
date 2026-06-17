@@ -98,7 +98,14 @@ run_step() {
                 metrics=$(grep -E "^[[:space:]]*(OK|EMPTY|FAIL|rows:)" "$logfile" | sed 's/^/          /')
                 ;;
             step4*)
-                metrics=$(grep -E "^[[:space:]]*(pass|warn|fail|skip|FAIL details:|WARN details:|[0-9A-Z^._-]+[[:space:]]+max_endpoint_drift=)" "$logfile" | sed 's/^/          /')
+                # email: counts + FAIL details only — drop the noisy WARN dump
+                # (warns < 2 pct-pt are normal dividend-reconstruction differences).
+                metrics=$(awk '
+                    /^[[:space:]]*(pass|warn|fail|skip)[[:space:]]*:/ {print; next}
+                    /FAIL details:/ {f=1; print; next}
+                    /WARN details:/ {f=0; next}
+                    f && /max_endpoint_drift=/ {print}
+                ' "$logfile" | sed 's/^/          /')
                 ;;
             step5*)
                 metrics=$(grep -E "^[[:space:]]*[0-9A-Z]+[[:space:]]+\[(PASS|INFO|WARN|FAIL)\]" "$logfile" | sed 's/^/          /')
@@ -170,7 +177,8 @@ done
 { echo; echo "etf_benchmark"; echo "──────────"; } >> "$SUMMARY_FILE"
 run_step "step3 backfill --incremental" python -m scripts.etf_benchmark.step3_backfill --incremental
 run_step "step4 verify (total return)"  python -m scripts.etf_benchmark.step4_verify
-run_step "step5 verify_nav"              python -m scripts.etf_benchmark.step5_verify_nav
+# step5 verify_nav is a NAV diagnostic that feeds nothing downstream (write-only
+# audit) and is noisy — run it manually when investigating, not on every daily job.
 run_step "step6 regime tagger"           python -m scripts.etf_benchmark.step6_regimes
 run_step "step7 score (append today)"    python -m scripts.etf_benchmark.step7_score
 run_step "generate_market_pulse_summary" python scripts/generate_market_pulse_summary.py
