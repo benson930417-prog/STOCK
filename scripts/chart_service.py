@@ -263,7 +263,7 @@ async def _extract_ig_nasdaq_quote(page):
         raise ValueError("Could not find US Tech 100 Cash on IG-NASDAQ page")
     slice_text = text[start:start + 1000]
     match = re.search(
-        r"US Tech 100 Cash.*?([0-9][0-9,.]*)\s*(?:D\s*)?USD\s*([+−-][0-9][0-9,.]*)\s*([+−-][0-9][0-9,.]*%)",
+        r"US Tech 100 Cash.*?([0-9][0-9,.]*)\s*(?:D\s*)?USD(?:R)?\s*([+−-][0-9][0-9,.]*)\s*([+−-][0-9][0-9,.]*%)",
         slice_text,
         flags=re.S,
     )
@@ -558,7 +558,6 @@ async def market_text(req: SnapshotRequest):
     try:
         if req.key == "nasdaq":
             await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
-            await page.add_style_tag(content=HIDE_CSS)
             await page.evaluate("window.scrollTo(0, 0)")
             await asyncio.sleep(0.8)
             quote = await _extract_ig_nasdaq_quote(page)
@@ -643,14 +642,13 @@ async def take_snapshot(req: SnapshotRequest):
             # Make the IG symbol page state explicit. The text quote comes from
             # IG:NASDAQ; the image must come from the same symbol overview
             # chart, not TradingView's lower white performance widget.
-            await page.set_viewport_size({"width": 768, "height": 576})
+            await page.set_viewport_size({"width": 768, "height": 620})
             await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
-            await page.add_style_tag(content=HIDE_CSS)
             await page.evaluate("window.scrollTo(0, 0)")
             await asyncio.sleep(1)
             await page.screenshot(
                 path=filepath,
-                clip={"x": 0, "y": 110, "width": 768, "height": 420},
+                clip={"x": 0, "y": 80, "width": 768, "height": 500},
             )
             print(f"  ✅ NASDAQ IG page snapshot saved: {filename}")
             return {"status": "success", "url": filename, "path": filepath}
