@@ -676,6 +676,14 @@ async def take_snapshot(req: SnapshotRequest):
             if meta:
                 _trim_bottom_whitespace(filepath)
                 _overlay_title(filepath, meta["title"])
+            # Trading-session markers (TW + US pre/regular/post in TW time).
+            # Overlay failure must not fail an otherwise-valid snapshot.
+            try:
+                from overlay_market_sessions import overlay_sessions_on_file
+                overlay_sessions_on_file(filepath)
+                print("  🕒 Trading-session overlay added")
+            except Exception as overlay_exc:
+                print(f"  ⚠ Session overlay skipped: {type(overlay_exc).__name__}: {overlay_exc}")
             return {"status": "success", "url": filename, "path": filepath, "clip": clip, "viewport": nasdaq_viewport}
 
         # Clip the chart area. TradingView uses DIFFERENT page templates for
