@@ -601,6 +601,14 @@ async def take_snapshot(req: SnapshotRequest):
         # would capture the cookie banner / social-link footer instead of chart.
         await page.evaluate("window.scrollTo(0, 0)")
         await asyncio.sleep(0.2)
+        if req.key == "nasdaq":
+            # Make the IG symbol page state explicit. The text quote comes from
+            # IG:NASDAQ; the image must come from the same symbol overview
+            # chart, not TradingView's lower white performance widget.
+            await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
+            await page.add_style_tag(content=HIDE_CSS)
+            await page.evaluate("window.scrollTo(0, 0)")
+            await asyncio.sleep(1)
 
         # Clip the chart area. TradingView uses DIFFERENT page templates for
         # different symbol types:
@@ -632,6 +640,26 @@ async def take_snapshot(req: SnapshotRequest):
                     && Number(style.opacity || 1) > 0;
             };
 
+            if (preferOverviewChart) {
+                const overviewCanvases = Array.from(document.querySelectorAll('canvas'))
+                    .filter(c => !c.closest('div[data-container-name="performance-chart-id"]'))
+                    .filter(c => visibleChartLike(c, 760))
+                    .map(c => ({el: c, r: c.getBoundingClientRect()}))
+                    .sort((a, b) => (b.r.width * b.r.height) - (a.r.width * a.r.height));
+                if (overviewCanvases.length) {
+                    const r = overviewCanvases[0].r;
+                    const pad = 14;
+                    const y = Math.max(0, r.top - pad);
+                    const bottom = Math.min(window.innerHeight, footerTop - pad, r.bottom + 70);
+                    return {
+                        x: Math.max(0, r.left - pad),
+                        y,
+                        width:  Math.min(window.innerWidth,  r.right  + pad) - Math.max(0, r.left - pad),
+                        height: Math.max(180, bottom - y),
+                    };
+                }
+            }
+
             // 1) Try named containers in priority order — covers forex/equity
             //    AND futures/index page templates.
             //
@@ -649,7 +677,7 @@ async def take_snapshot(req: SnapshotRequest):
                 'div[data-container-name="performance-chart-id"]',
             ];
             const containerSelectors = preferOverviewChart
-                ? [...overviewSelectors, ...performanceSelectors]
+                ? overviewSelectors
                 : [...performanceSelectors, ...overviewSelectors];
             for (const sel of containerSelectors) {
                 const el = document.querySelector(sel);
