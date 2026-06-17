@@ -549,6 +549,7 @@ MARKET_TEXT_ERROR_LABELS = {
     "usdtwd": "美元兌台幣",
     "usdchf": "美元兌瑞郎",
     "usdjpy": "美元兌日幣",
+    "nasdaq": "那斯達克 NASDAQ",
 }
 
 def _exception_detail(exc):
@@ -737,6 +738,23 @@ def handle_message(event):
             daemon=True,
         ).start()
 
+    elif user_msg in {"那斯達克", "那指", "納斯達克"} or user_msg.strip().lower() in {"nasdaq", "ndx", "nas"}:
+        reply_msg = get_market_text("nasdaq")
+        try:
+            res = get_chart_snapshot("nasdaq")
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
+            reply_line(
+                event.reply_token,
+                [
+                    TextSendMessage(text=reply_msg),
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
+                ],
+            )
+        except Exception as e:
+            print("NASDAQ Chart generation failed:", e)
+            error_msg = _tradingview_error_text("nasdaq", "圖表", e)
+            reply_line(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
+
     elif user_msg == "油價":
         reply_msg = get_oil_price()
         try:
@@ -835,6 +853,7 @@ def handle_message(event):
             "• 匯率 — 美元兌台幣、瑞郎、日圓\n"
             "• 債券 — 美國10年期公債殖利率\n"
             "• 黃金 — TradingView GOLD 報價與圖\n"
+            "• 那斯達克 — NASDAQ 24小時即時指標與圖\n"
             "• 市場脈動 — 加權指數市場狀態截圖\n"
             "• 403 — 00403A 持股即時表\n"
             "• 981 — 00981A 持股即時表\n"

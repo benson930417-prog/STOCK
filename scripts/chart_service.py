@@ -18,7 +18,9 @@ CHART_TABS = {
     "gold": "https://www.tradingview.com/symbols/GOLD/?timeframe=5D",
     "usdtwd": "https://www.tradingview.com/symbols/FX_IDC-USDTWD/?timeframe=5D",
     "usdjpy": "https://www.tradingview.com/symbols/OANDA-USDJPY/?timeframe=5D",
-    "usdchf": "https://www.tradingview.com/symbols/OANDA-USDCHF/?timeframe=5D"
+    "usdchf": "https://www.tradingview.com/symbols/OANDA-USDCHF/?timeframe=5D",
+    # NASDAQ 24h CFD — intraday indicator, 1-day window (it trades round the clock).
+    "nasdaq": "https://www.tradingview.com/symbols/IG-NASDAQ/?timeframe=1D",
 }
 
 # Chinese titles for each chart key
@@ -30,6 +32,9 @@ CHART_META = {
     "usdtwd": {"title": "美元兌台幣 (5日)", "display_title": "美元兌台幣", "emoji": "💵", "precision": 3, "unit": "台幣"},
     "usdjpy": {"title": "美元兌日幣 (5日)", "display_title": "美元兌日幣", "emoji": "💴", "precision": 2, "unit": "日圓"},
     "usdchf": {"title": "美元兌瑞郎 (5日)", "display_title": "美元兌瑞郎", "emoji": "💷", "precision": 4, "unit": "瑞郎"},
+    # Intraday indicator: 1-day chart, show only the real-time change (no 5d/1m/6m).
+    "nasdaq": {"title": "那斯達克 NASDAQ (即時)", "display_title": "那斯達克 NASDAQ", "emoji": "📈",
+               "precision": 2, "unit": "", "perf_labels": [("1d", "即時漲跌：")], "perf_header": None},
 }
 
 PERFORMANCE_LABELS = {
@@ -65,6 +70,13 @@ TRADINGVIEW_SCANNER_QUOTES = {
     "usdtwd": {"scanner": "forex", "symbol": "FX_IDC:USDTWD"},
     "usdjpy": {"scanner": "forex", "symbol": "OANDA:USDJPY"},
     "usdchf": {"scanner": "forex", "symbol": "OANDA:USDCHF"},
+    "nasdaq": {
+        "candidates": [
+            {"scanner": "cfd", "symbol": "IG:NASDAQ"},        # 24h CFD (primary)
+            {"scanner": "futures", "symbol": "CME_MINI:NQ1!"}, # Nasdaq-100 futures fallback
+            {"scanner": "america", "symbol": "NASDAQ:NDX"},    # cash index fallback
+        ],
+    },
 }
 
 OUTPUT_DIR = os.path.join(os.getcwd(), 'data', 'images')
@@ -344,19 +356,22 @@ def _market_text_payload(key, quote):
     emoji = meta.get("emoji", "")
     precision = int(meta.get("precision", 2))
     performance = quote.get("performance") or {}
-    labels = [
+    labels = meta.get("perf_labels") or [
         ("1d", "1日："),
         ("5d", "1週："),
         ("1m", "1月："),
         ("6m", "6月："),
     ]
+    price_line = f"🕒 最新報價：{price:,.{precision}f}" + (f" {unit}" if unit else "")
     lines = [
         f"{emoji} {title}".strip(),
         "──────────",
-        f"🕒 最新報價：{price:,.{precision}f} {unit}",
-        "",
-        "📊 近期漲跌幅：",
+        price_line,
     ]
+    # perf_header may be omitted (None/"") for a compact intraday indicator
+    perf_header = meta.get("perf_header", "📊 近期漲跌幅：")
+    if perf_header:
+        lines += ["", perf_header]
     for perf_key, label in labels:
         value = performance.get(perf_key)
         if value is None and perf_key == "1d":
