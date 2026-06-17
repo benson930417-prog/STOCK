@@ -1348,10 +1348,14 @@ def build_cache(ticker, previous_cache=None):
     all_valid_weight_sum = 0.0
     live_weighted_move_sum = 0.0
     live_valid_weight_sum = 0.0
+    notlive_weighted_move_sum = 0.0
+    notlive_valid_weight_sum = 0.0
     all_composite_count = 0
     live_composite_count = 0
+    notlive_composite_count = 0
     all_composite_countries = set()
     live_composite_countries = set()
+    notlive_composite_countries = set()
     up_count = down_count = flat_count = missing_count = 0
 
     for holding, yahoo_symbol, country in normalized:
@@ -1392,6 +1396,11 @@ def build_cache(ticker, previous_cache=None):
                         live_valid_weight_sum += weight
                         live_composite_count += 1
                         live_composite_countries.add(quote.get("composite_scope") or country)
+                    else:
+                        notlive_weighted_move_sum += weight * move
+                        notlive_valid_weight_sum += weight
+                        notlive_composite_count += 1
+                        notlive_composite_countries.add(quote.get("composite_scope") or country)
             else:
                 missing_count += 1
         else:
@@ -1418,6 +1427,13 @@ def build_cache(ticker, previous_cache=None):
             "error": quote.get("error") if quote else "missing yahoo symbol",
         })
 
+    composite_live_move_pct = (live_weighted_move_sum / live_valid_weight_sum
+                               if live_valid_weight_sum else None)
+    composite_notlive_move_pct = (notlive_weighted_move_sum / notlive_valid_weight_sum
+                                  if notlive_valid_weight_sum else None)
+
+    # Primary composite for single-value readers (webhook text, master card):
+    # live if any holding is live, else the closed-market composite.
     composite_move_pct = None
     composite_mode = "none"
     composite_count = 0
@@ -1425,10 +1441,16 @@ def build_cache(ticker, previous_cache=None):
     composite_countries = set()
     if live_valid_weight_sum:
         composite_mode = "live"
-        composite_move_pct = live_weighted_move_sum / live_valid_weight_sum
+        composite_move_pct = composite_live_move_pct
         composite_count = live_composite_count
         composite_weight_sum = live_valid_weight_sum
         composite_countries = live_composite_countries
+    elif notlive_valid_weight_sum:
+        composite_mode = "closed"
+        composite_move_pct = composite_notlive_move_pct
+        composite_count = notlive_composite_count
+        composite_weight_sum = notlive_valid_weight_sum
+        composite_countries = notlive_composite_countries
 
     return {
         "ticker": ticker,
@@ -1444,6 +1466,14 @@ def build_cache(ticker, previous_cache=None):
         "composite_country_scope": _country_scope_label(composite_countries),
         "composite_holding_count": composite_count,
         "composite_weight_pct": composite_weight_sum,
+        "composite_live_move_pct": composite_live_move_pct,
+        "composite_live_scope": _country_scope_label(live_composite_countries),
+        "composite_live_count": live_composite_count,
+        "composite_live_weight_pct": live_valid_weight_sum,
+        "composite_notlive_move_pct": composite_notlive_move_pct,
+        "composite_notlive_scope": _country_scope_label(notlive_composite_countries),
+        "composite_notlive_count": notlive_composite_count,
+        "composite_notlive_weight_pct": notlive_valid_weight_sum,
         "counts": {
             "total": len(rows),
             "up": up_count,

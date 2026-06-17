@@ -258,6 +258,32 @@ def _draw_stat(draw, x, y, w, label, value, accent):
     _text(draw, (x + 20, y + 82), _fit_text(draw, value, value_font, w - 40), value_font, accent)
 
 
+def _draw_composite_box(draw, x, y, w, cache):
+    """Weighted-move composite box. Shows the live composite (即時) and the
+    closed-market composite (收盤) on separate, clearly-labelled lines — whichever
+    exist. Box keeps the same footprint as the other stat boxes."""
+    entries = []
+    live_pct = cache.get("composite_live_move_pct")
+    if live_pct is not None:
+        scope = str(cache.get("composite_live_scope") or "").replace("台積電期貨", "期")
+        entries.append(("即時", scope, live_pct))
+    notlive_pct = cache.get("composite_notlive_move_pct")
+    if notlive_pct is not None:
+        scope = str(cache.get("composite_notlive_scope") or "").replace("台積電期貨", "期")
+        entries.append(("收盤", scope, notlive_pct))
+    if not entries:
+        return
+    _round_rect(draw, (x, y, x + w, y + 140), 18, PANEL, (225, 231, 239))
+    font = FONTS["small_bold"]
+    line_ys = [y + 52] if len(entries) == 1 else [y + 30, y + 80]
+    for (label, scope, pct), ly in zip(entries, line_ys):
+        left = f"{label}（{scope}）" if scope and scope != "--" else label
+        pct_str = _fmt_pct(pct)
+        pct_w, _ = _measure(draw, pct_str, font)
+        _text(draw, (x + 20, ly), _fit_text(draw, left, font, w - 40 - pct_w - 14), font, INK)
+        _text(draw, (x + w - 20, ly), pct_str, font, _color_for_pct(pct), anchor="ra")
+
+
 def _session_fill(session):
     return {
         "PRE": (255, 237, 213),
@@ -437,17 +463,7 @@ def _draw_quote_card_page(ticker, cache, rows, scale, page_no, total_pages):
     _draw_stat(draw, x0 + (box_w + gap) * 3, y0, box_w, "最新報價", _ago(cache.get("newest_quote_utc")), RED)
     _draw_stat(draw, x0 + (box_w + gap) * 4, y0, box_w, "最舊報價", _ago(cache.get("oldest_quote_utc")), INK)
     _draw_stat(draw, x0 + (box_w + gap) * 5, y0, box_w, "權重更新", _ago(cache.get("etf_refresh_utc")), INK)
-    composite_title = _composite_title(cache)
-    if composite_title:
-        _draw_stat(
-            draw,
-            x0 + (box_w + gap) * 6,
-            y0,
-            composite_box_w,
-            composite_title,
-            _fmt_pct(cache.get("composite_move_pct")),
-            _color_for_pct(cache.get("composite_move_pct")),
-        )
+    _draw_composite_box(draw, x0 + (box_w + gap) * 6, y0, composite_box_w, cache)
 
     draw.line((74, 528, width - 74, 528), fill=LINE, width=2)
     _text(draw, (74, 558), cache.get("sort_note") or "依ETF持股權重排序", FONTS["small_bold"], INK)
