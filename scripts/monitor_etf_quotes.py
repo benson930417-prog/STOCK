@@ -1071,65 +1071,43 @@ _EXCHANGE_TZ = {
 }
 
 
-def _previous_close_from_daily_bars(valid_points, quote_time, country):
-    """Previous close = the daily bar immediately preceding the quote's own date.
+def _naive_prev_business_day(d):
+    """Previous weekday (ignores holidays). Used only to decide whether the daily
+    series' previous close looks stale enough to double-check against intraday."""
+    prev = d - timedelta(days=1)
+    while prev.weekday() >= 5:        # Sat/Sun
+        prev -= timedelta(days=1)
+    return prev
 
-    Yahoo's meta.chartPreviousClose is the close just before the chart range
-    begins (e.g. 5 trading days ago), not yesterday — using it gives a multi-day
-    return. Newer Taiwan ETFs also return null regularMarketPreviousClose, so we
-    must read it off the daily series. The latest bar matches the quote's day
-    (or the quote is intraday for today while the last bar is yesterday), so the
-    most recent bar strictly before the quote date is yesterday's close in both
-    cases."""
+
+def _previous_close_from_daily_bars(valid_points, quote_time, country):
+    """(close, date) of the most recent non-null daily bar strictly before the
+    quote's date. Yahoo's meta.chartPreviousClose points at the start of the chart
+    range (multi-day return), so we read the previous close off the series instead."""
     if not valid_points or not quote_time:
-        return None
+        return None, None
     tz = ZoneInfo(_EXCHANGE_TZ.get(country, "UTC"))
     try:
         quote_date = datetime.fromtimestamp(int(quote_time), tz).date()
     except Exception:
-        return None
+        return None, None
     for timestamp, close in reversed(valid_points):
         try:
             bar_date = datetime.fromtimestamp(int(timestamp), tz).date()
         except Exception:
             continue
         if bar_date < quote_date:
-            return close
-    return None
-
-
-def _daily_yesterday_is_missing(timestamps, closes, quote_time, country):
-    """True if the most-recent daily bar strictly before the quote's date has a
-    NULL close — i.e. Yahoo dropped yesterday's daily bar (common for thinly-traded
-    new ETFs). In that case the daily-series previous close is a stale multi-day
-    value and today's % must instead be reconstructed from intraday bars."""
-    if not timestamps or not quote_time:
-        return False
-    tz = ZoneInfo(_EXCHANGE_TZ.get(country, "UTC"))
-    try:
-        quote_date = datetime.fromtimestamp(int(quote_time), tz).date()
-    except Exception:
-        return False
-    before = []
-    for timestamp, close in zip(timestamps, closes):
-        try:
-            bar_date = datetime.fromtimestamp(int(timestamp), tz).date()
-        except Exception:
-            continue
-        if bar_date < quote_date:
-            before.append((bar_date, close))
-    if not before:
-        return False
-    before.sort()
-    return before[-1][1] is None
+            return close, bar_date
+    return None, None
 
 
 def _previous_close_from_intraday(symbol, quote_time, country, timeout=10):
-    """Yesterday's close reconstructed from intraday bars — the last intraday close
-    of the most recent trading day strictly before the quote's date. Recovers the
-    value when the daily series is missing yesterday's bar."""
+    """(close, date) of the most recent trading day strictly before the quote's
+    date, taken from intraday (60m) bars — which reflect actual trading and so
+    recover yesterday even when Yahoo's daily series dropped it. Returns the day's
+    last intraday close. (None, None) if unavailable."""
     if not quote_time:
-        return None
+        return None, None
     try:
         res = requests.get(
             YAHOO_CHART_URL.format(symbol=symbol),
@@ -1154,10 +1132,11 @@ def _previous_close_from_intraday(symbol, quote_time, country, timeout=10):
             if bar_date < quote_date:
                 last_close_by_day[bar_date] = close   # later bars overwrite → day's last close
         if not last_close_by_day:
-            return None
-        return last_close_by_day[max(last_close_by_day)]
+            return None, None
+        latest = max(last_close_by_day)
+        return last_close_by_day[latest], latest
     except Exception:
-        return None
+        return None, None
 
 
 def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
@@ -1224,18 +1203,27 @@ def _fetch_yahoo_chart_quote(symbol, country=None, timeout=10):
         if country == "US":
             previous = _previous_us_regular_close(symbol, quote_time, timeout=timeout)
         if previous is None and country != "US":
-            # Today's % is just the latest close vs the previous trading day's
-            # close, read straight off the daily series. Don't use meta's
-            # previousClose / chartPreviousClose — those point at the start of
-            # the chart range (~5 trading days ago) and give a multi-day return.
-            previous = _previous_close_from_daily_bars(valid_points, quote_time, country)
-            # If Yahoo dropped yesterday's daily bar (null close), the value above
-            # skipped to 2+ days ago → a multi-day return. Recover yesterday's close
-            # from intraday bars so today's % is a true 1-day change.
-            if _daily_yesterday_is_missing(timestamps, closes, quote_time, country):
-                intraday_prev = _previous_close_from_intraday(symbol, quote_time, country, timeout)
-                if intraday_prev:
-                    previous = intraday_prev
+            # Today's % must compare against the PREVIOUS TRADING DAY's close, read
+            # off the daily series (not meta.chartPreviousClose, which is the start
+            # of the chart range → a multi-day return).
+            previous, prev_date = _previous_close_from_daily_bars(valid_points, quote_time, country)
+            # Guarantee: never a spurious 2-day fallback. If the daily series'
+            # previous is older than the naive previous business day, Yahoo likely
+            # dropped yesterday's bar — recover the true previous trading day from
+            # intraday bars (which reflect actual trading). Only override when
+            # intraday finds a MORE RECENT trading day, so genuine holidays (where
+            # 2 days ago really is the previous trading day) keep the precise daily
+            # close and are not falsely "corrected".
+            tz = ZoneInfo(_EXCHANGE_TZ.get(country, "UTC"))
+            try:
+                quote_date = datetime.fromtimestamp(int(quote_time), tz).date()
+            except Exception:
+                quote_date = None
+            if quote_date and (prev_date is None or prev_date < _naive_prev_business_day(quote_date)):
+                intra_close, intra_date = _previous_close_from_intraday(
+                    symbol, quote_time, country, timeout)
+                if intra_close and (prev_date is None or (intra_date and intra_date > prev_date)):
+                    previous = intra_close
 
         change_pct = None
         meta_change_pct = meta.get("regularMarketChangePercent")
