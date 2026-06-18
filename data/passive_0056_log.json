@@ -1,6 +1,9 @@
 {
-  "status": "PENDING",
-  "latest_date": null,
+  "last_checked_utc": "2026-06-18T04:23:04.963670Z",
+  "last_updated_utc": "2026-06-18T03:31:29.574885Z",
+  "latest_date": "2026-06-17",
+  "status": "NO CHANGE",
   "source": "https://www.yuantaetfs.com/product/detail/0056/ratio",
-  "holdings_count": 0
+  "holdings_count": 49,
+  "payload_changed": false
 }
