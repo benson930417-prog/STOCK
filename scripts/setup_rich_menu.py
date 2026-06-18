@@ -6,7 +6,7 @@ Page 1 top:    油價  | 黃金   | 匯率   | 債券
 Page 1 bottom: 市場脈動 | 吳大師 | 24小時那斯達克 | ▶更多
 Page 2 top:    00878 | 00981A | 00988A | 00403A
 Page 2 bottom: ◀上一頁 | 00891 | 00830 | ▶更多
-Page 3 top:    009805 | 009820 | future | future
+Page 3 top:    009805 | 009820 | 0056 | 00918
 Page 3 bottom: ◀上一頁 | future | future | 首頁
 
 Colour convention
@@ -88,7 +88,7 @@ PAGE3 = [
     (0,    0,   625, 843, "電", "009805", "美國電力基建",     (220,  38,  38), "message",        "9805",   False),
     (625,  0,   625, 843, "精", "009820", "元大納斯達克精選", (220,  38,  38), "message",        "9820",   False),
     (1250, 0,   625, 843, "高", "0056",   "元大高股息",       ( 37,  99, 235), "message",        "0056",   False),
-    (1875, 0,   625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),
+    (1875, 0,   625, 843, "填", "00918",  "大華優利高填息30", ( 37,  99, 235), "message",        "918",    False),
     # Row 2 — previous at bottom-left, home only because there is no next page yet
     (0,    843, 625, 843, "<", "上一頁", "ETF 第二頁",       ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
     (625,  843, 625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),

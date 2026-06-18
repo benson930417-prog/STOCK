@@ -227,7 +227,7 @@ def verify(rows: list[dict]) -> list[str]:
         issues.append(f"WARN: {n} rows (expected ~250-300)")
 
     # Required known tickers must exist
-    required = ["0050", "0056", "00878", "00891", "00865B", "00635U", "00403A", "00981A", "00988A"]
+    required = ["0050", "0056", "00878", "00891", "00918", "00865B", "00635U", "00403A", "00981A", "00988A"]
     by_t = {r["ticker"]: r for r in rows}
     for t in required:
         if t not in by_t:

@@ -448,7 +448,7 @@ def render_passive_etf_tab(
 
     etf_ticker = st.selectbox(
         T(lang, "Select ETF", "選擇 ETF"),
-        ["0050", "0056", "00830", "00878", "00891", "009805", "009820"],
+        ["0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"],
         format_func=lambda x: f"{x} (被動)",
     )
 
