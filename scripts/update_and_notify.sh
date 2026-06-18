@@ -2,7 +2,7 @@
 # Daily orchestrator: ETF fetchers + etf_benchmark refresh + git push +
 # LINE notify + admin email summary.
 #
-# Triggered by stock-fetch-1730-tw.timer at 17:30 TPE (09:30 UTC).
+# Triggered by stock-fetch-1830-tw.timer at 18:30 TPE (10:30 UTC).
 # Failure of any single step does NOT abort the rest — every step's status is
 # captured into a summary and emailed to ADMIN_EMAIL at the end.
 
@@ -107,11 +107,27 @@ run_step() {
                     f && /max_endpoint_drift=/ {print}
                 ' "$logfile" | sed 's/^/          /')
                 ;;
+            step6*)
+                metrics=$(awk '
+                    /^\[step6\]/ {print; next}
+                    /^[[:space:]]+Summary by regime:/ {f=1; print; next}
+                    f && /^[[:space:]]+(bull|correction|mini_bear|bear)[[:space:]]*:/ {print; next}
+                ' "$logfile" | sed 's/^/          /')
+                ;;
             step5*)
                 metrics=$(grep -E "^[[:space:]]*[0-9A-Z]+[[:space:]]+\[(PASS|INFO|WARN|FAIL)\]" "$logfile" | sed 's/^/          /')
                 ;;
             step7*)
                 metrics=$(grep -E "^\[step7\] (recorded|backfilled)" "$logfile" | sed 's/^/          /')
+                ;;
+            generate_etf_summary|generate_market_pulse_summary)
+                metrics=$(grep -E "^Saved " "$logfile" | sed 's/^/          /')
+                ;;
+            "LINE broadcast active reports")
+                metrics=$(tail -n 5 "$logfile" | sed 's/^/          /')
+                ;;
+            git\ push*)
+                metrics=$(grep -E "^(To |Everything up-to-date|[[:space:]]*[0-9a-f]+\\.\\.[0-9a-f]+[[:space:]]+main -> main)" "$logfile" | sed 's/^/          /')
                 ;;
         esac
         if [ -n "$metrics" ]; then
@@ -176,7 +192,8 @@ done
 # ──────────────────────────────────────────────────────────────────────────
 { echo; echo "etf_benchmark"; echo "──────────"; } >> "$SUMMARY_FILE"
 run_step "step3 backfill --incremental" python -m scripts.etf_benchmark.step3_backfill --incremental
-run_step "step4 verify (total return)"  python -m scripts.etf_benchmark.step4_verify
+# step4_verify is a manual adj_close audit. It writes only verification_log rows
+# and feeds nothing downstream, so keep the daily email focused on production writes.
 # step5 verify_nav is a NAV diagnostic that feeds nothing downstream (write-only
 # audit) and is noisy — run it manually when investigating, not on every daily job.
 run_step "step6 regime tagger"           python -m scripts.etf_benchmark.step6_regimes
@@ -265,10 +282,13 @@ if [ "${#CHANGED_ETFS[@]}" -gt 0 ]; then
     fi
 
     git add data/*.json data/summaries/*.jpg data/etf_bench/score_history.csv 2>/dev/null
-    if git commit -m "Auto-update ETF data and summary images from OCI" 2>&1; then
+    commit_output=$(git commit -m "Auto-update ETF data and summary images from OCI" 2>&1)
+    if [ "$?" -eq 0 ]; then
         printf "  [OK]   git commit\n" >> "$SUMMARY_FILE"
+        echo "$commit_output" | sed -n '1,4p' | sed 's/^/          /' >> "$SUMMARY_FILE"
     else
         printf "  [INFO] git: no changes to commit\n" >> "$SUMMARY_FILE"
+        echo "$commit_output" | sed -n '1,4p' | sed 's/^/          /' >> "$SUMMARY_FILE"
     fi
     run_step "git push origin main" git push origin main
 
@@ -337,7 +357,14 @@ else
     echo "No new ETF data found. Pushing log timestamps only."
     printf "  [INFO] no new ETF data\n" >> "$SUMMARY_FILE"
     git add data/*.json data/summaries/*.jpg data/etf_bench/score_history.csv 2>/dev/null
-    git commit -m "Auto-update ETF log timestamps and market pulse summary from OCI" 2>/dev/null || true
+    commit_output=$(git commit -m "Auto-update ETF log timestamps and market pulse summary from OCI" 2>&1)
+    if [ "$?" -eq 0 ]; then
+        printf "  [OK]   git commit\n" >> "$SUMMARY_FILE"
+        echo "$commit_output" | sed -n '1,4p' | sed 's/^/          /' >> "$SUMMARY_FILE"
+    else
+        printf "  [INFO] git: no changes to commit\n" >> "$SUMMARY_FILE"
+        echo "$commit_output" | sed -n '1,4p' | sed 's/^/          /' >> "$SUMMARY_FILE"
+    fi
     run_step "git push origin main (log-only)" git push origin main
 fi
 

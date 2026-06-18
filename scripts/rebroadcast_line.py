@@ -1,6 +1,6 @@
 """Manually re-fire the LINE broadcast for active ETF reports.
 
-Use this when the daily 17:30 job got interrupted AFTER fetching data
+Use this when the daily 18:30 job got interrupted AFTER fetching data
 but BEFORE pushing to LINE — re-running update_and_notify.sh would see
 "no new data" (logs already say checked) and skip the broadcast.
 

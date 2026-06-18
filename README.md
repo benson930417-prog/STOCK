@@ -15,7 +15,7 @@ The production server path used by all service files is `/home/ubuntu/STOCK`.
 | Streamlit dashboard | `app.py` | `stock-dashboard.service` | Browser UI for ETF data, master holdings, ETF comparison, and market pulse. |
 | LINE webhook | `api/webhook.py` | `stock-webhook.service` | Handles LINE messages, returns text/cards/images, and routes admin commands. |
 | TradingView chart API | `scripts/chart_service.py` | `stock-chart.service` | Keeps a browser alive and exposes `/market-text`, `/snapshot`, and `/market-debug` on `127.0.0.1:5005`. |
-| Daily fetch | `scripts/update_and_notify.sh` | `stock-fetch-1730-tw.timer` + `.service` | Pulls latest code, refreshes data, updates benchmark DB, commits/pushes, broadcasts reports, and emails admin summary. |
+| Daily fetch | `scripts/update_and_notify.sh` | `stock-fetch-1830-tw.timer` + `.service` | Pulls latest code, refreshes data, updates benchmark DB, commits/pushes, broadcasts reports, and emails admin summary. |
 | ETF quote monitors | `scripts/monitor_etf_quotes.py` | `stock-quote-monitor-*.service` | Refreshes per-ETF quote caches used by the dashboard and LINE cards. |
 | Gold monitor | `scripts/monitor_gold_quote.py` | `stock-gold-monitor.service` | Refreshes TradingView GOLD quote cache. |
 | Master holdings monitor | `scripts/monitor_master_holding.py` | `stock-master-holding-monitor.service` | Refreshes the expanded portfolio/master-holding cache. |
@@ -255,7 +255,6 @@ source venv/bin/activate
 python -m scripts.etf_benchmark.step1_universe
 python -m scripts.etf_benchmark.step2_schema --reset
 python -m scripts.etf_benchmark.step3_backfill
-python -m scripts.etf_benchmark.step4_verify
 python -m scripts.etf_benchmark.step6_regimes
 python -m scripts.etf_benchmark.step7_score --backfill
 ```
@@ -264,16 +263,18 @@ Daily refresh uses:
 
 ```bash
 python -m scripts.etf_benchmark.step3_backfill --incremental
-python -m scripts.etf_benchmark.step4_verify
 python -m scripts.etf_benchmark.step6_regimes
 python -m scripts.etf_benchmark.step7_score
 ```
 
-`step5_verify_nav` is a write-only NAV diagnostic that feeds nothing downstream;
-it is not in the daily job. Run it by hand only when investigating a NAV issue:
-`python -m scripts.etf_benchmark.step5_verify_nav`. `step4_verify` stays in the
-daily job as the guard for Yahoo `adj_close` (which the score depends on); its
-email summary shows counts + FAIL details only (sub-2 pct-pt warns are normal).
+`step4_verify` and `step5_verify_nav` are write-only diagnostics that feed
+nothing downstream. Run them by hand only when investigating Yahoo adjusted-close
+or issuer NAV issues:
+
+```bash
+python -m scripts.etf_benchmark.step4_verify
+python -m scripts.etf_benchmark.step5_verify_nav
+```
 
 ## Data Directory
 
@@ -314,8 +315,8 @@ All service templates live in `services/` and assume:
 | `services/stock-webhook.service` | `stock-webhook.service` | LINE webhook on port 8080. |
 | `services/stock-chart.service` | `stock-chart.service` | TradingView Playwright API on `127.0.0.1:5005`. |
 | `services/oci-firewall.service` | `oci-firewall.service` | Boot-time iptables reset used on OCI so public services remain reachable after reboot. |
-| `services/stock-fetch-1730-tw.service` | `stock-fetch-1730-tw.service` | One-shot daily fetch/orchestration job. |
-| `services/stock-fetch-1730-tw.timer` | `stock-fetch-1730-tw.timer` | Runs the daily job at 09:30 UTC / 17:30 Taiwan time. |
+| `services/stock-fetch-1830-tw.service` | `stock-fetch-1830-tw.service` | One-shot daily fetch/orchestration job. |
+| `services/stock-fetch-1830-tw.timer` | `stock-fetch-1830-tw.timer` | Runs the daily job at 10:30 UTC / 18:30 Taiwan time. |
 | `services/stock-gold-monitor.service` | `stock-gold-monitor.service` | GOLD quote monitor. |
 | `services/stock-market-chart-monitor.service` | `stock-market-chart-monitor.service` | TradingView market text/chart cache monitor for fast LINE chart replies. |
 | `services/stock-master-holding-monitor.service` | `stock-master-holding-monitor.service` | Master holdings monitor. |
@@ -339,7 +340,7 @@ sudo cp services/*.service services/*.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.service
 sudo systemctl enable oci-firewall.service
-sudo systemctl enable stock-fetch-1730-tw.timer
+sudo systemctl enable stock-fetch-1830-tw.timer
 sudo systemctl enable stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service
 sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service
 sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service
@@ -415,7 +416,7 @@ sudo cp services/*.service services/*.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now oci-firewall.service
 sudo systemctl enable --now stock-chart.service stock-webhook.service stock-dashboard.service
-sudo systemctl enable --now stock-fetch-1730-tw.timer
+sudo systemctl enable --now stock-fetch-1830-tw.timer
 ```
 
 ## Standard Deployment
@@ -440,7 +441,7 @@ sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard
 
 ## Daily Job Flow
 
-`stock-fetch-1730-tw.timer` runs at 09:30 UTC, which is 17:30 Taiwan time.
+`stock-fetch-1830-tw.timer` runs at 10:30 UTC, which is 18:30 Taiwan time.
 
 `scripts/update_and_notify.sh` performs:
 
@@ -448,7 +449,7 @@ sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard
 2. Pull latest Git changes with rebase/autostash.
 3. Install dependencies from `requirements.txt`.
 4. Run all active/passive ETF fetchers requested by the service arguments.
-5. Refresh ETF benchmark SQLite data and regime tags.
+5. Refresh ETF benchmark SQLite data, regime tags, and score history.
 6. Generate the market pulse image.
 7. Commit and push changed tracked data.
 8. Broadcast active ETF reports through LINE when new active ETF data exists.
@@ -755,7 +756,7 @@ Recent logs:
 ```bash
 journalctl -u stock-chart.service -n 100 --no-pager
 journalctl -u stock-webhook.service -n 100 --no-pager
-journalctl -u stock-fetch-1730-tw.service -n 100 --no-pager
+journalctl -u stock-fetch-1830-tw.service -n 100 --no-pager
 ```
 
 If LINE says it cannot connect to `127.0.0.1:5005`, restart and test the chart service:
@@ -840,8 +841,8 @@ scripts/etf_benchmark/step6_regimes.py
 services/stock-chart.service
 services/stock-dashboard.service
 services/oci-firewall.service
-services/stock-fetch-1730-tw.service
-services/stock-fetch-1730-tw.timer
+services/stock-fetch-1830-tw.service
+services/stock-fetch-1830-tw.timer
 services/stock-gold-monitor.service
 services/stock-master-holding-monitor.service
 services/stock-quote-monitor-00403a.service
