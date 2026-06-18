@@ -1173,19 +1173,38 @@ def merge_into_master(new_month_df: pd.DataFrame, upload_filename: str):
     master = load_master_trades()
     n_old = len(master)
     n_uploaded = len(new_month_df)
+    upload_min_date = new_month_df["日期"].min() if len(new_month_df) else None
+    upload_max_date = new_month_df["日期"].max() if len(new_month_df) else None
+
+    if (
+        len(master)
+        and upload_min_date is not None
+        and upload_max_date is not None
+        and pd.notna(upload_min_date)
+        and pd.notna(upload_max_date)
+    ):
+        # Broker exports are authoritative for the dates they cover. Replace
+        # that whole window so a later wider export can repair old partial data
+        # instead of preserving stale rows forever through append-only dedupe.
+        master_dates = pd.to_datetime(master["日期"], errors="coerce")
+        window_mask = (master_dates >= upload_min_date) & (master_dates <= upload_max_date)
+        replaced_rows = int(window_mask.sum())
+        master = master.loc[~window_mask].copy()
+    else:
+        replaced_rows = 0
 
     combined = pd.concat([master, new_month_df], ignore_index=True)
 
     before = len(combined)
     combined = combined.drop_duplicates(subset=["_key"], keep="last")
 
-    # Robust second-pass dedup: drop rows that look identical except for a
-    # NT$1 rounding wobble in 淨收付金額, or a later broker reclassification
-    # between 現買/現賣 and 沖買/沖賣 for the same order.
+    # Robust second-pass dedup: ignore NT$1 rounding wobble in 淨收付金額
+    # while preserving separate 現/沖 classifications under the same order.
     stable_key = (
         combined["股名"].astype(str) + "|"
         + combined["日期"].astype(str).str[:10] + "|"
         + combined["成交股數"].astype(str) + "|"
+        + combined["買賣別"].astype(str) + "|"
         + combined["成交價"].map(lambda v: f"{v:.4f}") + "|"
         + combined["委託書號"].astype(str)
     )
@@ -1213,6 +1232,11 @@ def merge_into_master(new_month_df: pd.DataFrame, upload_filename: str):
         "filename": upload_filename,
         "uploaded_rows": int(n_uploaded),
         "old_rows": int(n_old),
+        "replaced_rows": int(replaced_rows),
+        "upload_range": {
+            "min_date": str(pd.to_datetime(upload_min_date).date()) if upload_min_date is not None and pd.notna(upload_min_date) else None,
+            "max_date": str(pd.to_datetime(upload_max_date).date()) if upload_max_date is not None and pd.notna(upload_max_date) else None,
+        },
         "added_rows": int(added_rows),
         "dup_skipped": int(dup_skipped),
         "after_rows": int(n_after),
@@ -1226,6 +1250,7 @@ def merge_into_master(new_month_df: pd.DataFrame, upload_filename: str):
     return {
         "old_rows": n_old,
         "uploaded_rows": n_uploaded,
+        "replaced_rows": replaced_rows,
         "after_rows": n_after,
         "added_rows": added_rows,
         "dup_skipped": dup_skipped,
@@ -1294,9 +1319,11 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
 
     inventory = defaultdict(deque)  # stock -> deque lots {qty, cps}
     realized_rows = []
-    # Accumulate "sell without inventory" shortfalls per stock so we can
-    # emit ONE consolidated warning at the end instead of one per lot.
-    inventory_shortfalls = defaultdict(lambda: {"qty": 0, "first_date": None})
+    # If the trade history starts after an existing position was opened, a sell
+    # can legitimately appear without a matching buy in master_trades.csv. Treat
+    # that slice as unknown opening inventory with neutral P/L instead of a
+    # zero-cost gain. This keeps incremental broker exports usable.
+    opening_basis_rows = []
 
     def _take_from_lot(lot, take, fields):
         """Integer-precise proportional allocation from a remaining lot.
@@ -1318,21 +1345,59 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
 
     def sell_against_inventory(stock, pool, date, qty, cash_in, sell_fee_tot, sell_tax_tot):
         remaining = int(qty)
+        sell_lot = {
+            "qty": int(qty),
+            "cash": int(round(cash_in)),
+            "fee": int(round(sell_fee_tot)),
+            "tax": int(round(sell_tax_tot)),
+        }
+        matched_qty = 0
+        matched_cash_in = 0
+        matched_sell_fee = 0
+        matched_sell_tax = 0
         allocated_cost = 0
         allocated_buy_fee = 0
 
         while remaining > 0:
             if not inventory[stock]:
-                short = inventory_shortfalls[stock]
-                short["qty"] += remaining
-                d = pd.to_datetime(date).date()
-                if short["first_date"] is None or d < short["first_date"]:
-                    short["first_date"] = d
+                opening_qty = remaining
+                opening_parts = _take_from_lot(sell_lot, opening_qty, ("cash", "fee", "tax"))
+                opening_cash = opening_parts["cash"]
+                opening_fee = opening_parts["fee"]
+                opening_tax = opening_parts["tax"]
+                realized_rows.append(
+                    dict(
+                        date=pd.to_datetime(date),
+                        stock=stock,
+                        sell_qty=int(opening_qty),
+                        sell_cash_in=float(opening_cash),
+                        allocated_cost=float(opening_cash),
+                        realized_pnl=0.0,
+                        realized_return_pct=0.0,
+                        total_fee=float(opening_fee),
+                        total_tax=float(opening_tax),
+                        gross_cost=float(opening_cash + opening_fee + opening_tax),
+                        gross_sell_cash_in=float(opening_cash + opening_fee + opening_tax),
+                        method_key="opening_basis",
+                        type_key="opening_basis",
+                        pool_key=pool,
+                    )
+                )
+                opening_basis_rows.append(
+                    {"stock": stock, "qty": int(opening_qty), "first_date": pd.to_datetime(date).date()}
+                )
+                remaining = 0
                 break
 
             lot = inventory[stock][0]
             take = min(remaining, lot["qty"])
             parts = _take_from_lot(lot, take, ("cash", "fee"))
+            sell_parts = _take_from_lot(sell_lot, take, ("cash", "fee", "tax"))
+            sell_lot["qty"] -= take
+            matched_qty += take
+            matched_cash_in += sell_parts["cash"]
+            matched_sell_fee += sell_parts["fee"]
+            matched_sell_tax += sell_parts["tax"]
             allocated_cost += parts["cash"]
             allocated_buy_fee += parts["fee"]
             lot["qty"] -= take
@@ -1340,22 +1405,25 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
             if lot["qty"] == 0:
                 inventory[stock].popleft()
 
-        pnl = int(round(cash_in)) - allocated_cost
+        if matched_qty <= 0:
+            return
+
+        pnl = int(round(matched_cash_in)) - allocated_cost
         ret_pct = (pnl / allocated_cost * 100.0) if allocated_cost else 0.0
 
         realized_rows.append(
             dict(
                 date=pd.to_datetime(date),
                 stock=stock,
-                sell_qty=int(qty),
-                sell_cash_in=float(cash_in),
+                sell_qty=int(matched_qty),
+                sell_cash_in=float(matched_cash_in),
                 allocated_cost=float(allocated_cost),
                 realized_pnl=float(pnl),
                 realized_return_pct=float(ret_pct),
-                total_fee=float(allocated_buy_fee + sell_fee_tot),
-                total_tax=float(sell_tax_tot),
+                total_fee=float(allocated_buy_fee + matched_sell_fee),
+                total_tax=float(matched_sell_tax),
                 gross_cost=float(allocated_cost - allocated_buy_fee),
-                gross_sell_cash_in=float(cash_in + sell_fee_tot + sell_tax_tot),
+                gross_sell_cash_in=float(matched_cash_in + matched_sell_fee + matched_sell_tax),
                 method_key="cash",
                 type_key="cash",
                 pool_key=pool,
@@ -1473,16 +1541,22 @@ def realized_match_first_then_fifo_separate_pools_from_raw_trades(raw_trades: pd
                         int(lot["qty"]), int(lot["cash"]), int(lot["fee"]), int(lot["tax"])
                     )
 
-    if inventory_shortfalls:
+    if opening_basis_rows:
         import streamlit as st
+        summarized = defaultdict(lambda: {"qty": 0, "first_date": None})
+        for row in opening_basis_rows:
+            item = summarized[row["stock"]]
+            item["qty"] += row["qty"]
+            if item["first_date"] is None or row["first_date"] < item["first_date"]:
+                item["first_date"] = row["first_date"]
         msgs = [
-            f"**{stock}** — {info['qty']:,} 股自 {info['first_date']} 起無對應買進，採零成本基準"
-            for stock, info in sorted(inventory_shortfalls.items(), key=lambda kv: -kv[1]["qty"])
+            f"**{stock}** — {info['qty']:,} 股自 {info['first_date']} 起缺少買進成本，已用賣出金額作中性成本基準"
+            for stock, info in sorted(summarized.items(), key=lambda kv: -kv[1]["qty"])
             if info["qty"] > 0
         ]
         if msgs:
-            st.warning(
-                "⚠️ 以下標的賣出股數多於買進紀錄（通常代表 CSV 缺少更早的買進交易）：\n\n"
+            st.info(
+                "ℹ️ 以下賣出來自匯入資料起點之前的持股，已用中性成本基準避免零成本損益失真：\n\n"
                 + "\n\n".join(msgs)
             )
 
@@ -2099,10 +2173,10 @@ try:
     active_bases = daily_base[daily_base["invested_capital"] >= 100]["dynamic_base"]
     peak_base = float(active_bases.iloc[-1]) if not active_bases.empty else 1.0
 
-    TYPE_ZH = {"day_trade": "當沖交易", "cash": "現股交易"}
-    TYPE_EN = {"day_trade": "Day trade", "cash": "Cash trade"}
-    METHOD_ZH = {"day_trade": "當沖", "cash": "現股"}
-    METHOD_EN = {"day_trade": "Day trade", "cash": "Cash"}
+    TYPE_ZH = {"day_trade": "當沖交易", "cash": "現股交易", "opening_basis": "期初持股"}
+    TYPE_EN = {"day_trade": "Day trade", "cash": "Cash trade", "opening_basis": "Opening inventory"}
+    METHOD_ZH = {"day_trade": "當沖", "cash": "現股", "opening_basis": "期初成本"}
+    METHOD_EN = {"day_trade": "Day trade", "cash": "Cash", "opening_basis": "Opening basis"}
 
     realized["type_display"] = realized["type_key"].map(TYPE_ZH if lang == "中文" else TYPE_EN).fillna(realized["type_key"])
     realized["method_display"] = realized["method_key"].map(METHOD_ZH if lang == "中文" else METHOD_EN).fillna(realized["method_key"])
