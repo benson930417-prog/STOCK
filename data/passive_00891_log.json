@@ -1,11 +1,10 @@
 {
-  "last_checked_utc": "2026-06-18T04:24:58.469856Z",
-  "last_updated_utc": "2026-06-17T09:31:44.097674Z",
-  "latest_date": "2026-06-17",
-  "status": "FETCH FAILED",
+  "last_checked_utc": "2026-06-18T10:30:56.235877Z",
+  "last_updated_utc": "2026-06-18T10:30:56.235877Z",
+  "latest_date": "2026-06-18",
+  "status": "NEW DATA FOUND",
   "source": "https://www.ctbcinvestments.com/Etf/88182265/Combination",
   "holdings_count": 30,
   "provider": "CTBC Investments",
-  "payload_changed": true,
-  "error": "00891 fetch failed during daily job started at 2026-06-18T04:22:40.142813Z"
+  "payload_changed": true
 }

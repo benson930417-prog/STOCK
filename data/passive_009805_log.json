@@ -1,10 +1,9 @@
 {
-  "last_checked_utc": "2026-06-18T04:23:47.121462Z",
-  "last_updated_utc": "2026-06-17T09:31:47.678173Z",
-  "latest_date": "2026-06-16",
-  "provider_date": "2026-06-17",
-  "status": "NO CHANGE",
+  "last_checked_utc": "2026-06-18T10:30:59.955491Z",
+  "last_updated_utc": "2026-06-18T10:30:59.955491Z",
+  "latest_date": "2026-06-17",
+  "status": "NEW DATA FOUND",
   "source": "https://www.tsit.com.tw/ETF/Home/ETFSeriesDetail/009805",
   "holdings_count": 50,
-  "message": "Ignored provider date 2026-06-17: holdings table still matches 2026-06-16"
+  "payload_changed": true
 }
