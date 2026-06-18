@@ -17,7 +17,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from scripts.etf_benchmark import db
-from scripts.etf_benchmark.step6_regimes import zigzag_pivots, classify_leg
+from scripts.etf_benchmark.step4_regimes import zigzag_pivots, classify_leg
 
 
 FUND_TYPE_LABELS = {
@@ -470,7 +470,7 @@ def _build_score_table(
     so high-dividend funds are compared fairly and split artefacts are avoided.
 
     `as_of` caps the data at a past date so the very same scorer can reproduce the
-    score "as it would have looked then" — used by the history backfill and step7.
+    score "as it would have looked then" — used by the history backfill and step5.
     """
     end = pd.Timestamp(as_of) if as_of is not None else None
     bench_cache: dict[str, pd.Series | None] = {}
@@ -946,7 +946,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
             score_hist = db.get_score_history()
             if score_hist.empty:
                 st.info("尚無評分資料。請在伺服器執行 "
-                        "`python -m scripts.etf_benchmark.step7_score --backfill`。")
+                        "`python -m scripts.etf_benchmark.step5_score --backfill`。")
             else:
                 latest = score_hist["date"].max()
                 snap = score_hist[score_hist["date"] == latest].copy()
@@ -1058,7 +1058,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
             if score_hist.empty:
                 st.info("尚無評分歷史資料。請先在伺服器執行 "
-                        "`python -m scripts.etf_benchmark.step7_score --backfill`。")
+                        "`python -m scripts.etf_benchmark.step5_score --backfill`。")
             elif not hist_tickers:
                 st.info("上方所選的 ETF 尚無評分歷史（可能為新上市未滿 30 個交易日，"
                         "或非股票／債券／商品型）。")

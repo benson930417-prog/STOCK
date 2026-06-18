@@ -115,7 +115,7 @@ Rules:
 
 ## 5. Data store & pipeline
 
-- **`step7_score.py`** computes the two pillar percentiles for **every eligible ETF**,
+- **`step5_score.py`** computes the two pillar percentiles for **every eligible ETF**,
   ranked within its asset class, and writes one row per ETF per trading day to
   **`data/etf_bench/score_history.csv`** (long format):
 
@@ -130,7 +130,7 @@ Rules:
 - `--backfill` rebuilds history (default 1 year; `--years N` or `--start`); no args appends
   today. Idempotent (re-running a date replaces, never duplicates). A pre-fetch cache makes
   the full-universe backfill fast.
-- Wired into the daily job (`update_and_notify.sh`, after step6), which also `git add`s the
+- Wired into the daily job (`update_and_notify.sh`, after step4), which also `git add`s the
   CSV so history accrues one point/day and syncs to checkouts.
 
 ---
@@ -181,4 +181,4 @@ scorer on controlled data. **Result:** every pillar matched exactly (diff 0.00).
 5. **Trailing 1-year** window, **adj_close**, **30-day** per-fund listing gate, raw stored
    percentile with confidence shown via `n_days`.
 6. **One store, one standard** (`score_history.csv`) feeding both the ranking table and the
-   history line, recorded daily by `step7_score.py`.
+   history line, recorded daily by `step5_score.py`.

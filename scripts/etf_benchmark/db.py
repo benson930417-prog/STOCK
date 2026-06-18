@@ -146,7 +146,7 @@ def get_regimes(
     reference_index: str = "^TWII",
     mtime: float | None = None,
 ) -> pd.DataFrame:
-    """Regime periods from step6. Columns: start_date, end_date, regime, severity, notes."""
+    """Regime periods from step4. Columns: start_date, end_date, regime, severity, notes."""
     _ = mtime if mtime is not None else _db_mtime()
     if not DB_PATH.exists():
         return pd.DataFrame()
@@ -182,7 +182,7 @@ def get_ingest_status(mtime: float | None = None) -> pd.DataFrame:
 
 @_cache_data(ttl=600)
 def get_score_history(mtime: float | None = None) -> pd.DataFrame:
-    """Daily fair-score pillars per ETF, written by step7_score.
+    """Daily fair-score pillars per ETF, written by step5_score.
 
     Columns: date, ticker, asset_class, n_days, eff, asy
     (eff/asy = 效率/不對稱 percentile sub-scores 0-100; asy NaN if no benchmark).

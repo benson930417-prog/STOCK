@@ -27,9 +27,9 @@ Idempotent — clears all auto_zigzag rows for the reference ticker before
 reinserting, safe to re-run daily.
 
 Run:
-    python -m scripts.etf_benchmark.step6_regimes
-    python -m scripts.etf_benchmark.step6_regimes --reference ^TWII
-    python -m scripts.etf_benchmark.step6_regimes --threshold 5.0
+    python -m scripts.etf_benchmark.step4_regimes
+    python -m scripts.etf_benchmark.step4_regimes --reference ^TWII
+    python -m scripts.etf_benchmark.step4_regimes --threshold 5.0
 """
 from __future__ import annotations
 
@@ -145,7 +145,7 @@ def classify_leg(magnitude_pct: float, threshold_pct: float) -> str:
 def run_regimes(reference: str = DEFAULT_REFERENCE,
                 threshold_pct: float = DEFAULT_THRESHOLD_PCT) -> int:
     if not DB_PATH.exists():
-        print(f"[step6] DB not found at {DB_PATH}. Run step2 + step3 first.")
+        print(f"[step4] DB not found at {DB_PATH}. Run step2 + step3 first.")
         return 1
 
     with sqlite3.connect(DB_PATH) as conn:
@@ -156,7 +156,7 @@ def run_regimes(reference: str = DEFAULT_REFERENCE,
         )
 
     if df.empty or len(df) < 2:
-        print(f"[step6] No prices found for {reference}. Run step3 first.")
+        print(f"[step4] No prices found for {reference}. Run step3 first.")
         return 1
 
     df["date"]   = pd.to_datetime(df["date"]).dt.date
@@ -207,7 +207,7 @@ def run_regimes(reference: str = DEFAULT_REFERENCE,
 
     # Print summary
     label_zh = {"bull": "多頭", "correction": "修正", "mini_bear": "小熊市", "bear": "熊市"}
-    print(f"[step6] {reference}: {len(df)} trading days  "
+    print(f"[step4] {reference}: {len(df)} trading days  "
           f"→ {len(legs)} ZigZag legs (threshold {threshold_pct}%)")
     print()
     for leg in legs:
@@ -229,7 +229,7 @@ def run_regimes(reference: str = DEFAULT_REFERENCE,
             print(f"    {regime:11s}: {by_regime[regime]:2d} legs, "
                   f"{days_by[regime]:4d} trading days")
     print()
-    print(f"[step6] written to regimes table (source={SOURCE_TAG})")
+    print(f"[step4] written to regimes table (source={SOURCE_TAG})")
     return 0
 
 

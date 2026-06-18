@@ -21,7 +21,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from scripts.etf_benchmark.step6_regimes import classify_leg, zigzag_pivots
+from scripts.etf_benchmark.step4_regimes import classify_leg, zigzag_pivots
 
 SUMMARY_DIR = ROOT_DIR / "data" / "summaries"
 DB_PATH = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
@@ -110,7 +110,7 @@ def stretch_zscore(series: pd.Series, ma_window: int = 200, lookback: int = 504)
 def latest_regime(series: pd.Series, threshold_pct: float = 4.0) -> tuple[str, int | None]:
     """Match the 市場脈動 tab: compute the current ZigZag regime live at 4%.
 
-    The persisted regimes table is produced by step6 and may use a different
+    The persisted regimes table is produced by step4 and may use a different
     threshold/history snapshot, so using it here can drift from the web tab.
     """
     if series is None or len(series) < 2:

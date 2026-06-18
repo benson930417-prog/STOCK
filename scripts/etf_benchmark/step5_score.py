@@ -20,10 +20,10 @@ Persisted to data/etf_bench/score_history.csv (long format), tracked in git so i
 survives DB rebuilds and syncs to local checkouts.
 
 Run:
-    python -m scripts.etf_benchmark.step7_score                      # append today only
-    python -m scripts.etf_benchmark.step7_score --backfill           # last 1 year (default)
-    python -m scripts.etf_benchmark.step7_score --backfill --years 2
-    python -m scripts.etf_benchmark.step7_score --backfill --start 2026-02-23
+    python -m scripts.etf_benchmark.step5_score                      # append today only
+    python -m scripts.etf_benchmark.step5_score --backfill           # last 1 year (default)
+    python -m scripts.etf_benchmark.step5_score --backfill --years 2
+    python -m scripts.etf_benchmark.step5_score --backfill --start 2026-02-23
 """
 from __future__ import annotations
 
@@ -157,7 +157,7 @@ def run(backfill: bool, start: str | None, end: str | None, years: int) -> int:
     if not backfill:
         df_new = scores_as_of(universe, eligible, latest)
         total = _upsert(df_new)
-        print(f"[step7] recorded {len(df_new)} ETFs for {latest.date()}; "
+        print(f"[step5] recorded {len(df_new)} ETFs for {latest.date()}; "
               f"store now has {total} rows → {HIST_CSV}")
         return 0
 
@@ -182,7 +182,7 @@ def run(backfill: bool, start: str | None, end: str | None, years: int) -> int:
 
     df_new = pd.concat(frames, ignore_index=True)
     total = _upsert(df_new)
-    print(f"[step7] backfilled {df_new['date'].nunique()} dates ({len(df_new)} rows) "
+    print(f"[step5] backfilled {df_new['date'].nunique()} dates ({len(df_new)} rows) "
           f"from {start_ts.date()}; store now has {total} rows → {HIST_CSV}")
     return 0
 

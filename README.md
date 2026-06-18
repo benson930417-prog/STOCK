@@ -241,10 +241,8 @@ final four-basket (股票/債券/商品/其他) design and rationale.
 | `scripts/etf_benchmark/step1_universe.py` | Builds `data/etf_bench/universe.csv`. |
 | `scripts/etf_benchmark/step2_schema.py` | Creates/resets SQLite schema. |
 | `scripts/etf_benchmark/step3_backfill.py` | Downloads prices/dividends/splits through yfinance. Use `--incremental` for daily refresh. |
-| `scripts/etf_benchmark/step4_verify.py` | Audits adjusted-close returns against a transparent cash-dividend total-return model. |
-| `scripts/etf_benchmark/step5_verify_nav.py` | Optional NAV diagnostic for issuer NAV snapshots. |
-| `scripts/etf_benchmark/step6_regimes.py` | Builds market regime tags used by market pulse/benchmark views. |
-| `scripts/etf_benchmark/step7_score.py` | Records each ETF's fair-score pillars (效率/不對稱/一致性) per day into `data/etf_bench/score_history.csv`, ranked within asset class. `--backfill` rebuilds history (default 1y); no args appends today. Powers the ETF compare tab's 綜合評分 ranking + history. |
+| `scripts/etf_benchmark/step4_regimes.py` | Builds market regime tags used by market pulse/benchmark views. |
+| `scripts/etf_benchmark/step5_score.py` | Records each ETF's fair-score pillars (效率/不對稱/一致性) per day into `data/etf_bench/score_history.csv`, ranked within asset class. `--backfill` rebuilds history (default 1y); no args appends today. Powers the ETF compare tab's 綜合評分 ranking + history. |
 | `scripts/etf_benchmark/SCORING.md` | Authoritative spec for the 綜合評分 score: ranking logic, the four-basket method, the three pillars, methodology, and verification. |
 
 First-time benchmark setup:
@@ -255,25 +253,16 @@ source venv/bin/activate
 python -m scripts.etf_benchmark.step1_universe
 python -m scripts.etf_benchmark.step2_schema --reset
 python -m scripts.etf_benchmark.step3_backfill
-python -m scripts.etf_benchmark.step6_regimes
-python -m scripts.etf_benchmark.step7_score --backfill
+python -m scripts.etf_benchmark.step4_regimes
+python -m scripts.etf_benchmark.step5_score --backfill
 ```
 
 Daily refresh uses:
 
 ```bash
 python -m scripts.etf_benchmark.step3_backfill --incremental
-python -m scripts.etf_benchmark.step6_regimes
-python -m scripts.etf_benchmark.step7_score
-```
-
-`step4_verify` and `step5_verify_nav` are write-only diagnostics that feed
-nothing downstream. Run them by hand only when investigating Yahoo adjusted-close
-or issuer NAV issues:
-
-```bash
-python -m scripts.etf_benchmark.step4_verify
-python -m scripts.etf_benchmark.step5_verify_nav
+python -m scripts.etf_benchmark.step4_regimes
+python -m scripts.etf_benchmark.step5_score
 ```
 
 ## Data Directory
@@ -603,9 +592,8 @@ Use consistent casing:
       ```bash
       ./venv/bin/python -m scripts.etf_benchmark.step1_universe
       ./venv/bin/python -m scripts.etf_benchmark.step3_backfill --incremental
-      ./venv/bin/python -m scripts.etf_benchmark.step4_verify
-      ./venv/bin/python -m scripts.etf_benchmark.step5_verify_nav
-      ./venv/bin/python -m scripts.etf_benchmark.step6_regimes
+      ./venv/bin/python -m scripts.etf_benchmark.step4_regimes
+      ./venv/bin/python -m scripts.etf_benchmark.step5_score
       ```
 
 16. Deployment commands after merging/pulling on the server.
@@ -835,9 +823,8 @@ scripts/etf_benchmark/seed_tpex_etfs.csv
 scripts/etf_benchmark/step1_universe.py
 scripts/etf_benchmark/step2_schema.py
 scripts/etf_benchmark/step3_backfill.py
-scripts/etf_benchmark/step4_verify.py
-scripts/etf_benchmark/step5_verify_nav.py
-scripts/etf_benchmark/step6_regimes.py
+scripts/etf_benchmark/step4_regimes.py
+scripts/etf_benchmark/step5_score.py
 services/stock-chart.service
 services/stock-dashboard.service
 services/oci-firewall.service

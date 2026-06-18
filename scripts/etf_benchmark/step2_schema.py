@@ -1,13 +1,9 @@
 """Step 2 — initialise the benchmark SQLite database.
 
 Schema goals:
-    • RAW prices stored only (close, open, high, low, volume). No adj_close.
-      We reconstruct adj_close ourselves from raw + dividends + splits,
-      so step5 can validate against Yahoo's adj_close as an independent check.
-    • Dividends and splits stored as separate event tables.
-    • Total-return index stored in its own table (computed in step4).
-    • verification_log keeps every check + its delta — never deleted, so we
-      have a full audit trail for "is the DB trustworthy right now?".
+    • Yahoo OHLCV/adj_close rows are stored as the source used by the compare tab.
+    • Dividends and splits are stored as event tables for display and future use.
+    • Regime and ingest tables keep the production pipeline observable.
 
 Run:
     python -m scripts.etf_benchmark.step2_schema
@@ -97,8 +93,8 @@ CREATE INDEX IF NOT EXISTS idx_dividends_date ON dividends(ex_date);
 -- ratio = new_shares / old_shares
 --    e.g.  1股拆2股 → ratio = 2.0
 --    e.g.  5股併1股 → ratio = 0.2
--- step4 retroactively divides all earlier prices by ratio (and multiplies
--- earlier volumes / dividends by ratio).
+-- Split events are stored for reference; Yahoo adj_close remains the return
+-- series used by the scoring pipeline.
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS splits (
     ticker      TEXT NOT NULL,
@@ -108,19 +104,6 @@ CREATE TABLE IF NOT EXISTS splits (
     notes       TEXT,
     fetched_at  TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (ticker, ex_date),
-    FOREIGN KEY (ticker) REFERENCES etfs(ticker)
-);
-
--- ────────────────────────────────────────────────────────────────────────
--- Total-return index per ticker, base = 100 at data_start_date.
--- Recomputed by step4 whenever prices/dividends/splits change.
--- ────────────────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS tr_index (
-    ticker      TEXT NOT NULL,
-    date        TEXT NOT NULL,
-    value       REAL NOT NULL,                   -- total-return index value
-    computed_at TEXT NOT NULL DEFAULT (datetime('now')),
-    PRIMARY KEY (ticker, date),
     FOREIGN KEY (ticker) REFERENCES etfs(ticker)
 );
 
@@ -171,34 +154,13 @@ CREATE TABLE IF NOT EXISTS ingest_log (
 );
 CREATE INDEX IF NOT EXISTS idx_ingest_log_ticker ON ingest_log(ticker, run_at);
 
--- ────────────────────────────────────────────────────────────────────────
--- Verification log — one row per check. Persisted forever.
--- A ticker is considered "trusted" iff its most recent verification
--- of each check_name == 'pass'.
--- ────────────────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS verification_log (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    check_name  TEXT NOT NULL,                   -- 'adj_close_vs_yahoo' / 'twse_snapshot_match' / 'dividend_cross_check' / 'coverage_gap'
-    ticker      TEXT,
-    date        TEXT,                            -- the specific date the check refers to, if any
-    expected    REAL,
-    actual      REAL,
-    delta_pct   REAL,
-    status      TEXT NOT NULL,                   -- pass / warn / fail
-    notes       TEXT,
-    run_at      TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_verlog_check_ticker ON verification_log(check_name, ticker, run_at);
-CREATE INDEX IF NOT EXISTS idx_verlog_status ON verification_log(status, run_at);
 """
 
 
 RESET_SQL = """
-DROP TABLE IF EXISTS verification_log;
 DROP TABLE IF EXISTS ingest_log;
 DROP TABLE IF EXISTS regimes;
 DROP TABLE IF EXISTS benchmark;
-DROP TABLE IF EXISTS tr_index;
 DROP TABLE IF EXISTS splits;
 DROP TABLE IF EXISTS dividends;
 DROP TABLE IF EXISTS prices;
@@ -227,7 +189,7 @@ def init_db(reset: bool = False) -> None:
     print(f"[step2] tables present: {', '.join(tables)}")
     expected = {
         "benchmark", "dividends", "etfs", "ingest_log",
-        "prices", "regimes", "splits", "tr_index", "verification_log",
+        "prices", "regimes", "splits",
     }
     missing = expected - set(tables)
     if missing:
