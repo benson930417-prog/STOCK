@@ -533,6 +533,15 @@ Use consistent casing:
    - The service should run `/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py <TICKER> --interval 60`.
    - Add it to README service tables, enable commands, restart commands, and Current File Inventory.
    - After deployment, copy services and enable it with systemd.
+   - **Passive ETFs — update every passive-ticker set, or the monitor reads the
+     wrong path.** A passive ETF's holdings live in `data/passive_<TICKER>_history.json`
+     (not `etf_…`). The passive-ticker set is duplicated in several files and ALL of them
+     must include the new ticker: `PASSIVE_ETF_TICKERS` in `scripts/monitor_etf_quotes.py`,
+     `PASSIVE_TICKERS` in `scripts/generate_quote_card.py`, the `{"0050", …}` sets in
+     `app.py` and `scripts/master_holding_quote_card.py`, the passive `case`/sets in
+     `scripts/update_and_notify.sh`, and the selector list in `src/ui/etf_tab.py`.
+   - **Populate holdings before running the monitor**: run `fetch_passive_<TICKER>.py`
+     first so `passive_<TICKER>_history.json` has real data; the monitor reads it.
 
 9. Verify quote monitor compatibility.
    - Run `./venv/bin/python scripts/monitor_etf_quotes.py <TICKER> --interval 60` once and stop after it writes `data/quote_cache/etf_<TICKER>_quotes.json`.
