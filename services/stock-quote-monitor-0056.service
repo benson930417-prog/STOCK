@@ -1,0 +1,17 @@
+[Unit]
+Description=0056 Holding Quote Monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/STOCK
+ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py 0056 --interval 60
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/ubuntu/STOCK/quote_monitor_0056.log
+StandardError=append:/home/ubuntu/STOCK/quote_monitor_0056.log
+
+[Install]
+WantedBy=multi-user.target

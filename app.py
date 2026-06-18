@@ -444,6 +444,7 @@ ETF_NAME_TO_TICKER = {
     "主動統一台股增長": "00981A",
     "主動統一全球創新": "00988A",
     "元大台灣50": "0050",
+    "元大高股息": "0056",
     "國泰費城半導體": "00830",
     "國泰永續高股息": "00878",
     "中信關鍵半導體": "00891",
@@ -792,7 +793,7 @@ def enrich_positions_with_quotes(positions: pd.DataFrame) -> pd.DataFrame:
 
 
 def _latest_history_payload(ticker):
-    if ticker in {"0050", "00830", "00878", "00891", "009805", "009820"}:
+    if ticker in {"0050", "0056", "00830", "00878", "00891", "009805", "009820"}:
         path = DATA_DIR / f"passive_{ticker}_history.json"
     else:
         path = DATA_DIR / f"etf_{ticker}_history.json"
@@ -848,7 +849,7 @@ def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
         if pos.get("stock") == MANUAL_CASH_LABEL or pos.get("code") == MANUAL_CASH_LABEL:
             continue
         ticker = pos.get("ticker")
-        if ticker not in {"00403A", "00981A", "00988A", "0050", "00830", "00878", "00891", "009805", "009820"}:
+        if ticker not in {"00403A", "00981A", "00988A", "0050", "0056", "00830", "00878", "00891", "009805", "009820"}:
             key, country, code = _normalize_underlying_key(pos.get("code"), pos.get("country"))
             exposures[key] = {
                 "key": key,
@@ -3432,7 +3433,7 @@ try:
             missing_etfs = []
             for _, pos in portfolio_positions.dropna(subset=["market_value"]).iterrows():
                 ticker = pos.get("ticker")
-                if ticker in {"00403A", "00981A", "00988A", "0050", "00830", "00878", "00891", "009805", "009820"}:
+                if ticker in {"00403A", "00981A", "00988A", "0050", "0056", "00830", "00878", "00891", "009805", "009820"}:
                     _, payload = _latest_history_payload(ticker)
                     if not payload.get("holdings"):
                         missing_etfs.append(str(pos.get("stock") or ticker))

@@ -87,7 +87,7 @@ PAGE3 = [
     # Row 1 — ETF overflow
     (0,    0,   625, 843, "電", "009805", "美國電力基建",     (220,  38,  38), "message",        "9805",   False),
     (625,  0,   625, 843, "精", "009820", "元大納斯達克精選", (220,  38,  38), "message",        "9820",   False),
-    (1250, 0,   625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),
+    (1250, 0,   625, 843, "高", "0056",   "元大高股息",       ( 37,  99, 235), "message",        "0056",   False),
     (1875, 0,   625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),
     # Row 2 — previous at bottom-left, home only because there is no next page yet
     (0,    843, 625, 843, "<", "上一頁", "ETF 第二頁",       ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),

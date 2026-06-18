@@ -197,6 +197,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/fetch_etf_00981A.py` | Fetches official 00981A holdings/NAV data into tracked history/log JSON. |
 | `scripts/fetch_etf_00988A.py` | Fetches official 00988A holdings/NAV data from Unified's `fundCode=61YTW` Excel endpoint. |
 | `scripts/fetch_passive_0050.py` | Fetches 0050 passive ETF holdings/history. |
+| `scripts/fetch_passive_0056.py` | Fetches 0056 (元大高股息) passive ETF holdings/history from the official Yuanta source. |
 | `scripts/fetch_passive_00830.py` | Fetches 00830 passive ETF holdings/history from the official Cathay source. |
 | `scripts/fetch_passive_00878.py` | Fetches 00878 passive ETF holdings/history from the official Cathay source. |
 | `scripts/fetch_passive_00891.py` | Fetches 00891 passive ETF holdings/history from CTBC's official ETF API. |
@@ -279,7 +280,7 @@ Tracked files in `data/` are source/history state that should move with the repo
 |---|---|
 | `data/etf_00403A_history.json`, `data/etf_00981A_history.json`, `data/etf_00988A_history.json` | Active ETF official history snapshots. |
 | `data/etf_00403A_log.json`, `data/etf_00981A_log.json`, `data/etf_00988A_log.json` | Active ETF fetch logs/status. |
-| `data/passive_*_history.json` | Passive ETF official history snapshots for 0050, 00830, 00878, 00891, 009805, and 009820. |
+| `data/passive_*_history.json` | Passive ETF official history snapshots for 0050, 0056, 00830, 00878, 00891, 009805, and 009820. |
 | `data/passive_*_log.json` | Passive ETF fetch logs/status. |
 | `data/master_manual_positions.json` | Manual master portfolio positions. |
 | `data/master_meta.json` | Master portfolio metadata/state. |
@@ -317,6 +318,7 @@ All service templates live in `services/` and assume:
 | `services/stock-master-holding-monitor.service` | `stock-master-holding-monitor.service` | Master holdings monitor. |
 | `services/stock-quote-monitor-00403a.service` | `stock-quote-monitor-00403a.service` | 00403A quote monitor. |
 | `services/stock-quote-monitor-0050.service` | `stock-quote-monitor-0050.service` | 0050 quote monitor. |
+| `services/stock-quote-monitor-0056.service` | `stock-quote-monitor-0056.service` | 0056 quote monitor. |
 | `services/stock-quote-monitor-00830.service` | `stock-quote-monitor-00830.service` | 00830 quote monitor. |
 | `services/stock-quote-monitor-00878.service` | `stock-quote-monitor-00878.service` | 00878 quote monitor. |
 | `services/stock-quote-monitor-00891.service` | `stock-quote-monitor-00891.service` | 00891 quote monitor. |
@@ -335,7 +337,7 @@ sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.
 sudo systemctl enable oci-firewall.service
 sudo systemctl enable stock-fetch-1730-tw.timer
 sudo systemctl enable stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service
-sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-00830.service
+sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service
 sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-00891.service
 sudo systemctl enable stock-quote-monitor-009805.service
 sudo systemctl enable stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
@@ -351,7 +353,7 @@ Restart all monitors:
 
 ```bash
 sudo systemctl restart stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service
-sudo systemctl restart stock-quote-monitor-0050.service stock-quote-monitor-00830.service
+sudo systemctl restart stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service
 sudo systemctl restart stock-quote-monitor-00878.service stock-quote-monitor-00891.service
 sudo systemctl restart stock-quote-monitor-009805.service
 sudo systemctl restart stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
@@ -453,7 +455,7 @@ Manual run:
 ```bash
 cd /home/ubuntu/STOCK
 source venv/bin/activate
-bash scripts/update_and_notify.sh 00403A 00981A 00988A 0050 00830 00878 00891 009805 009820
+bash scripts/update_and_notify.sh 00403A 00981A 00988A 0050 0056 00830 00878 00891 009805 009820
 ```
 
 ## Rich Menu
@@ -695,6 +697,7 @@ python scripts/fetch_etf_00981A.py
 python scripts/fetch_etf_00988A.py
 python scripts/fetch_etf_00403A.py
 python scripts/fetch_passive_0050.py
+python scripts/fetch_passive_0056.py
 python scripts/fetch_passive_00830.py
 python scripts/fetch_passive_00878.py
 python scripts/fetch_passive_00891.py
@@ -773,6 +776,8 @@ data/master_meta.json
 data/master_trades.csv
 data/passive_0050_history.json
 data/passive_0050_log.json
+data/passive_0056_history.json
+data/passive_0056_log.json
 data/passive_00830_history.json
 data/passive_00830_log.json
 data/passive_00878_history.json
@@ -789,6 +794,7 @@ scripts/fetch_etf_00981A.py
 scripts/fetch_etf_00988A.py
 scripts/fetch_etf_00403A.py
 scripts/fetch_passive_0050.py
+scripts/fetch_passive_0056.py
 scripts/fetch_passive_00830.py
 scripts/fetch_passive_00878.py
 scripts/fetch_passive_00891.py
@@ -823,6 +829,7 @@ services/stock-gold-monitor.service
 services/stock-master-holding-monitor.service
 services/stock-quote-monitor-00403a.service
 services/stock-quote-monitor-0050.service
+services/stock-quote-monitor-0056.service
 services/stock-quote-monitor-00830.service
 services/stock-quote-monitor-00878.service
 services/stock-quote-monitor-00891.service
