@@ -26,7 +26,7 @@ These principles justify every downstream choice.
 1. **Direction-neutral only.** The score must not reward "being in a bull market" or
    "being defensive in a bear market." It only rewards metrics whose *meaning is
    independent of market direction*: risk-adjusted efficiency, up/down **asymmetry**
-   (a ratio — direction cancels), and **consistency** (low volatility). Raw return, raw
+   (a ratio — direction cancels). Raw return, raw
    up-capture, and raw down-capture are **banned** as standalone signals because they are
    regime-contaminated.
 
@@ -54,16 +54,15 @@ These principles justify every downstream choice.
    scores low under a growth-tilted weighting, which is the right signal ("not a growth
    fund"), not unfairness.
 
-4. **Objective lives in the weights.** The composite is a weighted average of the three
-   pillars. A growth investor raises the 效率 / 不對稱 weights; an income/stability
-   investor raises 一致性. Same data, different lens — the score is "fit for the chosen
-   objective," not an objective-free verdict.
+4. **Objective lives in the weights.** The composite is a weighted average of the two
+   pillars. A growth investor can raise the 效率 weight or the 不對稱 weight. Same data,
+   different lens — the score is "fit for the chosen objective," not an objective-free verdict.
 
 ---
 
-## 3. The score: three pillars
+## 3. The score: two pillars
 
-All three are direction-neutral. Each underlying metric is turned into a **0–100 percentile
+Both are direction-neutral. Each underlying metric is turned into a **0–100 percentile
 within the asset-class basket**; a pillar is the **mean of its available metric
 percentiles**; the composite is the **weighted mean of the available pillars**.
 
@@ -71,7 +70,11 @@ percentiles**; the composite is the **weighted mean of the available pillars**.
 |---|---|---|
 | **效率 Efficiency** | Sortino, Calmar | more return per unit of *downside* risk (regime-neutral efficiency) |
 | **不對稱 Asymmetry** *(UI label: 漲多跌少)* | up-capture − down-capture vs benchmark | keeps more of the upside while falling less — a ratio, so direction cancels |
-| **一致性 Consistency** | volatility (↓) only | smoother ride. Tracking error and batting average were intentionally removed: both are benchmark-relative and unfairly penalise active / global funds for deviating from a benchmark they aren't tracking. Volatility is benchmark-free, so it's fair for every fund. |
+
+> A **consistency** pillar (volatility / tracking error / batting average) was considered and
+> **removed**: volatility-based "smoothness" mainly penalised the high-return active funds for
+> being volatile, which runs against a growth objective; the benchmark-relative parts also
+> unfairly dinged active/global funds for deviating from a benchmark they don't track.
 
 Rules:
 - **Up/down is classified per trading day** by the benchmark's daily return sign
@@ -112,7 +115,7 @@ Rules:
 
 ## 5. Data store & pipeline
 
-- **`step7_score.py`** computes the three pillar percentiles for **every eligible ETF**,
+- **`step7_score.py`** computes the two pillar percentiles for **every eligible ETF**,
   ranked within its asset class, and writes one row per ETF per trading day to
   **`data/etf_bench/score_history.csv`** (long format):
 
@@ -120,7 +123,7 @@ Rules:
   |---|---|
   | `date`, `ticker`, `asset_class` | identity + basket |
   | `n_days` | trading days in the fund's window (drives 信賴) |
-  | `eff`, `asy`, `con` | 效率 / 不對稱 / 一致性 percentile sub-scores (0–100; `asy` may be empty) |
+  | `eff`, `asy` | 效率 / 不對稱 percentile sub-scores (0–100; `asy` may be empty) |
 
   Only the **pillars** are stored, not the weighted composite — so the UI recombines them
   live with the weight sliders without any re-backfill.
@@ -160,9 +163,9 @@ scorer on controlled data. **Result:** every pillar matched exactly (diff 0.00).
   ±1% day barely moves it — which is why a strong fund stays high on a red day.
 - **Ordering test:** Spearman ρ between the composite and independent Sharpe was positive
   and **agreed on the top fund** (00981A #1 by both). Mid-pack reordering is expected and
-  correct, because the composite is three-dimensional (efficiency + asymmetry +
-  consistency) whereas Sharpe is one-dimensional. **Conclusion:** the ranking reflects
-  genuine, independently measurable standing, with intended multi-factor reordering.
+  correct, because the composite is two-dimensional (efficiency + asymmetry) whereas Sharpe
+  is one-dimensional. **Conclusion:** the ranking reflects genuine, independently measurable
+  standing, with intended multi-factor reordering.
 
 ---
 
@@ -171,9 +174,9 @@ scorer on controlled data. **Result:** every pillar matched exactly (diff 0.00).
 1. **Relative percentile**, not absolute (regime fairness).
 2. **Four asset-class baskets**; **equity is one merged pool** (主動+被動+槓桿). Objective is
    expressed via **weights**, not by splitting the equity pool.
-3. **Three direction-neutral pillars**: 效率 (Sortino+Calmar), 不對稱 (up−down capture,
-   R²≥0.2 gate), 一致性 (low volatility only — benchmark-free; tracking error &
-   batting average removed as they unfairly penalise active/global funds).
+3. **Two direction-neutral pillars**: 效率 (Sortino+Calmar) + 不對稱 / 漲多跌少 (up−down
+   capture, R²≥0.2 gate). A consistency/volatility pillar was considered and removed (it
+   penalised high-return volatile funds against a growth objective).
 4. **Up/down classified per trading day** from the benchmark (not ZigZag regimes).
 5. **Trailing 1-year** window, **adj_close**, **30-day** per-fund listing gate, raw stored
    percentile with confidence shown via `n_days`.

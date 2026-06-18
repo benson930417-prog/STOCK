@@ -1,7 +1,7 @@
 """Step 7 — record every ETF's fair-score pillars per day into a tracked CSV.
 
 The ETF 比較 tab's composite is built from three direction-neutral pillars
-(效率 / 不對稱 / 一致性). This step computes those pillars for *all* eligible ETFs
+(效率 / 不對稱). This step computes those pillars for *all* eligible ETFs
 and appends one row per ETF per trading day, so the website can plot each fund's
 score history and recombine the pillars live (custom weights + confidence).
 
@@ -65,7 +65,7 @@ ASSET_CLASS = {
     # 'index' / reference rows are excluded below
 }
 
-PILLAR_COLS = {"效率": "eff", "不對稱": "asy", "一致性": "con"}
+PILLAR_COLS = {"效率": "eff", "不對稱": "asy"}
 
 
 def _eligible(universe: pd.DataFrame) -> pd.DataFrame:

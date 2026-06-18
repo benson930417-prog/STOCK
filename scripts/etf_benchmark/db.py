@@ -184,8 +184,8 @@ def get_ingest_status(mtime: float | None = None) -> pd.DataFrame:
 def get_score_history(mtime: float | None = None) -> pd.DataFrame:
     """Daily fair-score pillars per ETF, written by step7_score.
 
-    Columns: date, ticker, asset_class, n_days, eff, asy, con
-    (eff/asy/con = 效率/不對稱/一致性 percentile sub-scores 0-100; NaN if unavailable).
+    Columns: date, ticker, asset_class, n_days, eff, asy
+    (eff/asy = 效率/不對稱 percentile sub-scores 0-100; asy NaN if no benchmark).
     The website derives the weighted composite from these so weights stay live.
     """
     _ = mtime if mtime is not None else (
