@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -1300,7 +1301,7 @@ def _fetch_yahoo_chart_quote_with_fallback(symbol, country=None, timeout=10):
     return quote
 
 
-def fetch_yahoo_quotes(symbol_country_pairs, max_workers=12):
+def fetch_yahoo_quotes(symbol_country_pairs, max_workers=6):
     quotes = {}
     unique_pairs = {}
     for symbol, country in symbol_country_pairs:
@@ -1324,7 +1325,7 @@ def fetch_yahoo_quotes(symbol_country_pairs, max_workers=12):
     return quotes
 
 
-def build_cache(ticker, previous_cache=None):
+def build_cache(ticker, previous_cache=None, max_workers=6):
     holdings_date, latest_data, holdings = load_latest_holdings(ticker)
     etf_refresh_utc = load_etf_refresh_time(ticker)
 
@@ -1333,7 +1334,7 @@ def build_cache(ticker, previous_cache=None):
         yahoo_symbol, country = normalize_yahoo_symbol(holding.get("id"))
         normalized.append((holding, yahoo_symbol, country))
 
-    quotes = fetch_yahoo_quotes([(item[1], item[2]) for item in normalized])
+    quotes = fetch_yahoo_quotes([(item[1], item[2]) for item in normalized], max_workers=max_workers)
     has_tsmc_proxy_target = any(
         str(yahoo_symbol or "").upper() in TSMC_PROXY_TARGETS for _, yahoo_symbol, _ in normalized
     )
@@ -1496,8 +1497,21 @@ def atomic_write_json(path, data):
     os.replace(tmp_path, path)
 
 
-def monitor(ticker, interval):
+def _stable_start_offset(ticker, jitter_seconds):
+    jitter_seconds = int(jitter_seconds or 0)
+    if jitter_seconds <= 0:
+        return 0
+    digest = hashlib.sha256(str(ticker).encode("utf-8")).hexdigest()
+    return int(digest[:8], 16) % (jitter_seconds + 1)
+
+
+def monitor(ticker, interval, max_workers=6, jitter_seconds=0):
     cache_path = QUOTE_CACHE_DIR / f"etf_{ticker}_quotes.json"
+    initial_delay = _stable_start_offset(ticker, min(jitter_seconds, max(0, interval - 1)))
+    if initial_delay:
+        print(f"{utc_now_iso()} staggering {ticker} quote monitor start by {initial_delay}s", flush=True)
+        time.sleep(initial_delay)
+
     while True:
         try:
             previous_cache = None
@@ -1506,7 +1520,7 @@ def monitor(ticker, interval):
                     previous_cache = json.loads(cache_path.read_text(encoding="utf-8"))
                 except Exception:
                     previous_cache = None
-            cache = build_cache(ticker, previous_cache=previous_cache)
+            cache = build_cache(ticker, previous_cache=previous_cache, max_workers=max_workers)
             atomic_write_json(cache_path, cache)
             from scripts.generate_quote_card import generate_quote_card_from_cache
 
@@ -1535,9 +1549,11 @@ def main():
     parser = argparse.ArgumentParser(description="Continuously monitor ETF holding quotes into a server-only cache.")
     parser.add_argument("ticker", nargs="?", default="00988A")
     parser.add_argument("--interval", type=int, default=60)
+    parser.add_argument("--max-workers", type=int, default=6)
+    parser.add_argument("--jitter", type=int, default=0, help="Deterministic initial start spread in seconds.")
     args = parser.parse_args()
 
-    monitor(args.ticker.upper(), max(args.interval, 10))
+    monitor(args.ticker.upper(), max(args.interval, 10), max(1, args.max_workers), max(0, args.jitter))
 
 
 if __name__ == "__main__":

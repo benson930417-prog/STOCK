@@ -7,9 +7,12 @@ Wants=network-online.target
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK
-ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py 0056 --interval 60
+ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py 0056 --interval 180 --max-workers 4 --jitter 150
 Restart=always
 RestartSec=10
+RuntimeMaxSec=12h
+MemoryMax=512M
+CPUQuota=35%
 StandardOutput=append:/home/ubuntu/STOCK/quote_monitor_0056.log
 StandardError=append:/home/ubuntu/STOCK/quote_monitor_0056.log
 

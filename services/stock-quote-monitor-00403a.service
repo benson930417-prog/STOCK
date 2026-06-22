@@ -8,9 +8,12 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK
 EnvironmentFile=-/home/ubuntu/.stock_secrets
-ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py 00403A --interval 60
+ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py 00403A --interval 180 --max-workers 4 --jitter 150
 Restart=always
 RestartSec=10
+RuntimeMaxSec=12h
+MemoryMax=512M
+CPUQuota=35%
 
 [Install]
 WantedBy=multi-user.target
