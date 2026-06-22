@@ -193,7 +193,22 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--interval", type=int, default=60)
     parser.add_argument("--once", action="store_true")
+    parser.add_argument(
+        "--scanner-only",
+        action="store_true",
+        help="Use the lightweight TradingView scanner API instead of a persistent browser page.",
+    )
+    parser.add_argument(
+        "--browser-refreshes",
+        type=int,
+        default=60,
+        help="When using the page fetcher, recreate the browser after this many refreshes.",
+    )
     args = parser.parse_args()
+
+    if args.once and args.scanner_only:
+        refresh_once()
+        return
 
     if args.once:
         with sync_playwright() as p:
@@ -205,18 +220,40 @@ def main():
                 browser.close()
         return
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page(user_agent=USER_AGENT, timezone_id="Asia/Taipei")
+    if args.scanner_only:
         while True:
             try:
-                refresh_once(page=page)
+                refresh_once()
             except Exception as exc:
-                print(f"{utc_now_iso()} GOLD page update failed: {exc}", flush=True)
+                print(f"{utc_now_iso()} GOLD scanner update failed: {exc}", flush=True)
+            time.sleep(max(10, args.interval))
+
+    refresh_limit = max(1, args.browser_refreshes)
+    while True:
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page(user_agent=USER_AGENT, timezone_id="Asia/Taipei")
                 try:
-                    refresh_once()
-                except Exception as fallback_exc:
-                    print(f"{utc_now_iso()} GOLD scanner fallback failed: {fallback_exc}", flush=True)
+                    for refresh_count in range(refresh_limit):
+                        try:
+                            refresh_once(page=page)
+                        except Exception as exc:
+                            print(f"{utc_now_iso()} GOLD page update failed: {exc}", flush=True)
+                            try:
+                                refresh_once()
+                            except Exception as fallback_exc:
+                                print(f"{utc_now_iso()} GOLD scanner fallback failed: {fallback_exc}", flush=True)
+                        time.sleep(max(10, args.interval))
+                finally:
+                    browser.close()
+                    print(f"{utc_now_iso()} recycled GOLD browser after {refresh_limit} refreshes", flush=True)
+        except Exception as exc:
+            print(f"{utc_now_iso()} GOLD browser cycle failed: {exc}", flush=True)
+            try:
+                refresh_once()
+            except Exception as fallback_exc:
+                print(f"{utc_now_iso()} GOLD scanner fallback failed: {fallback_exc}", flush=True)
             time.sleep(max(10, args.interval))
 
 

@@ -7,9 +7,11 @@ Wants=network-online.target
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK
-ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_gold_quote.py --interval 60
+ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_gold_quote.py --interval 60 --scanner-only
 Restart=always
 RestartSec=10
+RuntimeMaxSec=12h
+MemoryMax=512M
 StandardOutput=append:/home/ubuntu/STOCK/gold_quote_monitor.log
 StandardError=append:/home/ubuntu/STOCK/gold_quote_monitor.log
 
