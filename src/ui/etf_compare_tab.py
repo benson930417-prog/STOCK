@@ -1090,7 +1090,10 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                             "<extra>" + t + "</extra>"
                         ),
                     ))
-                # auto-zoom y to the plotted scores (padded, clamped to 0-100)
+                # auto-scale y to the plotted scores. Use Plotly autorange so the
+                # axis also re-tightens when lines are toggled off via the legend
+                # (a fixed range= would stay frozen). Autorange ignores shapes, so
+                # only draw the 50 reference line when the data is near it.
                 yv = sub["score"].dropna()
                 if not yv.empty:
                     pad = max(2.0, (float(yv.max()) - float(yv.min())) * 0.10)
@@ -1102,7 +1105,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                     figh.add_hline(y=50, line=dict(color="#A9B1BD", width=1.5, dash="dash"))
                 figh.update_layout(
                     height=440, margin=dict(l=10, r=20, t=30, b=10),
-                    yaxis=dict(title="綜合評分（同類百分位）", range=[y_lo, y_hi],
+                    yaxis=dict(title="綜合評分（同類百分位）", autorange=True,
                                showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
                     xaxis=dict(title="", showgrid=True, gridcolor="rgba(255,255,255,0.08)",
                                range=[baseline_date, max(today_ts, baseline_date)]),
