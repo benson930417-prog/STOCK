@@ -47,6 +47,7 @@ ETF_NAME_TO_TICKER = {
     "主動統一台股增長": "00981A",
     "主動統一全球創新": "00988A",
     "元大台灣50": "0050",
+    "元大台灣50正2": "00631L",
     "元大高股息": "0056",
     "國泰費城半導體": "00830",
     "國泰永續高股息": "00878",
@@ -58,6 +59,14 @@ ETF_NAME_TO_TICKER = {
     "國泰US短期公債": "00865B",
 }
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
+
+# Leveraged ETFs (own NAV/price) decompose into a proxy ETF's basket with the
+# weight multiplied by the leverage factor — see app.py LEVERAGED_ETF_PROXY.
+# 00631L (2x) -> 0050 basket x2, so exposure and 貢獻 double and the expanded
+# weight can exceed 100%. Keep this in sync with app.py.
+LEVERAGED_ETF_PROXY = {
+    "00631L": {"expand_as": "0050", "leverage": 2.0},
+}
 
 
 def _default_sell_tax_rate_for_position(item):
@@ -348,11 +357,16 @@ def _normalize_underlying_key(holding_id, country=None):
 
 def build_expanded_exposure(position_quotes):
     exposures = {}
+    # Real (un-leveraged) portfolio value — denominator so a leveraged ETF's
+    # doubled exposure totals over 100% instead of renormalising everyone down.
+    portfolio_total = 0.0
+    expandable = {"00403A", "00981A", "00988A", "0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"} | set(LEVERAGED_ETF_PROXY)
     for _, pos in position_quotes.dropna(subset=["market_value"]).iterrows():
         if pos.get("stock") == CASH_LABEL or pos.get("code") == CASH_LABEL:
             continue
+        portfolio_total += float(pos["market_value"])
         ticker = pos.get("ticker")
-        if ticker not in {"00403A", "00981A", "00988A", "0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"}:
+        if ticker not in expandable:
             key, country, code = _normalize_underlying_key(pos.get("code"), pos.get("country"))
             exposures[key] = {
                 "key": key,
@@ -368,15 +382,18 @@ def build_expanded_exposure(position_quotes):
             }
             continue
 
-        _, payload = _latest_history_payload(ticker)
-        quote_map = _quote_cache_by_holding(ticker)
+        proxy = LEVERAGED_ETF_PROXY.get(ticker)
+        expand_ticker = proxy["expand_as"] if proxy else ticker
+        leverage = proxy["leverage"] if proxy else 1.0
+        _, payload = _latest_history_payload(expand_ticker)
+        quote_map = _quote_cache_by_holding(expand_ticker)
         for holding in payload.get("holdings", []):
             weight = holding.get("weight_pct")
             if weight is None:
                 continue
             quote_row = quote_map.get(str(holding.get("id")), {})
             key, country, code = _normalize_underlying_key(holding.get("id"), quote_row.get("country"))
-            value = float(pos["market_value"]) * float(weight) / 100.0
+            value = float(pos["market_value"]) * float(weight) / 100.0 * leverage
             if key not in exposures:
                 exposures[key] = {
                     "key": key,
@@ -403,7 +420,8 @@ def build_expanded_exposure(position_quotes):
             if quote_row.get("proxy"):
                 exposures[key]["proxy"] = quote_row.get("proxy")
 
-    total = sum(item.get("value_twd", 0.0) for item in exposures.values())
+    # Real portfolio value as denominator (leveraged exposure can exceed 100%).
+    total = portfolio_total
     rows = []
     for item in exposures.values():
         day_change = item.get("day_change_pct")

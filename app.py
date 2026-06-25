@@ -444,6 +444,7 @@ ETF_NAME_TO_TICKER = {
     "主動統一台股增長": "00981A",
     "主動統一全球創新": "00988A",
     "元大台灣50": "0050",
+    "元大台灣50正2": "00631L",
     "元大高股息": "0056",
     "國泰費城半導體": "00830",
     "國泰永續高股息": "00878",
@@ -456,6 +457,17 @@ ETF_NAME_TO_TICKER = {
 }
 
 ETF_TICKER_TO_NAME = {v: k for k, v in ETF_NAME_TO_TICKER.items()}
+
+# Leveraged ETFs hold their own NAV/price but track a multiple of another ETF's
+# basket. For exposure/contribution decomposition we expand them into the proxy
+# ETF's holdings with the weight multiplied by the leverage factor. So a 00631L
+# position that is 10% of the portfolio and whose 0050 basket is 50% TSMC shows
+# as 10% TSMC exposure (50% * 2 * 10%), the 今日貢獻 doubles to match the 2x
+# daily move, and the total expanded weight can exceed 100% (expected). The
+# constituent's own 今日漲跌% stays the real 1x stock move.
+LEVERAGED_ETF_PROXY = {
+    "00631L": {"expand_as": "0050", "leverage": 2.0},
+}
 SELL_FEE_RATE = 0.001425 * 0.28
 SELL_STOCK_TAX_RATE = 0.003
 SELL_ETF_TAX_RATE = 0.001
@@ -846,11 +858,17 @@ def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     exposures = {}
+    # Weight denominator = real (un-leveraged) portfolio value, so a leveraged
+    # ETF's doubled exposure pushes the total expanded weight above 100% instead
+    # of renormalising everyone back down.
+    portfolio_total = 0.0
+    expandable = {"00403A", "00981A", "00988A", "0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"} | set(LEVERAGED_ETF_PROXY)
     for _, pos in position_quotes.dropna(subset=["market_value"]).iterrows():
         if pos.get("stock") == MANUAL_CASH_LABEL or pos.get("code") == MANUAL_CASH_LABEL:
             continue
+        portfolio_total += float(pos["market_value"])
         ticker = pos.get("ticker")
-        if ticker not in {"00403A", "00981A", "00988A", "0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"}:
+        if ticker not in expandable:
             key, country, code = _normalize_underlying_key(pos.get("code"), pos.get("country"))
             exposures[key] = {
                 "key": key,
@@ -866,9 +884,12 @@ def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
             }
             continue
 
-        _, payload = _latest_history_payload(ticker)
+        proxy = LEVERAGED_ETF_PROXY.get(ticker)
+        expand_ticker = proxy["expand_as"] if proxy else ticker
+        leverage = proxy["leverage"] if proxy else 1.0
+        _, payload = _latest_history_payload(expand_ticker)
         holdings = payload.get("holdings", [])
-        quote_map = _quote_cache_by_holding(ticker)
+        quote_map = _quote_cache_by_holding(expand_ticker)
         for holding in holdings:
             weight = holding.get("weight_pct")
             if weight is None:
@@ -876,7 +897,7 @@ def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
             quote_row = quote_map.get(str(holding.get("id")), {})
             country = quote_row.get("country")
             key, country, code = _normalize_underlying_key(holding.get("id"), country)
-            value = float(pos["market_value"]) * float(weight) / 100.0
+            value = float(pos["market_value"]) * float(weight) / 100.0 * leverage
             if key not in exposures:
                 exposures[key] = {
                     "key": key,
@@ -906,7 +927,10 @@ def build_expanded_etf_exposure(position_quotes: pd.DataFrame) -> pd.DataFrame:
                 exposures[key]["is_live_market"] = bool(quote_row.get("is_live_market"))
 
     rows = []
-    total_value = sum(item.get("value_twd", 0.0) for item in exposures.values())
+    # Denominator is the real portfolio value (not the sum of leveraged exposures),
+    # so leveraged constituents read as a true share of capital and the column
+    # legitimately totals over 100%.
+    total_value = portfolio_total
     for item in exposures.values():
         day_change = item.get("day_change_pct")
         if day_change is None and item.get("move_weight"):
