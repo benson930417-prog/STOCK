@@ -16,6 +16,7 @@ from scripts.monitor_etf_quotes import (
     TSMC_PROXY_TARGETS,
     _adjusted_market_session,
     _apply_tsmc_night_futures_proxy,
+    _country_scope_label,
     _is_live_market_session,
     _select_tsmc_proxy,
     _tsmc_data_mode,
@@ -454,10 +455,8 @@ def load_master_snapshot():
     total_cost = float(non_cash["cost"].sum()) if not non_cash.empty else 0.0
     unrealized = total_liq - total_cost
     unrealized_pct = unrealized / total_cost * 100.0 if total_cost else 0.0
-    # 總成本 = 此次投入本金 + 加上之前獲利 (same split the dashboard shows):
-    # realized profit was reinvested, so deployed principal is total cost minus it.
+    # 已實 (realized P/L) — same intraday-then-FIFO total the dashboard KPI shows.
     realized_pnl = compute_realized_total(raw_trades)
-    deployed_principal = total_cost - realized_pnl
     all_exposures = build_expanded_exposure(positions)
     exposures = all_exposures[:50]
     return {
@@ -467,7 +466,6 @@ def load_master_snapshot():
         "cash_twd": cash_amount,
         "total_cost": total_cost,
         "realized_pnl": realized_pnl,
-        "deployed_principal": deployed_principal,
         "unrealized": unrealized,
         "unrealized_pct": unrealized_pct,
         "holding_count": len(all_exposures),
@@ -475,6 +473,38 @@ def load_master_snapshot():
         "tsmc_proxy": positions.attrs.get("tsmc_proxy") if hasattr(positions, "attrs") else None,
         "tsmc_data_mode": positions.attrs.get("tsmc_data_mode") if hasattr(positions, "attrs") else None,
     }
+
+
+def _pct_icon(value):
+    if value is None:
+        return "⚪"
+    value = float(value)
+    if value > 0:
+        return "🔴"
+    if value < 0:
+        return "🟢"
+    return "⚪"
+
+
+def _composite_block(cache, label, pct_key, scope_key, count_key, weight_key):
+    """One 交易中漲跌 / 已收盤漲跌 block — same shape as the ETF quote-card text.
+    No plus sign on the percentage (the 🔴/🟢 icon already shows direction)."""
+    pct = cache.get(pct_key)
+    if pct is None:
+        return None
+    scope = str(cache.get(scope_key) or "--").replace("台積電期貨", "期")
+    count = cache.get(count_key)
+    weight = cache.get(weight_key)
+    parts = []
+    if count is not None:
+        parts.append(f"{count}檔")
+    if weight is not None:
+        parts.append(f"權重{float(weight):.1f}%")
+    block = [f"{label}（{scope if scope and scope != '--' else '--'}）：",
+             f"{_pct_icon(pct)} {float(pct):.2f}%"]
+    if parts:
+        block.append(f"（{'・'.join(parts)}）")
+    return block
 
 
 def build_master_text(snapshot, quote_cache=None):
@@ -486,11 +516,9 @@ def build_master_text(snapshot, quote_cache=None):
         "吳大師持股",
         "━━━━━━━━━━━━━━",
         "💼 總覽",
-        f"總成本：{_fmt_money(snapshot['total_cost'])}",
-        f"　此次投入本金：{_fmt_money(snapshot.get('deployed_principal', 0))}",
-        f"　加上之前獲利：{snapshot.get('realized_pnl', 0):+,.0f}",
-        f"未實損益：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:+.2f}%)",
-        f"目前淨值(扣費稅)：{_fmt_money(snapshot['total_liq'])}",
+        f"成本：{_fmt_money(snapshot['total_cost'])}",
+        f"已實：{_fmt_money(snapshot.get('realized_pnl', 0))}",
+        f"未實：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:.2f}%)",
         "",
     ]
 
@@ -498,15 +526,20 @@ def build_master_text(snapshot, quote_cache=None):
         lines.extend([detail_text, "━━━━━━━━━━━━━━"])
 
     if quote_cache:
-        lines.append("📈 交易中即時狀態（前50大）")
-        composite_count = quote_cache.get("composite_holding_count", 0)
-        composite_weight = quote_cache.get("composite_weight_pct")
-        weight_text = "--" if composite_weight is None else f"{float(composite_weight):.1f}%"
-        lines.append(f"交易中：{composite_count}檔（佔總權重{weight_text}）")
-
-        composite = quote_cache.get("composite_move_pct")
-        comp_text = "--" if composite is None else f"{float(composite):+.2f}%"
-        lines.append(f"交易中即時加權：{comp_text}")
+        blocks = [
+            _composite_block(quote_cache, "交易中漲跌", "composite_live_move_pct",
+                             "composite_live_scope", "composite_live_count", "composite_live_weight_pct"),
+            _composite_block(quote_cache, "已收盤漲跌", "composite_notlive_move_pct",
+                             "composite_notlive_scope", "composite_notlive_count", "composite_notlive_weight_pct"),
+        ]
+        for block in [b for b in blocks if b]:
+            lines.append("")
+            lines.extend(block)
+        counts = quote_cache.get("counts", {})
+        lines.append("")
+        lines.append(
+            f"漲跌統計：🔴{counts.get('up', 0)}　🟢{counts.get('down', 0)}　⚪{counts.get('flat', 0)}"
+        )
 
     return "\n".join(lines)
 
@@ -537,14 +570,18 @@ def build_master_holding_details_text(positions, cash_twd=0):
 def _master_quote_cache(snapshot, rows):
     valid_quote_times = [row.get("quote_time_utc") for row in rows if row.get("quote_time_utc")]
     up = down = flat = missing = 0
-    live_weighted_sum = 0.0
-    live_weight_sum = 0.0
+    live_weighted_sum = live_weight_sum = 0.0
     live_count = 0
+    notlive_weighted_sum = notlive_weight_sum = 0.0
+    notlive_count = 0
+    live_countries = set()
+    notlive_countries = set()
     holdings = []
     for row in rows:
         change = row.get("day_change_pct")
         weight = row.get("weight_pct")
         is_live = _is_live_market_session(row.get("market_session"))
+        scope_country = row.get("composite_scope") or row.get("country")
         if change is None or pd.isna(change):
             missing += 1
         else:
@@ -554,10 +591,19 @@ def _master_quote_cache(snapshot, rows):
                 down += 1
             else:
                 flat += 1
-            if is_live and weight is not None and not pd.isna(weight):
-                live_weighted_sum += float(weight) * float(change)
-                live_weight_sum += float(weight)
-                live_count += 1
+            if weight is not None and not pd.isna(weight):
+                if is_live:
+                    live_weighted_sum += float(weight) * float(change)
+                    live_weight_sum += float(weight)
+                    live_count += 1
+                    if scope_country:
+                        live_countries.add(scope_country)
+                else:
+                    notlive_weighted_sum += float(weight) * float(change)
+                    notlive_weight_sum += float(weight)
+                    notlive_count += 1
+                    if scope_country:
+                        notlive_countries.add(scope_country)
         holdings.append({
             "id": row.get("code"),
             "name": row.get("name"),
@@ -600,11 +646,26 @@ def _master_quote_cache(snapshot, rows):
         "tsmc_data_mode": snapshot.get("tsmc_data_mode"),
         "newest_quote_utc": max(valid_quote_times) if valid_quote_times else None,
         "oldest_quote_utc": min(valid_quote_times) if valid_quote_times else None,
-        "composite_move_pct": live_weighted_sum / live_weight_sum if live_weight_sum else None,
-        "composite_mode": "live" if live_weight_sum else "none",
-        "composite_country_scope": "展開",
-        "composite_holding_count": live_count,
-        "composite_weight_pct": live_weight_sum,
+        "composite_move_pct": (
+            live_weighted_sum / live_weight_sum if live_weight_sum
+            else (notlive_weighted_sum / notlive_weight_sum if notlive_weight_sum else None)
+        ),
+        "composite_mode": "live" if live_weight_sum else ("closed" if notlive_weight_sum else "none"),
+        "composite_country_scope": _country_scope_label(
+            live_countries if live_weight_sum else notlive_countries
+        ),
+        "composite_holding_count": live_count if live_weight_sum else notlive_count,
+        "composite_weight_pct": live_weight_sum if live_weight_sum else notlive_weight_sum,
+        # Live (交易中) / closed (已收盤) split — drives the image's top-right
+        # composite box and the two-block text, same keys an ETF cache uses.
+        "composite_live_move_pct": live_weighted_sum / live_weight_sum if live_weight_sum else None,
+        "composite_live_scope": _country_scope_label(live_countries),
+        "composite_live_count": live_count,
+        "composite_live_weight_pct": live_weight_sum,
+        "composite_notlive_move_pct": notlive_weighted_sum / notlive_weight_sum if notlive_weight_sum else None,
+        "composite_notlive_scope": _country_scope_label(notlive_countries),
+        "composite_notlive_count": notlive_count,
+        "composite_notlive_weight_pct": notlive_weight_sum,
         "counts": {
             "total": len(rows),
             "up": up,

@@ -290,7 +290,7 @@ def build_etf_quote_text(ticker):
         if weight is not None:
             detail_parts.append(f"權重{weight_text}")
         scope_text = scope if scope and scope != "--" else "--"
-        lines = [f"{label}（{scope_text}）：", f"{pct_icon(pct)} {float(pct):+.2f}%"]
+        lines = [f"{label}（{scope_text}）：", f"{pct_icon(pct)} {float(pct):.2f}%"]
         if detail_parts:
             lines.append(f"（{'・'.join(detail_parts)}）")
         return lines
@@ -309,7 +309,7 @@ def build_etf_quote_text(ticker):
             lines.append("")
             lines.extend(block)
     elif cache.get("composite_mode") == "live" and composite is not None:
-        comp_text = f"{composite:+.2f}%"
+        comp_text = f"{composite:.2f}%"
         composite_label = f"交易中漲跌（{composite_scope}）："
         lines.append("")
         lines.append(composite_label)
