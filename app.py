@@ -1176,22 +1176,15 @@ def merge_into_master(new_month_df: pd.DataFrame, upload_filename: str):
     upload_min_date = new_month_df["日期"].min() if len(new_month_df) else None
     upload_max_date = new_month_df["日期"].max() if len(new_month_df) else None
 
-    if (
-        len(master)
-        and upload_min_date is not None
-        and upload_max_date is not None
-        and pd.notna(upload_min_date)
-        and pd.notna(upload_max_date)
-    ):
-        # Broker exports are authoritative for the dates they cover. Replace
-        # that whole window so a later wider export can repair old partial data
-        # instead of preserving stale rows forever through append-only dedupe.
-        master_dates = pd.to_datetime(master["日期"], errors="coerce")
-        window_mask = (master_dates >= upload_min_date) & (master_dates <= upload_max_date)
-        replaced_rows = int(window_mask.sum())
-        master = master.loc[~window_mask].copy()
-    else:
-        replaced_rows = 0
+    # Append-only + dedupe. Broker weekly exports overlap (the app can't export
+    # a long range without a special request), so the same trade reappears in
+    # consecutive uploads and is removed by the _key / stable-key dedupe below.
+    # We deliberately do NOT delete the upload's date window: a routine export
+    # can legitimately omit special transactions (in-kind subscriptions, etc.)
+    # that are NOT duplicates, and a window-replace would silently drop them
+    # (this wiped a 00988A 2026-06-17 subscription buy once). Non-duplicate rows
+    # always survive; only exact/rounding duplicates are skipped.
+    replaced_rows = 0
 
     combined = pd.concat([master, new_month_df], ignore_index=True)
 
