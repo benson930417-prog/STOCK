@@ -477,6 +477,9 @@ def load_master_snapshot():
     realized_pnl = compute_realized_total(raw_trades)
     all_exposures = build_expanded_exposure(positions)
     exposures = all_exposures[:50]
+    # 槓桿值 = sum of look-through weights (total exposure ÷ capital). 100% =
+    # unleveraged; >100% is the extra exposure from leveraged ETFs (00631L 2x).
+    leverage_pct = sum(float(e.get("weight_pct") or 0.0) for e in all_exposures)
     return {
         "positions": positions,
         "total_market": total_market,
@@ -486,6 +489,7 @@ def load_master_snapshot():
         "realized_pnl": realized_pnl,
         "unrealized": unrealized,
         "unrealized_pct": unrealized_pct,
+        "leverage_pct": leverage_pct,
         "holding_count": len(all_exposures),
         "exposures": exposures,
         "tsmc_proxy": positions.attrs.get("tsmc_proxy") if hasattr(positions, "attrs") else None,
@@ -537,6 +541,7 @@ def build_master_text(snapshot, quote_cache=None):
         f"成本：{_fmt_money(snapshot['total_cost'])}",
         f"已實：{_fmt_money(snapshot.get('realized_pnl', 0))}",
         f"未實：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:.2f}%)",
+        f"槓桿值：{snapshot.get('leverage_pct', 100.0):.0f}%",
         "",
     ]
 

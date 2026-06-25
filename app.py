@@ -3555,7 +3555,16 @@ try:
             reinvested_realized_pnl = float(total_pnl)
             deployed_principal = total_cost_open - reinvested_realized_pnl
 
-            m1, m2, m3, m4, m5 = st.columns(5)
+            # Expand once here so the 槓桿值 KPI and the tabs below reuse it.
+            # 槓桿值 = sum of the look-through weights (total exposure ÷ capital):
+            # 100% = unleveraged, >100% = the leverage from holdings like 00631L.
+            expanded_df = build_expanded_etf_exposure(portfolio_positions)
+            leverage_pct = (
+                float(expanded_df["權重"].dropna().sum())
+                if not expanded_df.empty and "權重" in expanded_df.columns else 100.0
+            )
+
+            m1, m2, m3, m4, m5, m6 = st.columns(6)
             with m1:
                 st.metric("目前淨值 (扣費稅)", fmt_money(total_liquidation_value))
             with m2:
@@ -3578,6 +3587,8 @@ try:
                 st.metric("現金", fmt_money(cash_amount))
             with m5:
                 st.metric("持股檔數", f"{len(non_cash)}")
+            with m6:
+                st.metric("槓桿值", f"{leverage_pct:.0f}%", help="展開後總曝險 ÷ 本金。100% = 無槓桿，>100% 為槓桿 ETF（如 00631L 2倍）帶來的額外曝險。")
 
             mh_tabs = st.tabs(["投資組合摘要", "展開後絕對權重", "ETF 展開權重圖", "今日貢獻圖"])
 
@@ -3664,7 +3675,7 @@ try:
                     height=min(520, max(280, 42 * (len(direct_show) + 1) + 12)),
                 )
 
-            expanded_df = build_expanded_etf_exposure(portfolio_positions)
+            # expanded_df already built above (for the 槓桿值 KPI); scale 今日貢獻 to money.
             if not expanded_df.empty and "今日貢獻" in expanded_df.columns:
                 expanded_df["今日貢獻"] = expanded_df["今日貢獻"] / 100.0 * total_liquidation_value
 
