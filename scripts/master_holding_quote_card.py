@@ -29,6 +29,7 @@ from scripts.master_manual_positions import (
     load_manual_positions,
     manual_positions_as_open_position_rows,
 )
+from scripts.realized_pnl import compute_realized_total
 
 DATA_DIR = ROOT_DIR / "data"
 IMAGE_DIR = DATA_DIR / "images"
@@ -424,7 +425,8 @@ def build_expanded_exposure(position_quotes):
 
 def load_master_snapshot():
     manual = load_manual_positions()
-    base = calculate_open_positions(load_master_trades())
+    raw_trades = load_master_trades()
+    base = calculate_open_positions(raw_trades)
     existing_tickers = (
         set(base["ticker"].dropna().astype(str).str.upper().tolist())
         if not base.empty and "ticker" in base else set()
@@ -452,6 +454,10 @@ def load_master_snapshot():
     total_cost = float(non_cash["cost"].sum()) if not non_cash.empty else 0.0
     unrealized = total_liq - total_cost
     unrealized_pct = unrealized / total_cost * 100.0 if total_cost else 0.0
+    # 總成本 = 此次投入本金 + 加上之前獲利 (same split the dashboard shows):
+    # realized profit was reinvested, so deployed principal is total cost minus it.
+    realized_pnl = compute_realized_total(raw_trades)
+    deployed_principal = total_cost - realized_pnl
     all_exposures = build_expanded_exposure(positions)
     exposures = all_exposures[:50]
     return {
@@ -460,6 +466,8 @@ def load_master_snapshot():
         "total_liq": total_liq,
         "cash_twd": cash_amount,
         "total_cost": total_cost,
+        "realized_pnl": realized_pnl,
+        "deployed_principal": deployed_principal,
         "unrealized": unrealized,
         "unrealized_pct": unrealized_pct,
         "holding_count": len(all_exposures),
@@ -479,6 +487,8 @@ def build_master_text(snapshot, quote_cache=None):
         "━━━━━━━━━━━━━━",
         "💼 總覽",
         f"總成本：{_fmt_money(snapshot['total_cost'])}",
+        f"　此次投入本金：{_fmt_money(snapshot.get('deployed_principal', 0))}",
+        f"　加上之前獲利：{snapshot.get('realized_pnl', 0):+,.0f}",
         f"未實損益：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:+.2f}%)",
         f"目前淨值(扣費稅)：{_fmt_money(snapshot['total_liq'])}",
         "",
