@@ -7,9 +7,12 @@ Wants=network-online.target stock-chart.service
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK
-ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_market_charts.py nasdaq --interval 60
+ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_market_charts.py oil brent bond gold usdtwd usdjpy usdchf nasdaq --interval 60
 Restart=always
 RestartSec=10
+RuntimeMaxSec=12h
+MemoryMax=512M
+CPUQuota=35%
 StandardOutput=append:/home/ubuntu/STOCK/market_chart_monitor.log
 StandardError=append:/home/ubuntu/STOCK/market_chart_monitor.log
 

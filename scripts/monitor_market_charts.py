@@ -38,18 +38,22 @@ def post_chart_service(endpoint, key, timeout):
 
 
 def refresh_key(key, timeout):
-    text_payload = post_chart_service("market-text", key, timeout)
+    # Single /snapshot call captures the chart image AND the price/% from the
+    # same page render, so the cached text matches the chart at the same moment.
     snapshot_payload = post_chart_service("snapshot", key, timeout)
-    if not text_payload.get("text"):
-        raise RuntimeError(f"{key} market-text returned no text: {text_payload}")
     if not snapshot_payload.get("url"):
         raise RuntimeError(f"{key} snapshot returned no url: {snapshot_payload}")
+    text = snapshot_payload.get("text")
+    if not text:
+        raise RuntimeError(
+            f"{key} snapshot returned no text (same-moment quote failed): {snapshot_payload}"
+        )
 
     payload = {
         "key": key,
         "updated_at": utc_now_iso(),
-        "text": text_payload["text"],
-        "quote": text_payload.get("quote"),
+        "text": text,
+        "quote": snapshot_payload.get("quote"),
         "snapshot_url": snapshot_payload["url"],
         "snapshot_path": snapshot_payload.get("path"),
         "clip": snapshot_payload.get("clip"),
@@ -63,7 +67,10 @@ def refresh_key(key, timeout):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("keys", nargs="*", default=["nasdaq"])
+    parser.add_argument(
+        "keys", nargs="*",
+        default=["oil", "brent", "bond", "gold", "usdtwd", "usdjpy", "usdchf", "nasdaq"],
+    )
     parser.add_argument("--interval", type=int, default=60)
     parser.add_argument("--timeout", type=int, default=45)
     parser.add_argument("--once", action="store_true")

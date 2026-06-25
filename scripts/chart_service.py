@@ -556,6 +556,37 @@ async def _get_body_text(page):
     return await page.locator("body").evaluate("(body) => body.textContent || body.innerText || ''")
 
 
+async def _compute_market_quote(page, key):
+    """Read the current quote for a non-nasdaq key from the already-loaded page.
+
+    Shared by /market-text and /snapshot so the printed price and the chart
+    image can be captured from the same page state (same moment).
+    """
+    quote = await _fetch_tradingview_scanner_quote(page, key)
+    if quote is None:
+        try:
+            quote = await _extract_market_quote(page)
+        except Exception as dom_error:
+            print(f"⚠️ DOM quote extraction failed for {key}: {dom_error}")
+            text = await _get_body_text(page)
+            quote = _parse_market_text(text)
+    elif not (TRADINGVIEW_SCANNER_QUOTES.get(key) or {}).get("skip_dom_performance_overlay"):
+        # Scanner data is fast but its `Perf.W` is week-to-date (since
+        # Monday), NOT the last 5 trading days. TradingView's on-page
+        # widget displays "5 days" which IS the trailing 5d. To match
+        # what the user sees on the actual page, overlay DOM-scraped
+        # performance over scanner values where DOM provides them.
+        try:
+            dom_perf = _parse_performance_from_text(await _get_body_text(page))
+            perf = quote.setdefault("performance", {})
+            for k in ("1d", "5d", "1m", "6m"):
+                if dom_perf.get(k) is not None:
+                    perf[k] = dom_perf[k]
+        except Exception as e:
+            print(f"⚠️ Could not overlay DOM perf for {key}: {e}")
+    return quote
+
+
 @app.post("/market-text")
 async def market_text(req: SnapshotRequest):
     page = await _get_page_for_key(req.key)
@@ -566,28 +597,7 @@ async def market_text(req: SnapshotRequest):
             await asyncio.sleep(0.8)
             quote = await _extract_ig_nasdaq_quote(page)
             return _market_text_payload(req.key, quote)
-        quote = await _fetch_tradingview_scanner_quote(page, req.key)
-        if quote is None:
-            try:
-                quote = await _extract_market_quote(page)
-            except Exception as dom_error:
-                print(f"⚠️ DOM quote extraction failed for {req.key}: {dom_error}")
-                text = await _get_body_text(page)
-                quote = _parse_market_text(text)
-        elif not (TRADINGVIEW_SCANNER_QUOTES.get(req.key) or {}).get("skip_dom_performance_overlay"):
-            # Scanner data is fast but its `Perf.W` is week-to-date (since
-            # Monday), NOT the last 5 trading days. TradingView's on-page
-            # widget displays "5 days" which IS the trailing 5d. To match
-            # what the user sees on the actual page, overlay DOM-scraped
-            # performance over scanner values where DOM provides them.
-            try:
-                dom_perf = _parse_performance_from_text(await _get_body_text(page))
-                perf = quote.setdefault("performance", {})
-                for k in ("1d", "5d", "1m", "6m"):
-                    if dom_perf.get(k) is not None:
-                        perf[k] = dom_perf[k]
-            except Exception as e:
-                print(f"⚠️ Could not overlay DOM perf for {req.key}: {e}")
+        quote = await _compute_market_quote(page, req.key)
         return _market_text_payload(req.key, quote)
     except Exception as e:
         print(f"❌ Error parsing market text for {req.key}: {e}")
@@ -684,6 +694,15 @@ async def take_snapshot(req: SnapshotRequest):
                 clip=clip,
             )
             print(f"  ✅ NASDAQ IG page snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
+            # Read the price/% from the SAME page render that produced the chart,
+            # so the cached text matches the chart exactly (no separate goto, no
+            # buffer). Quote failure must not discard an otherwise-valid image.
+            quote, text = None, None
+            try:
+                quote = await _extract_ig_nasdaq_quote(page)
+                text = _market_text_payload(req.key, quote)["text"]
+            except Exception as quote_exc:
+                print(f"  ⚠ NASDAQ same-moment quote failed: {type(quote_exc).__name__}: {quote_exc}")
             meta = CHART_META.get(req.key)
             if meta:
                 _trim_bottom_whitespace(filepath)
@@ -696,7 +715,8 @@ async def take_snapshot(req: SnapshotRequest):
                 print("  🕒 Trading-session overlay added")
             except Exception as overlay_exc:
                 print(f"  ⚠ Session overlay skipped: {type(overlay_exc).__name__}: {overlay_exc}")
-            return {"status": "success", "url": filename, "path": filepath, "clip": clip, "viewport": nasdaq_viewport}
+            return {"status": "success", "url": filename, "path": filepath, "clip": clip,
+                    "viewport": nasdaq_viewport, "quote": quote, "text": text}
 
         # Clip the chart area. TradingView uses DIFFERENT page templates for
         # different symbol types:
@@ -818,14 +838,25 @@ async def take_snapshot(req: SnapshotRequest):
                 clip={"x": 0, "y": 40, "width": 600, "height": 460},
             )
             print(f"  ⚠ Snapshot fallback to upper-viewport bounded clip: {filename}")
-        
+
+        # Read the quote from the SAME page state as the screenshot so the
+        # cached text price matches the chart. Done right after the screenshot
+        # to minimise drift on the live-streaming page. Quote failure must not
+        # discard an otherwise-valid image.
+        quote, text = None, None
+        try:
+            quote = await _compute_market_quote(page, req.key)
+            text = _market_text_payload(req.key, quote)["text"]
+        except Exception as quote_exc:
+            print(f"  ⚠ {req.key} same-moment quote failed: {type(quote_exc).__name__}: {quote_exc}")
+
         # --- Overlay Chinese title ---
         meta = CHART_META.get(req.key)
         if meta:
             _trim_bottom_whitespace(filepath)
             _overlay_title(filepath, meta["title"])
-        
-        return {"status": "success", "url": filename, "path": filepath}
+
+        return {"status": "success", "url": filename, "path": filepath, "quote": quote, "text": text}
     except Exception as e:
         print(f"❌ Error during snapshot for {req.key}: {e}")
         raise HTTPException(status_code=500, detail=str(e))

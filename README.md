@@ -89,7 +89,7 @@ Endpoints:
 | Endpoint | Method | Body | Purpose |
 |---|---|---|---|
 | `/market-text` | POST | `{"key":"oil"}` | Return formatted quote text for one market key. |
-| `/snapshot` | POST | `{"key":"oil"}` | Capture a TradingView chart image into `data/images/`. |
+| `/snapshot` | POST | `{"key":"oil"}` | Capture a TradingView chart image into `data/images/` **and** return `text`/`quote` read from the same page render, so the price matches the chart at the same moment. |
 | `/market-debug` | POST | `{"key":"oil"}` | Return raw debug information for parser troubleshooting. |
 
 Market keys:
@@ -110,6 +110,21 @@ Manual checks on the server:
 ```bash
 curl -s -X POST http://127.0.0.1:5005/market-text -H "Content-Type: application/json" -d '{"key":"bond"}' && curl -s -X POST http://127.0.0.1:5005/snapshot -H "Content-Type: application/json" -d '{"key":"bond"}'
 ```
+
+### Caching and Resource Limits
+
+All LINE market commands (`油價`, `匯率`, `債券`, `黃金`, `那斯達克`) are served **only from cache**. The webhook never renders TradingView live during a reply — it reads `data/quote_cache/market_<key>.json`.
+
+| Concern | Where | Value |
+|---|---|---|
+| Market cache refresh | `stock-market-chart-monitor.service` → `monitor_market_charts.py oil brent bond gold usdtwd usdjpy usdchf nasdaq --interval 60` | every **60s**, all 8 keys |
+| Market monitor caps | `stock-market-chart-monitor.service` | `MemoryMax=512M`, `CPUQuota=35%`, `RuntimeMaxSec=12h` |
+| Heavy lifting (Playwright) | `stock-chart.service` | `MemoryMax=2500M`, `RuntimeMaxSec=2h` (this is the real CPU/RAM governor; the monitor only makes HTTP calls) |
+| Webhook cache freshness | `get_cached_market_chart(..., max_age_seconds=240)` | serve cache up to **240s** old, else explicit error |
+| ETF quote-card cache | `stock-quote-monitor-*.service` → `monitor_etf_quotes.py <TICKER> --interval 180 --max-workers 4 --jitter 150` | every **180s** (3 min), `MemoryMax=512M`, `CPUQuota=35%`, `RuntimeMaxSec=12h` |
+| Gold quote cache | `stock-gold-monitor.service` → `monitor_gold_quote.py --interval 60 --scanner-only` | every **60s**, `MemoryMax=512M` |
+
+**Same-moment price + chart.** `monitor_market_charts.refresh_key` makes a single `/snapshot` call per key. `chart_service.py` reads the price/% from the *same page render* that produced the screenshot and returns both, so the cached text never drifts from the cached chart. There is no separate `/market-text` pass and no per-key price buffer.
 
 ### Adding a Cached Market Chart Monitor
 

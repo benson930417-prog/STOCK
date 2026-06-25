@@ -667,17 +667,51 @@ def get_cached_market_chart(key, max_age_seconds=300):
 
     return payload
 
+# All market commands are served from the 1-minute cache written by
+# stock-market-chart-monitor.service. The webhook never renders TradingView
+# live anymore — it only reads cache so replies are fast and the text price
+# always matches the cached chart (same-moment capture in chart_service).
+# max_age 240s tolerates a couple of failed 60s refreshes before going stale.
+MARKET_CACHE_MAX_AGE = 240
+
+def _cached_market_text(key):
+    try:
+        return get_cached_market_chart(key, max_age_seconds=MARKET_CACHE_MAX_AGE)["text"]
+    except Exception as exc:
+        print(f"Cached market text failed for {key}: {exc}")
+        return _tradingview_error_text(key, "快取報價", exc)
+
+def reply_cached_market(reply_token, keys):
+    """Reply a market card (text + chart) entirely from cache.
+
+    One combined text block for all keys, followed by each key's cached chart
+    image. A missing/stale key degrades to an inline error line so the rest of
+    the card still sends.
+    """
+    texts, images = [], []
+    for key in keys:
+        try:
+            cache = get_cached_market_chart(key, max_age_seconds=MARKET_CACHE_MAX_AGE)
+            texts.append(cache["text"])
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{cache['snapshot_url']}?t={int(time.time())}"
+            images.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
+        except Exception as exc:
+            print(f"Cached market reply failed for {key}: {exc}")
+            texts.append(_tradingview_error_text(key, "快取圖表", exc))
+    messages = [TextSendMessage(text="\n\n".join(texts))] + images
+    reply_line(reply_token, messages)
+
 def get_oil_price():
-    return "\n\n".join(get_market_text(key) for key in ["oil", "brent"])
+    return "\n\n".join(_cached_market_text(key) for key in ["oil", "brent"])
 
 def get_10yf_price():
-    return get_market_text("bond")
+    return _cached_market_text("bond")
 
 def get_exchange_rates():
-    return "\n\n".join(get_market_text(key) for key in ["usdtwd", "usdchf", "usdjpy"])
+    return "\n\n".join(_cached_market_text(key) for key in ["usdtwd", "usdchf", "usdjpy"])
 
 def get_gold_text():
-    return get_market_text("gold")
+    return _cached_market_text("gold")
 
 @app.route('/', methods=['GET'])
 @app.route('/api/webhook', methods=['GET'])
@@ -754,21 +788,7 @@ def handle_message(event):
             )
 
     elif is_gold:
-        reply_msg = get_gold_text()
-        try:
-            res = get_chart_snapshot("gold")
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
-            reply_line(
-                event.reply_token,
-                [
-                    TextSendMessage(text=reply_msg),
-                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
-                ],
-            )
-        except Exception as e:
-            print("Gold Chart generation failed:", e)
-            error_msg = _tradingview_error_text("gold", "圖表", e)
-            reply_line(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
+        reply_cached_market(event.reply_token, ["gold"])
 
     elif etf_quote_ticker:
         try:
@@ -816,76 +836,16 @@ def handle_message(event):
         ).start()
 
     elif user_msg in {"那斯達克", "那指", "納斯達克", "24小時那斯達克"} or user_msg.strip().lower() in {"nasdaq", "ndx", "nas"}:
-        try:
-            cache = get_cached_market_chart("nasdaq")
-            reply_msg = cache["text"]
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{cache['snapshot_url']}?t={int(time.time())}"
-            reply_line(
-                event.reply_token,
-                [
-                    TextSendMessage(text=reply_msg),
-                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
-                ],
-            )
-        except Exception as e:
-            print("NASDAQ cached chart reply failed:", e)
-            error_msg = _tradingview_error_text("nasdaq", "快取圖表", e)
-            reply_line(event.reply_token, TextSendMessage(text=error_msg))
+        reply_cached_market(event.reply_token, ["nasdaq"])
 
     elif user_msg == "油價":
-        reply_msg = get_oil_price()
-        try:
-            messages = [TextSendMessage(text=reply_msg)]
-            
-            # WTI and Brent - chart_service scrapes data from TradingView directly
-            key = "oil"
-            for key in ["oil", "brent"]:
-                res = get_chart_snapshot(key)
-                img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
-                messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
-            
-            reply_line(event.reply_token, messages)
-        except Exception as e:
-            print("Oil Chart generation failed:", e)
-            error_msg = _tradingview_error_text(key, "圖表", e)
-            reply_line(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
+        reply_cached_market(event.reply_token, ["oil", "brent"])
 
     elif user_msg in ["債卷", "債券"]:
-        reply_msg = get_10yf_price()
-        try:
-            res = get_chart_snapshot("bond")
-            
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
-            
-            reply_line(
-                event.reply_token,
-                [
-                    TextSendMessage(text=reply_msg),
-                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
-                ]
-            )
-        except Exception as e:
-            print("Bond Chart generation failed:", e)
-            error_msg = _tradingview_error_text("bond", "圖表", e)
-            reply_line(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
+        reply_cached_market(event.reply_token, ["bond"])
 
     elif user_msg == "匯率":
-        reply_msg = get_exchange_rates()
-        try:
-            messages = [TextSendMessage(text=reply_msg)]
-            
-            # 3 Quick snapshots - chart_service scrapes data from TradingView directly
-            key = "usdtwd"
-            for key in ["usdtwd", "usdjpy", "usdchf"]:
-                res = get_chart_snapshot(key)
-                img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{res['url']}?t={int(time.time())}"
-                messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
-            
-            reply_line(event.reply_token, messages)
-        except Exception as e:
-            print("Forex Chart generation failed:", e)
-            error_msg = _tradingview_error_text(key, "圖表", e)
-            reply_line(event.reply_token, TextSendMessage(text=f"{reply_msg}\n\n{error_msg}"))
+        reply_cached_market(event.reply_token, ["usdtwd", "usdjpy", "usdchf"])
     elif user_msg.lower() == "admin":
         reply_line(
             event.reply_token,
