@@ -1,28 +1,28 @@
 {
-  "last_update_utc_epoch": 1782275596.446965,
-  "rows": 646,
+  "last_update_utc_epoch": 1782362303.522521,
+  "rows": 650,
   "min_date": "2025-11-26",
-  "max_date": "2026-06-24",
+  "max_date": "2026-06-25",
   "last_upload": {
-    "filename": "證券對帳單 20260624123301.csv",
-    "uploaded_rows": 188,
-    "old_rows": 621,
-    "replaced_rows": 163,
+    "filename": "證券對帳單 20260625123755.csv",
+    "uploaded_rows": 100,
+    "old_rows": 646,
+    "replaced_rows": 96,
     "upload_range": {
-      "min_date": "2026-06-01",
-      "max_date": "2026-06-24"
+      "min_date": "2026-06-17",
+      "max_date": "2026-06-25"
     },
-    "added_rows": 25,
+    "added_rows": 4,
     "dup_skipped": 0,
-    "after_rows": 646,
+    "after_rows": 650,
     "range_after": {
       "min_date": "2025-11-26",
-      "max_date": "2026-06-24"
+      "max_date": "2026-06-25"
     }
   },
   "last_github_push": {
     "ok": true,
-    "pushed_at_utc": "2026-06-24T04:33:18.228783+00:00",
+    "pushed_at_utc": "2026-06-25T04:38:26.197663+00:00",
     "context": {
       "repo": "benson930417-prog/STOCK",
       "branch": "main",
@@ -35,8 +35,8 @@
       {
         "path": "data/master_trades.csv",
         "status_code": 200,
-        "commit_sha": "471b70d71877d61e8e52aa17c1251f878c4f6181",
-        "html_url": "https://github.com/benson930417-prog/STOCK/commit/471b70d71877d61e8e52aa17c1251f878c4f6181"
+        "commit_sha": "3bc8179a4126f86d04a990f49528ad17ad4a9a2c",
+        "html_url": "https://github.com/benson930417-prog/STOCK/commit/3bc8179a4126f86d04a990f49528ad17ad4a9a2c"
       }
     ]
   }
