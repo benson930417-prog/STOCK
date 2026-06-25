@@ -538,7 +538,7 @@ def build_master_text(snapshot, quote_cache=None):
         "吳大師持股",
         "━━━━━━━━━━━━━━",
         "💼 總覽",
-        f"成本：{_fmt_money(snapshot['total_cost'])}",
+        f"成本：{_fmt_money(snapshot['total_cost'] - snapshot.get('realized_pnl', 0))}",
         f"已實：{_fmt_money(snapshot.get('realized_pnl', 0))}",
         f"未實：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:.2f}%)",
         f"槓桿值：{snapshot.get('leverage_pct', 100.0):.0f}%",
