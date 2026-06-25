@@ -658,12 +658,24 @@ async def take_snapshot(req: SnapshotRequest):
             await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
             await page.evaluate("window.scrollTo(0, 0)")
             await asyncio.sleep(1)
-            await page.evaluate("""() => {
+            clicked = await page.evaluate("""() => {
                 const controls = Array.from(document.querySelectorAll('button, a, [role="button"]'));
                 const oneDay = controls.find(el => (el.textContent || '').trim() === '1 day');
-                if (oneDay) oneDay.click();
+                if (oneDay) { oneDay.click(); return true; }
+                return false;
             }""")
-            await asyncio.sleep(1)
+            # Clicking "1 day" re-fetches the intraday series and repaints the
+            # chart canvas. A blind sleep races that repaint: when TradingView is
+            # slow the screenshot fires before the price line is drawn, so the
+            # capture shows the frame + logo but a blank chart (only our PIL
+            # title/session overlay survives). Wait for the data fetch to go idle,
+            # then give the canvas a moment to finish painting.
+            try:
+                await page.wait_for_load_state("networkidle", timeout=15000)
+            except Exception as wait_exc:
+                print(f"  ⚠ NASDAQ networkidle wait after 1-day click skipped: "
+                      f"{type(wait_exc).__name__}: {wait_exc}")
+            await asyncio.sleep(2 if clicked else 1)
             # Fixed against the IG symbol-page layout after pressing 1 day.
             # Optional crop_* request fields let us tune this live with curl
             # without restarting the Playwright service for every attempt.
