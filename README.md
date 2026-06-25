@@ -108,13 +108,7 @@ Market keys:
 Manual checks on the server:
 
 ```bash
-curl -s -X POST http://127.0.0.1:5005/market-text \
-  -H "Content-Type: application/json" \
-  -d '{"key":"bond"}'
-
-curl -s -X POST http://127.0.0.1:5005/snapshot \
-  -H "Content-Type: application/json" \
-  -d '{"key":"bond"}'
+curl -s -X POST http://127.0.0.1:5005/market-text -H "Content-Type: application/json" -d '{"key":"bond"}' && curl -s -X POST http://127.0.0.1:5005/snapshot -H "Content-Type: application/json" -d '{"key":"bond"}'
 ```
 
 ### Adding a Cached Market Chart Monitor
@@ -131,13 +125,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 2. Test the chart service directly on the server.
 
    ```bash
-   curl -s -X POST http://127.0.0.1:5005/market-text \
-     -H "Content-Type: application/json" \
-     -d '{"key":"nasdaq"}'
-
-   curl -s -X POST http://127.0.0.1:5005/snapshot \
-     -H "Content-Type: application/json" \
-     -d '{"key":"nasdaq"}'
+   curl -s -X POST http://127.0.0.1:5005/market-text -H "Content-Type: application/json" -d '{"key":"nasdaq"}' && curl -s -X POST http://127.0.0.1:5005/snapshot -H "Content-Type: application/json" -d '{"key":"nasdaq"}'
    ```
 
 3. Add the key to `scripts/monitor_market_charts.py`.
@@ -170,21 +158,13 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 8. Deploy on the server.
 
    ```bash
-   cd /home/ubuntu/STOCK
-   git pull origin main --rebase --autostash
-   sudo cp services/*.service services/*.timer /etc/systemd/system/
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now stock-market-chart-monitor.service
-   sudo systemctl restart stock-chart.service stock-market-chart-monitor.service stock-webhook.service
+   cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now stock-market-chart-monitor.service && sudo systemctl restart stock-chart.service stock-market-chart-monitor.service stock-webhook.service
    ```
 
 9. Verify the cache, then test LINE.
 
    ```bash
-   python scripts/monitor_market_charts.py nasdaq --once
-   cat data/quote_cache/market_nasdaq.json
-   ls -lh data/images/nasdaq_chart.png
-   journalctl -u stock-market-chart-monitor.service -n 80 --no-pager
+   python scripts/monitor_market_charts.py nasdaq --once && cat data/quote_cache/market_nasdaq.json && ls -lh data/images/nasdaq_chart.png && journalctl -u stock-market-chart-monitor.service -n 80 --no-pager
    ```
 
 ## Scripts
@@ -248,21 +228,13 @@ final four-basket (股票/債券/商品/其他) design and rationale.
 First-time benchmark setup:
 
 ```bash
-cd /home/ubuntu/STOCK
-source venv/bin/activate
-python -m scripts.etf_benchmark.step1_universe
-python -m scripts.etf_benchmark.step2_schema --reset
-python -m scripts.etf_benchmark.step3_backfill
-python -m scripts.etf_benchmark.step4_regimes
-python -m scripts.etf_benchmark.step5_score --backfill
+cd /home/ubuntu/STOCK && source venv/bin/activate && python -m scripts.etf_benchmark.step1_universe && python -m scripts.etf_benchmark.step2_schema --reset && python -m scripts.etf_benchmark.step3_backfill && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score --backfill
 ```
 
 Daily refresh uses:
 
 ```bash
-python -m scripts.etf_benchmark.step3_backfill --incremental
-python -m scripts.etf_benchmark.step4_regimes
-python -m scripts.etf_benchmark.step5_score
+python -m scripts.etf_benchmark.step3_backfill --incremental && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score
 ```
 
 ## Data Directory
@@ -324,17 +296,7 @@ All service templates live in `services/` and assume:
 Install/update service templates:
 
 ```bash
-cd /home/ubuntu/STOCK
-sudo cp services/*.service services/*.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.service
-sudo systemctl enable oci-firewall.service
-sudo systemctl enable stock-fetch-1830-tw.timer
-sudo systemctl enable stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service
-sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service
-sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service
-sudo systemctl enable stock-quote-monitor-009805.service
-sudo systemctl enable stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
+cd /home/ubuntu/STOCK && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.service && sudo systemctl enable oci-firewall.service && sudo systemctl enable stock-fetch-1830-tw.timer && sudo systemctl enable stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service && sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service && sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service && sudo systemctl enable stock-quote-monitor-009805.service && sudo systemctl enable stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
 ```
 
 Restart common production services after code changes:
@@ -346,11 +308,7 @@ sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard
 Restart all monitors:
 
 ```bash
-sudo systemctl restart stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service
-sudo systemctl restart stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service
-sudo systemctl restart stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service
-sudo systemctl restart stock-quote-monitor-009805.service
-sudo systemctl restart stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
+sudo systemctl restart stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service && sudo systemctl restart stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service && sudo systemctl restart stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service && sudo systemctl restart stock-quote-monitor-009805.service && sudo systemctl restart stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
 ```
 
 ## Server Setup
@@ -358,13 +316,7 @@ sudo systemctl restart stock-quote-monitor-00403a.service stock-quote-monitor-00
 First-time host setup:
 
 ```bash
-cd /home/ubuntu
-git clone https://github.com/benson930417-prog/STOCK.git
-cd /home/ubuntu/STOCK
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt -q
-python -m playwright install chromium
+cd /home/ubuntu && git clone https://github.com/benson930417-prog/STOCK.git && cd /home/ubuntu/STOCK && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt -q && python -m playwright install chromium
 ```
 
 Create `/home/ubuntu/.stock_secrets`.
@@ -401,11 +353,7 @@ chmod 600 /home/ubuntu/.stock_secrets
 Deploy services:
 
 ```bash
-sudo cp services/*.service services/*.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now oci-firewall.service
-sudo systemctl enable --now stock-chart.service stock-webhook.service stock-dashboard.service
-sudo systemctl enable --now stock-fetch-1830-tw.timer
+sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now oci-firewall.service && sudo systemctl enable --now stock-chart.service stock-webhook.service stock-dashboard.service && sudo systemctl enable --now stock-fetch-1830-tw.timer
 ```
 
 ## Standard Deployment
@@ -413,19 +361,13 @@ sudo systemctl enable --now stock-fetch-1830-tw.timer
 Use this after pulling new code on the server:
 
 ```bash
-cd /home/ubuntu/STOCK
-git pull origin main --rebase --autostash
-source venv/bin/activate
-pip install -r requirements.txt -q
-sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service
+cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash && source venv/bin/activate && pip install -r requirements.txt -q && sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service
 ```
 
 If service files changed:
 
 ```bash
-sudo cp services/*.service services/*.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service
+sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service
 ```
 
 ## Daily Job Flow
@@ -447,9 +389,7 @@ sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard
 Manual run:
 
 ```bash
-cd /home/ubuntu/STOCK
-source venv/bin/activate
-bash scripts/update_and_notify.sh 00403A 00981A 00988A 0050 0056 00830 00878 00891 00918 009805 009820
+cd /home/ubuntu/STOCK && source venv/bin/activate && bash scripts/update_and_notify.sh 00403A 00981A 00988A 0050 0056 00830 00878 00891 00918 009805 009820
 ```
 
 ## Rich Menu
@@ -457,10 +397,7 @@ bash scripts/update_and_notify.sh 00403A 00981A 00988A 0050 0056 00830 00878 008
 Run this when LINE rich-menu buttons change:
 
 ```bash
-cd /home/ubuntu/STOCK
-source venv/bin/activate
-source /home/ubuntu/.stock_secrets
-python scripts/setup_rich_menu.py
+cd /home/ubuntu/STOCK && source venv/bin/activate && source /home/ubuntu/.stock_secrets && python scripts/setup_rich_menu.py
 ```
 
 The rich menu uses three LINE rich-menu aliases. Page 1 is fast market/macro, Page 2 is the primary ETF watchlist, and Page 3 is ETF overflow. Navigation convention is fixed: previous page is bottom-left, next page is bottom-right, and the last page uses bottom-right `首頁` until another page is needed.
@@ -569,8 +506,7 @@ Use consistent casing:
 15. Run verification before committing.
     - Syntax:
       ```bash
-      python -m py_compile app.py api/webhook.py scripts/fetch_etf_<TICKER>.py scripts/monitor_etf_quotes.py scripts/generate_quote_card.py scripts/master_holding_quote_card.py scripts/setup_rich_menu.py
-      bash -n scripts/update_and_notify.sh
+      python -m py_compile app.py api/webhook.py scripts/fetch_etf_<TICKER>.py scripts/monitor_etf_quotes.py scripts/generate_quote_card.py scripts/master_holding_quote_card.py scripts/setup_rich_menu.py && bash -n scripts/update_and_notify.sh
       ```
     - Fetch:
       ```bash
@@ -590,27 +526,16 @@ Use consistent casing:
       ```
     - Benchmark if applicable:
       ```bash
-      ./venv/bin/python -m scripts.etf_benchmark.step1_universe
-      ./venv/bin/python -m scripts.etf_benchmark.step3_backfill --incremental
-      ./venv/bin/python -m scripts.etf_benchmark.step4_regimes
-      ./venv/bin/python -m scripts.etf_benchmark.step5_score
+      ./venv/bin/python -m scripts.etf_benchmark.step1_universe && ./venv/bin/python -m scripts.etf_benchmark.step3_backfill --incremental && ./venv/bin/python -m scripts.etf_benchmark.step4_regimes && ./venv/bin/python -m scripts.etf_benchmark.step5_score
       ```
 
 16. Deployment commands after merging/pulling on the server.
     ```bash
-    cd /home/ubuntu/STOCK
-    git pull origin main --rebase --autostash
-    source venv/bin/activate
-    pip install -r requirements.txt -q
-    sudo cp services/*.service services/*.timer /etc/systemd/system/
-    sudo systemctl daemon-reload
-    sudo systemctl enable --now stock-quote-monitor-<ticker-lower>.service
-    sudo systemctl restart stock-dashboard.service stock-webhook.service stock-master-holding-monitor.service stock-quote-monitor-<ticker-lower>.service
+    cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash && source venv/bin/activate && pip install -r requirements.txt -q && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now stock-quote-monitor-<ticker-lower>.service && sudo systemctl restart stock-dashboard.service stock-webhook.service stock-master-holding-monitor.service stock-quote-monitor-<ticker-lower>.service
     ```
     If the rich menu changed:
     ```bash
-    source /home/ubuntu/.stock_secrets
-    ./venv/bin/python scripts/setup_rich_menu.py
+    source /home/ubuntu/.stock_secrets && ./venv/bin/python scripts/setup_rich_menu.py
     ```
 
 ### Delete One ETF
@@ -642,9 +567,7 @@ Use consistent casing:
    - Remove it from README service table, enable commands, restart commands, and Current File Inventory.
    - On the server:
      ```bash
-     sudo systemctl disable --now stock-quote-monitor-<ticker-lower>.service
-     sudo rm -f /etc/systemd/system/stock-quote-monitor-<ticker-lower>.service
-     sudo systemctl daemon-reload
+     sudo systemctl disable --now stock-quote-monitor-<ticker-lower>.service && sudo rm -f /etc/systemd/system/stock-quote-monitor-<ticker-lower>.service && sudo systemctl daemon-reload
      ```
 
 6. Remove fetcher and tracked data.
@@ -676,18 +599,11 @@ Use consistent casing:
 
 11. Deployment commands after deleting an ETF.
     ```bash
-    cd /home/ubuntu/STOCK
-    git pull origin main --rebase --autostash
-    sudo systemctl disable --now stock-quote-monitor-<ticker-lower>.service
-    sudo rm -f /etc/systemd/system/stock-quote-monitor-<ticker-lower>.service
-    sudo cp services/*.service services/*.timer /etc/systemd/system/
-    sudo systemctl daemon-reload
-    sudo systemctl restart stock-dashboard.service stock-webhook.service stock-master-holding-monitor.service
+    cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash && sudo systemctl disable --now stock-quote-monitor-<ticker-lower>.service && sudo rm -f /etc/systemd/system/stock-quote-monitor-<ticker-lower>.service && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl restart stock-dashboard.service stock-webhook.service stock-master-holding-monitor.service
     ```
     If the rich menu changed:
     ```bash
-    source /home/ubuntu/.stock_secrets
-    ./venv/bin/python scripts/setup_rich_menu.py
+    source /home/ubuntu/.stock_secrets && ./venv/bin/python scripts/setup_rich_menu.py
     ```
 
 ## Manual Fetch and Cache Checks
@@ -695,17 +611,7 @@ Use consistent casing:
 Fetch official holdings:
 
 ```bash
-python scripts/fetch_etf_00981A.py
-python scripts/fetch_etf_00988A.py
-python scripts/fetch_etf_00403A.py
-python scripts/fetch_passive_0050.py
-python scripts/fetch_passive_0056.py
-python scripts/fetch_passive_00830.py
-python scripts/fetch_passive_00878.py
-python scripts/fetch_passive_00891.py
-python scripts/fetch_passive_00918.py
-python scripts/fetch_passive_009805.py
-python scripts/fetch_passive_009820.py
+python scripts/fetch_etf_00981A.py && python scripts/fetch_etf_00988A.py && python scripts/fetch_etf_00403A.py && python scripts/fetch_passive_0050.py && python scripts/fetch_passive_0056.py && python scripts/fetch_passive_00830.py && python scripts/fetch_passive_00878.py && python scripts/fetch_passive_00891.py && python scripts/fetch_passive_00918.py && python scripts/fetch_passive_009805.py && python scripts/fetch_passive_009820.py
 ```
 
 Seed one ETF quote cache:
@@ -723,10 +629,7 @@ python scripts/master_holding_quote_card.py
 Test admin email:
 
 ```bash
-source /home/ubuntu/.stock_secrets
-python scripts/admin_email.py \
-  --subject "[STOCK] manual SMTP test" \
-  --body "If you see this, email config works."
+source /home/ubuntu/.stock_secrets && python scripts/admin_email.py --subject "[STOCK] manual SMTP test" --body "If you see this, email config works."
 ```
 
 ## Troubleshooting
@@ -734,24 +637,19 @@ python scripts/admin_email.py \
 Service status:
 
 ```bash
-sudo systemctl status stock-chart.service --no-pager
-sudo systemctl status stock-webhook.service --no-pager
-sudo systemctl status stock-dashboard.service --no-pager
+sudo systemctl status stock-chart.service --no-pager && sudo systemctl status stock-webhook.service --no-pager && sudo systemctl status stock-dashboard.service --no-pager
 ```
 
 Recent logs:
 
 ```bash
-journalctl -u stock-chart.service -n 100 --no-pager
-journalctl -u stock-webhook.service -n 100 --no-pager
-journalctl -u stock-fetch-1830-tw.service -n 100 --no-pager
+journalctl -u stock-chart.service -n 100 --no-pager && journalctl -u stock-webhook.service -n 100 --no-pager && journalctl -u stock-fetch-1830-tw.service -n 100 --no-pager
 ```
 
 If LINE says it cannot connect to `127.0.0.1:5005`, restart and test the chart service:
 
 ```bash
-sudo systemctl restart stock-chart.service
-curl -s http://127.0.0.1:5005/docs >/dev/null && echo "chart service reachable"
+sudo systemctl restart stock-chart.service && curl -s http://127.0.0.1:5005/docs >/dev/null && echo "chart service reachable"
 ```
 
 If TradingView text or chart parsing breaks, use the exact failing key with `/market-debug` and inspect `journalctl -u stock-chart.service`.
