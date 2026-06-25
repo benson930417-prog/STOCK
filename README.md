@@ -47,7 +47,7 @@ The production server path used by all service files is `/home/ubuntu/STOCK`.
 
 ## Dashboard
 
-`app.py` renders the main dashboard and delegates major sections to `src/ui/`.
+`app.py` renders the main dashboard and delegates major sections to `src/ui/`. It is served by `stock-dashboard.service` on port **8501** — publicly reachable at **http://80.225.204.45:8501/** (the OCI host's public IP). The page is password-gated (`VIEW_PASSWORD`); Streamlit auth is per browser session, so each new tab must re-enter the password.
 
 | File | Purpose |
 |---|---|
