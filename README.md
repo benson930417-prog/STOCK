@@ -191,6 +191,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/fetch_etf_00403A.py` | Fetches official 00403A holdings/NAV data from Unified's `fundCode=63YTW` Excel endpoint. |
 | `scripts/fetch_etf_00981A.py` | Fetches official 00981A holdings/NAV data into tracked history/log JSON. |
 | `scripts/fetch_etf_00988A.py` | Fetches official 00988A holdings/NAV data from Unified's `fundCode=61YTW` Excel endpoint. |
+| `scripts/fetch_etf_00991A.py` | Fetches official 00991A (主動復華未來50) holdings/NAV from Fuh Hwa's `assetsExcel/ETF23` Excel endpoint. |
 | `scripts/fetch_passive_0050.py` | Fetches 0050 passive ETF holdings/history. |
 | `scripts/fetch_passive_0056.py` | Fetches 0056 (元大高股息) passive ETF holdings/history from the official Yuanta source. |
 | `scripts/fetch_passive_00830.py` | Fetches 00830 passive ETF holdings/history from the official Cathay source. |
@@ -258,8 +259,8 @@ Tracked files in `data/` are source/history state that should move with the repo
 
 | File pattern | Purpose |
 |---|---|
-| `data/etf_00403A_history.json`, `data/etf_00981A_history.json`, `data/etf_00988A_history.json` | Active ETF official history snapshots. |
-| `data/etf_00403A_log.json`, `data/etf_00981A_log.json`, `data/etf_00988A_log.json` | Active ETF fetch logs/status. |
+| `data/etf_00403A_history.json`, `data/etf_00981A_history.json`, `data/etf_00988A_history.json`, `data/etf_00991A_history.json` | Active ETF official history snapshots. |
+| `data/etf_00403A_log.json`, `data/etf_00981A_log.json`, `data/etf_00988A_log.json`, `data/etf_00991A_log.json` | Active ETF fetch logs/status. |
 | `data/passive_*_history.json` | Passive ETF official history snapshots for 0050, 0056, 00830, 00878, 00891, 00918, 009805, and 009820. |
 | `data/passive_*_log.json` | Passive ETF fetch logs/status. |
 | `data/master_manual_positions.json` | Manual master portfolio positions. |
@@ -306,12 +307,13 @@ All service templates live in `services/` and assume:
 | `services/stock-quote-monitor-009805.service` | `stock-quote-monitor-009805.service` | 009805 quote monitor. |
 | `services/stock-quote-monitor-00981a.service` | `stock-quote-monitor-00981a.service` | 00981A quote monitor. |
 | `services/stock-quote-monitor-00988a.service` | `stock-quote-monitor-00988a.service` | 00988A quote monitor. |
+| `services/stock-quote-monitor-00991a.service` | `stock-quote-monitor-00991a.service` | 00991A quote monitor. |
 | `services/stock-quote-monitor-009820.service` | `stock-quote-monitor-009820.service` | 009820 quote monitor. |
 
 Install/update service templates:
 
 ```bash
-cd /home/ubuntu/STOCK && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.service && sudo systemctl enable oci-firewall.service && sudo systemctl enable stock-fetch-1830-tw.timer && sudo systemctl enable stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service && sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service && sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service && sudo systemctl enable stock-quote-monitor-009805.service && sudo systemctl enable stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
+cd /home/ubuntu/STOCK && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.service && sudo systemctl enable oci-firewall.service && sudo systemctl enable stock-fetch-1830-tw.timer && sudo systemctl enable stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service && sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service && sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service && sudo systemctl enable stock-quote-monitor-009805.service && sudo systemctl enable stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-00991a.service stock-quote-monitor-009820.service
 ```
 
 Restart common production services after code changes:
@@ -323,7 +325,7 @@ sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard
 Restart all monitors:
 
 ```bash
-sudo systemctl restart stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service && sudo systemctl restart stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service && sudo systemctl restart stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service && sudo systemctl restart stock-quote-monitor-009805.service && sudo systemctl restart stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-009820.service
+sudo systemctl restart stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service && sudo systemctl restart stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service && sudo systemctl restart stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service && sudo systemctl restart stock-quote-monitor-009805.service && sudo systemctl restart stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-00991a.service stock-quote-monitor-009820.service
 ```
 
 ## Server Setup
@@ -626,7 +628,7 @@ Use consistent casing:
 Fetch official holdings:
 
 ```bash
-python scripts/fetch_etf_00981A.py && python scripts/fetch_etf_00988A.py && python scripts/fetch_etf_00403A.py && python scripts/fetch_passive_0050.py && python scripts/fetch_passive_0056.py && python scripts/fetch_passive_00830.py && python scripts/fetch_passive_00878.py && python scripts/fetch_passive_00891.py && python scripts/fetch_passive_00918.py && python scripts/fetch_passive_009805.py && python scripts/fetch_passive_009820.py
+python scripts/fetch_etf_00981A.py && python scripts/fetch_etf_00988A.py && python scripts/fetch_etf_00991A.py && python scripts/fetch_etf_00403A.py && python scripts/fetch_passive_0050.py && python scripts/fetch_passive_0056.py && python scripts/fetch_passive_00830.py && python scripts/fetch_passive_00878.py && python scripts/fetch_passive_00891.py && python scripts/fetch_passive_00918.py && python scripts/fetch_passive_009805.py && python scripts/fetch_passive_009820.py
 ```
 
 Seed one ETF quote cache:
@@ -685,6 +687,8 @@ data/etf_00981A_history.json
 data/etf_00981A_log.json
 data/etf_00988A_history.json
 data/etf_00988A_log.json
+data/etf_00991A_history.json
+data/etf_00991A_log.json
 data/etf_00403A_history.json
 data/etf_00403A_log.json
 data/master_manual_positions.json
@@ -710,6 +714,7 @@ scripts/admin_email.py
 scripts/chart_service.py
 scripts/fetch_etf_00981A.py
 scripts/fetch_etf_00988A.py
+scripts/fetch_etf_00991A.py
 scripts/fetch_etf_00403A.py
 scripts/fetch_passive_0050.py
 scripts/fetch_passive_0056.py
@@ -755,6 +760,7 @@ services/stock-quote-monitor-00918.service
 services/stock-quote-monitor-009805.service
 services/stock-quote-monitor-00981a.service
 services/stock-quote-monitor-00988a.service
+services/stock-quote-monitor-00991a.service
 services/stock-quote-monitor-009820.service
 services/stock-webhook.service
 src/__init__.py

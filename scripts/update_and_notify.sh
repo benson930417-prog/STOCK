@@ -150,7 +150,7 @@ run_step() {
 if [ "$#" -gt 0 ]; then
     ETFS=("$@")
 else
-    ETFS=("00403A" "00981A" "00988A" "0050" "0056" "00830" "00878" "00891" "00918" "009805" "009820")
+    ETFS=("00403A" "00981A" "00988A" "00991A" "0050" "0056" "00830" "00878" "00891" "00918" "009805" "009820")
 fi
 
 echo "ETF list: ${ETFS[*]}"
@@ -161,7 +161,7 @@ FAILED_ETFS=()
 
 for ETF in "${ETFS[@]}"; do
     case "$ETF" in
-        00403A|00981A|00988A)
+        00403A|00981A|00988A|00991A)
             run_step "fetch $ETF (active)" python "scripts/fetch_etf_${ETF}.py" || FAILED_ETFS+=("$ETF")
             ;;
         0050|0056|00830|00878|00891|00918|009805|009820)
@@ -214,7 +214,7 @@ PY
 
 for ETF in "${CHANGED_ETFS[@]}"; do
     case "$ETF" in
-        00403A|00981A|00988A)
+        00403A|00981A|00988A|00991A)
             ACTIVE_NEW_ETFS+=("$ETF")
             ;;
     esac
@@ -293,12 +293,16 @@ names = {
     "00403A": "主動統一升級50",
     "00981A": "主動統一台股增長",
     "00988A": "主動統一全球創新",
+    "00991A": "主動復華未來50",
 }
 
 # Free LINE quota is counted as messages x recipients, so keep the object
 # count low: one combined text header listing every report, then the images.
-# (LINE still caps a broadcast at 5 message objects; with at most 3 active
-# ETFs that is 1 text + 3 images = 4, comfortably under the limit.)
+# LINE caps a broadcast at 5 message objects. With 4 active ETFs this is
+# 1 text + 4 images = 5 (exactly the cap → one push). If a 5th active ETF is
+# ever added it would be 6, so we chunk into batches of 5 to stay valid
+# (only then does it become >1 push).
+LINE_MAX_OBJECTS = 5
 header_lines = []
 image_messages = []
 cache_buster = int(time.time())
@@ -319,18 +323,22 @@ for ticker in tickers:
 
 messages = [{"type": "text", "text": "\n".join(header_lines)}] + image_messages
 
-payload = json.dumps({"messages": messages}, ensure_ascii=False).encode("utf-8")
-req = request.Request(
-    "https://api.line.me/v2/bot/message/broadcast",
-    data=payload,
-    headers={
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}",
-    },
-    method="POST",
-)
-with request.urlopen(req, timeout=20) as resp:
-    print(resp.status, resp.read().decode("utf-8", errors="replace"))
+def _broadcast(objs):
+    payload = json.dumps({"messages": objs}, ensure_ascii=False).encode("utf-8")
+    req = request.Request(
+        "https://api.line.me/v2/bot/message/broadcast",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        },
+        method="POST",
+    )
+    with request.urlopen(req, timeout=20) as resp:
+        print(resp.status, resp.read().decode("utf-8", errors="replace"))
+
+for i in range(0, len(messages), LINE_MAX_OBJECTS):
+    _broadcast(messages[i:i + LINE_MAX_OBJECTS])
 PY
     elif [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ]; then
         printf "  [SKIP] LINE broadcast: LINE_TOKEN not set\n" >> "$SUMMARY_FILE"

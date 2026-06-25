@@ -29,6 +29,7 @@ ACTIVE_NAMES = {
     "00403A": "主動統一升級50",
     "00981A": "主動統一台股增長",
     "00988A": "主動統一全球創新",
+    "00991A": "主動復華未來50",
 }
 
 SECRETS_FILE = "/home/ubuntu/.stock_secrets"

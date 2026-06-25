@@ -46,6 +46,7 @@ ETF_NAME_TO_TICKER = {
     "主動統一升級50": "00403A",
     "主動統一台股增長": "00981A",
     "主動統一全球創新": "00988A",
+    "主動復華未來50": "00991A",
     "元大台灣50": "0050",
     "元大台灣50正2": "00631L",
     "元大高股息": "0056",
@@ -360,7 +361,7 @@ def build_expanded_exposure(position_quotes):
     # Real (un-leveraged) portfolio value — denominator so a leveraged ETF's
     # doubled exposure totals over 100% instead of renormalising everyone down.
     portfolio_total = 0.0
-    expandable = {"00403A", "00981A", "00988A", "0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"} | set(LEVERAGED_ETF_PROXY)
+    expandable = {"00403A", "00981A", "00988A", "00991A", "0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"} | set(LEVERAGED_ETF_PROXY)
     for _, pos in position_quotes.dropna(subset=["market_value"]).iterrows():
         if pos.get("stock") == CASH_LABEL or pos.get("code") == CASH_LABEL:
             continue
