@@ -7,7 +7,7 @@ Page 1 bottom: 市場脈動 | 吳大師 | 24小時那斯達克 | ▶更多
 Page 2 top:    00878 | 00981A | 00988A | 00403A
 Page 2 bottom: ◀上一頁 | 00891 | 00830 | ▶更多
 Page 3 top:    009805 | 009820 | 0056 | 00918
-Page 3 bottom: ◀上一頁 | 0050 | future | 首頁
+Page 3 bottom: ◀上一頁 | 0050 | 00991A | 首頁
 
 Colour convention
   TW stocks  →  blue  (37, 99, 235)
@@ -92,7 +92,7 @@ PAGE3 = [
     # Row 2 — previous at bottom-left, home only because there is no next page yet
     (0,    843, 625, 843, "<", "上一頁", "ETF 第二頁",       ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
     (625,  843, 625, 843, "台", "0050",   "元大台灣50",       ( 37,  99, 235), "message",        "0050",   False),
-    (1250, 843, 625, 843, "+", "預留",   "下一檔 ETF",       ( 71,  85, 105), "none",           None,     False),
+    (1250, 843, 625, 843, "未", "00991A", "主動復華未來50",   ( 37,  99, 235), "message",        "991",    False),
     (1875, 843, 625, 843, "家", "首頁",   "回主選單",         ( 71,  85, 105), "richmenuswitch", ALIAS_P1, True),
 ]
 
