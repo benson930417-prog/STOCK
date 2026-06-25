@@ -133,8 +133,8 @@ def _ago(value):
 def _fmt_pct(value):
     if value is None:
         return "----"
-    sign = "+" if value > 0 else ""
-    return f"{sign}{value:.2f}%"
+    # No plus sign — colour already conveys direction; negatives keep their minus.
+    return f"{value:.2f}%"
 
 
 def _fmt_weight(value):
