@@ -535,13 +535,18 @@ def build_master_text(snapshot, quote_cache=None):
         snapshot.get("positions"),
         snapshot.get("cash_twd", 0),
     )
+    # 成本 = 投入本金 (net cash deployed = total cost − reinvested realized).
+    # 未實 = overall gain since inception = 目前淨值 − 投入本金 (folds the
+    # reinvested realized P/L in, so it shows the buffer rather than today's drift).
+    deployed = snapshot['total_cost'] - snapshot.get('realized_pnl', 0)
+    overall = snapshot['total_liq'] - deployed
+    overall_pct = (overall / deployed * 100.0) if deployed else 0.0
     lines = [
         "吳大師持股",
         "━━━━━━━━━━━━━━",
         "💼 總覽",
-        f"成本：{_fmt_money(snapshot['total_cost'] - snapshot.get('realized_pnl', 0))}",
-        f"已實：{_fmt_money(snapshot.get('realized_pnl', 0))}",
-        f"未實：{_fmt_money(snapshot['unrealized'])} ({snapshot['unrealized_pct']:.2f}%)",
+        f"成本：{_fmt_money(deployed)}",
+        f"未實：{_fmt_money(overall)} ({overall_pct:.2f}%)",
         f"槓桿值：{snapshot.get('leverage_pct', 100.0):.0f}%",
         "",
     ]

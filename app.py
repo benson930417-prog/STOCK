@@ -2347,8 +2347,17 @@ try:
     else:
         win_color = LOSS_COLOR
 
+    # Headline "since inception" account view: net cash in vs current value, so
+    # realized P/L folds into the overall gain (the buffer view) - no separate
+    # 已實 card and no time-weighted figure here.
+    liq_value = unrealized_cost + unrealized_pnl       # 目前淨值 = sum of liquidation values (after fee/tax)
+    deployed_capital = unrealized_cost - total_pnl     # 投入本金 = net cash in = cost - reinvested realized
+    overall_gain = liq_value - deployed_capital        # 未實現損益 = 未實 + 已實 (since inception)
+    overall_pct = (overall_gain / deployed_capital * 100.0) if deployed_capital else 0.0
+    overall_color = PROFIT_COLOR if overall_gain > 0 else (LOSS_COLOR if overall_gain < 0 else "#FFFFFF")
+
     st.markdown(f"### {T(lang, 'Key Metrics', '關鍵指標')}")
-    k1, k2, k3, k4, k5, k6 = st.columns([1, 1, 1, 1, 1, 1], gap="medium")
+    k1, k2, k3, k4, k5, k6, k7 = st.columns(7, gap="medium")
 
     # Sub-win rates
     def calc_wr(df_in):
@@ -2363,72 +2372,26 @@ try:
     n_cash = len(f_sorted[f_sorted["type_key"] == "cash"])
 
     with k1:
-        # User request: include Base Capital (Dynamic Max Drawdown) on total PL kpi
-        base_cap_converted = float(peak_base) * CURRENCY_RATE
-        base_cap_str = fmt_money(base_cap_converted, 1.0, CURRENCY_SYMBOL)
-        base_lbl = T(lang, "Peak deployed", "最高投入本金")
-        KPI_CARD(T(lang, "Total P/L", "總損益"), fmt_signed_money(total_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), total_color, f"{base_lbl}: {base_cap_str}")
+        KPI_CARD(T(lang, "Net Value", "目前淨值"), fmt_money(liq_value, CURRENCY_RATE, CURRENCY_SYMBOL), NEUTRAL_BLUE, T(lang, "after fee/tax", "扣費稅後 · 即時"))
     with k2:
-        # Percentage is invariant to currency
-        # Calculate vs TAIEX
-        alpha_text = "&nbsp;"
-        try:
-             # Get TAIEX data for the same range
-             d_min = f_sorted["date"].min()
-             d_max = f_sorted["date"].max()
-             days_range = (d_max - d_min).days + 10
-             
-             tw_df = get_market_data("^TWII", days=max(30, days_range))
-             if not tw_df.empty:
-                 # Find closest close to start and end
-                 # We need open of start_date (or close of prev day) vs close of end_date
-                 # Simplified: Close of first available day in range vs Close of last available day
-                 
-                 mask = (tw_df["date"] >= d_min) & (tw_df["date"] <= d_max)
-                 tw_rel = tw_df[mask]
-                 
-                 if not tw_rel.empty:
-                     start_price = tw_rel["close"].iloc[0]
-                     end_price = tw_rel["close"].iloc[-1]
-                     if start_price > 0:
-                         tw_pct = (end_price - start_price) / start_price * 100.0
-                         diff = total_pl_pct - tw_pct
-                         
-                         # Format text
-                         lbl = T(lang, "vs TAIEX", "加權指數")
-                         sign_str = "+" if diff > 0 else "-" if diff < 0 else "" 
-                         # Use logic: 'Ahead' or 'Behind' or just signed diff
-                         # User asked: "how much behind or ahead"
-                         # "Ahead by 5%" or "Behind by 5%"
-                         if diff > 0:
-                             status = T(lang, "Ahead", "領先")
-                         else:
-                             status = T(lang, "Behind", "落後")
-                             
-                         alpha_text = f"{status} {T(lang,'TAIEX','加權')} {abs(diff):.2f}%"
-        except Exception:
-             pass
-
-        KPI_CARD(T(lang, "Personal Return %", "個人報酬率 %"), fmt_signed_pct(total_pl_pct), plpct_color, alpha_text)
+        KPI_CARD(T(lang, "Invested", "投入本金"), fmt_money(deployed_capital, CURRENCY_RATE, CURRENCY_SYMBOL), "#FFFFFF", T(lang, "net cash in (from trades)", "淨投入 · 由交易計算"))
     with k3:
+        KPI_CARD(T(lang, "Total Gain", "未實現損益"), fmt_signed_money(overall_gain, CURRENCY_RATE, CURRENCY_SYMBOL), overall_color, T(lang, "since inception, incl. realized", "自成立以來（含已實）"))
+    with k4:
+        KPI_CARD(T(lang, "Return %", "報酬率 %"), fmt_signed_pct(overall_pct), overall_color, T(lang, "net value / invested", "淨值 ÷ 投入本金"))
+    with k5:
         sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.1f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.1f}%"
         KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, sub_wr)
-    with k4:
+    with k6:
         sub_tr = f"{T(lang, 'Day Trade', '當沖')}: {n_day}  {T(lang, 'Cash', '現股')}: {n_cash}"
         KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, sub_tr)
-    with k5:
-        # Split fee/tax (Converted)
+    with k7:
         total_fee = float(f_sorted["total_fee"].sum())
         total_tax = float(f_sorted["total_tax"].sum())
-        
-        # Sub label with full text
         fee_str = fmt_money(total_fee, CURRENCY_RATE, CURRENCY_SYMBOL)
         tax_str = fmt_money(total_tax, CURRENCY_RATE, CURRENCY_SYMBOL)
-        
         sub_lbl = f"{T(lang, 'Fee', '手續費')}: {fee_str}  {T(lang, 'Tax', '稅')}: {tax_str}"
         KPI_CARD(T(lang, "Trade volume", "交易量"), fmt_money(trade_volume, 1.0, CURRENCY_SYMBOL), NEUTRAL_BLUE, sub_lbl)
-    with k6:
-        KPI_CARD("未實現損益", fmt_signed_money(unrealized_pnl, CURRENCY_RATE, CURRENCY_SYMBOL), unrealized_color, f"扣費稅後 {fmt_signed_pct(unrealized_pct)}")
 
     hr()
 
@@ -3569,21 +3532,10 @@ try:
             with m1:
                 st.metric("目前淨值 (扣費稅)", fmt_money(total_liquidation_value))
             with m2:
-                st.metric("總成本", fmt_money(total_cost_open))
-                st.markdown(
-                    f"""
-<div style="margin-top:-0.45rem; font-size:0.875rem; line-height:1.25; color:rgba(250,250,250,0.62);">
-  <span>此次投入本金: </span>
-  <span>{fmt_money(deployed_principal)}</span>
-  <span style="opacity:0.55; padding:0 0.45rem;">|</span>
-  <span>加上之前獲利</span>
-  <span>{fmt_signed_money(reinvested_realized_pnl)}</span>
-</div>
-""",
-                    unsafe_allow_html=True,
-                )
+                # Bank-style cost basis for verification against the broker.
+                st.metric("此次投入成本", fmt_money(total_cost_open))
             with m3:
-                st.metric("未實現損益 (扣費稅後)", fmt_signed_money(unrealized_pnl), delta=fmt_signed_pct(unrealized_pct), delta_color=delta_color_param)
+                st.metric("此次未實現損益 (扣費稅後)", fmt_signed_money(unrealized_pnl), delta=fmt_signed_pct(unrealized_pct), delta_color=delta_color_param)
             with m4:
                 st.metric("現金", fmt_money(cash_amount))
             with m5:
