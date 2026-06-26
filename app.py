@@ -2357,7 +2357,10 @@ try:
     overall_color = PROFIT_COLOR if overall_gain > 0 else (LOSS_COLOR if overall_gain < 0 else "#FFFFFF")
 
     st.markdown(f"### {T(lang, 'Key Metrics', '關鍵指標')}")
-    k1, k2, k3, k4, k5, k6, k7 = st.columns(7, gap="medium")
+    # Two rows so cards stay wide enough on narrow screens (7-across squished the
+    # numbers into one-char-per-line). Row 1 = financials, row 2 = trade stats.
+    k1, k2, k3, k4 = st.columns(4, gap="medium")
+    k5, k6, k7 = st.columns(3, gap="medium")
 
     # Sub-win rates
     def calc_wr(df_in):
