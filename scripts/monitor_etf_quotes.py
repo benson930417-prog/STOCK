@@ -866,40 +866,23 @@ def _regular_session_bounds(country, now=None):
         now = now or datetime.now(ZoneInfo("Asia/Tokyo"))
         if now.weekday() >= 5:
             return None
-        morning_start, morning_end = _session_bounds(
-            now,
-            JP_REGULAR_OFFICIAL_OPEN_MINUTES,
-            JP_REGULAR_OFFICIAL_BREAK_START_MINUTES,
-        )
-        afternoon_start, afternoon_end = _session_bounds(
-            now,
-            JP_REGULAR_OFFICIAL_BREAK_END_MINUTES,
-            JP_REGULAR_OFFICIAL_CLOSE_MINUTES,
-        )
-        if morning_start <= now < morning_end:
-            return morning_start, morning_end
-        if afternoon_start <= now < afternoon_end:
-            return afternoon_start, afternoon_end
+        day_start, _ = _session_bounds(now, JP_REGULAR_OFFICIAL_OPEN_MINUTES, JP_REGULAR_OFFICIAL_BREAK_START_MINUTES)
+        _, day_end = _session_bounds(now, JP_REGULAR_OFFICIAL_BREAK_END_MINUTES, JP_REGULAR_OFFICIAL_CLOSE_MINUTES)
+        # Span the lunch break: between open and close the market is still in
+        # session (paused at lunch), not closed for the day — keeps it live/交易中.
+        if day_start <= now < day_end:
+            return day_start, day_end
         return None
 
     if country == "HK":
         now = now or datetime.now(ZoneInfo("Asia/Hong_Kong"))
         if now.weekday() >= 5:
             return None
-        morning_start, morning_end = _session_bounds(
-            now,
-            HK_REGULAR_OFFICIAL_OPEN_MINUTES,
-            HK_REGULAR_OFFICIAL_BREAK_START_MINUTES,
-        )
-        afternoon_start, afternoon_end = _session_bounds(
-            now,
-            HK_REGULAR_OFFICIAL_BREAK_END_MINUTES,
-            HK_REGULAR_OFFICIAL_CLOSE_MINUTES,
-        )
-        if morning_start <= now < morning_end:
-            return morning_start, morning_end
-        if afternoon_start <= now < afternoon_end:
-            return afternoon_start, afternoon_end
+        day_start, _ = _session_bounds(now, HK_REGULAR_OFFICIAL_OPEN_MINUTES, HK_REGULAR_OFFICIAL_BREAK_START_MINUTES)
+        _, day_end = _session_bounds(now, HK_REGULAR_OFFICIAL_BREAK_END_MINUTES, HK_REGULAR_OFFICIAL_CLOSE_MINUTES)
+        # Span the lunch break (see JP).
+        if day_start <= now < day_end:
+            return day_start, day_end
         return None
 
     if country == "KR":
@@ -915,20 +898,11 @@ def _regular_session_bounds(country, now=None):
         now = now or datetime.now(ZoneInfo("Asia/Shanghai"))
         if now.weekday() >= 5:
             return None
-        morning_start, morning_end = _session_bounds(
-            now,
-            CN_REGULAR_OFFICIAL_OPEN_MINUTES,
-            CN_REGULAR_OFFICIAL_BREAK_START_MINUTES,
-        )
-        afternoon_start, afternoon_end = _session_bounds(
-            now,
-            CN_REGULAR_OFFICIAL_BREAK_END_MINUTES,
-            CN_REGULAR_OFFICIAL_CLOSE_MINUTES,
-        )
-        if morning_start <= now < morning_end:
-            return morning_start, morning_end
-        if afternoon_start <= now < afternoon_end:
-            return afternoon_start, afternoon_end
+        day_start, _ = _session_bounds(now, CN_REGULAR_OFFICIAL_OPEN_MINUTES, CN_REGULAR_OFFICIAL_BREAK_START_MINUTES)
+        _, day_end = _session_bounds(now, CN_REGULAR_OFFICIAL_BREAK_END_MINUTES, CN_REGULAR_OFFICIAL_CLOSE_MINUTES)
+        # Span the lunch break (see JP).
+        if day_start <= now < day_end:
+            return day_start, day_end
         return None
 
     if country == "DE":
