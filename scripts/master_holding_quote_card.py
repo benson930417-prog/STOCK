@@ -548,7 +548,7 @@ def build_master_text(snapshot, quote_cache=None):
         "💼 總覽",
         f"淨值：{_fmt_money(snapshot['total_liq'])}",
         f"成本：{_fmt_money(deployed)}",
-        f"未實：{_fmt_money(overall)} ({overall_pct:.2f}%)",
+        f"未實：{overall:+,.0f} ({overall_pct:+.2f}%)",
         f"槓桿值：{snapshot.get('leverage_pct', 100.0):.0f}%",
         f"累計交易量：{_fmt_money(snapshot.get('trade_volume', 0))}",
         "",
