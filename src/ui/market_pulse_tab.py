@@ -971,6 +971,117 @@ def _render_speed_panel(taiex: pd.Series) -> dict:
             "vol": cur_vol, "vol_pct": vol_pct, "tag": tag}
 
 
+def _render_price_volume(prices: pd.Series, volume: pd.Series) -> dict:
+    """價量健康 — built ONLY from close + volume (the least-lagging, most honest
+    data the user trusts). Decision *context*, not a buy/sell signal.
+
+    TAIEX only: ^TWII volume is real TWSE turnover; ^SOX carries no volume on
+    Yahoo and the US indices use aggregate component volume, so we keep this to
+    the index actually traded. The latest bar's volume can be 0 (today's session
+    not yet settled) — treated as missing so metrics use the last settled day.
+    """
+    st.markdown("### 🔊 價量健康（成交量與量價關係）")
+    st.caption(
+        "只看**收盤價 + 成交量**——市場最誠實、最即時的兩個數字。"
+        "量＝真金白銀的參與度：**上漲要有量才有說服力，下跌帶量代表賣壓重**。"
+        "幫你判斷「**這個價格走勢值不值得相信**」，不是買賣訊號。"
+    )
+
+    vol = volume.where(volume > 0).dropna()      # 0 = 今日尚未結算 → 視為缺值
+    px = prices.dropna()
+    if len(vol) < 25 or len(px) < 25:
+        st.info("成交量資料不足（需約 25 個交易日的有效成交量）。")
+        return {}
+
+    vol_date  = vol.index[-1]
+    last_vol  = float(vol.iloc[-1])
+    avg20     = float(vol.iloc[-21:-1].mean())
+    vol_ratio = (last_vol / avg20) if avg20 > 0 else None
+
+    ret_5     = (float(px.iloc[-1]) / float(px.iloc[-6]) - 1.0) * 100.0 if len(px) >= 6 else 0.0
+    vol5, vol20 = float(vol.iloc[-5:].mean()), float(vol.iloc[-20:].mean())
+    vol_trend = (vol5 / vol20) if vol20 > 0 else 1.0
+
+    # OBV over the valid-volume series; compare its 20d drift vs price drift.
+    common = px.reindex(vol.index).dropna()
+    diff   = common.diff()
+    signed = vol.reindex(common.index).astype(float).copy()
+    signed[diff < 0] *= -1.0
+    signed[diff == 0] = 0.0
+    obv = signed.cumsum()
+    if len(common) >= 21 and avg20 > 0:
+        price_20    = (float(common.iloc[-1]) / float(common.iloc[-21]) - 1.0) * 100.0
+        obv_20_days = (float(obv.iloc[-1]) - float(obv.iloc[-21])) / avg20   # in "days of avg volume"
+    else:
+        price_20, obv_20_days = 0.0, 0.0
+
+    # 1) 今日量能 vs 20 日均量
+    if vol_ratio is None:
+        c_v, s_v, vol_value = HEALTH_COLORS["gray"], "—", "—"
+    else:
+        vol_value = f"{vol_ratio:.1f} 倍"
+        if   vol_ratio >= 2.0: c_v, s_v = HEALTH_COLORS["red"], "爆量"
+        elif vol_ratio >= 1.3: c_v, s_v = HEALTH_COLORS["orange"], "放量"
+        elif vol_ratio >= 0.7: c_v, s_v = HEALTH_COLORS["green"], "正常"
+        elif vol_ratio >= 0.5: c_v, s_v = HEALTH_COLORS["blue"], "量縮"
+        else:                  c_v, s_v = HEALTH_COLORS["deep_blue"], "急縮"
+    r_v = "今日量 ÷ 前 20 日均量。>2倍=爆量，1.3~2=放量，0.7~1.3=正常，<0.5=急縮"
+
+    # 2) 量價關係 — this week's price direction × volume trend
+    price_up, price_down = ret_5 > 1.0, ret_5 < -1.0
+    vol_expand, vol_shrink = vol_trend > 1.1, vol_trend < 0.9
+    if   price_up and vol_expand:   c_pv, s_pv, pv_msg = HEALTH_COLORS["green"],  "價漲量增", "上漲有買盤撐腰，走勢較可信"
+    elif price_up and vol_shrink:   c_pv, s_pv, pv_msg = HEALTH_COLORS["yellow"], "價漲量縮", "漲勢量能不足，追高需謹慎"
+    elif price_down and vol_expand: c_pv, s_pv, pv_msg = HEALTH_COLORS["red"],    "價跌量增", "賣壓沉重（恐慌或出貨）"
+    elif price_down and vol_shrink: c_pv, s_pv, pv_msg = HEALTH_COLORS["blue"],   "價跌量縮", "賣壓減弱，跌勢趨緩"
+    elif price_up:                  c_pv, s_pv, pv_msg = HEALTH_COLORS["green"],  "價漲量平", "上漲但量能普通"
+    elif price_down:                c_pv, s_pv, pv_msg = HEALTH_COLORS["yellow"], "價跌量平", "下跌但量能普通"
+    else:                           c_pv, s_pv, pv_msg = HEALTH_COLORS["gray"],   "量價平淡", "近一週價格波動不大"
+    r_pv = "近5日價格方向 × 量能趨勢。價漲量增最健康，價漲量縮要小心，價跌量增最危險"
+
+    # 3) OBV 量價背離 (20d)
+    if   price_20 > 1.5 and obv_20_days < 0:  c_o, s_o, o_msg = HEALTH_COLORS["orange"], "頂背離",   "價創高但量能沒跟上 — 買盤在縮手"
+    elif price_20 < -1.5 and obv_20_days > 0: c_o, s_o, o_msg = HEALTH_COLORS["blue"],   "底背離",   "價走弱但量能流入 — 可能有人默默承接"
+    elif abs(price_20) <= 1.5:                c_o, s_o, o_msg = HEALTH_COLORS["gray"],   "量價持平", "近20日價量皆無明顯方向"
+    else:                                     c_o, s_o, o_msg = HEALTH_COLORS["green"],  "量價同步", "量能與價格方向一致，趨勢有量能背書"
+    r_o = "OBV＝上漲日加量、下跌日減量的累積線。與價格背離＝量能不認同價格"
+
+    # 4) 量能趨勢 (5d vs 20d)
+    vt_value = f"{vol_trend:.1f} 倍"
+    if   vol_trend >= 1.2: c_t, s_t = HEALTH_COLORS["orange"], "量能擴張"
+    elif vol_trend >= 0.9: c_t, s_t = HEALTH_COLORS["green"],  "持平"
+    else:                  c_t, s_t = HEALTH_COLORS["blue"],   "量能萎縮"
+    r_t = "近5日均量 ÷ 近20日均量。>1.2=參與度升溫，<0.9=退潮"
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1: _render_health_metric("今日量能", vol_value, c_v, s_v, r_v)
+    with c2: _render_health_metric("量價關係（近5日）", s_pv, c_pv, pv_msg, r_pv)
+    with c3: _render_health_metric("OBV 量價背離（20日）", s_o, c_o, o_msg, r_o)
+    with c4: _render_health_metric("量能趨勢", vt_value, c_t, s_t, r_t)
+
+    if vol_date < px.index[-1]:
+        st.caption(f"⚠ 量能數據截至 {vol_date.date()}（今日 {px.index[-1].date()} 成交量尚未結算）。")
+
+    # Decision-helping read — plain language, still not a hard signal
+    decision: list[str] = []
+    if s_pv == "價漲量縮" or s_o == "頂背離":
+        decision.append("上漲缺量能背書，**追高的勝算下降**——可等放量確認或拉回再評估")
+    if s_pv == "價漲量增" and s_o == "量價同步":
+        decision.append("上漲有量能支撐，**走勢健康**；風險主要來自價格拉伸而非缺量")
+    if s_pv == "價跌量增":
+        decision.append("帶量下跌代表賣壓沉重，**不宜搶接**，待量能萎縮（賣壓宣洩）再觀察")
+    if s_pv == "價跌量縮" or s_o == "底背離":
+        decision.append("下跌但量在縮、OBV 默默流入，**賣壓可能在減弱**，可留意止穩")
+    if s_v == "爆量":
+        decision.append(f"今日爆量（{vol_ratio:.1f} 倍均量）— 爆量常見於轉折，方向仍須價格確認")
+    if not decision:
+        decision.append("量價大致同步、無明顯背離 — 照原訂計畫即可，不需因量能特別調整")
+
+    _section_insight(f"量價綜合：**{s_pv}**，OBV **{s_o}**。" + "；".join(decision) + "。")
+
+    return {"vol_ratio": vol_ratio, "pv": s_pv, "obv": s_o, "vol_trend": vol_trend}
+
+
 def _render_chart_with_regimes(taiex: pd.Series, regimes_df: pd.DataFrame) -> None:
     """`regimes_df` passed in from upstream (Bug 13 fix: was being
     recomputed here). Insight variables now computed inline at the
@@ -1186,6 +1297,7 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
         st.error("資料庫無加權指數 (^TWII) 價格。請先執行 step3_backfill。")
         return
     taiex = taiex_df.set_index("date")["close"].dropna()
+    taiex_vol = taiex_df.set_index("date")["volume"] if "volume" in taiex_df.columns else pd.Series(dtype=float)
 
     # "As of" date banner — TZ-aware so a US-deployed server still uses TW
     # market day (Bug 15). Chinese weekday so the banner matches the page (Bug 16).
@@ -1230,6 +1342,10 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
 
     # 3. Speed (momentum + volatility, combined card)
     speed_info = _render_speed_panel(taiex)
+    st.markdown("---")
+
+    # 3.5 Price-Volume health — the least-lagging data (close + volume)
+    _render_price_volume(taiex, taiex_vol)
     st.markdown("---")
 
     # 4. Historical analogs (data mining, not a forecast signal)
