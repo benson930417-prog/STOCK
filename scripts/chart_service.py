@@ -101,6 +101,9 @@ browser_context = None
 browser_instance = None
 pages = {}
 
+GENERIC_SNAPSHOT_VIEWPORT = {"width": 720, "height": 860}
+NASDAQ_SNAPSHOT_VIEWPORT = {"width": 1200, "height": 900}
+
 HIDE_CSS = """
     header, aside, nav, div[class*="layout__header"], div[class*="pageHead-"],
     div[class*="cookies-banner"], div[class*="cookie-banner"],
@@ -459,7 +462,7 @@ def _overlay_title(image_path, title):
     print(f"  🖌️ Title overlay added: {title}")
 
 
-def _trim_bottom_whitespace(image_path, padding=18, min_trim=24, max_body_height=430):
+def _trim_bottom_whitespace(image_path, padding=18, min_trim=24, max_body_height=None):
     """Normalize chart snapshots by trimming oversized blank lower areas."""
     img = Image.open(image_path).convert("RGB")
     width, height = img.size
@@ -479,7 +482,7 @@ def _trim_bottom_whitespace(image_path, padding=18, min_trim=24, max_body_height
             break
 
     crop_bottom = min(height, last_content_y + padding)
-    if height > max_body_height:
+    if max_body_height is not None and height > max_body_height:
         crop_bottom = min(crop_bottom, max_body_height)
     if height - crop_bottom >= min_trim:
         img.crop((0, 0, width, crop_bottom)).save(image_path)
@@ -656,7 +659,7 @@ async def take_snapshot(req: SnapshotRequest):
             # Make the IG symbol page state explicit. The text quote comes from
             # IG:NASDAQ; the image must come from the same symbol overview
             # chart, not TradingView's lower white performance widget.
-            nasdaq_viewport = {"width": 1200, "height": 900}
+            nasdaq_viewport = NASDAQ_SNAPSHOT_VIEWPORT
             default_clip = {"x": 0, "y": 490, "width": nasdaq_viewport["width"], "height": 345}
             clip = {
                 "x": 0,
@@ -705,7 +708,7 @@ async def take_snapshot(req: SnapshotRequest):
                 print(f"  ⚠ NASDAQ same-moment quote failed: {type(quote_exc).__name__}: {quote_exc}")
             meta = CHART_META.get(req.key)
             if meta:
-                _trim_bottom_whitespace(filepath)
+                _trim_bottom_whitespace(filepath, max_body_height=430)
                 _overlay_title(filepath, meta["title"])
             # Trading-session markers (TW + US pre/regular/post in TW time).
             # Overlay failure must not fail an otherwise-valid snapshot.
@@ -717,6 +720,10 @@ async def take_snapshot(req: SnapshotRequest):
                 print(f"  ⚠ Session overlay skipped: {type(overlay_exc).__name__}: {overlay_exc}")
             return {"status": "success", "url": filename, "path": filepath, "clip": clip,
                     "viewport": nasdaq_viewport, "quote": quote, "text": text}
+
+        await page.set_viewport_size(GENERIC_SNAPSHOT_VIEWPORT)
+        await page.evaluate("window.scrollTo(0, 0)")
+        await asyncio.sleep(0.4)
 
         # Clip the chart area. TradingView uses DIFFERENT page templates for
         # different symbol types:
@@ -756,13 +763,13 @@ async def take_snapshot(req: SnapshotRequest):
                     .sort((a, b) => (b.r.width * b.r.height) - (a.r.width * a.r.height));
                 if (overviewCanvases.length) {
                     const r = overviewCanvases[0].r;
-                    const pad = 14;
-                    const y = Math.max(0, r.top - pad);
-                    const bottom = Math.min(window.innerHeight, footerTop - pad, r.bottom + 70);
+                    const padX = 18, padTop = 14, padBottom = 70;
+                    const y = Math.max(0, r.top - padTop);
+                    const bottom = Math.min(window.innerHeight, footerTop - 8, r.bottom + padBottom);
                     return {
-                        x: Math.max(0, r.left - pad),
+                        x: Math.max(0, r.left - padX),
                         y,
-                        width:  Math.min(window.innerWidth,  r.right  + pad) - Math.max(0, r.left - pad),
+                        width:  Math.min(window.innerWidth,  r.right  + padX) - Math.max(0, r.left - padX),
                         height: Math.max(180, bottom - y),
                     };
                 }
@@ -790,17 +797,17 @@ async def take_snapshot(req: SnapshotRequest):
             for (const sel of containerSelectors) {
                 const el = document.querySelector(sel);
                 if (el && visibleChartLike(el, 800)) {
-                const r = el.getBoundingClientRect();
-                const pad = 10;
-                const y = Math.max(0, r.top - pad);
-                const bottom = Math.min(window.innerHeight, footerTop - pad, r.bottom + pad);
-                return {
-                    x: Math.max(0, r.left - pad),
-                    y,
-                    width:  Math.min(window.innerWidth,  r.right  + pad) - Math.max(0, r.left - pad),
-                    height: Math.max(120, bottom - y),
-                };
-            }
+                    const r = el.getBoundingClientRect();
+                    const padX = 18, padTop = 14, padBottom = 46;
+                    const y = Math.max(0, r.top - padTop);
+                    const bottom = Math.min(window.innerHeight, footerTop - 8, r.bottom + padBottom);
+                    return {
+                        x: Math.max(0, r.left - padX),
+                        y,
+                        width:  Math.min(window.innerWidth,  r.right  + padX) - Math.max(0, r.left - padX),
+                        height: Math.max(120, bottom - y),
+                    };
+                }
             }
 
             // 2) Fallback: largest CANVAS in upper page (futures page case).
@@ -812,13 +819,13 @@ async def take_snapshot(req: SnapshotRequest):
                 .sort((a, b) => (b.r.width * b.r.height) - (a.r.width * a.r.height));
             if (canvases.length) {
                 const r = canvases[0].r;
-                const pad = 10;
-                const y = Math.max(0, r.top - pad);
-                const bottom = Math.min(window.innerHeight, footerTop - pad, r.bottom + pad);
+                const padX = 18, padTop = 14, padBottom = 46;
+                const y = Math.max(0, r.top - padTop);
+                const bottom = Math.min(window.innerHeight, footerTop - 8, r.bottom + padBottom);
                 return {
-                    x: Math.max(0, r.left - pad),
+                    x: Math.max(0, r.left - padX),
                     y,
-                    width:  Math.min(window.innerWidth,  r.right  + pad) - Math.max(0, r.left - pad),
+                    width:  Math.min(window.innerWidth,  r.right  + padX) - Math.max(0, r.left - padX),
                     height: Math.max(120, bottom - y),
                 };
             }
@@ -835,7 +842,7 @@ async def take_snapshot(req: SnapshotRequest):
             # produced for the bond futures page).
             await page.screenshot(
                 path=filepath,
-                clip={"x": 0, "y": 40, "width": 600, "height": 460},
+                clip={"x": 0, "y": 40, "width": GENERIC_SNAPSHOT_VIEWPORT["width"], "height": 540},
             )
             print(f"  ⚠ Snapshot fallback to upper-viewport bounded clip: {filename}")
 
@@ -853,7 +860,7 @@ async def take_snapshot(req: SnapshotRequest):
         # --- Overlay Chinese title ---
         meta = CHART_META.get(req.key)
         if meta:
-            _trim_bottom_whitespace(filepath)
+            _trim_bottom_whitespace(filepath, padding=34, min_trim=34)
             _overlay_title(filepath, meta["title"])
 
         return {"status": "success", "url": filename, "path": filepath, "quote": quote, "text": text}
