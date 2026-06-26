@@ -40,10 +40,12 @@ def _take_from_lot(lot, take, fields):
     return out
 
 
-def compute_realized_total(raw_trades) -> float:
+def compute_realized_total(raw_trades):
+    """Returns (realized_pnl_total, trade_volume). trade_volume = cumulative
+    matched cost, identical to the dashboard's 交易量 (allocated_cost sum)."""
     df = raw_trades.copy()
     if df.empty or any(c not in df.columns for c in REQUIRED):
-        return 0.0
+        return 0.0, 0.0
 
     df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
     df["成交股數"] = df["成交股數"].apply(_to_int)
@@ -54,6 +56,7 @@ def compute_realized_total(raw_trades) -> float:
 
     inventory = defaultdict(deque)  # stock -> deque of {qty, cost}
     realized = 0.0
+    volume = 0.0  # cumulative matched cost (= dashboard 交易量 = allocated_cost sum)
 
     def _is_day(label):
         return str(label or "").startswith("沖")
@@ -96,6 +99,7 @@ def compute_realized_total(raw_trades) -> float:
 
             if intraday_cost or intraday_cash:
                 realized += intraday_cash - intraday_cost
+                volume += intraday_cost
 
             for lot in list(day_buy_dt) + list(day_buy_cash):
                 if lot["qty"] > 0:
@@ -124,5 +128,6 @@ def compute_realized_total(raw_trades) -> float:
                     if inv["qty"] == 0:
                         inventory[stock].popleft()
                 realized += matched_cash - allocated_cost
+                volume += allocated_cost
 
-    return float(realized)
+    return float(realized), float(volume)

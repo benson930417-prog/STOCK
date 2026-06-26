@@ -2402,7 +2402,7 @@ try:
                      f"{day_lbl} {wr_day:.1f}% · {cash_lbl} {wr_cash:.1f}%", wr_color)
         + _stat_item(T(lang, "Trades", "筆數"), f"{trades:,}",
                      f"{day_lbl} {n_day} · {cash_lbl} {n_cash}")
-        + _stat_item(T(lang, "Trade volume", "交易量"), fmt_money(trade_volume, 1.0, CURRENCY_SYMBOL),
+        + _stat_item(T(lang, "Trade volume", "累計交易量"), fmt_money(trade_volume, 1.0, CURRENCY_SYMBOL),
                      f"{T(lang, 'Fee', '手續費')} {fmt_money(total_fee, CURRENCY_RATE, CURRENCY_SYMBOL)}"
                      f" · {T(lang, 'Tax', '稅')} {fmt_money(total_tax, CURRENCY_RATE, CURRENCY_SYMBOL)}")
         + '</div>',

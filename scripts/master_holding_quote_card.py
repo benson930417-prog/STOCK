@@ -475,7 +475,7 @@ def load_master_snapshot():
     unrealized = total_liq - total_cost
     unrealized_pct = unrealized / total_cost * 100.0 if total_cost else 0.0
     # 已實 (realized P/L) — same intraday-then-FIFO total the dashboard KPI shows.
-    realized_pnl = compute_realized_total(raw_trades)
+    realized_pnl, trade_volume = compute_realized_total(raw_trades)
     all_exposures = build_expanded_exposure(positions)
     exposures = all_exposures[:50]
     # 槓桿值 = sum of look-through weights (total exposure ÷ capital). 100% =
@@ -488,6 +488,7 @@ def load_master_snapshot():
         "cash_twd": cash_amount,
         "total_cost": total_cost,
         "realized_pnl": realized_pnl,
+        "trade_volume": trade_volume,
         "unrealized": unrealized,
         "unrealized_pct": unrealized_pct,
         "leverage_pct": leverage_pct,
@@ -545,9 +546,11 @@ def build_master_text(snapshot, quote_cache=None):
         "吳大師持股",
         "━━━━━━━━━━━━━━",
         "💼 總覽",
+        f"淨值：{_fmt_money(snapshot['total_liq'])}",
         f"成本：{_fmt_money(deployed)}",
         f"未實：{_fmt_money(overall)} ({overall_pct:.2f}%)",
         f"槓桿值：{snapshot.get('leverage_pct', 100.0):.0f}%",
+        f"累計交易量：{_fmt_money(snapshot.get('trade_volume', 0))}",
         "",
     ]
 
