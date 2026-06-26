@@ -2374,7 +2374,7 @@ try:
     with k1:
         KPI_CARD(T(lang, "Net Value", "目前淨值"), fmt_money(liq_value, CURRENCY_RATE, CURRENCY_SYMBOL), NEUTRAL_BLUE, T(lang, "after fee/tax", "扣費稅後 · 即時"))
     with k2:
-        KPI_CARD(T(lang, "Invested", "投入本金"), fmt_money(deployed_capital, CURRENCY_RATE, CURRENCY_SYMBOL), "#FFFFFF", T(lang, "net cash in (from trades)", "淨投入 · 由交易計算"))
+        KPI_CARD(T(lang, "Invested", "投入本金"), fmt_money(deployed_capital, CURRENCY_RATE, CURRENCY_SYMBOL), "#475569", T(lang, "net cash in (from trades)", "淨投入 · 由交易計算"))
     with k3:
         KPI_CARD(T(lang, "Total Gain", "未實現損益"), fmt_signed_money(overall_gain, CURRENCY_RATE, CURRENCY_SYMBOL), overall_color, T(lang, "since inception, incl. realized", "自成立以來（含已實）"))
     with k4:
