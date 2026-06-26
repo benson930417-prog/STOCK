@@ -2357,22 +2357,20 @@ try:
     overall_color = PROFIT_COLOR if overall_gain > 0 else (LOSS_COLOR if overall_gain < 0 else "#FFFFFF")
 
     st.markdown(f"### {T(lang, 'Key Metrics', '關鍵指標')}")
-    # Two rows so cards stay wide enough on narrow screens (7-across squished the
-    # numbers into one-char-per-line). Row 1 = financials, row 2 = trade stats.
+    # Row 1 = the 4 headline financial cards. The trading-activity stats below are
+    # a light secondary strip (not heavy colored cards) so the eye lands on value.
     k1, k2, k3, k4 = st.columns(4, gap="medium")
-    k5, k6, k7 = st.columns(3, gap="medium")
 
-    # Sub-win rates
     def calc_wr(df_in):
         if df_in.empty: return 0.0
         return (df_in["realized_pnl"] > 0).mean() * 100.0
 
     wr_day = calc_wr(f_sorted[f_sorted["type_key"] == "day_trade"])
     wr_cash = calc_wr(f_sorted[f_sorted["type_key"] == "cash"])
-
-    # Sub-trades
     n_day = len(f_sorted[f_sorted["type_key"] == "day_trade"])
     n_cash = len(f_sorted[f_sorted["type_key"] == "cash"])
+    total_fee = float(f_sorted["total_fee"].sum())
+    total_tax = float(f_sorted["total_tax"].sum())
 
     with k1:
         KPI_CARD(T(lang, "Net Value", "目前淨值"), fmt_money(liq_value, CURRENCY_RATE, CURRENCY_SYMBOL), NEUTRAL_BLUE, T(lang, "after fee/tax", "扣費稅後 · 即時"))
@@ -2382,19 +2380,34 @@ try:
         KPI_CARD(T(lang, "Total Gain", "未實現損益"), fmt_signed_money(overall_gain, CURRENCY_RATE, CURRENCY_SYMBOL), overall_color, T(lang, "since inception, incl. realized", "自成立以來（含已實）"))
     with k4:
         KPI_CARD(T(lang, "Return %", "報酬率 %"), fmt_signed_pct(overall_pct), overall_color, T(lang, "net value / invested", "淨值 ÷ 投入本金"))
-    with k5:
-        sub_wr = f"{T(lang, 'Day Trade', '當沖')}: {wr_day:.1f}%  {T(lang, 'Cash', '現股')}: {wr_cash:.1f}%"
-        KPI_CARD(T(lang, "Win rate", "勝率"), f"{win_rate*100:.1f}%", win_color, sub_wr)
-    with k6:
-        sub_tr = f"{T(lang, 'Day Trade', '當沖')}: {n_day}  {T(lang, 'Cash', '現股')}: {n_cash}"
-        KPI_CARD(T(lang, "Trades", "筆數"), f"{trades}", NEUTRAL_PURPLE, sub_tr)
-    with k7:
-        total_fee = float(f_sorted["total_fee"].sum())
-        total_tax = float(f_sorted["total_tax"].sum())
-        fee_str = fmt_money(total_fee, CURRENCY_RATE, CURRENCY_SYMBOL)
-        tax_str = fmt_money(total_tax, CURRENCY_RATE, CURRENCY_SYMBOL)
-        sub_lbl = f"{T(lang, 'Fee', '手續費')}: {fee_str}  {T(lang, 'Tax', '稅')}: {tax_str}"
-        KPI_CARD(T(lang, "Trade volume", "交易量"), fmt_money(trade_volume, 1.0, CURRENCY_SYMBOL), NEUTRAL_BLUE, sub_lbl)
+
+    # --- Trade-activity stats: muted secondary strip (no cards) ---
+    def _stat_item(label, value, sub, value_color="rgba(255,255,255,0.92)"):
+        return (
+            '<div style="min-width:160px;">'
+            f'<div style="font-size:12px; color:rgba(255,255,255,0.50); letter-spacing:0.3px;">{label}</div>'
+            f'<div style="font-size:21px; font-weight:700; color:{value_color}; line-height:1.15; margin-top:2px;">{value}</div>'
+            f'<div style="font-size:12px; color:rgba(255,255,255,0.42); margin-top:1px;">{sub}</div>'
+            '</div>'
+        )
+
+    wr_pct = win_rate * 100.0
+    wr_color = PROFIT_COLOR if wr_pct > 50.0 else (LOSS_COLOR if wr_pct < 50.0 else "rgba(255,255,255,0.92)")
+    day_lbl = T(lang, "Day", "當沖")
+    cash_lbl = T(lang, "Cash", "現股")
+    st.markdown(
+        '<div style="display:flex; flex-wrap:wrap; gap:48px; padding:14px 4px 0 4px;'
+        ' border-top:1px solid rgba(255,255,255,0.08); margin-top:16px;">'
+        + _stat_item(T(lang, "Win rate", "勝率"), f"{wr_pct:.1f}%",
+                     f"{day_lbl} {wr_day:.1f}% · {cash_lbl} {wr_cash:.1f}%", wr_color)
+        + _stat_item(T(lang, "Trades", "筆數"), f"{trades:,}",
+                     f"{day_lbl} {n_day} · {cash_lbl} {n_cash}")
+        + _stat_item(T(lang, "Trade volume", "交易量"), fmt_money(trade_volume, 1.0, CURRENCY_SYMBOL),
+                     f"{T(lang, 'Fee', '手續費')} {fmt_money(total_fee, CURRENCY_RATE, CURRENCY_SYMBOL)}"
+                     f" · {T(lang, 'Tax', '稅')} {fmt_money(total_tax, CURRENCY_RATE, CURRENCY_SYMBOL)}")
+        + '</div>',
+        unsafe_allow_html=True,
+    )
 
     hr()
 
