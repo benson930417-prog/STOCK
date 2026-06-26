@@ -78,12 +78,16 @@ Z_DEPRESSED         = -1.5   # cell labelled "偏低"; counted as compressed
 Z_VERY_DEPRESSED    = -2.5   # cell labelled "低位"
 
 # 30-day return %  (TAIEX 2y: p5=-8.6, p25=-0.3, p75=+9, p95=+18)
+RET_30_STEADY_UP    =  3.0
+RET_30_STEADY_DOWN  = -3.0
 RET_30_BIG_UP       =  9.0
 RET_30_EXTREME_UP   = 18.0
 RET_30_BIG_DOWN     = -9.0
 RET_30_EXTREME_DOWN = -18.0
 
 # 60-day return %  (TAIEX 2y: p5=-10, p25=-0.2, p75=+15.6, p95=+24.4)
+RET_60_STEADY_UP    =  6.0
+RET_60_STEADY_DOWN  = -6.0
 RET_60_BIG_UP       = 16.0
 RET_60_EXTREME_UP   = 25.0
 RET_60_BIG_DOWN     = -18.0
@@ -204,6 +208,219 @@ def _rolling_vol(prices: pd.Series, window: int = 20) -> pd.Series:
     """Annualised realised volatility from daily returns."""
     rets = prices.pct_change().dropna()
     return rets.rolling(window).std() * (252 ** 0.5) * 100.0
+
+
+def _rolling_stretch_zscore(
+    prices: pd.Series,
+    ma_window: int = 200,
+    lookback_max: int = 504,
+) -> tuple[pd.Series, pd.Series]:
+    """Daily MA stretch and trailing z-score, excluding each day from its own reference."""
+    ma = prices.rolling(ma_window).mean()
+    stretch = (prices - ma) / ma * 100.0
+    ref = stretch.shift(1)
+    mean = ref.rolling(lookback_max, min_periods=30).mean()
+    std = ref.rolling(lookback_max, min_periods=30).std().where(lambda s: s > 0)
+    return stretch, (stretch - mean) / std
+
+
+def _bucket_stretch(z: float | None) -> str | None:
+    if z is None or pd.isna(z):
+        return None
+    if z >= Z_EXTREME:
+        return "extreme_high"
+    if z >= Z_ELEVATED:
+        return "elevated"
+    if z <= Z_VERY_DEPRESSED:
+        return "extreme_low"
+    if z <= Z_DEPRESSED:
+        return "depressed"
+    return "neutral"
+
+
+def _bucket_momentum(ret_30: float | None) -> str | None:
+    if ret_30 is None or pd.isna(ret_30):
+        return None
+    if ret_30 >= RET_30_BIG_UP:
+        return "strong_up"
+    if ret_30 <= RET_30_BIG_DOWN:
+        return "strong_down"
+    if ret_30 >= RET_30_STEADY_UP:
+        return "up"
+    if ret_30 <= RET_30_STEADY_DOWN:
+        return "down"
+    return "flat"
+
+
+def _bucket_accel(accel: float | None) -> str | None:
+    if accel is None or pd.isna(accel):
+        return None
+    if accel >= ACCEL_NOTABLE:
+        return "accelerating"
+    if accel <= ACCEL_NOTABLE_DOWN:
+        return "decelerating"
+    return "stable"
+
+
+def _bucket_breadth(n_stretched: int | None, n_total: int | None) -> str | None:
+    if not n_total:
+        return None
+    if n_stretched <= 0:
+        return "none"
+    if n_stretched == 1:
+        return "local"
+    if n_stretched <= n_total // 2:
+        return "clustered"
+    if n_stretched < n_total:
+        return "broad"
+    return "full"
+
+
+def _build_market_signal_history(taiex: pd.Series) -> pd.DataFrame:
+    """Build one daily signal table for historical-analog mining.
+
+    The forward-return columns intentionally stay NaN near the end, because
+    those days do not yet have enough future observations to evaluate.
+    """
+    prices = taiex.dropna().copy()
+    out = pd.DataFrame({"close": prices})
+    out["ret_30"] = (prices / prices.shift(30) - 1.0) * 100.0
+    out["ret_60"] = (prices / prices.shift(60) - 1.0) * 100.0
+    out["prior_30"] = (prices.shift(30) / prices.shift(60) - 1.0) * 100.0
+    out["accel"] = out["ret_30"] - out["prior_30"]
+    out["vol_20"] = _rolling_vol(prices, 20)
+    _stretch, out["tw_z"] = _rolling_stretch_zscore(prices)
+
+    z_cols: list[pd.Series] = []
+    for ticker, _name in CROSS_ASSET_INDICES:
+        df = db.get_prices(ticker)
+        if df.empty:
+            continue
+        series = df.set_index("date")["close"].dropna()
+        _s, z = _rolling_stretch_zscore(series)
+        z_cols.append(z.rename(ticker))
+    if z_cols:
+        zdf = pd.concat(z_cols, axis=1).reindex(out.index)
+        out["breadth_total"] = zdf.notna().sum(axis=1)
+        out["breadth_stretched"] = (zdf >= Z_ELEVATED).sum(axis=1)
+    else:
+        out["breadth_total"] = 0
+        out["breadth_stretched"] = 0
+
+    out["z_bucket"] = out["tw_z"].map(_bucket_stretch)
+    out["momentum_bucket"] = out["ret_30"].map(_bucket_momentum)
+    out["accel_bucket"] = out["accel"].map(_bucket_accel)
+    out["breadth_bucket"] = [
+        _bucket_breadth(n, t) for n, t in zip(out["breadth_stretched"], out["breadth_total"])
+    ]
+
+    for horizon in (20, 60):
+        out[f"fwd_{horizon}"] = (prices.shift(-horizon) / prices - 1.0) * 100.0
+    return out
+
+
+def _nearest_analogs(history: pd.DataFrame, current: pd.Series, max_rows: int = 30) -> tuple[pd.DataFrame, str]:
+    eligible = history.dropna(subset=["tw_z", "ret_30", "accel", "vol_20", "fwd_20", "fwd_60"]).copy()
+    eligible = eligible[eligible.index < current.name]
+    if eligible.empty:
+        return eligible, "no_sample"
+
+    strict = eligible[
+        (eligible["z_bucket"] == current.get("z_bucket"))
+        & (eligible["momentum_bucket"] == current.get("momentum_bucket"))
+        & (eligible["breadth_bucket"] == current.get("breadth_bucket"))
+    ].copy()
+    if len(strict) >= 8:
+        return strict.tail(max_rows), "same_buckets"
+
+    semi = eligible[
+        (eligible["z_bucket"] == current.get("z_bucket"))
+        & (eligible["momentum_bucket"] == current.get("momentum_bucket"))
+    ].copy()
+    if len(semi) >= 8:
+        return semi.tail(max_rows), "same_stretch_momentum"
+
+    features = ["tw_z", "ret_30", "accel", "vol_20", "breadth_stretched"]
+    norm = eligible[features].std().replace(0, pd.NA).fillna(1.0)
+    dist = (((eligible[features] - current[features]) / norm) ** 2).sum(axis=1) ** 0.5
+    nearest = eligible.assign(_distance=dist).nsmallest(min(max_rows, len(eligible)), "_distance")
+    return nearest, "nearest"
+
+
+def _render_historical_analogs(taiex: pd.Series) -> dict:
+    """Data-mining panel: similar past states and their future-return distribution."""
+    st.markdown("### 🔎 歷史相似情境（資料探勘）")
+    st.caption(
+        "用目前的 MA200 z-score、30 日動能、加速度、波動與跨市場拉伸寬度，"
+        "尋找過去相似日期，觀察之後 20/60 個交易日的報酬分布。"
+        "**這是歷史相似樣本，不是買賣訊號。**"
+    )
+
+    history = _build_market_signal_history(taiex)
+    current_candidates = history.dropna(subset=["tw_z", "ret_30", "accel", "vol_20"])
+    if current_candidates.empty:
+        st.info("資料尚不足以建立相似情境（需要 MA200 與至少 60 個交易日動能資料）。")
+        return {"n": 0, "method": "insufficient_current"}
+    current = current_candidates.iloc[-1]
+    analogs, method = _nearest_analogs(history, current)
+    if len(analogs) < 5:
+        st.info("可用歷史樣本太少，暫不顯示相似情境統計。")
+        return {"n": int(len(analogs)), "method": method}
+
+    rows = []
+    for horizon in (20, 60):
+        vals = analogs[f"fwd_{horizon}"].dropna()
+        if vals.empty:
+            continue
+        rows.append({
+            "觀察期": f"未來 {horizon} 交易日",
+            "樣本數": int(len(vals)),
+            "上漲機率": float((vals > 0).mean() * 100.0),
+            "中位數": float(vals.median()),
+            "平均": float(vals.mean()),
+            "25分位": float(vals.quantile(0.25)),
+            "75分位": float(vals.quantile(0.75)),
+        })
+
+    if not rows:
+        st.info("相似情境尚無足夠未來報酬可供統計。")
+        return {"n": int(len(analogs)), "method": method}
+
+    method_label = {
+        "same_buckets": "同拉伸/同動能/同寬度分組",
+        "same_stretch_momentum": "同拉伸/同動能分組",
+        "nearest": "最近鄰相似度",
+    }.get(method, method)
+    st.caption(f"比對方式：{method_label}；樣本 {len(analogs)} 筆。樣本越少，參考性越低。")
+    df_show = pd.DataFrame(rows)
+    styled = df_show.style.format({
+        "上漲機率": "{:.0f}%",
+        "中位數": "{:+.2f}%",
+        "平均": "{:+.2f}%",
+        "25分位": "{:+.2f}%",
+        "75分位": "{:+.2f}%",
+    })
+    st.dataframe(styled, hide_index=True, width="stretch")
+
+    with st.expander("查看最相似日期", expanded=False):
+        cols = ["close", "tw_z", "ret_30", "accel", "vol_20", "breadth_stretched", "breadth_total", "fwd_20", "fwd_60"]
+        detail = analogs[cols].copy().reset_index(names="日期")
+        detail = detail.sort_values("日期", ascending=False).head(12)
+        st.dataframe(
+            detail.style.format({
+                "close": "{:,.0f}",
+                "tw_z": "{:+.2f}",
+                "ret_30": "{:+.2f}%",
+                "accel": "{:+.2f}pp",
+                "vol_20": "{:.1f}%",
+                "fwd_20": "{:+.2f}%",
+                "fwd_60": "{:+.2f}%",
+            }),
+            hide_index=True,
+            width="stretch",
+        )
+
+    return {"n": int(len(analogs)), "method": method, "rows": rows}
 
 
 # ─── "lab report" health-metric helper ────────────────────────────────────
@@ -339,18 +556,20 @@ def _classify_return(pct: float, window: str) -> tuple[str, str, str]:
     if window == "30d":
         big_up, extreme_up   = RET_30_BIG_UP,   RET_30_EXTREME_UP
         big_down, extreme_dn = RET_30_BIG_DOWN, RET_30_EXTREME_DOWN
+        steady_up, steady_down = RET_30_STEADY_UP, RET_30_STEADY_DOWN
         ref = (f"常態 -3%~+{RET_30_BIG_UP:.0f}% / 大漲 >+{RET_30_BIG_UP:.0f}% / "
                f"急漲 >+{RET_30_EXTREME_UP:.0f}%（基於加權指數 2 年分布）")
     else:  # 60d
         big_up, extreme_up   = RET_60_BIG_UP,   RET_60_EXTREME_UP
         big_down, extreme_dn = RET_60_BIG_DOWN, RET_60_EXTREME_DOWN
+        steady_up, steady_down = RET_60_STEADY_UP, RET_60_STEADY_DOWN
         ref = (f"常態 -6%~+{RET_60_BIG_UP:.0f}% / 大漲 >+{RET_60_BIG_UP:.0f}% / "
                f"急漲 >+{RET_60_EXTREME_UP:.0f}%（基於加權指數 2 年分布）")
 
     if pct >= extreme_up:     return HEALTH_COLORS["red"],    "急漲",     ref
     if pct >= big_up:         return HEALTH_COLORS["orange"], "大漲",     ref
-    if pct >=  3.0:           return HEALTH_COLORS["green"],  "穩健上漲", ref
-    if pct >  -3.0:           return HEALTH_COLORS["gray"],   "盤整",     ref
+    if pct >= steady_up:      return HEALTH_COLORS["green"],  "穩健上漲", ref
+    if pct >  steady_down:    return HEALTH_COLORS["gray"],   "盤整",     ref
     if pct >   big_down:      return HEALTH_COLORS["yellow"], "下跌",     ref      # was green (bug)
     if pct >   extreme_dn:    return HEALTH_COLORS["orange"], "大跌",     ref
     return HEALTH_COLORS["red"], "重挫", ref
@@ -682,10 +901,14 @@ def _render_speed_panel(taiex: pd.Series) -> dict:
 
     vol_series = _rolling_vol(taiex, 20)
     cur_vol = vol_pct = None
-    if len(vol_series.dropna()) >= 30:
-        cur_vol = float(vol_series.iloc[-1])
-        vol_window = vol_series.dropna().iloc[-252:] if len(vol_series.dropna()) > 252 else vol_series.dropna()
-        vol_pct = float((vol_window <= cur_vol).sum()) / len(vol_window) * 100
+    vol_hist_all = vol_series.dropna()
+    if len(vol_hist_all) >= 30:
+        cur_vol = float(vol_hist_all.iloc[-1])
+        # Exclude the current value from its own percentile reference.
+        vol_ref = vol_hist_all.iloc[:-1]
+        if len(vol_ref) >= 30:
+            vol_window = vol_ref.iloc[-252:] if len(vol_ref) > 252 else vol_ref
+            vol_pct = float((vol_window <= cur_vol).sum()) / len(vol_window) * 100
 
     tag, _composite_color = _momentum_composite(ret_30, ret_60, accel)
 
@@ -1009,9 +1232,13 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
     speed_info = _render_speed_panel(taiex)
     st.markdown("---")
 
-    # 4. Chart with regime overlay
+    # 4. Historical analogs (data mining, not a forecast signal)
+    _render_historical_analogs(taiex)
+    st.markdown("---")
+
+    # 5. Chart with regime overlay
     _render_chart_with_regimes(taiex, regimes_df)
     st.markdown("---")
 
-    # 5. Summary card — receives precomputed headline/stretch/speed values
+    # 6. Summary card — receives precomputed headline/stretch/speed values
     _render_summary_card(taiex, stretch_info, speed_info, headline_info)
