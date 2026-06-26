@@ -763,13 +763,13 @@ async def take_snapshot(req: SnapshotRequest):
                     .sort((a, b) => (b.r.width * b.r.height) - (a.r.width * a.r.height));
                 if (overviewCanvases.length) {
                     const r = overviewCanvases[0].r;
-                    const padX = 18, padTop = 14, padBottom = 70;
+                    const padTop = 14, padBottom = 70;
                     const y = Math.max(0, r.top - padTop);
                     const bottom = Math.min(window.innerHeight, footerTop - 8, r.bottom + padBottom);
                     return {
-                        x: Math.max(0, r.left - padX),
+                        x: 0,
                         y,
-                        width:  Math.min(window.innerWidth,  r.right  + padX) - Math.max(0, r.left - padX),
+                        width: window.innerWidth,
                         height: Math.max(180, bottom - y),
                     };
                 }
@@ -798,13 +798,13 @@ async def take_snapshot(req: SnapshotRequest):
                 const el = document.querySelector(sel);
                 if (el && visibleChartLike(el, 800)) {
                     const r = el.getBoundingClientRect();
-                    const padX = 18, padTop = 14, padBottom = 46;
+                    const padTop = 14, padBottom = 46;
                     const y = Math.max(0, r.top - padTop);
                     const bottom = Math.min(window.innerHeight, footerTop - 8, r.bottom + padBottom);
                     return {
-                        x: Math.max(0, r.left - padX),
+                        x: 0,
                         y,
-                        width:  Math.min(window.innerWidth,  r.right  + padX) - Math.max(0, r.left - padX),
+                        width: window.innerWidth,
                         height: Math.max(120, bottom - y),
                     };
                 }
@@ -819,13 +819,13 @@ async def take_snapshot(req: SnapshotRequest):
                 .sort((a, b) => (b.r.width * b.r.height) - (a.r.width * a.r.height));
             if (canvases.length) {
                 const r = canvases[0].r;
-                const padX = 18, padTop = 14, padBottom = 46;
+                const padTop = 14, padBottom = 46;
                 const y = Math.max(0, r.top - padTop);
                 const bottom = Math.min(window.innerHeight, footerTop - 8, r.bottom + padBottom);
                 return {
-                    x: Math.max(0, r.left - padX),
+                    x: 0,
                     y,
-                    width:  Math.min(window.innerWidth,  r.right  + padX) - Math.max(0, r.left - padX),
+                    width: window.innerWidth,
                     height: Math.max(120, bottom - y),
                 };
             }
@@ -863,7 +863,15 @@ async def take_snapshot(req: SnapshotRequest):
             _trim_bottom_whitespace(filepath, padding=34, min_trim=34)
             _overlay_title(filepath, meta["title"])
 
-        return {"status": "success", "url": filename, "path": filepath, "quote": quote, "text": text}
+        return {
+            "status": "success",
+            "url": filename,
+            "path": filepath,
+            "clip": clip,
+            "viewport": GENERIC_SNAPSHOT_VIEWPORT,
+            "quote": quote,
+            "text": text,
+        }
     except Exception as e:
         print(f"❌ Error during snapshot for {req.key}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
