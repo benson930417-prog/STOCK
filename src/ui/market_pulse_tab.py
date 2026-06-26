@@ -54,6 +54,8 @@ from src.ui.etf_compare_tab import (
     _compute_regimes_live,
 )
 
+MARKET_PULSE_VOLUME_PATH = db.ROOT_DIR / "data" / "market_pulse_volume.csv"
+
 
 CROSS_ASSET_INDICES: list[tuple[str, str]] = [
     ("^TWII", "加權指數"),
@@ -971,52 +973,45 @@ def _render_speed_panel(taiex: pd.Series) -> dict:
             "vol": cur_vol, "vol_pct": vol_pct, "tag": tag}
 
 
-def _roc_to_date(s: str) -> "pd.Timestamp":
-    y, m, d = s.split("/")
-    return pd.Timestamp(int(y) + 1911, int(m), int(d))
+def _volume_cache_mtime() -> float:
+    try:
+        return MARKET_PULSE_VOLUME_PATH.stat().st_mtime
+    except FileNotFoundError:
+        return 0.0
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def _twse_daily_market(months: int = 4) -> pd.DataFrame:
-    """Official TWSE daily market stats (FMTQIK): TAIEX close + 成交金額(turnover)
-    + 成交股數(volume). Authoritative and same-day-after-close — and crucially it
-    never carries a 0 placeholder for an unsettled day (the latest published row
-    is always fully settled), unlike Yahoo's ^TWII volume. The monthly endpoint
-    returns one calendar month per call, so we stitch the last few months to get
-    enough history for the 20-day windows."""
-    import requests
-    requests.packages.urllib3.disable_warnings()
-    today = pd.Timestamp.now(tz="Asia/Taipei").tz_localize(None).normalize()
-    seen: dict = {}
-    for k in range(months):
-        anchor = today.replace(day=1) - pd.DateOffset(months=k)
-        ymd = anchor.strftime("%Y%m01")
-        try:
-            r = requests.get(
-                f"https://www.twse.com.tw/rwd/zh/afterTrading/FMTQIK?date={ymd}&response=json",
-                headers={"User-Agent": "Mozilla/5.0"}, verify=False, timeout=15,
-            )
-            payload = r.json()
-        except Exception:
-            continue
-        if payload.get("stat") != "OK":
-            continue
-        for row in payload.get("data") or []:
-            try:
-                dt = _roc_to_date(row[0])
-                volume   = float(str(row[1]).replace(",", ""))
-                turnover = float(str(row[2]).replace(",", ""))
-                close    = float(str(row[4]).replace(",", ""))
-            except Exception:
-                continue
-            seen[dt] = (close, turnover, volume)
-    if not seen:
-        return pd.DataFrame(columns=["close", "turnover", "volume"])
-    return (
-        pd.DataFrame([(d, *v) for d, v in sorted(seen.items())],
-                     columns=["date", "close", "turnover", "volume"])
-        .set_index("date")
+@st.cache_data(ttl=600, show_spinner=False)
+def _load_twse_daily_market(cache_mtime: float) -> pd.DataFrame:
+    """Read the server-local TWSE daily market cache; never fetch during render."""
+    _ = cache_mtime  # included only to invalidate Streamlit cache after daily refresh
+    columns = ["date", "close", "turnover", "volume"]
+    if not MARKET_PULSE_VOLUME_PATH.exists():
+        return pd.DataFrame(columns=columns[1:])
+
+    try:
+        df = pd.read_csv(MARKET_PULSE_VOLUME_PATH)
+    except Exception:
+        return pd.DataFrame(columns=columns[1:])
+
+    if not set(columns).issubset(df.columns):
+        return pd.DataFrame(columns=columns[1:])
+
+    df = df[columns].copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    for col in columns[1:]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = (
+        df.dropna(subset=["date", "close", "turnover"])
+        .drop_duplicates(subset=["date"], keep="last")
+        .sort_values("date")
     )
+    if df.empty:
+        return pd.DataFrame(columns=columns[1:])
+    return df.set_index("date")[columns[1:]]
+
+
+def _twse_daily_market() -> pd.DataFrame:
+    return _load_twse_daily_market(_volume_cache_mtime())
 
 
 def _fmt_turnover(x: float) -> str:
@@ -1036,12 +1031,16 @@ def _render_price_volume() -> dict:
     st.caption(
         "只看**收盤價 + 成交量**——市場最誠實的兩個數字。量＝真金白銀的參與度："
         "**上漲要有量才有說服力，下跌帶量代表賣壓重**。"
-        "資料來源：**TWSE 官方每日成交統計（收盤後更新，無估計值）**；以成交金額衡量量能。"
+        "資料來源：**TWSE 官方每日成交統計（收盤後更新，無估計值）**；"
+        "由每日 18:30 更新的本機快取提供，以成交金額衡量量能。"
     )
 
     mkt = _twse_daily_market()
     if mkt.empty or len(mkt) < 25:
-        st.info("無法取得 TWSE 官方成交量資料（或有效交易日不足 25 天）。")
+        st.info(
+            "無法取得 TWSE 官方成交量快取（或有效交易日不足 25 天）。"
+            "請先在伺服器執行 `python scripts/update_market_pulse_volume.py --backfill-years 5`。"
+        )
         return {}
 
     close, turn = mkt["close"], mkt["turnover"]

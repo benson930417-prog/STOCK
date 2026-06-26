@@ -110,6 +110,9 @@ run_step() {
             generate_etf_summary|generate_market_pulse_summary)
                 metrics=$(grep -E "^Saved " "$logfile" | sed 's/^/          /')
                 ;;
+            "market pulse volume cache")
+                metrics=$(grep -E "^\[market-volume\]" "$logfile" | sed 's/^/          /')
+                ;;
             "LINE broadcast active reports")
                 metrics=$(tail -n 5 "$logfile" | sed 's/^/          /')
                 ;;
@@ -181,6 +184,7 @@ done
 run_step "step3 backfill --incremental" python -m scripts.etf_benchmark.step3_backfill --incremental
 run_step "step4 regime tagger"           python -m scripts.etf_benchmark.step4_regimes
 run_step "step5 score (append today)"    python -m scripts.etf_benchmark.step5_score
+run_step "market pulse volume cache"     python scripts/update_market_pulse_volume.py --months 4
 run_step "generate_market_pulse_summary" python scripts/generate_market_pulse_summary.py
 
 # ──────────────────────────────────────────────────────────────────────────

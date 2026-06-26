@@ -25,6 +25,7 @@ Thumbs.db
 data/images/
 data/fonts/
 data/quote_cache/
+data/market_pulse_volume.csv
 data/debug_00997A/
 data/test_*.html
 data/test_*.js

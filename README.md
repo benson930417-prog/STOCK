@@ -212,6 +212,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/rebroadcast_line.py` | Manual helper for rebroadcasting generated LINE report images. |
 | `scripts/setup_rich_menu.py` | Creates/updates the LINE rich menu. |
 | `scripts/update_and_notify.sh` | Daily orchestrator for fetchers, benchmark refresh, market pulse image, Git update, LINE broadcast, and admin email. |
+| `scripts/update_market_pulse_volume.py` | Refreshes the server-local TWSE 成交量/成交金額 cache used by the 市場脈動 price-volume panel. |
 
 00988A global-holding quote handling: the holdings sheet uses global market suffixes such as `NVDA US`, `7203 JP`, or Hong Kong/Taiwan codes. `scripts/monitor_etf_quotes.py` normalizes those into Yahoo Finance symbols (`NVDA`, `7203.T`, `0005.HK`, `2330.TW`, etc.) and applies the existing exchange-session watcher logic.
 
@@ -244,13 +245,13 @@ final four-basket (股票/債券/商品/其他) design and rationale.
 First-time benchmark setup:
 
 ```bash
-cd /home/ubuntu/STOCK && source venv/bin/activate && python -m scripts.etf_benchmark.step1_universe && python -m scripts.etf_benchmark.step2_schema --reset && python -m scripts.etf_benchmark.step3_backfill && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score --backfill
+cd /home/ubuntu/STOCK && source venv/bin/activate && python -m scripts.etf_benchmark.step1_universe && python -m scripts.etf_benchmark.step2_schema --reset && python -m scripts.etf_benchmark.step3_backfill && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score --backfill && python scripts/update_market_pulse_volume.py --backfill-years 5
 ```
 
 Daily refresh uses:
 
 ```bash
-python -m scripts.etf_benchmark.step3_backfill --incremental && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score
+python -m scripts.etf_benchmark.step3_backfill --incremental && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score && python scripts/update_market_pulse_volume.py --months 4
 ```
 
 ## Data Directory
@@ -274,6 +275,7 @@ Ignored generated data:
 | `data/images/` | `chart_service.py`, quote-card renderers, webhook responses. |
 | `data/summaries/` | `generate_market_pulse_summary.py` and report generators. |
 | `data/quote_cache/` | Quote monitor services. |
+| `data/market_pulse_volume.csv` | Server-local TWSE market turnover/volume cache from `scripts/update_market_pulse_volume.py`. |
 | `data/fonts/` | Local font assets if installed on the server. |
 | `data/etf_bench/*.sqlite` | ETF benchmark pipeline. |
 
