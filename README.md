@@ -59,6 +59,8 @@ The production server path used by all service files is `/home/ubuntu/STOCK`.
 
 Dashboard authentication uses `VIEW_PASSWORD` and `ADMIN_PASSWORD` from Streamlit secrets, environment variables, or `/home/ubuntu/.stock_secrets` depending on the runtime.
 
+Market Pulse (`src/ui/market_pulse_tab.py`) is a dashboard view, not a live data fetcher. It reads the local ETF benchmark DB plus the server-local TWSE volume cache. Do not add slow network calls to the Streamlit render path; add a script/cache refresh step instead.
+
 ## LINE Webhook
 
 `api/webhook.py` is a Flask app listening on `0.0.0.0:8080` when executed directly. It requires LINE credentials and calls the chart service through `CHART_SERVICE_URL`, defaulting to `http://127.0.0.1:5005`.
@@ -126,6 +128,10 @@ All LINE market commands (`油價`, `匯率`, `債券`, `黃金`, `那斯達克`
 
 **Same-moment price + chart.** `monitor_market_charts.refresh_key` makes a single `/snapshot` call per key. `chart_service.py` reads the price/% from the *same page render* that produced the screenshot and returns both, so the cached text never drifts from the cached chart. There is no separate `/market-text` pass and no per-key price buffer.
 
+**Snapshot crop rules.** Generic 5-day charts (`oil`, `brent`, `bond`, `gold`, `usdtwd`, `usdjpy`, `usdchf`) may detect the chart's `y` and `height`, but they must use the full TradingView viewport width: `clip.x = 0` and `clip.width = window.innerWidth`. Do not crop or shift the x-axis for generic charts; the right price axis and last-price marker live at the far right edge. NASDAQ is the exception: it uses a separate IG-NASDAQ 24h branch with its own `1200x900` viewport, fixed `y`/`height`, 1-day button click, and trading-session overlay. Do not "simplify" NASDAQ into the generic crop path unless it is manually reverified.
+
+The `/snapshot` response includes `clip` and `viewport`; `monitor_market_charts.py` stores those fields in `data/quote_cache/market_<key>.json`. If a chart image looks cropped, check those values first. For generic charts, `clip.x` should be `0`.
+
 ### Adding a Cached Market Chart Monitor
 
 Use this procedure when adding a LINE market chart command that must reply fast and should not render TradingView during the LINE reply.
@@ -135,6 +141,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
    - Add display metadata to `CHART_META`.
    - Add quote extraction logic if `/market-text` cannot use the generic parser.
    - Add any symbol-specific `/snapshot` crop logic if the generic chart crop is not reliable.
+   - For generic TradingView charts, keep full x-width (`x=0`, full viewport width) and only tune vertical crop. Do not add x movement/cropping unless the key is deliberately special-cased.
    - Keep failures explicit. Do not silently fall back to Yahoo or another provider for these TradingView commands.
 
 2. Test the chart service directly on the server.
@@ -179,7 +186,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 9. Verify the cache, then test LINE.
 
    ```bash
-   python scripts/monitor_market_charts.py nasdaq --once && cat data/quote_cache/market_nasdaq.json && ls -lh data/images/nasdaq_chart.png && journalctl -u stock-market-chart-monitor.service -n 80 --no-pager
+   python scripts/monitor_market_charts.py oil brent bond gold usdtwd usdjpy usdchf nasdaq --once && cat data/quote_cache/market_oil.json && ls -lh data/images/*_chart.png && journalctl -u stock-market-chart-monitor.service -n 80 --no-pager
    ```
 
 ## Scripts
@@ -209,6 +216,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/monitor_gold_quote.py` | Long-running GOLD quote monitor. |
 | `scripts/monitor_market_charts.py` | Long-running TradingView market text/chart cache monitor for LINE chart commands such as NASDAQ. |
 | `scripts/monitor_master_holding.py` | Long-running master-holding cache monitor. |
+| `scripts/overlay_market_sessions.py` | Draws Taiwan/US session markers on the special NASDAQ 24h chart image. |
 | `scripts/rebroadcast_line.py` | Manual helper for rebroadcasting generated LINE report images. |
 | `scripts/setup_rich_menu.py` | Creates/updates the LINE rich menu. |
 | `scripts/update_and_notify.sh` | Daily orchestrator for fetchers, benchmark refresh, market pulse image, Git update, LINE broadcast, and admin email. |
@@ -254,6 +262,27 @@ Daily refresh uses:
 python -m scripts.etf_benchmark.step3_backfill --incremental && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score && python scripts/update_market_pulse_volume.py --months 4
 ```
 
+### Market Pulse Data Flow
+
+Market Pulse has two separate outputs:
+
+- Dashboard tab: `src/ui/market_pulse_tab.py`, rendered live in Streamlit from local data.
+- LINE image: `scripts/generate_market_pulse_summary.py`, saved as `data/summaries/market_pulse_latest.jpg`.
+
+The dashboard's 價量健康 panel uses TWSE official `FMTQIK` daily stats for TAIEX close, turnover, and volume. That data is cached in ignored server-local `data/market_pulse_volume.csv`. The dashboard only reads the CSV via `_twse_daily_market()`; it must not call TWSE during page render. The cache is refreshed by `scripts/update_market_pulse_volume.py`, and the 18:30 daily job runs:
+
+```bash
+python scripts/update_market_pulse_volume.py --months 4
+```
+
+On a fresh server, initialize history once:
+
+```bash
+python scripts/update_market_pulse_volume.py --backfill-years 5
+```
+
+`scripts/update_and_notify.sh` treats this as its own logged step (`market pulse volume cache`) and the admin email includes the `[market-volume] rows=... range=...` line. `step4_regimes` and `step5_score` are production benchmark steps, not temporary debug steps: step 4 builds regime tags, step 5 appends/backfills fair-score history.
+
 ## Data Directory
 
 Tracked files in `data/` are source/history state that should move with the repo:
@@ -267,6 +296,7 @@ Tracked files in `data/` are source/history state that should move with the repo
 | `data/master_manual_positions.json` | Manual master portfolio positions. |
 | `data/master_meta.json` | Master portfolio metadata/state. |
 | `data/master_trades.csv` | Manual trade ledger for the master portfolio. |
+| `data/summaries/market_pulse_latest.jpg` | Latest generated Market Pulse LINE image. |
 
 Ignored generated data:
 
@@ -400,10 +430,11 @@ sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemc
 3. Install dependencies from `requirements.txt`.
 4. Run all active/passive ETF fetchers requested by the service arguments.
 5. Refresh ETF benchmark SQLite data, regime tags, and score history.
-6. Generate the market pulse image.
-7. Commit and push changed tracked data.
-8. Broadcast active ETF reports through LINE when new active ETF data exists.
-9. Send admin email summary with success/failure details.
+6. Refresh the server-local Market Pulse TWSE volume cache.
+7. Generate the market pulse image.
+8. Commit and push changed tracked data.
+9. Broadcast active ETF reports through LINE when new active ETF data exists.
+10. Send admin email summary with success/failure details, including small step metrics such as DB rows, regime counts, score writes, market-volume cache range, generated summary files, LINE send output, and git push status.
 
 Manual run:
 
@@ -450,6 +481,10 @@ Each of these is a trap that has already caused a wrong result or a missed step.
 8. **Per-ETF data prefix:** active = `data/etf_<TICKER>_*`, passive = `data/passive_<TICKER>_*`. `monitor_etf_quotes.py` and `_latest_history_payload` pick the prefix from the `PASSIVE_*` sets — an active ETF must NOT be in those sets.
 
 9. **Asian markets with a midday break must stay in-session during lunch.** Tokyo (11:30–12:30), Hong Kong (12:00–13:00) and Shanghai/Shenzhen (11:30–13:00) pause for lunch but are NOT closed for the day. `_regular_session_bounds` (in `monitor_etf_quotes.py`) therefore spans open→close as ONE window for JP/HK/CN; do not split it back into morning/afternoon windows or the lunch gap is mis-detected as `CLOSE`, which freezes those holdings at the morning close and dumps them into the 已收盤 composite instead of 交易中. A holding showing 已收盤 with a stale ~morning timestamp while its own exchange is mid-day is the symptom.
+
+10. **Market Pulse volume is daily cached, never fetched on demand.** `src/ui/market_pulse_tab.py` must read `data/market_pulse_volume.csv` only. `scripts/update_market_pulse_volume.py` is the only place that should call TWSE `FMTQIK`; it runs at 18:30 through `scripts/update_and_notify.sh`. If the dashboard says the cache is missing, run `python scripts/update_market_pulse_volume.py --backfill-years 5` once on the server, then let the daily `--months 4` refresh maintain it. Do not add `requests` back into the Streamlit render path.
+
+11. **Cached TradingView charts use full x-width except NASDAQ.** Generic market charts (`oil`, `brent`, `bond`, `gold`, `usdtwd`, `usdjpy`, `usdchf`) should crop only vertically and must keep `clip.x=0`, `clip.width=window.innerWidth`; otherwise the right price axis/last-price marker gets cut off. NASDAQ is intentionally special: it uses IG-NASDAQ 24h, a fixed `1200x900` viewport, custom y/height, a 1-day click, and `overlay_market_sessions.py`. Do not share generic crop edits into NASDAQ unless reverified with a real screenshot.
 
 ## ETF Maintenance Playbook For Agents
 
@@ -699,6 +734,24 @@ Render master holding card once:
 python scripts/master_holding_quote_card.py
 ```
 
+Refresh Market Pulse TWSE volume cache once:
+
+```bash
+python scripts/update_market_pulse_volume.py --months 4
+```
+
+Initialize Market Pulse TWSE volume history on a fresh server:
+
+```bash
+python scripts/update_market_pulse_volume.py --backfill-years 5
+```
+
+Refresh cached LINE market charts once:
+
+```bash
+python scripts/monitor_market_charts.py oil brent bond gold usdtwd usdjpy usdchf nasdaq --once
+```
+
 Test admin email:
 
 ```bash
@@ -727,6 +780,30 @@ sudo systemctl restart stock-chart.service && curl -s http://127.0.0.1:5005/docs
 
 If TradingView text or chart parsing breaks, use the exact failing key with `/market-debug` and inspect `journalctl -u stock-chart.service`.
 
+If a cached TradingView image is horizontally cropped, first inspect the saved cache JSON:
+
+```bash
+cat data/quote_cache/market_oil.json | python -m json.tool | grep -A8 '"clip"'
+```
+
+For generic market charts, `clip.x` should be `0` and `clip.width` should match the snapshot viewport width. Restart the chart service after crop-code changes, then regenerate cache images:
+
+```bash
+sudo systemctl restart stock-chart.service && source venv/bin/activate && python scripts/monitor_market_charts.py oil brent bond gold usdtwd usdjpy usdchf --once
+```
+
+NASDAQ is intentionally excluded from that generic crop check; verify it separately because it has custom 24h parameters:
+
+```bash
+python scripts/monitor_market_charts.py nasdaq --once && cat data/quote_cache/market_nasdaq.json | python -m json.tool | grep -A12 '"clip"'
+```
+
+If the Market Pulse dashboard says TWSE volume cache is missing or too short, initialize or refresh the cache instead of editing the dashboard:
+
+```bash
+python scripts/update_market_pulse_volume.py --backfill-years 5
+```
+
 If GitHub push returns a remote 500, retry after a few minutes. That error is server-side when local `git status` is clean and credentials are unchanged.
 
 ## Current File Inventory
@@ -750,6 +827,7 @@ data/etf_00403A_log.json
 data/master_manual_positions.json
 data/master_meta.json
 data/master_trades.csv
+data/summaries/market_pulse_latest.jpg
 data/passive_0050_history.json
 data/passive_0050_log.json
 data/passive_0056_history.json
@@ -787,10 +865,13 @@ scripts/master_holding_quote_card.py
 scripts/master_manual_positions.py
 scripts/monitor_etf_quotes.py
 scripts/monitor_gold_quote.py
+scripts/monitor_market_charts.py
 scripts/monitor_master_holding.py
+scripts/overlay_market_sessions.py
 scripts/rebroadcast_line.py
 scripts/setup_rich_menu.py
 scripts/update_and_notify.sh
+scripts/update_market_pulse_volume.py
 scripts/etf_benchmark/__init__.py
 scripts/etf_benchmark/db.py
 scripts/etf_benchmark/seed_tpex_etfs.csv
