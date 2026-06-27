@@ -28,10 +28,18 @@ Sections
        Single combined card with 30d return, 60d return, acceleration,
        and 20d realised volatility. One composite tag, not four.
 
-    4. TAIEX 2y chart with ZigZag regime overlay (today marked).
+    3.5 價量健康 Price-Volume
+       TWSE official close + turnover cache. Updated by the daily 18:30 job,
+       never fetched during Streamlit render.
 
-    5. 📋 綜合解讀 Summary card
-       Plain text combining all four section signals into one neutral
+    4. 歷史相似情境 Historical analogs
+       Data-mining base rates with visible sample quality and return ranges.
+       Context only, not a forecast signal.
+
+    5. TAIEX 2y chart with ZigZag regime overlay (today marked).
+
+    6. 📋 綜合解讀 Summary card
+       Plain text combining the section signals into one neutral
        interpretation. No 🚨, no "warning" language — this page is
        context, not call.
 
@@ -48,6 +56,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from scripts.etf_benchmark import db
+from scripts.etf_benchmark.step4_regimes import DEFAULT_THRESHOLD_PCT as REGIME_SWING_THRESHOLD_PCT
 from src.ui.etf_compare_tab import (
     REGIME_COLORS,
     REGIME_LABELS_ZH,
@@ -349,6 +358,30 @@ def _nearest_analogs(history: pd.DataFrame, current: pd.Series, max_rows: int = 
     return nearest, "nearest"
 
 
+def _analog_sample_quality(n: int, method: str) -> tuple[str, str, str]:
+    if n < 8:
+        return "低", HEALTH_COLORS["orange"], "樣本少，只能當提示，不能當規則。"
+    if method == "nearest":
+        return "低~中", HEALTH_COLORS["yellow"], "最近鄰容易過度貼合目前狀態，參考性低於同分組樣本。"
+    if n < 15:
+        return "中", HEALTH_COLORS["yellow"], "樣本可參考，但仍不足以當交易規則。"
+    return "較高", HEALTH_COLORS["green"], "樣本較穩，但仍只是歷史基準率，不是預測。"
+
+
+def _analog_temperature(median: float, q25: float, q75: float, win_rate: float) -> str:
+    if median > 0 and q25 > 0 and win_rate >= 65:
+        return "偏順風"
+    if median < 0 and q75 < 0 and win_rate <= 35:
+        return "偏逆風"
+    if q25 < 0 < q75:
+        return "分歧大"
+    if median > 0:
+        return "略順風"
+    if median < 0:
+        return "略逆風"
+    return "中性"
+
+
 def _render_historical_analogs(taiex: pd.Series) -> dict:
     """Data-mining panel: similar past states and their future-return distribution."""
     st.markdown("### 🔎 歷史相似情境（資料探勘）")
@@ -374,14 +407,21 @@ def _render_historical_analogs(taiex: pd.Series) -> dict:
         vals = analogs[f"fwd_{horizon}"].dropna()
         if vals.empty:
             continue
+        q10 = float(vals.quantile(0.10))
+        q25 = float(vals.quantile(0.25))
+        median = float(vals.median())
+        q75 = float(vals.quantile(0.75))
+        q90 = float(vals.quantile(0.90))
+        win_rate = float((vals > 0).mean() * 100.0)
         rows.append({
             "觀察期": f"未來 {horizon} 交易日",
             "樣本數": int(len(vals)),
-            "上漲機率": float((vals > 0).mean() * 100.0),
-            "中位數": float(vals.median()),
+            "風險溫度": _analog_temperature(median, q25, q75, win_rate),
+            "上漲比例": win_rate,
+            "中位數": median,
+            "中間50%": f"{q25:+.2f}% ~ {q75:+.2f}%",
+            "10~90分位": f"{q10:+.2f}% ~ {q90:+.2f}%",
             "平均": float(vals.mean()),
-            "25分位": float(vals.quantile(0.25)),
-            "75分位": float(vals.quantile(0.75)),
         })
 
     if not rows:
@@ -393,16 +433,29 @@ def _render_historical_analogs(taiex: pd.Series) -> dict:
         "same_stretch_momentum": "同拉伸/同動能分組",
         "nearest": "最近鄰相似度",
     }.get(method, method)
-    st.caption(f"比對方式：{method_label}；樣本 {len(analogs)} 筆。樣本越少，參考性越低。")
+    quality, quality_color, quality_note = _analog_sample_quality(len(analogs), method)
+    st.markdown(
+        f"""<div style="border-left:3px solid {quality_color}; padding:0.6rem 0.9rem;
+                       margin:0.4rem 0 0.7rem 0; background:rgba(255,255,255,0.025);
+                       border-radius:3px; font-size:0.9rem; line-height:1.5">
+              <span style="color:{quality_color}; font-weight:650">樣本品質：{quality}</span>
+              <span style="color:#9ca3af">　{method_label}；樣本 {len(analogs)} 筆。{quality_note}</span>
+            </div>""",
+        unsafe_allow_html=True,
+    )
     df_show = pd.DataFrame(rows)
     styled = df_show.style.format({
-        "上漲機率": "{:.0f}%",
+        "上漲比例": "{:.0f}%",
         "中位數": "{:+.2f}%",
         "平均": "{:+.2f}%",
-        "25分位": "{:+.2f}%",
-        "75分位": "{:+.2f}%",
     })
     st.dataframe(styled, hide_index=True, width="stretch")
+    primary = rows[-1]
+    _section_insight(
+        f"以 {primary['觀察期']} 看，歷史相似樣本的中位數為 "
+        f"**{primary['中位數']:+.2f}%**，中間 50% 落在 **{primary['中間50%']}**。"
+        "這是基準率/風險溫度，用來校準情緒，不是預測或買賣訊號。"
+    )
 
     with st.expander("查看最相似日期", expanded=False):
         cols = ["close", "tw_z", "ret_30", "accel", "vol_20", "breadth_stretched", "breadth_total", "fwd_20", "fwd_60"]
@@ -680,7 +733,7 @@ def _render_headline(taiex: pd.Series, regimes_df: pd.DataFrame) -> dict:
     with c2:
         days_str = f"{cur_regime_label}已 {cur_regime_days} 交易日" if cur_regime_days is not None else "—"
         _render_health_metric(
-            "目前規制（ZigZag 4%）",
+            f"目前規制（ZigZag {REGIME_SWING_THRESHOLD_PCT:g}%）",
             f"{cur_regime_label}　<span style='font-size:1.0rem'>{days_str}</span>",
             c_reg, s_reg, r_reg,
         )
@@ -1374,7 +1427,7 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
 
     # Compute regimes ONCE per render and pass to both sections that need it
     # (Bug 13: was being recomputed 2-3 times, ~100ms wasted each call)
-    regimes_df = _compute_regimes_live(threshold_pct=4.0)
+    regimes_df = _compute_regimes_live(threshold_pct=REGIME_SWING_THRESHOLD_PCT)
 
     # 1. Market Level — capture return dict so summary can reuse it (Bug 11)
     headline_info = _render_headline(taiex, regimes_df)

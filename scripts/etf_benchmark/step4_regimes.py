@@ -1,4 +1,4 @@
-"""Step 6 — tag market regimes via ZigZag swing detection on a reference index.
+"""Step 4 — tag market regimes via ZigZag swing detection on a reference index.
 
 Why ZigZag (vs rolling drawdown):
     Drawdown-from-cummax over a 2-year window anchors to a stale absolute

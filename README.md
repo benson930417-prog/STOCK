@@ -283,6 +283,8 @@ python scripts/update_market_pulse_volume.py --backfill-years 5
 
 `scripts/update_and_notify.sh` treats this as its own logged step (`market pulse volume cache`) and the admin email includes the `[market-volume] rows=... range=...` line. `step4_regimes` and `step5_score` are production benchmark steps, not temporary debug steps: step 4 builds regime tags, step 5 appends/backfills fair-score history.
 
+Regime threshold must stay aligned: the dashboard imports `DEFAULT_THRESHOLD_PCT` from `scripts/etf_benchmark/step4_regimes.py` for its live ZigZag overlay and headline label. Do not hardcode a separate 4%/5% threshold in `src/ui/market_pulse_tab.py`.
+
 ## Data Directory
 
 Tracked files in `data/` are source/history state that should move with the repo:
