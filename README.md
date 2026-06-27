@@ -8,6 +8,32 @@ STOCK is a self-hosted ETF and market-monitoring system. It has three user-facin
 
 The production server path used by all service files is `/home/ubuntu/STOCK`.
 
+## Agent Delivery Contract
+
+For future AI/code agents: when the user asks for a repo change, finish the delivery loop unless the user explicitly says not to.
+
+1. Edit the repo and run appropriate checks.
+2. Commit the completed change locally.
+3. Push to `origin main`.
+4. Deploy by pulling the pushed commit on the OCI server.
+5. Tell the user exactly what changed, what was verified, and what ran on the server.
+
+Normal server target:
+
+```bash
+ubuntu@80.225.204.45:/home/ubuntu/STOCK
+```
+
+Prefer one-shot SSH commands for routine deploys because they are auditable and close automatically. Use an interactive SSH session only for live debugging, log-following, or manual server inspection.
+
+For README-only/doc changes, deployment usually means only:
+
+```bash
+cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash
+```
+
+For code changes, use the **Standard Deployment** command in this README and restart the relevant services. If service files changed, also copy service templates and run `sudo systemctl daemon-reload`.
+
 ## Runtime Map
 
 | Runtime | Entry point | systemd unit | Purpose |
