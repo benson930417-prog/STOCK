@@ -31,37 +31,43 @@ REPO_CJK_FONT = os.path.join(_REPO_ROOT, "data", "fonts", "NotoSansTC-Regular.ot
 
 # Time -> pixel-x mapping.
 #
-# The IG overview "1 day" chart is a FIXED 24h frame: 07:00 TW -> 07:00 TW next
-# day, mapped onto a fixed plot pixel area [PLOT_LEFT_X .. PLOT_RIGHT_X]. Only the
-# START (07:00) is a pinned, labelled gridline; the right end (07:00 next day) is
-# the frame edge but is NOT labelled. The latest data point gets its own floating
-# time label (e.g. "04:40") wherever "now" falls inside the frame -- that label is
-# NOT the frame end and NOT the session close, and it ticks forward (04:40->04:50)
-# as data arrives. So do not infer the right edge from it.
+# The IG overview "1 day" chart maps the trading "day" [07:00 TW open .. frame end]
+# onto a FIXED plot pixel area [PLOT_LEFT_X .. PLOT_RIGHT_X]. The left edge (07:00)
+# and the right edge (PLOT_RIGHT_X) are fixed pixels; the FRAME END time differs by
+# weekday, so px/hour is constant within a day but differs Friday vs Mon-Thu:
+#   - Mon-Thu: the market is continuous, so the grapher frame is a full 24h,
+#     07:00 -> 07:00 next day. px/hour = (1095-31)/24 = 44.33.
+#   - Friday:  the REAL weekly close is ~05:00 TW Sat (= Fri 21:00 UTC = 22:00
+#     London), so the frame is 07:00 -> 05:00 = 22h, fit into the SAME width and
+#     therefore more compressed. px/hour = (1095-31)/22 = 48.4.
+# Using the 24h constant on Friday (the bug) placed bands too far left, with the
+# error growing rightward (US open drawn before 21:00).
 #
-# Because the frame is a fixed 24h, px/hour is CONSTANT for every day -- it does
-# NOT depend on now, and Friday is no different (its data just ends ~05:00 TW, with
-# the last ~2h of the frame empty). Confirmed by the user: a Monday server capture
-# was correctly 7->7, and the Friday frame is also 7->7.
-#   px/hour = (PLOT_RIGHT_X - PLOT_LEFT_X) / 24 = 44.33
-# (Earlier theories -- "scale to now" and "Friday = 22h span" -- were both wrong
-# and are reverted; both fought a frame that is simply fixed at 24h.)
+# Two hard constraints pin every number, no free parameters:
+#   1. The user confirmed a Monday (weekday) capture was correct at 44.33 -> the
+#      weekday frame is 24h and (PLOT_RIGHT_X-31)/24=44.33 -> PLOT_RIGHT_X=1095.
+#   2. The Friday overview hover reads close 22:59 GMT+2 = 04:59 TW -> Friday frame
+#      is 07:00->05:00 = 22h -> px/hour 48.4 at the SAME PLOT_RIGHT_X=1095.
+# The "04:40"-type label on a Friday capture is just the latest data point floating
+# inside the frame; it is NOT the frame end -- do not scale to it (that and the old
+# "scale to now" idea were both wrong).
 #
-# Pixel edges are invariants of the 1200-wide IG snapshot layout, from measured
-# x-axis tick centers (09:00=120, 06:00=1051) -> 07:00=31 and 07:00-next=1095.
+# Pixel edges are invariants of the 1200-wide IG snapshot layout (measured tick
+# centers 09:00=120, 06:00=1051 on a weekday 24h frame -> 07:00=31, 07:00-next=1095).
 SESSION_OPEN_H = 7.0         # TW clock hour the chart frame starts (left edge)
-WINDOW_HOURS = 24.0          # the 1D frame is a fixed 24h window: 07:00 -> 07:00
 PLOT_LEFT_X = 31             # pixel-x of the left edge (SESSION_OPEN_H = 07:00)
-PLOT_RIGHT_X = 1095          # pixel-x of the right edge (07:00 next day, +24h)
+PLOT_RIGHT_X = 1095          # pixel-x of the right edge (the frame end)
+WEEKDAY_FRAME_H = 24.0       # Mon-Thu continuous: frame 07:00 -> 07:00 next day
+FRIDAY_FRAME_H = 22.0        # Friday: real weekly close ~05:00 TW -> 07:00 -> 05:00
 
 # IG:NASDAQ ("US Tech 100" cash) trades ~07:00 TW each weekday into the next
 # morning (server pins the browser to Asia/Taipei). Over the weekend the chart
-# stays FROZEN on Friday's frame, so displayed_session_open() rolls weekend/pre-
-# open captures back to the last weekday -- used only to pick the DST date for the
-# US-session offset. Schedule context (confirmed from hover tooltips, rendered in
-# UTC): weekend gap = Fri 21:00 UTC -> Sun 22:00 UTC; Friday's data ends ~05:00 TW
-# Sat, reopen Mon 06:00 TW. Matches IG dealing hours (22:00 London Fri / 23:00
-# London Sun, BST). None of this changes the fixed 24h pixel frame above.
+# stays FROZEN on Friday's 22h frame, so displayed_session_open() rolls weekend/
+# pre-open captures back to the last weekday (Friday) -- this both picks the DST
+# date for the US-session offset AND selects the Friday frame length. Schedule
+# (confirmed from hover tooltips, rendered in UTC): weekend gap = Fri 21:00 UTC ->
+# Sun 22:00 UTC; Friday data ends ~05:00 TW Sat, reopen Mon 06:00 TW. Matches IG
+# dealing hours (22:00 London Fri / 23:00 London Sun, BST).
 
 ET = ZoneInfo("America/New_York")
 TW = ZoneInfo("Asia/Taipei")
@@ -136,12 +142,14 @@ def displayed_session_open(capture_dt):
 def axis_scale(capture_dt):
     """(px_per_hour, open_dt) for this snapshot.
 
-    The 1D chart is a fixed 24h frame (07:00 -> 07:00) across the fixed plot width
-    [PLOT_LEFT_X .. PLOT_RIGHT_X], so px/hour is a constant 44.33 for every day --
-    independent of now and of which weekday it is. open_dt is the frame's left edge
-    (for the DST date only).
+    The frame [07:00 .. frame end] is fit across the fixed plot width, so px/hour is
+    constant within a day but depends on the frame length: 24h Mon-Thu (44.33), 22h
+    on Friday (48.4, because the real weekly close is ~05:00 TW). It does NOT depend
+    on wall-clock now. open_dt is the frame's left edge (also picks the DST date).
     """
-    return (PLOT_RIGHT_X - PLOT_LEFT_X) / WINDOW_HOURS, displayed_session_open(capture_dt)
+    open_dt = displayed_session_open(capture_dt)
+    frame_h = FRIDAY_FRAME_H if open_dt.weekday() == 4 else WEEKDAY_FRAME_H
+    return (PLOT_RIGHT_X - PLOT_LEFT_X) / frame_h, open_dt
 
 
 def x_of(tw_hour, px_per_hour):
