@@ -54,10 +54,15 @@ PX_PER_HOUR_FALLBACK = 44.333  # used only if elapsed span is unknown/degenerate
 # and the 1D chart stays FROZEN on it until Monday's reopen. So the chart's right
 # edge is min(now, session close), NOT wall-clock now -- using now on a weekend
 # stretched the axis ~2x and squished every band left again.
-#   - Daily close (Tue-Sat morning): ~06:00 TW next day.
-#   - Friday weekly close: ~05:00 TW Sat (= 22:00 London Fri for US indices).
-# Sources: IG dealing-hours docs. These two are the only schedule guesses; nudge
-# if a frozen-chart capture shows the far-right bands drifting.
+#
+# CONFIRMED from chart hover tooltips (the user's TradingView renders in UTC):
+#   weekend gap = Fri 21:00 UTC (last bar 20:55) -> Sun 22:00 UTC reopen, which in
+#   TW (UTC+8) is: Friday weekly close = Sat 05:00 TW, reopen = Mon 06:00 TW.
+#   Matches IG dealing hours (22:00 London Fri close / 23:00 London Sun open, BST).
+#   (Fri 19 Jun 2026 closed early at 19:55 UTC = Juneteenth, a holiday, not a rule.)
+#   - Daily close (Tue-Sat morning): ~06:00 TW next day (rarely matters; weekdays
+#     are essentially continuous, so the chart is live and the clamp seldom fires).
+#   - Friday weekly close: 05:00 TW Sat -- verified, do not nudge without new data.
 DAILY_CLOSE_H = 6.0          # next-day TW hour a normal weekday session closes
 FRIDAY_CLOSE_H = 5.0         # next-day (Sat) TW hour the Friday weekly close lands
 
