@@ -82,33 +82,30 @@ SESSIONS = [
     ("美股盤後", (171, 71, 188), 16.0, 20.0, "ET"),   # purple
 ]
 
-# Vertical layout is computed from the actual image height so it stays correct
-# even if the snapshot's bottom-trim changes the body height. The chart body
-# starts below the title bar that chart_service stamps on top.
+# Vertical layout is computed from the actual image height + font metrics so it
+# stays correct even if the snapshot's bottom-trim changes the body height. The
+# chart body starts below the title bar that chart_service stamps on top.
 TITLE_BAR_H = 70         # height of the title bar chart_service adds on top
 
-# Extra white strip appended below the chart so the bigger arrows/labels have
-# breathing room (the original snapshot's bottom gap is too short for them).
-ADD_BOTTOM_SPACE = 56
-
-# Shaded session bands (kept). Faint full-plot-height rectangles.
+# Shaded session bands (faint) + vertical end-ticks. Both run from band_top down
+# to the arrow line ONLY, so the label row below them is never crossed by a line.
 DRAW_BANDS = True
 BAND_TOP_MARGIN = 0      # px below the title bar where the band starts
-BAND_BOTTOM_MARGIN = 4   # px from the (expanded) image bottom where bands end
 BAND_ALPHA = 24
+DRAW_END_TICKS = True
+TICK_W = 2               # vertical boundary-line thickness (px)
 
-# Thick double-headed dimension arrows in the white strip at the BOTTOM,
-# with the label sitting in a break in the middle of the shaft (CAD style).
-ARROW_BOTTOM_MARGIN = 26 # px from the (expanded) image bottom to the arrow line
+# Dimension marker: a FULL double-headed arrow spanning the region in the white
+# strip below the chart, with the label centered BELOW it. A narrow region (e.g.
+# Friday 美股盤後, ~1h wide) gets a short arrow and the label simply overflows
+# sideways into neighbours -- because it sits below every vertical line, nothing
+# crosses it. The bottom strip height is derived from the font so labels fit.
+ARROW_TOP_GAP = 16       # px from the chart-body bottom down to the arrow line
 ARROW_W = 8              # shaft thickness (px)
 ARROW_HEAD = 13          # arrowhead half-length / half-height (px)
-LABEL_GAP = 10           # gap between label and shaft on each side (px)
+ARROW_TO_LABEL_GAP = 3   # px from the arrowhead bottom to the label top (tight)
+LABEL_BOTTOM_PAD = 8     # px of white below the label
 FONT_SIZE = 24           # arrow label text size
-
-# Vertical boundary lines at each end of a region, spanning the full shaded
-# band (band_top -> band_bottom). CAD-style region delimiters.
-DRAW_END_TICKS = True
-TICK_W = 2               # vertical line thickness (px)
 
 
 def tw_offset_hours(chart_date):
@@ -184,23 +181,21 @@ def a(color, alpha):
     return (color[0], color[1], color[2], alpha)
 
 
-def dimension_with_label(d, x0, x1, y, color, label, font):
-    """CAD-style dimension: outward arrowheads at x0/x1, shaft broken in the
-    middle where the centered label sits."""
+def dimension_with_label(d, x0, x1, arrow_y, label_y, color, label, font):
+    """Full double-headed dimension arrow from x0..x1 at arrow_y, with the label
+    centered BELOW it (its visual top at label_y). The label may be wider than the
+    arrow on a narrow region; it overflows sideways but sits below all the vertical
+    extension lines, so nothing crosses it."""
     h, w = ARROW_HEAD, ARROW_W
+    # outward arrowheads at both ends, with a continuous shaft between them
+    d.polygon([(x0, arrow_y), (x0 + h, arrow_y - h), (x0 + h, arrow_y + h)], fill=color)
+    d.polygon([(x1, arrow_y), (x1 - h, arrow_y - h), (x1 - h, arrow_y + h)], fill=color)
+    if x1 - x0 > 2 * h:
+        d.line([(x0 + h, arrow_y), (x1 - h, arrow_y)], fill=color, width=w)
+    # label centered below the arrow
     cx = (x0 + x1) / 2
     tb = d.textbbox((0, 0), label, font=font)
-    tw_, th = tb[2] - tb[0], tb[3] - tb[1]
-    lx0, lx1 = cx - tw_ / 2, cx + tw_ / 2
-
-    # arrowheads pointing outward at both ends
-    d.polygon([(x0, y), (x0 + h, y - h), (x0 + h, y + h)], fill=color)
-    d.polygon([(x1, y), (x1 - h, y - h), (x1 - h, y + h)], fill=color)
-    # shaft on each side of the label break
-    d.line([(x0 + h, y), (lx0 - LABEL_GAP, y)], fill=color, width=w)
-    d.line([(lx1 + LABEL_GAP, y), (x1 - h, y)], fill=color, width=w)
-    # label centered on the line
-    d.text((lx0, y - th / 2 - tb[1]), label, font=font, fill=color)
+    d.text((cx - (tb[2] - tb[0]) / 2 - tb[0], label_y - tb[1]), label, font=font, fill=color)
 
 
 def draw_overlay(img, capture_dt=None):
@@ -216,18 +211,25 @@ def draw_overlay(img, capture_dt=None):
     src = img.convert("RGBA")
     width, orig_h = src.size
 
-    # Append a white strip at the bottom for the enlarged arrows/labels.
-    height = orig_h + ADD_BOTTOM_SPACE
+    font = load_font(FONT_SIZE)
+    try:
+        lb = font.getbbox("美股盤後")
+        label_h = lb[3] - lb[1]
+    except Exception:
+        label_h = FONT_SIZE
+
+    # Append a white strip sized for: arrow line, then the label row beneath it.
+    arrow_y = orig_h + ARROW_TOP_GAP
+    label_y = arrow_y + ARROW_HEAD + ARROW_TO_LABEL_GAP
+    height = int(label_y + label_h + LABEL_BOTTOM_PAD)
     base = Image.new("RGBA", (width, height), (255, 255, 255, 255))
     base.paste(src, (0, 0))
 
     band_top = TITLE_BAR_H + BAND_TOP_MARGIN
-    band_bottom = height - BAND_BOTTOM_MARGIN
-    arrow_y = height - ARROW_BOTTOM_MARGIN
+    band_bottom = arrow_y          # bands + end-ticks stop at the arrow line
 
     overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(overlay)
-    font = load_font(FONT_SIZE)
 
     for s in SESSIONS:
         label, color, start, end = resolve_session(s, offset)
@@ -239,12 +241,13 @@ def draw_overlay(img, capture_dt=None):
         if DRAW_BANDS:
             d.rectangle([x0, band_top, x1, band_bottom], fill=a(color, BAND_ALPHA))
 
-        # full-height vertical boundary lines spanning the shaded region
+        # vertical boundary lines: band_top down to the arrow line only (so they
+        # never cross the label row below)
         if DRAW_END_TICKS:
             d.line([(x0, band_top), (x0, band_bottom)], fill=a(color, 255), width=TICK_W)
             d.line([(x1, band_top), (x1, band_bottom)], fill=a(color, 255), width=TICK_W)
 
-        dimension_with_label(d, x0, x1, arrow_y, a(color, 255), label, font)
+        dimension_with_label(d, x0, x1, arrow_y, label_y, a(color, 255), label, font)
 
     return Image.alpha_composite(base, overlay).convert("RGB")
 
