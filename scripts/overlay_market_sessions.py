@@ -15,7 +15,7 @@ Tune the CONFIG block until it lines up, then we port the mapping to the server.
 """
 import argparse
 import os
-from datetime import date as date_cls, datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
@@ -29,15 +29,24 @@ REPO_CJK_FONT = os.path.join(_REPO_ROOT, "data", "fonts", "NotoSansTC-Regular.ot
 # CONFIG -- everything you'd nudge pixel-by-pixel lives here.
 # ----------------------------------------------------------------------------
 
-# Time -> pixel-x mapping, calibrated from the 1200x420 snapshot.
-# x-axis tick centers measured: 09:00=120 ... 06:00=1051 -> 44.333 px/hour.
-# 07:00 sits at the plot's left edge; we anchor on 09:00 to avoid the
-# left-clipped first label.
-ANCHOR_HOUR = 2.0        # hours after 07:00 for the anchor tick (09:00)
-ANCHOR_X = 120.0         # pixel-x of that tick
-PX_PER_HOUR = 44.333     # horizontal pixels per hour
-PLOT_LEFT_X = 31         # left edge of plotting area (07:00)
-PLOT_RIGHT_X = 1095      # right edge (07:00 next day, t=24h)
+# Time -> pixel-x mapping.
+#
+# TradingView's "1 day" view does NOT show a fixed 24h window. It stretches the
+# range [SESSION_START_HOUR .. now] across a FIXED plot pixel area: the left data
+# edge is always 07:00 TW (PLOT_LEFT_X), and the latest point ("now", the chart
+# capture time) always sits at the right data edge (PLOT_RIGHT_X). So pixels per
+# hour are NOT constant — they depend on how many hours have elapsed since 07:00
+# at capture time and must be computed per snapshot. Hardcoding a fixed px/hour
+# (the old bug) placed every later boundary too far left, with the error growing
+# through the day.
+#
+# Both pixel edges below are invariants of the 1200-wide IG snapshot layout,
+# calibrated from measured x-axis tick centers (09:00=120 ... 06:00=1051), which
+# imply 07:00->31 and a full-24h right edge of 07:00->1095.
+SESSION_START_HOUR = 7.0      # TW clock hour at the chart's left data edge
+PLOT_LEFT_X = 31             # pixel-x of the left data edge (SESSION_START_HOUR)
+PLOT_RIGHT_X = 1095          # pixel-x of the right data edge (= capture time "now")
+PX_PER_HOUR_FALLBACK = 44.333  # used only if capture time is unknown/degenerate
 
 ET = ZoneInfo("America/New_York")
 TW = ZoneInfo("Asia/Taipei")
@@ -87,10 +96,38 @@ def tw_offset_hours(chart_date):
     return (d.astimezone(TW).utcoffset() - d.utcoffset()).total_seconds() / 3600.0
 
 
-def x_of(tw_hour):
+def session_start_dt(capture_dt):
+    """TW datetime of the chart's left edge (07:00) for a given capture moment.
+
+    The 24h chart starts at 07:00 TW. If the snapshot is taken after midnight but
+    before 07:00 (e.g. 04:40, during the US session), the chart's 07:00 belongs to
+    the PREVIOUS calendar day.
+    """
+    start = capture_dt.replace(hour=int(SESSION_START_HOUR),
+                               minute=int(round((SESSION_START_HOUR % 1) * 60)),
+                               second=0, microsecond=0)
+    if capture_dt < start:
+        start -= timedelta(days=1)
+    return start
+
+
+def axis_scale(capture_dt):
+    """Pixels per axis-hour for this snapshot, from elapsed time since 07:00.
+
+    Returns (px_per_hour, right_hour) where right_hour is the capture time on the
+    axis (07:00 == SESSION_START_HOUR, values past 24 mean the next day).
+    """
+    start = session_start_dt(capture_dt)
+    elapsed_h = (capture_dt - start).total_seconds() / 3600.0
+    right_hour = SESSION_START_HOUR + elapsed_h
+    if elapsed_h <= 0.01:
+        return PX_PER_HOUR_FALLBACK, right_hour
+    return (PLOT_RIGHT_X - PLOT_LEFT_X) / elapsed_h, right_hour
+
+
+def x_of(tw_hour, px_per_hour):
     """TW clock hour (may exceed 24 = next day) -> pixel x."""
-    hours_after_0700 = tw_hour - 7.0
-    return ANCHOR_X + (hours_after_0700 - ANCHOR_HOUR) * PX_PER_HOUR
+    return PLOT_LEFT_X + (tw_hour - SESSION_START_HOUR) * px_per_hour
 
 
 def resolve_session(s, offset):
@@ -139,10 +176,16 @@ def dimension_with_label(d, x0, x1, y, color, label, font):
     d.text((lx0, y - th / 2 - tb[1]), label, font=font, fill=color)
 
 
-def draw_overlay(img, chart_date=None):
-    if chart_date is None:
-        chart_date = datetime.now(TW).date()
+def draw_overlay(img, capture_dt=None):
+    if capture_dt is None:
+        capture_dt = datetime.now(TW)
+    elif capture_dt.tzinfo is None:
+        capture_dt = capture_dt.replace(tzinfo=TW)
+    # DST offset is anchored on the chart's start date (its 07:00 left edge), not
+    # the wall-clock date, so a post-midnight capture still uses the right day.
+    chart_date = session_start_dt(capture_dt).date()
     offset = tw_offset_hours(chart_date)
+    px_per_hour, right_hour = axis_scale(capture_dt)
     src = img.convert("RGBA")
     width, orig_h = src.size
 
@@ -161,8 +204,8 @@ def draw_overlay(img, chart_date=None):
 
     for s in SESSIONS:
         label, color, start, end = resolve_session(s, offset)
-        x0 = max(PLOT_LEFT_X, x_of(start))
-        x1 = min(PLOT_RIGHT_X, x_of(end))
+        x0 = max(PLOT_LEFT_X, x_of(start, px_per_hour))
+        x1 = min(PLOT_RIGHT_X, x_of(end, px_per_hour))
         if x1 - x0 < 2 * ARROW_HEAD:
             continue
 
@@ -179,14 +222,16 @@ def draw_overlay(img, chart_date=None):
     return Image.alpha_composite(base, overlay).convert("RGB")
 
 
-def overlay_sessions_on_file(image_path, chart_date=None):
+def overlay_sessions_on_file(image_path, capture_dt=None):
     """Open a saved chart snapshot, draw the session overlay, save in place.
 
-    Imported by chart_service.py after the title bar is stamped on the NASDAQ
-    snapshot. Safe no-op semantics: raises on real failures so the caller can
-    log, but does not alter the image unless drawing succeeds.
+    Imported by chart_service.py right after the title bar is stamped on the
+    NASDAQ snapshot, so `capture_dt` defaults to now (TW) — which is exactly the
+    chart's right-edge time and what the dynamic px/hour scale needs. Safe no-op
+    semantics: raises on real failures so the caller can log, but does not alter
+    the image unless drawing succeeds.
     """
-    out = draw_overlay(Image.open(image_path), chart_date)
+    out = draw_overlay(Image.open(image_path), capture_dt)
     out.save(image_path)
     return image_path
 
@@ -195,14 +240,26 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("input")
     ap.add_argument("-o", "--output", default="overlay_out.png")
-    ap.add_argument("--date", help="chart start date (YYYY-MM-DD) for DST; default=today")
+    ap.add_argument("--capture", help="capture moment 'YYYY-MM-DD HH:MM' (TW) = "
+                                      "chart right edge; default=now. This drives "
+                                      "the dynamic time->pixel scale.")
+    ap.add_argument("--date", help="(legacy) chart start date YYYY-MM-DD; assumes "
+                                   "capture at 07:00, i.e. a full 24h span")
     args = ap.parse_args()
-    chart_date = (datetime.strptime(args.date, "%Y-%m-%d").date()
-                  if args.date else date_cls.today())
-    out = draw_overlay(Image.open(args.input), chart_date)
+    if args.capture:
+        capture_dt = datetime.strptime(args.capture, "%Y-%m-%d %H:%M").replace(tzinfo=TW)
+    elif args.date:
+        d = datetime.strptime(args.date, "%Y-%m-%d").date()
+        capture_dt = datetime(d.year, d.month, d.day, 7, 0, tzinfo=TW)
+    else:
+        capture_dt = datetime.now(TW)
+    px_per_hour, right_hour = axis_scale(capture_dt)
+    out = draw_overlay(Image.open(args.input), capture_dt)
     out.save(args.output)
+    chart_date = session_start_dt(capture_dt).date()
     print(f"wrote {args.output} ({out.size[0]}x{out.size[1]}) "
-          f"offset=+{tw_offset_hours(chart_date):.0f}h")
+          f"offset=+{tw_offset_hours(chart_date):.0f}h "
+          f"px/hour={px_per_hour:.2f} right_hour={right_hour:.2f}")
 
 
 if __name__ == "__main__":
