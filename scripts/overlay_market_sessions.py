@@ -43,10 +43,23 @@ REPO_CJK_FONT = os.path.join(_REPO_ROOT, "data", "fonts", "NotoSansTC-Regular.ot
 # Both pixel edges below are invariants of the 1200-wide IG snapshot layout,
 # calibrated from measured x-axis tick centers (09:00=120 ... 06:00=1051), which
 # imply 07:00->31 and a full-24h right edge of 07:00->1095.
-SESSION_START_HOUR = 7.0      # TW clock hour at the chart's left data edge
-PLOT_LEFT_X = 31             # pixel-x of the left data edge (SESSION_START_HOUR)
-PLOT_RIGHT_X = 1095          # pixel-x of the right data edge (= capture time "now")
-PX_PER_HOUR_FALLBACK = 44.333  # used only if capture time is unknown/degenerate
+SESSION_OPEN_H = 7.0         # TW clock hour the IG cash session opens (left edge)
+PLOT_LEFT_X = 31             # pixel-x of the left data edge (SESSION_OPEN_H)
+PLOT_RIGHT_X = 1095          # pixel-x of the right data edge (latest plotted bar)
+PX_PER_HOUR_FALLBACK = 44.333  # used only if elapsed span is unknown/degenerate
+
+# IG:NASDAQ ("US Tech 100" cash) session schedule, expressed on the TW axis (the
+# server pins the browser to Asia/Taipei). The instrument trades ~07:00 TW each
+# weekday into the next morning; Friday is the last session before the weekend
+# and the 1D chart stays FROZEN on it until Monday's reopen. So the chart's right
+# edge is min(now, session close), NOT wall-clock now -- using now on a weekend
+# stretched the axis ~2x and squished every band left again.
+#   - Daily close (Tue-Sat morning): ~06:00 TW next day.
+#   - Friday weekly close: ~05:00 TW Sat (= 22:00 London Fri for US indices).
+# Sources: IG dealing-hours docs. These two are the only schedule guesses; nudge
+# if a frozen-chart capture shows the far-right bands drifting.
+DAILY_CLOSE_H = 6.0          # next-day TW hour a normal weekday session closes
+FRIDAY_CLOSE_H = 5.0         # next-day (Sat) TW hour the Friday weekly close lands
 
 ET = ZoneInfo("America/New_York")
 TW = ZoneInfo("Asia/Taipei")
@@ -96,38 +109,51 @@ def tw_offset_hours(chart_date):
     return (d.astimezone(TW).utcoffset() - d.utcoffset()).total_seconds() / 3600.0
 
 
-def session_start_dt(capture_dt):
-    """TW datetime of the chart's left edge (07:00) for a given capture moment.
+def _at_hour(dt, hour_float):
+    """Return dt at the given fractional TW hour (e.g. 5.5 -> 05:30)."""
+    return dt.replace(hour=int(hour_float),
+                      minute=int(round((hour_float % 1) * 60)),
+                      second=0, microsecond=0)
 
-    The 24h chart starts at 07:00 TW. If the snapshot is taken after midnight but
-    before 07:00 (e.g. 04:40, during the US session), the chart's 07:00 belongs to
-    the PREVIOUS calendar day.
+
+def displayed_session(capture_dt):
+    """(open_dt, close_dt): the trading session the 1D chart currently shows.
+
+    The IG cash session opens ~07:00 TW each weekday and runs into the next
+    morning. After midnight but before 07:00 the live session opened the PREVIOUS
+    day. Weekends/holidays have no open, so the chart stays frozen on the last
+    weekday session (Friday) -- we roll back to it. Friday closes earlier (weekly
+    close) than the daily close on other mornings.
     """
-    start = capture_dt.replace(hour=int(SESSION_START_HOUR),
-                               minute=int(round((SESSION_START_HOUR % 1) * 60)),
-                               second=0, microsecond=0)
-    if capture_dt < start:
-        start -= timedelta(days=1)
-    return start
+    open_today = _at_hour(capture_dt, SESSION_OPEN_H)
+    open_dt = open_today if capture_dt >= open_today else open_today - timedelta(days=1)
+    while open_dt.weekday() >= 5:        # Sat(5)/Sun(6) never open -> last weekday
+        open_dt -= timedelta(days=1)
+    close_h = FRIDAY_CLOSE_H if open_dt.weekday() == 4 else DAILY_CLOSE_H
+    close_dt = _at_hour(open_dt + timedelta(days=1), close_h)
+    return open_dt, close_dt
 
 
 def axis_scale(capture_dt):
-    """Pixels per axis-hour for this snapshot, from elapsed time since 07:00.
+    """Pixels per axis-hour for this snapshot.
 
-    Returns (px_per_hour, right_hour) where right_hour is the capture time on the
-    axis (07:00 == SESSION_START_HOUR, values past 24 mean the next day).
+    The 1D chart stretches [open .. right_edge] across [PLOT_LEFT_X..PLOT_RIGHT_X].
+    right_edge = min(now, session close) so a frozen (closed-market) chart scales
+    to its last bar, not wall-clock now. Returns (px_per_hour, open_dt, right_hour)
+    with right_hour on the 07:00-anchored axis (values past 24 mean next day).
     """
-    start = session_start_dt(capture_dt)
-    elapsed_h = (capture_dt - start).total_seconds() / 3600.0
-    right_hour = SESSION_START_HOUR + elapsed_h
+    open_dt, close_dt = displayed_session(capture_dt)
+    right_edge = min(capture_dt, close_dt)
+    elapsed_h = (right_edge - open_dt).total_seconds() / 3600.0
+    right_hour = SESSION_OPEN_H + elapsed_h
     if elapsed_h <= 0.01:
-        return PX_PER_HOUR_FALLBACK, right_hour
-    return (PLOT_RIGHT_X - PLOT_LEFT_X) / elapsed_h, right_hour
+        return PX_PER_HOUR_FALLBACK, open_dt, right_hour
+    return (PLOT_RIGHT_X - PLOT_LEFT_X) / elapsed_h, open_dt, right_hour
 
 
 def x_of(tw_hour, px_per_hour):
-    """TW clock hour (may exceed 24 = next day) -> pixel x."""
-    return PLOT_LEFT_X + (tw_hour - SESSION_START_HOUR) * px_per_hour
+    """TW clock hour on the 07:00-anchored axis (>=24 = next day) -> pixel x."""
+    return PLOT_LEFT_X + (tw_hour - SESSION_OPEN_H) * px_per_hour
 
 
 def resolve_session(s, offset):
@@ -181,11 +207,11 @@ def draw_overlay(img, capture_dt=None):
         capture_dt = datetime.now(TW)
     elif capture_dt.tzinfo is None:
         capture_dt = capture_dt.replace(tzinfo=TW)
-    # DST offset is anchored on the chart's start date (its 07:00 left edge), not
-    # the wall-clock date, so a post-midnight capture still uses the right day.
-    chart_date = session_start_dt(capture_dt).date()
-    offset = tw_offset_hours(chart_date)
-    px_per_hour, right_hour = axis_scale(capture_dt)
+    px_per_hour, open_dt, right_hour = axis_scale(capture_dt)
+    # DST offset is anchored on the displayed session's open date (its 07:00 left
+    # edge), not the wall-clock date, so a post-midnight or weekend-frozen capture
+    # still uses the right day (e.g. Friday on a Sunday).
+    offset = tw_offset_hours(open_dt.date())
     src = img.convert("RGBA")
     width, orig_h = src.size
 
@@ -253,12 +279,12 @@ def main():
         capture_dt = datetime(d.year, d.month, d.day, 7, 0, tzinfo=TW)
     else:
         capture_dt = datetime.now(TW)
-    px_per_hour, right_hour = axis_scale(capture_dt)
+    px_per_hour, open_dt, right_hour = axis_scale(capture_dt)
     out = draw_overlay(Image.open(args.input), capture_dt)
     out.save(args.output)
-    chart_date = session_start_dt(capture_dt).date()
     print(f"wrote {args.output} ({out.size[0]}x{out.size[1]}) "
-          f"offset=+{tw_offset_hours(chart_date):.0f}h "
+          f"session_open={open_dt:%Y-%m-%d %H:%M} "
+          f"offset=+{tw_offset_hours(open_dt.date()):.0f}h "
           f"px/hour={px_per_hour:.2f} right_hour={right_hour:.2f}")
 
 
