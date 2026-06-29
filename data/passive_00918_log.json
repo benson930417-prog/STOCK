@@ -1,9 +1,9 @@
 {
-  "last_checked_utc": "2026-06-28T10:31:04.898724Z",
-  "last_updated_utc": "2026-06-26T10:31:31.024760Z",
-  "latest_date": "2026-06-25",
-  "status": "NO CHANGE",
+  "last_checked_utc": "2026-06-29T10:31:24.696778Z",
+  "last_updated_utc": "2026-06-29T10:31:24.696778Z",
+  "latest_date": "2026-06-28",
+  "status": "NEW DATA FOUND",
   "source": "https://www.uobam.com.tw/json/reply/WebSitePcfRequest",
   "holdings_count": 30,
-  "payload_changed": false
+  "payload_changed": true
 }
