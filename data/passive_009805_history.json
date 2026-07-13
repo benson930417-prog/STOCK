@@ -10324,5 +10324,317 @@
         "shares": 39924
       }
     ]
+  },
+  "2026-07-09": {
+    "date": "2026-07-09",
+    "meta": {
+      "fund_size": null,
+      "nav": 16.75,
+      "outstanding_units": null,
+      "closing_price": 16.6,
+      "source_url": "https://www.tsit.com.tw/ETF/Home/ETFSeriesDetail/009805"
+    },
+    "holdings": [
+      {
+        "id": "GEV US",
+        "name": "奇異維諾瓦公司",
+        "weight_pct": 10.966,
+        "shares": 33804
+      },
+      {
+        "id": "ETN US",
+        "name": "伊頓公開有限公司",
+        "weight_pct": 10.0043,
+        "shares": 81710
+      },
+      {
+        "id": "VRT US",
+        "name": "維諦技術控股公司",
+        "weight_pct": 9.2106,
+        "shares": 94251
+      },
+      {
+        "id": "PWR US",
+        "name": "廣達服務公司",
+        "weight_pct": 7.4787,
+        "shares": 37100
+      },
+      {
+        "id": "NEE US",
+        "name": "Nextera Energy Inc",
+        "weight_pct": 5.351,
+        "shares": 203636
+      },
+      {
+        "id": "DUK US",
+        "name": "杜克能源公司",
+        "weight_pct": 4.0927,
+        "shares": 108302
+      },
+      {
+        "id": "BE UN",
+        "name": "Bloom Energy Corp",
+        "weight_pct": 3.9642,
+        "shares": 51124
+      },
+      {
+        "id": "SO US",
+        "name": "南方公司",
+        "weight_pct": 3.3725,
+        "shares": 117458
+      },
+      {
+        "id": "HUBB US",
+        "name": "安柏",
+        "weight_pct": 2.9613,
+        "shares": 20221
+      },
+      {
+        "id": "NVT US",
+        "name": "nVent Electric PLC",
+        "weight_pct": 2.9335,
+        "shares": 61521
+      },
+      {
+        "id": "D US",
+        "name": "道明尼能源公司",
+        "weight_pct": 2.5598,
+        "shares": 122171
+      },
+      {
+        "id": "AEP US",
+        "name": "美國電力公司",
+        "weight_pct": 2.285,
+        "shares": 56584
+      },
+      {
+        "id": "EXC US",
+        "name": "Exelon Corp",
+        "weight_pct": 1.9901,
+        "shares": 142224
+      },
+      {
+        "id": "CEG US",
+        "name": "星座能源公司",
+        "weight_pct": 1.7785,
+        "shares": 23510
+      },
+      {
+        "id": "FSLR US",
+        "name": "第一太陽能",
+        "weight_pct": 1.7482,
+        "shares": 25360
+      },
+      {
+        "id": "XEL US",
+        "name": "Xcel 能源",
+        "weight_pct": 1.5498,
+        "shares": 65010
+      },
+      {
+        "id": "MTZ US",
+        "name": "MasTec公司",
+        "weight_pct": 1.3731,
+        "shares": 11830
+      },
+      {
+        "id": "ED US",
+        "name": "聯合愛迪生",
+        "weight_pct": 1.2767,
+        "shares": 38378
+      },
+      {
+        "id": "PEG US",
+        "name": "大眾服務企業集團公司",
+        "weight_pct": 1.2552,
+        "shares": 51898
+      },
+      {
+        "id": "EIX US",
+        "name": "愛迪生國際",
+        "weight_pct": 1.2033,
+        "shares": 53435
+      },
+      {
+        "id": "WEC US",
+        "name": "WEC能源集團公司",
+        "weight_pct": 1.1758,
+        "shares": 33923
+      },
+      {
+        "id": "ES US",
+        "name": "Eversource能源",
+        "weight_pct": 1.1651,
+        "shares": 52236
+      },
+      {
+        "id": "FE US",
+        "name": "第一能源公司",
+        "weight_pct": 1.1546,
+        "shares": 80347
+      },
+      {
+        "id": "VST US",
+        "name": "維斯達能源公司",
+        "weight_pct": 1.107,
+        "shares": 23226
+      },
+      {
+        "id": "ETR US",
+        "name": "安特吉公司",
+        "weight_pct": 1.0919,
+        "shares": 31768
+      },
+      {
+        "id": "AGX US",
+        "name": "阿根公司",
+        "weight_pct": 1.0651,
+        "shares": 5135
+      },
+      {
+        "id": "ACM UN",
+        "name": "艾奕康",
+        "weight_pct": 1.0074,
+        "shares": 49071
+      },
+      {
+        "id": "DTE US",
+        "name": "DTE能源",
+        "weight_pct": 0.9731,
+        "shares": 21609
+      },
+      {
+        "id": "AEE US",
+        "name": "阿莫林公司",
+        "weight_pct": 0.97,
+        "shares": 28767
+      },
+      {
+        "id": "TTEK UW",
+        "name": "德照科技公司",
+        "weight_pct": 0.9259,
+        "shares": 99194
+      },
+      {
+        "id": "AEIS US",
+        "name": "艾儀有限公司",
+        "weight_pct": 0.8767,
+        "shares": 9396
+      },
+      {
+        "id": "ENS US",
+        "name": "EnerSys",
+        "weight_pct": 0.8606,
+        "shares": 13828
+      },
+      {
+        "id": "PPL US",
+        "name": "PPL公司",
+        "weight_pct": 0.8428,
+        "shares": 78337
+      },
+      {
+        "id": "EVRG US",
+        "name": "Evergy公司",
+        "weight_pct": 0.8138,
+        "shares": 31632
+      },
+      {
+        "id": "GNRC US",
+        "name": "基內瑞克控股公司",
+        "weight_pct": 0.7905,
+        "shares": 11109
+      },
+      {
+        "id": "PCG US",
+        "name": "太平洋電力瓦斯公司",
+        "weight_pct": 0.7893,
+        "shares": 152287
+      },
+      {
+        "id": "CMS US",
+        "name": "CMS能源",
+        "weight_pct": 0.7246,
+        "shares": 32025
+      },
+      {
+        "id": "LNT US",
+        "name": "聯合能源公司",
+        "weight_pct": 0.6144,
+        "shares": 26901
+      },
+      {
+        "id": "NRG US",
+        "name": "NRG Energy Inc",
+        "weight_pct": 0.5936,
+        "shares": 14007
+      },
+      {
+        "id": "CNP US",
+        "name": "Centerpoint能源",
+        "weight_pct": 0.593,
+        "shares": 45373
+      },
+      {
+        "id": "PNW US",
+        "name": "皮那可資本公司",
+        "weight_pct": 0.542,
+        "shares": 16828
+      },
+      {
+        "id": "VICR US",
+        "name": "懷克爾公司",
+        "weight_pct": 0.5133,
+        "shares": 6133
+      },
+      {
+        "id": "POWL US",
+        "name": "Powell工業公司",
+        "weight_pct": 0.5085,
+        "shares": 7124
+      },
+      {
+        "id": "MYRG US",
+        "name": "MYR集團公司",
+        "weight_pct": 0.4953,
+        "shares": 3810
+      },
+      {
+        "id": "AES US",
+        "name": "愛伊斯公司",
+        "weight_pct": 0.4382,
+        "shares": 98609
+      },
+      {
+        "id": "ENPH US",
+        "name": "Enphase能源公司",
+        "weight_pct": 0.3324,
+        "shares": 24541
+      },
+      {
+        "id": "BELFB US",
+        "name": "百富電子有限公司",
+        "weight_pct": 0.2393,
+        "shares": 2963
+      },
+      {
+        "id": "ITRI US",
+        "name": "英特隆公司",
+        "weight_pct": 0.2146,
+        "shares": 8370
+      },
+      {
+        "id": "FLNC US",
+        "name": "通量能源公司",
+        "weight_pct": 0.0972,
+        "shares": 19254
+      },
+      {
+        "id": "MVST US",
+        "name": "Microvast Holdings Inc",
+        "weight_pct": 0.0131,
+        "shares": 39924
+      }
+    ]
   }
 }

@@ -1,5 +1,5 @@
 {
-  "last_checked_utc": "2026-07-12T10:32:19.182607Z",
+  "last_checked_utc": "2026-07-13T10:32:36.347971Z",
   "last_updated_utc": "2026-07-09T10:30:48.022007Z",
   "latest_date": "2026-07-09",
   "status": "FETCH FAILED",
@@ -7,5 +7,5 @@
   "holdings_count": 30,
   "provider": "CTBC Investments",
   "payload_changed": false,
-  "error": "00891 fetch failed during daily job started at 2026-07-12T10:30:23.043624Z"
+  "error": "00891 fetch failed during daily job started at 2026-07-13T10:30:23.257011Z"
 }
