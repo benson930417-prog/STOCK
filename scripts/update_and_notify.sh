@@ -81,16 +81,17 @@ print(f"          status={status}")
 PY
 }
 
-# Run a labeled command; append OK/FAIL to summary, capture full stderr+stdout
-# to a per-step log file, and on failure copy the tail into errors file.
-run_step() {
-    local label="$1"; shift
-    local logfile="$LOG_DIR/${label// /_}.log"
-    echo "=== $label ==="
-    if "$@" > "$logfile" 2>&1; then
-        # Pull useful metrics out of the daily production steps.
-        local metrics=""
-        case "$label" in
+# Record a successful step: append [OK] + step metrics to the summary.
+# Optional third arg is a note appended to the label (e.g. retry recovery).
+record_step_ok() {
+    local label="$1"
+    local logfile="$2"
+    local note="${3:-}"
+    local summary_label="$label"
+    [ -n "$note" ] && summary_label="$label ($note)"
+    # Pull useful metrics out of the daily production steps.
+    local metrics=""
+    case "$label" in
             fetch*)
                 metrics=$(fetch_summary_line "$label")
                 ;;
@@ -120,31 +121,88 @@ run_step() {
                 metrics=$(grep -E "^(To |Everything up-to-date|[[:space:]]*[0-9a-f]+\\.\\.[0-9a-f]+[[:space:]]+main -> main)" "$logfile" | sed 's/^/          /')
                 ;;
         esac
-        if [ -n "$metrics" ]; then
-            printf "  [OK]   %s\n%s\n" "$label" "$metrics" >> "$SUMMARY_FILE"
-        else
-            printf "  [OK]   %s\n" "$label" >> "$SUMMARY_FILE"
-        fi
-        # Echo tail for journal log
-        tail -n 3 "$logfile"
+    if [ -n "$metrics" ]; then
+        printf "  [OK]   %s\n%s\n" "$summary_label" "$metrics" >> "$SUMMARY_FILE"
+    else
+        printf "  [OK]   %s\n" "$summary_label" >> "$SUMMARY_FILE"
+    fi
+    # Echo tail for journal log
+    tail -n 3 "$logfile"
+}
+
+# Record a failed step: append [FAIL] to summary, copy the log tail into the
+# errors file, and flip the overall run status.
+record_step_fail() {
+    local label="$1"
+    local logfile="$2"
+    local rc="$3"
+    printf "  [FAIL] %s  (exit=%d)\n" "$label" "$rc" >> "$SUMMARY_FILE"
+    {
+        echo
+        echo "═══════════════════════════════════════════════════"
+        echo "FAILURE: $label  (exit=$rc)"
+        echo "Last 30 lines of $logfile:"
+        echo "───────────────────────────────────────────────────"
+        tail -n 30 "$logfile"
+        echo
+    } >> "$ERRORS_FILE"
+    overall_status="PARTIAL_FAIL"
+    fail_count=$((fail_count + 1))
+    echo "  [FAIL] $label (exit=$rc) — continuing"
+}
+
+# Run a labeled command; append OK/FAIL to summary, capture full stderr+stdout
+# to a per-step log file, and on failure copy the tail into errors file.
+run_step() {
+    local label="$1"; shift
+    local logfile="$LOG_DIR/${label// /_}.log"
+    echo "=== $label ==="
+    if "$@" > "$logfile" 2>&1; then
+        record_step_ok "$label" "$logfile"
         return 0
     else
         local rc=$?
-        printf "  [FAIL] %s  (exit=%d)\n" "$label" "$rc" >> "$SUMMARY_FILE"
-        {
-            echo
-            echo "═══════════════════════════════════════════════════"
-            echo "FAILURE: $label  (exit=$rc)"
-            echo "Last 30 lines of $logfile:"
-            echo "───────────────────────────────────────────────────"
-            tail -n 30 "$logfile"
-            echo
-        } >> "$ERRORS_FILE"
-        overall_status="PARTIAL_FAIL"
-        fail_count=$((fail_count + 1))
-        echo "  [FAIL] $label (exit=$rc) — continuing"
+        record_step_fail "$label" "$logfile" "$rc"
         return $rc
     fi
+}
+
+# Like run_step, but retries transient failures: up to $1 attempts with $2
+# seconds between them. Only the FINAL outcome is recorded in the summary, so
+# a step that recovers on retry stays [OK] and does not flip the run to
+# PARTIAL_FAIL (the recovery is noted on the [OK] line and in the journal).
+# Meant for fetchers hitting flaky external sources — e.g. Yuanta's page
+# rendering without the weight table at 18:30 (2026-07-16), which succeeded
+# on a later manual rerun.
+run_step_retry() {
+    local attempts="$1"
+    local delay="$2"
+    local label="$3"
+    shift 3
+    local try=1 rc logfile="$LOG_DIR/${label// /_}.log"
+    while true; do
+        echo "=== $label (attempt $try/$attempts) ==="
+        if "$@" > "$logfile" 2>&1; then
+            if [ "$try" -gt 1 ]; then
+                record_step_ok "$label" "$logfile" "recovered on attempt $try/$attempts"
+            else
+                record_step_ok "$label" "$logfile"
+            fi
+            return 0
+        else
+            rc=$?
+        fi
+        if [ "$try" -ge "$attempts" ]; then
+            record_step_fail "$label" "$logfile" "$rc"
+            return $rc
+        fi
+        # Keep the failed attempt's log for debugging before the retry
+        # overwrites it, and note the retry in the journal.
+        cp "$logfile" "$LOG_DIR/${label// /_}.attempt${try}.log" 2>/dev/null
+        echo "  [RETRY] $label failed (exit=$rc) — retrying in ${delay}s"
+        try=$((try + 1))
+        sleep "$delay"
+    done
 }
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -162,13 +220,19 @@ echo "ETF list: ${ETFS[*]}"
 RUN_STARTED_UTC="$(python -c 'from datetime import datetime, timezone; print(datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))')"
 FAILED_ETFS=()
 
+# Fetchers scrape/query external issuer sources, which occasionally hiccup
+# for one run (Yuanta page missing its weight table, issuer API timeouts).
+# One retry after 90s absorbs those; a hard outage still fails after retry.
+FETCH_ATTEMPTS=2
+FETCH_RETRY_DELAY=90
+
 for ETF in "${ETFS[@]}"; do
     case "$ETF" in
         00403A|00981A|00988A|00991A)
-            run_step "fetch $ETF (active)" python "scripts/fetch_etf_${ETF}.py" || FAILED_ETFS+=("$ETF")
+            run_step_retry "$FETCH_ATTEMPTS" "$FETCH_RETRY_DELAY" "fetch $ETF (active)" python "scripts/fetch_etf_${ETF}.py" || FAILED_ETFS+=("$ETF")
             ;;
         0050|0056|00830|00878|00891|00918|009805|009820)
-            run_step "fetch $ETF (passive)" python "scripts/fetch_passive_${ETF}.py" || FAILED_ETFS+=("$ETF")
+            run_step_retry "$FETCH_ATTEMPTS" "$FETCH_RETRY_DELAY" "fetch $ETF (passive)" python "scripts/fetch_passive_${ETF}.py" || FAILED_ETFS+=("$ETF")
             ;;
         *)
             echo "Skipping unknown ETF: $ETF"

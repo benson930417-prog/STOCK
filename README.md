@@ -484,7 +484,7 @@ sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemc
 1. Load `/home/ubuntu/.stock_secrets`.
 2. Pull latest Git changes with rebase/autostash.
 3. Install dependencies from `requirements.txt`.
-4. Run all active/passive ETF fetchers requested by the service arguments.
+4. Run all active/passive ETF fetchers requested by the service arguments. Each fetcher gets **one retry after 90s** (`run_step_retry`) because issuer sources occasionally hiccup for a single run (e.g. Yuanta's page rendering without its weight table, issuer API connect timeouts). A fetch that recovers on retry is reported `[OK] ... (recovered on attempt 2/2)` and does not flip the run to PARTIAL_FAIL; a hard outage still fails after the retry.
 5. Refresh ETF benchmark SQLite data, regime tags, and score history.
 6. Refresh the server-local Market Pulse TWSE volume cache.
 7. Generate the market pulse image.
