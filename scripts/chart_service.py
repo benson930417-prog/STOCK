@@ -489,6 +489,22 @@ def _trim_bottom_whitespace(image_path, padding=18, min_trim=24, max_body_height
         print(f"  ✂️ Trimmed bottom whitespace: {height - crop_bottom}px")
 
 
+def _chart_snapshot_has_content(image_path, min_colored_ratio=0.002):
+    """True if the captured chart area contains an actual price plot.
+
+    A TradingView canvas that failed to paint (e.g. the IG feed's transient
+    "Market closed / No trades" state) screenshots as white plus the gray
+    TradingView watermark — zero color saturation. A rendered price chart has
+    a colored line, gradient fill, and price marker. Run this BEFORE any of
+    our own overlays are drawn, because those add colored pixels.
+    """
+    img = Image.open(image_path).convert("RGB")
+    img.thumbnail((320, 320))
+    total = img.width * img.height
+    colored = sum(1 for r, g, b in img.getdata() if max(r, g, b) - min(r, g, b) > 40)
+    return total > 0 and (colored / total) >= min_colored_ratio
+
+
 async def init_browser():
     global playwright_instance, browser_instance, browser_context, pages
 
@@ -668,56 +684,91 @@ async def take_snapshot(req: SnapshotRequest):
                 "height": float(req.crop_height) if req.crop_height is not None else default_clip["height"],
             }
             await page.set_viewport_size(nasdaq_viewport)
-            await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
-            await page.evaluate("window.scrollTo(0, 0)")
-            await asyncio.sleep(1)
-            clicked = await page.evaluate("""() => {
-                const controls = Array.from(document.querySelectorAll('button, a, [role="button"]'));
-                const oneDay = controls.find(el => (el.textContent || '').trim() === '1 day');
-                if (oneDay) { oneDay.click(); return true; }
-                return false;
-            }""")
-            # Clicking "1 day" re-fetches the intraday series and repaints the
-            # chart canvas. A blind sleep races that repaint: when TradingView is
-            # slow the screenshot fires before the price line is drawn, so the
-            # capture shows the frame + logo but a blank chart (only our PIL
-            # title/session overlay survives). Wait for the data fetch to go idle,
-            # then give the canvas a moment to finish painting.
+
+            async def _load_ig_page_and_select_1d(reload_page):
+                if reload_page:
+                    await page.reload(wait_until="networkidle", timeout=60000)
+                else:
+                    await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
+                await page.evaluate("window.scrollTo(0, 0)")
+                await asyncio.sleep(1)
+                clicked = await page.evaluate("""() => {
+                    const controls = Array.from(document.querySelectorAll('button, a, [role="button"]'));
+                    const oneDay = controls.find(el => (el.textContent || '').trim() === '1 day');
+                    if (oneDay) { oneDay.click(); return true; }
+                    return false;
+                }""")
+                # Clicking "1 day" re-fetches the intraday series and repaints
+                # the chart canvas; wait for the fetch to go idle, then give the
+                # canvas a moment to finish painting.
+                try:
+                    await page.wait_for_load_state("networkidle", timeout=15000)
+                except Exception as wait_exc:
+                    print(f"  ⚠ NASDAQ networkidle wait after 1-day click skipped: "
+                          f"{type(wait_exc).__name__}: {wait_exc}")
+                await asyncio.sleep(2 if clicked else 1)
+
+            # The IG-NASDAQ page sometimes loads in a transient
+            # "Market closed / No trades" feed state: the quote block shows no
+            # price and the 1-day canvas paints NOTHING, so a blind capture is
+            # a white frame where only our PIL title/session overlays survive.
+            # Waiting longer does not clear that state — only a reload does.
+            # So: capture to a temp file, validate page text + captured pixels
+            # + same-moment quote, retry with reloads, and only replace the
+            # served image once everything is valid. A failed refresh keeps the
+            # previous good image AND the previous cache text consistent
+            # (monitor_market_charts.py rejects payloads without text).
+            tmp_filepath = filepath + ".tmp.png"
+            quote, text, failures = None, None, []
             try:
-                await page.wait_for_load_state("networkidle", timeout=15000)
-            except Exception as wait_exc:
-                print(f"  ⚠ NASDAQ networkidle wait after 1-day click skipped: "
-                      f"{type(wait_exc).__name__}: {wait_exc}")
-            await asyncio.sleep(2 if clicked else 1)
-            # Fixed against the IG symbol-page layout after pressing 1 day.
-            # Optional crop_* request fields let us tune this live with curl
-            # without restarting the Playwright service for every attempt.
-            await page.screenshot(
-                path=filepath,
-                clip=clip,
-            )
+                for attempt in range(3):
+                    await _load_ig_page_and_select_1d(reload_page=attempt > 0)
+                    body_head = (await _get_body_text(page))[:3000]
+                    if "No trades" in body_head:
+                        failures.append(f"attempt {attempt + 1}: IG feed shows 'No trades'")
+                        print(f"  ⚠ NASDAQ {failures[-1]}, reloading")
+                        continue
+                    # Fixed against the IG symbol-page layout after pressing
+                    # 1 day. Optional crop_* request fields let us tune this
+                    # live with curl without restarting the Playwright service.
+                    await page.screenshot(path=tmp_filepath, clip=clip)
+                    if not _chart_snapshot_has_content(tmp_filepath):
+                        failures.append(f"attempt {attempt + 1}: captured chart area is blank")
+                        print(f"  ⚠ NASDAQ {failures[-1]}, reloading")
+                        continue
+                    # Read the price/% from the SAME page render that produced
+                    # the chart so the cached text matches the chart exactly.
+                    try:
+                        quote = await _extract_ig_nasdaq_quote(page)
+                        text = _market_text_payload(req.key, quote)["text"]
+                    except Exception as quote_exc:
+                        failures.append(f"attempt {attempt + 1}: same-moment quote failed: "
+                                        f"{type(quote_exc).__name__}: {quote_exc}")
+                        print(f"  ⚠ NASDAQ {failures[-1]}, reloading")
+                        continue
+                    break
+                else:
+                    raise ValueError(
+                        "NASDAQ snapshot invalid after 3 attempts, keeping previous image: "
+                        + "; ".join(failures)
+                    )
+                meta = CHART_META.get(req.key)
+                if meta:
+                    _trim_bottom_whitespace(tmp_filepath, max_body_height=430)
+                    _overlay_title(tmp_filepath, meta["title"])
+                # Trading-session markers (TW + US pre/regular/post in TW time).
+                # Overlay failure must not fail an otherwise-valid snapshot.
+                try:
+                    from overlay_market_sessions import overlay_sessions_on_file
+                    overlay_sessions_on_file(tmp_filepath)
+                    print("  🕒 Trading-session overlay added")
+                except Exception as overlay_exc:
+                    print(f"  ⚠ Session overlay skipped: {type(overlay_exc).__name__}: {overlay_exc}")
+                os.replace(tmp_filepath, filepath)
+            finally:
+                if os.path.exists(tmp_filepath):
+                    os.remove(tmp_filepath)
             print(f"  ✅ NASDAQ IG page snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
-            # Read the price/% from the SAME page render that produced the chart,
-            # so the cached text matches the chart exactly (no separate goto, no
-            # buffer). Quote failure must not discard an otherwise-valid image.
-            quote, text = None, None
-            try:
-                quote = await _extract_ig_nasdaq_quote(page)
-                text = _market_text_payload(req.key, quote)["text"]
-            except Exception as quote_exc:
-                print(f"  ⚠ NASDAQ same-moment quote failed: {type(quote_exc).__name__}: {quote_exc}")
-            meta = CHART_META.get(req.key)
-            if meta:
-                _trim_bottom_whitespace(filepath, max_body_height=430)
-                _overlay_title(filepath, meta["title"])
-            # Trading-session markers (TW + US pre/regular/post in TW time).
-            # Overlay failure must not fail an otherwise-valid snapshot.
-            try:
-                from overlay_market_sessions import overlay_sessions_on_file
-                overlay_sessions_on_file(filepath)
-                print("  🕒 Trading-session overlay added")
-            except Exception as overlay_exc:
-                print(f"  ⚠ Session overlay skipped: {type(overlay_exc).__name__}: {overlay_exc}")
             return {"status": "success", "url": filename, "path": filepath, "clip": clip,
                     "viewport": nasdaq_viewport, "quote": quote, "text": text}
 
