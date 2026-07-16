@@ -20,6 +20,8 @@ Thumbs.db
 
 # Claude Code
 .claude/
+# Local agent credentials (SSH command, dashboard session URL) — repo is public
+CLAUDE.local.md
 
 # Generated assets served by webhook directly from the server
 data/images/

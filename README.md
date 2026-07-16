@@ -34,6 +34,34 @@ cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash
 
 For code changes, use the **Standard Deployment** command in this README and restart the relevant services. If service files changed, also copy service templates and run `sudo systemctl daemon-reload`.
 
+### Complete Agent Debugging Loop (SSH deploy + browser verify)
+
+An AI agent on the dev machine can run the whole loop end-to-end with no human in the middle: **edit → check → commit → push → SSH deploy → browser-verify**. This has been tested and works.
+
+**This repository is PUBLIC on GitHub. Never commit the SSH private key, or the dashboard session token, to any tracked file, commit message, or log output.** The machine-specific secrets live in the untracked, git-ignored `CLAUDE.local.md` at the repo root of the dev machine (Claude Code loads it automatically). It contains:
+
+- The exact SSH command (`ssh -i "<local key path>" ubuntu@80.225.204.45`) for the production server.
+- A permanent dashboard session URL (`http://80.225.204.45:8501/?session=<token>`) that skips the `VIEW_PASSWORD` gate, so the agent can open the dashboard in a browser tool and visually verify a deployed change.
+
+The loop:
+
+1. Edit locally and run checks (`python -m py_compile ...`, `bash -n ...`).
+2. Commit and push to `origin main`.
+3. Deploy with a one-shot SSH command (key path from `CLAUDE.local.md`):
+
+   ```bash
+   ssh -i "<KEY_PATH>" ubuntu@80.225.204.45 "cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash && source venv/bin/activate && pip install -r requirements.txt -q && sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service"
+   ```
+
+   For README/doc-only changes, the `git pull` alone is enough — skip pip and restarts.
+4. Verify in the browser: open the permanent session URL from `CLAUDE.local.md` with the browser tool, navigate to the affected tab, and confirm the change actually renders (screenshot / read the page text). If `CLAUDE.local.md` is missing (fresh machine), ask the user for the session URL or `VIEW_PASSWORD` — do not guess.
+5. Report to the user what changed, what was deployed, and what was visually verified.
+
+Notes:
+
+- The server repo may be ahead of the local checkout because the 18:30 daily job auto-commits data. Run `git pull origin main --rebase --autostash` locally before committing.
+- The dashboard is Streamlit: after a `stock-dashboard.service` restart it needs a few seconds before the page responds; reload once if the first browser load looks broken.
+
 ## Runtime Map
 
 | Runtime | Entry point | systemd unit | Purpose |
