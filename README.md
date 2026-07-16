@@ -492,7 +492,7 @@ sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemc
 9. Broadcast active ETF reports through LINE when new active ETF data exists.
 10. Send admin email summary with success/failure details, including small step metrics such as DB rows, regime counts, score writes, market-volume cache range, generated summary files, LINE send output, and git push status.
 
-Manual run:
+Manual run (⚠️ **sends the paid LINE broadcast to ALL followers when active ETFs have new data** — see Invariant #11; do not use this to test code changes):
 
 ```bash
 cd /home/ubuntu/STOCK && source venv/bin/activate && bash scripts/update_and_notify.sh 00403A 00981A 00988A 0050 0056 00830 00878 00891 00918 009805 009820
@@ -540,7 +540,9 @@ Each of these is a trap that has already caused a wrong result or a missed step.
 
 10. **Market Pulse volume is daily cached, never fetched on demand.** `src/ui/market_pulse_tab.py` must read `data/market_pulse_volume.csv` only. `scripts/update_market_pulse_volume.py` is the only place that should call TWSE `FMTQIK`; it runs at 18:30 through `scripts/update_and_notify.sh`. If the dashboard says the cache is missing, run `python scripts/update_market_pulse_volume.py --backfill-years 5` once on the server, then let the daily `--months 4` refresh maintain it. Do not add `requests` back into the Streamlit render path.
 
-11. **Cached TradingView charts use full x-width except NASDAQ.** Generic market charts (`oil`, `brent`, `bond`, `gold`, `usdtwd`, `usdjpy`, `usdchf`) should crop only vertically and must keep `clip.x=0`, `clip.width=window.innerWidth`; otherwise the right price axis/last-price marker gets cut off. NASDAQ is intentionally special: it uses IG-NASDAQ 24h, a fixed `1200x900` viewport, custom y/height, a 1-day click, and `overlay_market_sessions.py`. Do not share generic crop edits into NASDAQ unless reverified with a real screenshot.
+11. **Never trigger LINE push/broadcast outside the 18:30 daily job — sends are PAID.** Push/broadcast messages consume the paid LINE message quota (only replies to user-initiated webhook messages are free). The ONLY sanctioned sender is the daily broadcast step inside `scripts/update_and_notify.sh`; `scripts/rebroadcast_line.py` may be run ONLY when the user explicitly asks for a rebroadcast. When testing or debugging: do NOT run `update_and_notify.sh` end-to-end on the server (its broadcast step pushes to ALL followers), do NOT call `api.line.me` push/broadcast endpoints manually, and do NOT "verify" LINE features by sending. Fetchers, quote/chart monitors, `chart_service.py`, cache checks, and the dashboard send nothing and are always safe to run.
+
+12. **Cached TradingView charts use full x-width except NASDAQ.** Generic market charts (`oil`, `brent`, `bond`, `gold`, `usdtwd`, `usdjpy`, `usdchf`) should crop only vertically and must keep `clip.x=0`, `clip.width=window.innerWidth`; otherwise the right price axis/last-price marker gets cut off. NASDAQ is intentionally special: it uses IG-NASDAQ 24h, a fixed `1200x900` viewport, custom y/height, a 1-day click, and `overlay_market_sessions.py`. Do not share generic crop edits into NASDAQ unless reverified with a real screenshot.
 
 ## ETF Maintenance Playbook For Agents
 
