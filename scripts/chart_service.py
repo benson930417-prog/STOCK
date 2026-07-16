@@ -721,13 +721,13 @@ async def take_snapshot(req: SnapshotRequest):
             tmp_filepath = filepath + ".tmp.png"
             quote, text, failures = None, None, []
             try:
+                # NOTE: do NOT gate on "No trades" in the page text — that
+                # string is ALWAYS present (pre/post-market sub-widgets of the
+                # IG feed show it even when the market is open and the chart
+                # is fine). The broken state is identified by a blank canvas
+                # and an unparsable quote, both checked below.
                 for attempt in range(3):
                     await _load_ig_page_and_select_1d(reload_page=attempt > 0)
-                    body_head = (await _get_body_text(page))[:3000]
-                    if "No trades" in body_head:
-                        failures.append(f"attempt {attempt + 1}: IG feed shows 'No trades'")
-                        print(f"  ⚠ NASDAQ {failures[-1]}, reloading")
-                        continue
                     # Fixed against the IG symbol-page layout after pressing
                     # 1 day. Optional crop_* request fields let us tune this
                     # live with curl without restarting the Playwright service.
