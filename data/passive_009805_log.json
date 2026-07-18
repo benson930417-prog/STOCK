@@ -1,9 +1,9 @@
 {
-  "last_checked_utc": "2026-07-17T10:31:01.381431Z",
+  "last_checked_utc": "2026-07-18T10:31:09.922169Z",
   "last_updated_utc": "2026-07-17T10:31:01.381431Z",
   "latest_date": "2026-07-16",
-  "status": "NEW DATA FOUND",
+  "status": "NO CHANGE",
   "source": "https://www.tsit.com.tw/ETF/Home/ETFSeriesDetail/009805",
   "holdings_count": 50,
-  "payload_changed": true
+  "payload_changed": false
 }
