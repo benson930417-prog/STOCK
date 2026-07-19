@@ -1140,9 +1140,9 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     with st.container(border=True):
         st.markdown("### 🥇 全市場綜合評分 Top 10")
         st.caption(
-            "不限於上方所選 ETF——用最新一天的評分，把**整個資料庫**（套用上方流動性篩選）"
-            "依綜合評分排出前 10 名。分數為「同資產類別」內的百分位（0–100，越高越好），"
-            "支柱權重沿用上方排名設定。"
+            "不限於上方所選 ETF——用最新一天的評分，把**所選資產類別的全部 ETF**"
+            "（套用上方流動性篩選）依綜合評分排出前 10 名。分數為該類別內的百分位"
+            "（0–100，越高越好），不同類別的分數不可互比，支柱權重沿用上方排名設定。"
         )
         top_hist = db.get_score_history()
         if top_hist.empty:
@@ -1151,8 +1151,10 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         else:
             ac_zh = {"equity": "股票", "bond": "債券", "commodity": "商品", "other": "其他"}
             c_ac, c_shrink = st.columns([1, 2])
+            # No 「全部」 option: scores are percentiles WITHIN an asset class, so a
+            # cross-class leaderboard would compare incomparable numbers.
             ac_pick = c_ac.selectbox(
-                "資產類別", ["全部", "股票", "債券", "商品", "其他"],
+                "資產類別", ["股票", "債券", "商品", "其他"],
                 key="etfc_top10_ac",
             )
             shrink_top = c_shrink.checkbox(
@@ -1178,10 +1180,9 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
             display_pool["_rank"] = display_pool.groupby("asset_class")["score"].rank(
                 ascending=False, method="min")
             display_pool["_size"] = display_pool.groupby("asset_class")["ticker"].transform("count")
-            if ac_pick != "全部":
-                zh_to_ac = {v: k for k, v in ac_zh.items()}
-                display_pool = display_pool[
-                    display_pool["asset_class"] == zh_to_ac.get(ac_pick)]
+            zh_to_ac = {v: k for k, v in ac_zh.items()}
+            display_pool = display_pool[
+                display_pool["asset_class"] == zh_to_ac.get(ac_pick)]
 
             top10 = display_pool.dropna(subset=["score"]).sort_values(
                 "score", ascending=False).head(10)
