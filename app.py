@@ -1222,7 +1222,31 @@ def merge_into_master(new_month_df: pd.DataFrame, upload_filename: str):
     # that are NOT duplicates, and a window-replace would silently drop them
     # (this wiped a 00988A 2026-06-17 subscription buy once). Non-duplicate rows
     # always survive; only exact/rounding duplicates are skipped.
-    replaced_rows = 0
+    #
+    # One exception to pure append: a later export can RECLASSIFY an order
+    # (e.g. 現買 → 沖買 once same-day matching is finalized — an export pulled
+    # intraday shows the pre-matching class). 買賣別 is part of _key, so the
+    # stale copy and the reclassified copy would BOTH survive dedupe and
+    # double the position (three 2026-07-08 0050 buys became 6,000 phantom
+    # shares this way). Rows in the upload therefore SUPERSEDE the master's
+    # rows for the same order (股名+日期+委託書號). This is order-scoped, not
+    # a window-replace: orders the upload doesn't mention are untouched.
+    # Caveat: upload exports in the order they were generated — re-uploading
+    # a stale export can regress a classification until the newest export is
+    # uploaded again.
+    def _order_key(d: pd.DataFrame) -> pd.Series:
+        return (
+            d["股名"].astype(str) + "|"
+            + pd.to_datetime(d["日期"]).dt.strftime("%Y-%m-%d") + "|"
+            + d["委託書號"].astype(str)
+        )
+
+    if len(master) and len(new_month_df):
+        superseded = _order_key(master).isin(set(_order_key(new_month_df)))
+        replaced_rows = int(superseded.sum())
+        master = master[~superseded]
+    else:
+        replaced_rows = 0
 
     combined = pd.concat([master, new_month_df], ignore_index=True)
 
