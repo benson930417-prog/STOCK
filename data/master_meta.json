@@ -1,23 +1,23 @@
 {
-  "last_update_utc_epoch": 1783474980.184584,
-  "rows": 828,
+  "last_update_utc_epoch": 1784478143.041237,
+  "rows": 901,
   "min_date": "2025-11-26",
-  "max_date": "2026-07-08",
+  "max_date": "2026-07-17",
   "last_upload": {
-    "filename": "證券對帳單 20260708094210.csv",
-    "uploaded_rows": 41,
-    "old_rows": 824,
+    "filename": "證券對帳單 20260720000307.csv",
+    "uploaded_rows": 111,
+    "old_rows": 828,
     "replaced_rows": 0,
     "upload_range": {
       "min_date": "2026-07-01",
-      "max_date": "2026-07-08"
+      "max_date": "2026-07-17"
     },
-    "added_rows": 4,
-    "dup_skipped": 37,
-    "after_rows": 828,
+    "added_rows": 73,
+    "dup_skipped": 38,
+    "after_rows": 901,
     "range_after": {
       "min_date": "2025-11-26",
-      "max_date": "2026-07-08"
+      "max_date": "2026-07-17"
     }
   },
   "last_github_push": {
