@@ -457,7 +457,22 @@ def _stars(v: float | None) -> str:
     return "★" * n + "☆" * (5 - n)
 
 
+def _num_or_nan(v) -> float:
+    """Parse a display cell ('92.5', '—', None) back to float for coloring."""
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return float("nan")
+
+
+def _fmt_100(v, dec: int = 0) -> str:
+    """Format a 0-100 score for display; Streamlit's grid prints NaN as 'None',
+    so tables carry pre-formatted strings with '—' for missing."""
+    return f"{float(v):.{dec}f}" if pd.notna(v) else "—"
+
+
 def _score_color(v):
+    v = _num_or_nan(v)
     if pd.isna(v):
         return ""
     if v >= 70:
@@ -470,6 +485,7 @@ def _score_color(v):
 
 
 def _pillar_color(v):
+    v = _num_or_nan(v)
     if pd.isna(v):
         return "color: #6b7280"
     if v >= 66:
@@ -999,9 +1015,9 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                             "排名": i,
                             "代號": r["ticker"], "名稱": name_map.get(r["ticker"], r["ticker"]),
                             "類別": ac_zh.get(r["asset_class"], r["asset_class"]),
-                            "綜合評分": round(float(r["score"]), 1) if pd.notna(r["score"]) else None,
+                            "綜合評分": _fmt_100(r["score"], 1),
                             "評等": _stars(r["score"]),
-                            "效率": r["eff"], "漲多跌少": r["asy"],
+                            "效率": _fmt_100(r["eff"]), "漲多跌少": _fmt_100(r["asy"]),
                             "同類排名": rk,
                             "交易日數": int(r["n_days"]),
                             "信賴": _conf_label(int(r["n_days"])),
@@ -1009,18 +1025,13 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                     for t in missing:
                         rows.append({
                             "排名": "—", "代號": t, "名稱": name_map.get(t, t), "類別": "—",
-                            "綜合評分": None, "評等": "", "效率": None, "漲多跌少": None,
+                            "綜合評分": "—", "評等": "", "效率": "—", "漲多跌少": "—",
                             "同類排名": "", "交易日數": 0, "信賴": "資料不足",
                         })
                     disp = pd.DataFrame(rows)
 
                     styled = (
                         disp.style
-                        .format({
-                            "綜合評分": lambda v: f"{v:.1f}" if pd.notna(v) else "—",
-                            "效率":   lambda v: f"{v:.0f}" if pd.notna(v) else "—",
-                            "漲多跌少": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
-                        }, na_rep="—")
                         .map(_score_color, subset=["綜合評分"])
                         .map(_pillar_color, subset=["效率", "漲多跌少"])
                     )
@@ -1186,9 +1197,9 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         "代號": r["ticker"],
                         "名稱": name_map_all.get(r["ticker"], r["ticker"]),
                         "類別": ac_zh.get(r["asset_class"], r["asset_class"]),
-                        "綜合評分": round(float(r["score"]), 1),
+                        "綜合評分": _fmt_100(r["score"], 1),
                         "評等": _stars(r["score"]),
-                        "效率": r["eff"], "漲多跌少": r["asy"],
+                        "效率": _fmt_100(r["eff"]), "漲多跌少": _fmt_100(r["asy"]),
                         "同類排名": rk,
                         "交易日數": int(r["n_days"]),
                         "信賴": _conf_label(int(r["n_days"])),
@@ -1196,11 +1207,6 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                 top_disp = pd.DataFrame(top_rows)
                 top_styled = (
                     top_disp.style
-                    .format({
-                        "綜合評分": lambda v: f"{v:.1f}" if pd.notna(v) else "—",
-                        "效率":   lambda v: f"{v:.0f}" if pd.notna(v) else "—",
-                        "漲多跌少": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
-                    }, na_rep="—")
                     .map(_score_color, subset=["綜合評分"])
                     .map(_pillar_color, subset=["效率", "漲多跌少"])
                 )
