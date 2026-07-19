@@ -456,6 +456,28 @@ def _stars(v: float | None) -> str:
     return "★" * n + "☆" * (5 - n)
 
 
+def _score_color(v):
+    if pd.isna(v):
+        return ""
+    if v >= 70:
+        return "background-color: rgba(74,222,128,0.18); font-weight: 700"
+    if v >= 50:
+        return "background-color: rgba(74,222,128,0.07)"
+    if v >= 30:
+        return "background-color: rgba(251,191,36,0.10)"
+    return "background-color: rgba(248,113,113,0.14)"
+
+
+def _pillar_color(v):
+    if pd.isna(v):
+        return "color: #6b7280"
+    if v >= 66:
+        return "color: #4ade80"
+    if v <= 33:
+        return "color: #f87171"
+    return ""
+
+
 def _build_score_table(
     selected_tickers: list[str],
     etf_universe: pd.DataFrame,
@@ -988,26 +1010,6 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         })
                     disp = pd.DataFrame(rows)
 
-                    def _score_color(v):
-                        if pd.isna(v):
-                            return ""
-                        if v >= 70:
-                            return "background-color: rgba(74,222,128,0.18); font-weight: 700"
-                        if v >= 50:
-                            return "background-color: rgba(74,222,128,0.07)"
-                        if v >= 30:
-                            return "background-color: rgba(251,191,36,0.10)"
-                        return "background-color: rgba(248,113,113,0.14)"
-
-                    def _pillar_color(v):
-                        if pd.isna(v):
-                            return "color: #6b7280"
-                        if v >= 66:
-                            return "color: #4ade80"
-                        if v <= 33:
-                            return "color: #f87171"
-                        return ""
-
                     styled = (
                         disp.style
                         .format({
@@ -1117,6 +1119,93 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                 st.caption(
                     "線越淡＝該基金資料越短、評分越不穩定（新上市基金自上市 30 個交易日後才開始計分）。"
                     "拖曳可縮放、點圖例可隱藏單條線。"
+                )
+
+    # ─────────── 全市場綜合評分 Top 10 ───────────
+    with st.container(border=True):
+        st.markdown("### 🥇 全市場綜合評分 Top 10")
+        st.caption(
+            "不限於上方所選 ETF——用最新一天的評分，把**整個資料庫**（套用上方流動性篩選）"
+            "依綜合評分排出前 10 名。分數為「同資產類別」內的百分位（0–100，越高越好），"
+            "支柱權重沿用上方排名設定。"
+        )
+        top_hist = db.get_score_history()
+        if top_hist.empty:
+            st.info("尚無評分資料。請在伺服器執行 "
+                    "`python -m scripts.etf_benchmark.step5_score --backfill`。")
+        else:
+            ac_zh = {"equity": "股票", "bond": "債券", "commodity": "商品", "other": "其他"}
+            c_ac, c_shrink = st.columns([1, 2])
+            ac_pick = c_ac.selectbox(
+                "資產類別", ["全部", "股票", "債券", "商品", "其他"],
+                key="etfc_top10_ac",
+            )
+            shrink_top = c_shrink.checkbox(
+                "依信賴度壓縮（新基金分數往中位 50 收斂）", value=True,
+                key="etfc_top10_shrink",
+                help="避免上市不久、資料很短的基金憑短樣本衝上榜首。",
+            )
+
+            latest_d = top_hist["date"].max()
+            snap_all = top_hist[top_hist["date"] == latest_d].copy()
+            w_eff_t = st.session_state.get("etfc_w_eff", 1.0)
+            w_asy_t = st.session_state.get("etfc_w_asy", 1.0)
+            snap_all["score"] = _history_composite(snap_all, w_eff_t, w_asy_t)
+            if shrink_top:
+                conf = (snap_all["n_days"] / SCORE_FULL_CONF_DAYS).clip(0, 1)
+                snap_all["score"] = 50.0 + (snap_all["score"] - 50.0) * conf
+
+            # 同類排名 within the whole asset-class basket (before any display filter)
+            snap_all["_rank"] = snap_all.groupby("asset_class")["score"].rank(
+                ascending=False, method="min")
+            snap_all["_size"] = snap_all.groupby("asset_class")["ticker"].transform("count")
+
+            # Apply the tab's global liquidity filter + the asset-class picker
+            display_pool = snap_all[snap_all["ticker"].isin(set(etf_universe["ticker"]))]
+            if ac_pick != "全部":
+                zh_to_ac = {v: k for k, v in ac_zh.items()}
+                display_pool = display_pool[
+                    display_pool["asset_class"] == zh_to_ac.get(ac_pick)]
+
+            top10 = display_pool.dropna(subset=["score"]).sort_values(
+                "score", ascending=False).head(10)
+            if top10.empty:
+                st.info("此類別目前沒有可評分的 ETF。")
+            else:
+                name_map_all = dict(zip(universe["ticker"], universe["name"]))
+                top_rows: list[dict] = []
+                for i, (_, r) in enumerate(top10.iterrows(), 1):
+                    rk = (f"{int(r['_rank'])}/{int(r['_size'])}"
+                          if pd.notna(r["_rank"]) else "—")
+                    top_rows.append({
+                        "排名": i,
+                        "代號": r["ticker"],
+                        "名稱": name_map_all.get(r["ticker"], r["ticker"]),
+                        "類別": ac_zh.get(r["asset_class"], r["asset_class"]),
+                        "綜合評分": round(float(r["score"]), 1),
+                        "評等": _stars(r["score"]),
+                        "效率": r["eff"], "漲多跌少": r["asy"],
+                        "同類排名": rk,
+                        "交易日數": int(r["n_days"]),
+                        "信賴": _conf_label(int(r["n_days"])),
+                    })
+                top_disp = pd.DataFrame(top_rows)
+                top_styled = (
+                    top_disp.style
+                    .format({
+                        "綜合評分": lambda v: f"{v:.1f}" if pd.notna(v) else "—",
+                        "效率":   lambda v: f"{v:.0f}" if pd.notna(v) else "—",
+                        "漲多跌少": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
+                    })
+                    .map(_score_color, subset=["綜合評分"])
+                    .map(_pillar_color, subset=["效率", "漲多跌少"])
+                )
+                st.dataframe(top_styled, hide_index=True, width="stretch")
+                st.caption(
+                    f"基準日 {pd.Timestamp(latest_d).date()}　·　"
+                    f"評分池 {len(display_pool)} 檔（已套用流動性篩選）　·　"
+                    "同類排名＝在整個資產類別籃子內的名次　·　"
+                    "點選上方多選框可把感興趣的 ETF 加入比較圖"
                 )
 
     # ─────────── 市場區間績效摘要 ───────────
