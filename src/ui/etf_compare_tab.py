@@ -970,91 +970,114 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         add_zero_line(fig, axis="y", color="#A9B1BD", width=2, dash="dash")
     st.plotly_chart(fig, width="stretch")
 
-    # ─────────── 綜合評分排名（公平、與市場多空方向無關）───────────
-    if selected_tickers:
-        with st.container(border=True):
-            st.markdown("### 🏆 綜合評分排名")
-            st.caption(
-                "每項分數 **0–100，越高越好**（50＝同類中位數）＝該 ETF 在「同資產類別」"
-                "（股票／債券／商品）籃子內的百分位，與下方「綜合評分歷史」走勢線**同一套標準**。"
-                "三大支柱皆與市場多空方向無關。"
+    # ─────────── 綜合評分排名 — 同類 Top 10 ＋ 你選的 ETF，一張表一套名次 ───────────
+    with st.container(border=True):
+        st.markdown("### 🏆 綜合評分排名")
+        st.caption(
+            "每項分數 **0–100，越高越好**（50＝同類中位數）＝該 ETF 在「同資產類別」籃子"
+            "（已套用上方流動性篩選）內的百分位，與下方「綜合評分歷史」走勢線**同一套標準**。"
+            "表格＝所選類別的 **Top 10**；你在上方挑的 ETF 一律加列並以 ⭐ 標記，"
+            "同一檔 ETF 全頁只有一個名次。"
+        )
+
+        with st.expander("⚙️ 調整支柱權重（預設等權＝最公平）", expanded=False):
+            cw = st.columns(2)
+            w_eff = cw[0].slider("效率",   0.0, 3.0, 1.0, 0.5, key="etfc_w_eff")
+            w_asy = cw[1].slider("漲多跌少", 0.0, 3.0, 1.0, 0.5, key="etfc_w_asy")
+
+        score_hist = db.get_score_history()
+        if score_hist.empty:
+            st.info("尚無評分資料。請在伺服器執行 "
+                    "`python -m scripts.etf_benchmark.step5_score --backfill`。")
+        else:
+            ac_zh = {"equity": "股票", "bond": "債券", "commodity": "商品", "other": "其他"}
+            zh_to_ac = {v: k for k, v in ac_zh.items()}
+            c_ac, _ = st.columns([1, 3])
+            # No 「全部」 option: scores are percentiles WITHIN an asset class, so a
+            # cross-class leaderboard would compare incomparable numbers.
+            ac_pick = c_ac.selectbox(
+                "資產類別（Top 10 名單）", ["股票", "債券", "商品", "其他"],
+                key="etfc_top10_ac",
             )
 
-            with st.expander("⚙️ 調整支柱權重（預設等權＝最公平）", expanded=False):
-                cw = st.columns(2)
-                w_eff = cw[0].slider("效率",   0.0, 3.0, 1.0, 0.5, key="etfc_w_eff")
-                w_asy = cw[1].slider("漲多跌少", 0.0, 3.0, 1.0, 0.5, key="etfc_w_asy")
+            # One standard for the whole page: raw composite scores, ranked
+            # within the liquidity-filtered asset-class basket.
+            latest = score_hist["date"].max()
+            snap = score_hist[score_hist["date"] == latest].copy()
+            snap["score"] = _history_composite(snap, w_eff, w_asy)
+            snap = snap[snap["ticker"].isin(set(etf_universe["ticker"]))]
+            snap["_rank"] = snap.groupby("asset_class")["score"].rank(
+                ascending=False, method="min")
+            snap["_size"] = snap.groupby("asset_class")["ticker"].transform("count")
 
-            score_hist = db.get_score_history()
-            if score_hist.empty:
-                st.info("尚無評分資料。請在伺服器執行 "
-                        "`python -m scripts.etf_benchmark.step5_score --backfill`。")
+            pool = snap[snap["asset_class"] == zh_to_ac[ac_pick]]
+            top10 = pool.dropna(subset=["score"]).sort_values(
+                "score", ascending=False).head(10)
+            sel_set = set(selected_tickers)
+            extra = snap[snap["ticker"].isin(sel_set)
+                         & ~snap["ticker"].isin(set(top10["ticker"]))]
+            show = pd.concat([top10, extra])
+            # picked class first (by rank), then your picks from other classes
+            show = show.assign(
+                _grp=(show["asset_class"] != zh_to_ac[ac_pick]).astype(int)
+            ).sort_values(["_grp", "asset_class", "_rank"])
+            missing = [t for t in selected_tickers if t not in set(snap["ticker"])]
+
+            if show.empty and not missing:
+                st.info("此類別目前沒有可評分的 ETF。")
             else:
-                latest = score_hist["date"].max()
-                snap = score_hist[score_hist["date"] == latest].copy()
-                snap["score"] = _history_composite(snap, w_eff, w_asy)
-                # 同類排名 within the liquidity-filtered basket — the SAME pool and
-                # score basis as the Top 10 leaderboard below, so a ticker never
-                # shows two different ranks on one page.
-                snap = snap[snap["ticker"].isin(set(etf_universe["ticker"]))]
-                snap["_rank"] = snap.groupby("asset_class")["score"].rank(
-                    ascending=False, method="min")
-                snap["_size"] = snap.groupby("asset_class")["ticker"].transform("count")
-
                 name_map = dict(zip(universe["ticker"], universe["name"]))
-                ac_zh = {"equity": "股票", "bond": "債券", "commodity": "商品", "other": "其他"}
-                sel = snap[snap["ticker"].isin(selected_tickers)].sort_values(
-                    "score", ascending=False)
-                missing = [t for t in selected_tickers if t not in set(snap["ticker"])]
+                rows: list[dict] = []
+                for _, r in show.iterrows():
+                    rows.append({
+                        "已選": "⭐" if r["ticker"] in sel_set else "",
+                        "代號": r["ticker"],
+                        "名稱": name_map.get(r["ticker"], r["ticker"]),
+                        "類別": ac_zh.get(r["asset_class"], r["asset_class"]),
+                        "綜合評分": _fmt_100(r["score"], 1),
+                        "評等": _stars(r["score"]),
+                        "效率": _fmt_100(r["eff"]), "漲多跌少": _fmt_100(r["asy"]),
+                        "同類排名": (f"{int(r['_rank'])}/{int(r['_size'])}"
+                                     if pd.notna(r["_rank"]) else "—"),
+                        "交易日數": int(r["n_days"]),
+                        "信賴": _conf_label(int(r["n_days"])),
+                    })
+                for t in missing:
+                    rows.append({
+                        "已選": "⭐", "代號": t, "名稱": name_map.get(t, t), "類別": "—",
+                        "綜合評分": "—", "評等": "", "效率": "—", "漲多跌少": "—",
+                        "同類排名": "—", "交易日數": 0, "信賴": "資料不足",
+                    })
+                disp = pd.DataFrame(rows)
 
-                if sel.empty and not missing:
-                    st.info("所選 ETF 尚無評分（新上市未滿 30 個交易日，或非股票/債券/商品型）。")
-                else:
-                    rows: list[dict] = []
-                    for i, (_, r) in enumerate(sel.iterrows(), 1):
-                        rk = (f"{int(r['_rank'])}/{int(r['_size'])}"
-                              if pd.notna(r["_rank"]) else "—")
-                        rows.append({
-                            "排名": i,
-                            "代號": r["ticker"], "名稱": name_map.get(r["ticker"], r["ticker"]),
-                            "類別": ac_zh.get(r["asset_class"], r["asset_class"]),
-                            "綜合評分": _fmt_100(r["score"], 1),
-                            "評等": _stars(r["score"]),
-                            "效率": _fmt_100(r["eff"]), "漲多跌少": _fmt_100(r["asy"]),
-                            "同類排名": rk,
-                            "交易日數": int(r["n_days"]),
-                            "信賴": _conf_label(int(r["n_days"])),
-                        })
-                    for t in missing:
-                        rows.append({
-                            "排名": "—", "代號": t, "名稱": name_map.get(t, t), "類別": "—",
-                            "綜合評分": "—", "評等": "", "效率": "—", "漲多跌少": "—",
-                            "同類排名": "", "交易日數": 0, "信賴": "資料不足",
-                        })
-                    disp = pd.DataFrame(rows)
+                def _sel_row_bg(row):
+                    on = row.get("已選") == "⭐"
+                    return ["background-color: rgba(96,165,250,0.10)" if on else ""] * len(row)
 
-                    styled = (
-                        disp.style
-                        .map(_score_color, subset=["綜合評分"])
-                        .map(_pillar_color, subset=["效率", "漲多跌少"])
-                    )
-                    st.dataframe(styled, hide_index=True, width="stretch")
-                    st.caption(
-                        f"基準日 {pd.Timestamp(latest).date()}　·　"
-                        "每欄分數 0–100，越高越好（50＝同類中位數）　·　"
-                        "同類排名＝在通過流動性篩選的同類 ETF 中的名次"
-                        "（不只你選的這幾檔，與下方 Top 10 同一套名次）"
-                    )
-                    st.markdown(
-                        "**📖 讀法**（每欄都是 0–100 分，越高越好，50＝同類中位數）\n\n"
-                        "- ⚙️ **效率**：風險調整後報酬（Sortino＋Calmar）→ 同樣下跌風險下賺越多越高\n"
-                        "- ⚖️ **漲多跌少**：相對大盤，**漲時跟得上、跌時守得住**的程度"
-                        "（上漲捕獲 − 下跌捕獲）→ 越高代表越「進可攻、退可守」\n"
-                        "- 🏆 **綜合評分**：兩支柱加權平均（預設等權），分數與下方走勢線一致\n"
-                        "- 🛈 **漲多跌少「—」**：該 ETF 與大盤關聯太低或無對應基準，改由其餘支柱計分\n"
-                        "- 🆕 **信賴**：交易日越少越不穩定（新上市自上市 30 個交易日後才計分）"
-                    )
+                styled = (
+                    disp.style
+                    .apply(_sel_row_bg, axis=1)
+                    .map(_score_color, subset=["綜合評分"])
+                    .map(_pillar_color, subset=["效率", "漲多跌少"])
+                )
+                st.dataframe(styled, hide_index=True, width="stretch")
+                st.caption(
+                    f"基準日 {pd.Timestamp(latest).date()}　·　"
+                    f"{ac_pick}評分池 {len(pool)} 檔（已套用流動性篩選）　·　"
+                    "同類排名＝在同資產類別評分池內的名次　·　"
+                    "⭐＝你在上方選的 ETF（不在 Top 10 也會加列）"
+                )
+                st.markdown(
+                    "**📖 讀法**（每欄都是 0–100 分，越高越好，50＝同類中位數）\n\n"
+                    "- ⚙️ **效率**：風險調整後報酬（Sortino＋Calmar）→ 同樣下跌風險下賺越多越高\n"
+                    "- ⚖️ **漲多跌少**：相對大盤，**漲時跟得上、跌時守得住**的程度"
+                    "（上漲捕獲 − 下跌捕獲）→ 越高代表越「進可攻、退可守」\n"
+                    "- 🏆 **綜合評分**：兩支柱加權平均（預設等權），分數與下方走勢線一致\n"
+                    "- 🛈 **漲多跌少「—」**：該 ETF 與大盤關聯太低或無對應基準，改由其餘支柱計分\n"
+                    "- 🆕 **信賴**：交易日越少越不穩定（新上市自上市 30 個交易日後才計分）"
+                )
 
+    if selected_tickers:
         with st.container(border=True):
             st.markdown("### 📈 綜合評分歷史")
             st.caption(
@@ -1138,86 +1161,6 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                 st.caption(
                     "線越淡＝該基金資料越短、評分越不穩定（新上市基金自上市 30 個交易日後才開始計分）。"
                     "拖曳可縮放、點圖例可隱藏單條線。"
-                )
-
-    # ─────────── 全市場綜合評分 Top 10 ───────────
-    with st.container(border=True):
-        st.markdown("### 🥇 全市場綜合評分 Top 10")
-        st.caption(
-            "不限於上方所選 ETF——用最新一天的評分，把**所選資產類別的全部 ETF**"
-            "（套用上方流動性篩選）依綜合評分排出前 10 名。分數為該類別內的百分位"
-            "（0–100，越高越好），不同類別的分數不可互比；分數、名次與上方排名表"
-            "**同一套標準**，支柱權重也沿用上方設定。"
-        )
-        top_hist = db.get_score_history()
-        if top_hist.empty:
-            st.info("尚無評分資料。請在伺服器執行 "
-                    "`python -m scripts.etf_benchmark.step5_score --backfill`。")
-        else:
-            ac_zh = {"equity": "股票", "bond": "債券", "commodity": "商品", "other": "其他"}
-            c_ac, _ = st.columns([1, 2])
-            # No 「全部」 option: scores are percentiles WITHIN an asset class, so a
-            # cross-class leaderboard would compare incomparable numbers.
-            ac_pick = c_ac.selectbox(
-                "資產類別", ["股票", "債券", "商品", "其他"],
-                key="etfc_top10_ac",
-            )
-
-            # Raw (unshrunk) composite — deliberately the SAME basis as the
-            # 綜合評分排名 table above, so one ticker has one rank per page.
-            # Thin-history funds are flagged by the 信賴 column instead.
-            latest_d = top_hist["date"].max()
-            snap_all = top_hist[top_hist["date"] == latest_d].copy()
-            w_eff_t = st.session_state.get("etfc_w_eff", 1.0)
-            w_asy_t = st.session_state.get("etfc_w_asy", 1.0)
-            snap_all["score"] = _history_composite(snap_all, w_eff_t, w_asy_t)
-
-            # Apply the tab's global liquidity filter FIRST, then rank within the
-            # filtered basket — otherwise rank 1 can belong to an ETF the filter
-            # removed and the table starts at 2/N.
-            display_pool = snap_all[
-                snap_all["ticker"].isin(set(etf_universe["ticker"]))].copy()
-            display_pool["_rank"] = display_pool.groupby("asset_class")["score"].rank(
-                ascending=False, method="min")
-            display_pool["_size"] = display_pool.groupby("asset_class")["ticker"].transform("count")
-            zh_to_ac = {v: k for k, v in ac_zh.items()}
-            display_pool = display_pool[
-                display_pool["asset_class"] == zh_to_ac.get(ac_pick)]
-
-            top10 = display_pool.dropna(subset=["score"]).sort_values(
-                "score", ascending=False).head(10)
-            if top10.empty:
-                st.info("此類別目前沒有可評分的 ETF。")
-            else:
-                name_map_all = dict(zip(universe["ticker"], universe["name"]))
-                top_rows: list[dict] = []
-                for i, (_, r) in enumerate(top10.iterrows(), 1):
-                    rk = (f"{int(r['_rank'])}/{int(r['_size'])}"
-                          if pd.notna(r["_rank"]) else "—")
-                    top_rows.append({
-                        "排名": i,
-                        "代號": r["ticker"],
-                        "名稱": name_map_all.get(r["ticker"], r["ticker"]),
-                        "類別": ac_zh.get(r["asset_class"], r["asset_class"]),
-                        "綜合評分": _fmt_100(r["score"], 1),
-                        "評等": _stars(r["score"]),
-                        "效率": _fmt_100(r["eff"]), "漲多跌少": _fmt_100(r["asy"]),
-                        "同類排名": rk,
-                        "交易日數": int(r["n_days"]),
-                        "信賴": _conf_label(int(r["n_days"])),
-                    })
-                top_disp = pd.DataFrame(top_rows)
-                top_styled = (
-                    top_disp.style
-                    .map(_score_color, subset=["綜合評分"])
-                    .map(_pillar_color, subset=["效率", "漲多跌少"])
-                )
-                st.dataframe(top_styled, hide_index=True, width="stretch")
-                st.caption(
-                    f"基準日 {pd.Timestamp(latest_d).date()}　·　"
-                    f"評分池 {len(display_pool)} 檔（已套用流動性篩選）　·　"
-                    "同類排名＝在通過流動性篩選的同資產類別 ETF 中的名次　·　"
-                    "點選上方多選框可把感興趣的 ETF 加入比較圖"
                 )
 
     # ─────────── 市場區間績效摘要 ───────────
