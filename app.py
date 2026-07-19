@@ -1072,7 +1072,19 @@ def read_cathay_csv_any(file_like_or_path) -> pd.DataFrame:
     Supports:
     - Cathay export: row1 banner, row2 header -> header=1
     - Master CSV: normal header=0
+
+    File-like inputs (Streamlit UploadedFile) must be rewound between the two
+    parse attempts, otherwise the fallback read starts at EOF and raises
+    EmptyDataError.
     """
+    def _rewind():
+        if hasattr(file_like_or_path, "seek"):
+            try:
+                file_like_or_path.seek(0)
+            except Exception:
+                pass
+
+    _rewind()
     try:
         df = pd.read_csv(file_like_or_path, header=1, encoding="utf-8-sig")
         df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
@@ -1081,6 +1093,7 @@ def read_cathay_csv_any(file_like_or_path) -> pd.DataFrame:
     except Exception:
         pass
 
+    _rewind()
     df = pd.read_csv(file_like_or_path, header=0, encoding="utf-8-sig")
     df.columns = [str(c).strip().replace("\n", "") for c in df.columns]
     return df
