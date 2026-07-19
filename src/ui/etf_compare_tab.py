@@ -1170,13 +1170,14 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                 conf = (snap_all["n_days"] / SCORE_FULL_CONF_DAYS).clip(0, 1)
                 snap_all["score"] = 50.0 + (snap_all["score"] - 50.0) * conf
 
-            # 同類排名 within the whole asset-class basket (before any display filter)
-            snap_all["_rank"] = snap_all.groupby("asset_class")["score"].rank(
+            # Apply the tab's global liquidity filter FIRST, then rank within the
+            # filtered basket — otherwise rank 1 can belong to an ETF the filter
+            # removed and the table starts at 2/N.
+            display_pool = snap_all[
+                snap_all["ticker"].isin(set(etf_universe["ticker"]))].copy()
+            display_pool["_rank"] = display_pool.groupby("asset_class")["score"].rank(
                 ascending=False, method="min")
-            snap_all["_size"] = snap_all.groupby("asset_class")["ticker"].transform("count")
-
-            # Apply the tab's global liquidity filter + the asset-class picker
-            display_pool = snap_all[snap_all["ticker"].isin(set(etf_universe["ticker"]))]
+            display_pool["_size"] = display_pool.groupby("asset_class")["ticker"].transform("count")
             if ac_pick != "全部":
                 zh_to_ac = {v: k for k, v in ac_zh.items()}
                 display_pool = display_pool[
@@ -1214,7 +1215,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                 st.caption(
                     f"基準日 {pd.Timestamp(latest_d).date()}　·　"
                     f"評分池 {len(display_pool)} 檔（已套用流動性篩選）　·　"
-                    "同類排名＝在整個資產類別籃子內的名次　·　"
+                    "同類排名＝在通過流動性篩選的同資產類別 ETF 中的名次　·　"
                     "點選上方多選框可把感興趣的 ETF 加入比較圖"
                 )
 
