@@ -9,6 +9,7 @@ Refresh path:
 """
 from __future__ import annotations
 
+import html
 from datetime import datetime
 
 import pandas as pd
@@ -646,6 +647,9 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     )
 
     universe = db.get_universe()
+    # Yahoo names can carry HTML entities (e.g. "S&amp;P") — clean once for all displays
+    universe["name"] = universe["name"].map(
+        lambda s: html.unescape(s) if isinstance(s, str) else s)
     # ETFs only (exclude reference indices) for the picker
     etf_universe = universe[universe["market"].isin(["TWSE", "TPEx"])].copy()
     etf_universe = etf_universe[etf_universe["has_prices"]]   # drop the 30 empties
@@ -1016,7 +1020,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                             "綜合評分": lambda v: f"{v:.1f}" if pd.notna(v) else "—",
                             "效率":   lambda v: f"{v:.0f}" if pd.notna(v) else "—",
                             "漲多跌少": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
-                        })
+                        }, na_rep="—")
                         .map(_score_color, subset=["綜合評分"])
                         .map(_pillar_color, subset=["效率", "漲多跌少"])
                     )
@@ -1196,7 +1200,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                         "綜合評分": lambda v: f"{v:.1f}" if pd.notna(v) else "—",
                         "效率":   lambda v: f"{v:.0f}" if pd.notna(v) else "—",
                         "漲多跌少": lambda v: f"{v:.0f}" if pd.notna(v) else "—",
-                    })
+                    }, na_rep="—")
                     .map(_score_color, subset=["綜合評分"])
                     .map(_pillar_color, subset=["效率", "漲多跌少"])
                 )
