@@ -993,7 +993,10 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                 latest = score_hist["date"].max()
                 snap = score_hist[score_hist["date"] == latest].copy()
                 snap["score"] = _history_composite(snap, w_eff, w_asy)
-                # rank within the WHOLE asset-class basket (籃內名次，不只你選的)
+                # 同類排名 within the liquidity-filtered basket — the SAME pool and
+                # score basis as the Top 10 leaderboard below, so a ticker never
+                # shows two different ranks on one page.
+                snap = snap[snap["ticker"].isin(set(etf_universe["ticker"]))]
                 snap["_rank"] = snap.groupby("asset_class")["score"].rank(
                     ascending=False, method="min")
                 snap["_size"] = snap.groupby("asset_class")["ticker"].transform("count")
@@ -1039,7 +1042,8 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                     st.caption(
                         f"基準日 {pd.Timestamp(latest).date()}　·　"
                         "每欄分數 0–100，越高越好（50＝同類中位數）　·　"
-                        "同類排名＝在整個資產類別籃子內的名次（不只你選的這幾檔）"
+                        "同類排名＝在通過流動性篩選的同類 ETF 中的名次"
+                        "（不只你選的這幾檔，與下方 Top 10 同一套名次）"
                     )
                     st.markdown(
                         "**📖 讀法**（每欄都是 0–100 分，越高越好，50＝同類中位數）\n\n"
@@ -1142,7 +1146,8 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         st.caption(
             "不限於上方所選 ETF——用最新一天的評分，把**所選資產類別的全部 ETF**"
             "（套用上方流動性篩選）依綜合評分排出前 10 名。分數為該類別內的百分位"
-            "（0–100，越高越好），不同類別的分數不可互比，支柱權重沿用上方排名設定。"
+            "（0–100，越高越好），不同類別的分數不可互比；分數、名次與上方排名表"
+            "**同一套標準**，支柱權重也沿用上方設定。"
         )
         top_hist = db.get_score_history()
         if top_hist.empty:
@@ -1150,27 +1155,22 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                     "`python -m scripts.etf_benchmark.step5_score --backfill`。")
         else:
             ac_zh = {"equity": "股票", "bond": "債券", "commodity": "商品", "other": "其他"}
-            c_ac, c_shrink = st.columns([1, 2])
+            c_ac, _ = st.columns([1, 2])
             # No 「全部」 option: scores are percentiles WITHIN an asset class, so a
             # cross-class leaderboard would compare incomparable numbers.
             ac_pick = c_ac.selectbox(
                 "資產類別", ["股票", "債券", "商品", "其他"],
                 key="etfc_top10_ac",
             )
-            shrink_top = c_shrink.checkbox(
-                "依信賴度壓縮（新基金分數往中位 50 收斂）", value=True,
-                key="etfc_top10_shrink",
-                help="避免上市不久、資料很短的基金憑短樣本衝上榜首。",
-            )
 
+            # Raw (unshrunk) composite — deliberately the SAME basis as the
+            # 綜合評分排名 table above, so one ticker has one rank per page.
+            # Thin-history funds are flagged by the 信賴 column instead.
             latest_d = top_hist["date"].max()
             snap_all = top_hist[top_hist["date"] == latest_d].copy()
             w_eff_t = st.session_state.get("etfc_w_eff", 1.0)
             w_asy_t = st.session_state.get("etfc_w_asy", 1.0)
             snap_all["score"] = _history_composite(snap_all, w_eff_t, w_asy_t)
-            if shrink_top:
-                conf = (snap_all["n_days"] / SCORE_FULL_CONF_DAYS).clip(0, 1)
-                snap_all["score"] = 50.0 + (snap_all["score"] - 50.0) * conf
 
             # Apply the tab's global liquidity filter FIRST, then rank within the
             # filtered basket — otherwise rank 1 can belong to an ETF the filter
