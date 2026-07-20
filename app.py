@@ -2386,17 +2386,19 @@ try:
 
     # Headline "since inception" account view: net cash in vs current value, so
     # realized P/L folds into the overall gain (the buffer view) - no separate
-    # 已實 card and no time-weighted figure here.
+    # 已實 card and no time-weighted figure here. 投入本金 can legitimately go
+    # negative once realized profit exceeds the remaining open cost (house
+    # money), so there is deliberately NO return-% card: any percent against a
+    # ≤0 deployed base is meaningless.
     liq_value = unrealized_cost + unrealized_pnl       # 目前淨值 = sum of liquidation values (after fee/tax)
     deployed_capital = unrealized_cost - total_pnl     # 投入本金 = net cash in = cost - reinvested realized
-    overall_gain = liq_value - deployed_capital        # 未實現損益 = 未實 + 已實 (since inception)
-    overall_pct = (overall_gain / deployed_capital * 100.0) if deployed_capital else 0.0
+    overall_gain = liq_value - deployed_capital        # 累計總損益 = 已實 + 未實 (since inception)
     overall_color = PROFIT_COLOR if overall_gain > 0 else (LOSS_COLOR if overall_gain < 0 else "#FFFFFF")
 
     st.markdown(f"### {T(lang, 'Key Metrics', '關鍵指標')}")
-    # Row 1 = the 4 headline financial cards. The trading-activity stats below are
+    # Row 1 = the 3 headline financial cards. The trading-activity stats below are
     # a light secondary strip (not heavy colored cards) so the eye lands on value.
-    k1, k2, k3, k4 = st.columns(4, gap="medium")
+    k1, k2, k3 = st.columns(3, gap="medium")
 
     def calc_wr(df_in):
         if df_in.empty: return 0.0
@@ -2414,9 +2416,11 @@ try:
     with k2:
         KPI_CARD(T(lang, "Invested", "投入本金"), fmt_money(deployed_capital, CURRENCY_RATE, CURRENCY_SYMBOL), "#475569", T(lang, "net cash in (from trades)", "淨投入 · 由交易計算"))
     with k3:
-        KPI_CARD(T(lang, "Total Gain", "未實現損益"), fmt_signed_money(overall_gain, CURRENCY_RATE, CURRENCY_SYMBOL), overall_color, T(lang, "since inception, incl. realized", "自成立以來（含已實）"))
-    with k4:
-        KPI_CARD(T(lang, "Return %", "報酬率 %"), fmt_signed_pct(overall_pct), overall_color, T(lang, "net value / invested", "淨值 ÷ 投入本金"))
+        _pl_breakdown = (
+            f"{T(lang, 'Realized', '已實')} {fmt_signed_money(total_pnl, CURRENCY_RATE, CURRENCY_SYMBOL)}"
+            f" · {T(lang, 'Unrealized', '未實')} {fmt_signed_money(unrealized_pnl, CURRENCY_RATE, CURRENCY_SYMBOL)}"
+        )
+        KPI_CARD(T(lang, "Total P/L", "累計總損益"), fmt_signed_money(overall_gain, CURRENCY_RATE, CURRENCY_SYMBOL), overall_color, _pl_breakdown)
 
     # --- Trade-activity stats: muted secondary strip (no cards) ---
     def _stat_item(label, value, sub, value_color="rgba(255,255,255,0.92)"):
