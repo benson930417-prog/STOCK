@@ -2384,21 +2384,21 @@ try:
     else:
         win_color = LOSS_COLOR
 
-    # Headline "since inception" account view: net cash in vs current value, so
-    # realized P/L folds into the overall gain (the buffer view) - no separate
-    # 已實 card and no time-weighted figure here. 投入本金 can legitimately go
-    # negative once realized profit exceeds the remaining open cost (house
-    # money), so there is deliberately NO return-% card: any percent against a
-    # ≤0 deployed base is meaningless.
+    # Headline row mirrors the 吳大師持股 header (net value / open cost /
+    # unrealized on the CURRENT position, incl. its %) plus one since-inception
+    # 累計總損益 card. Deliberately NO total return-% card: 淨投入 goes negative
+    # once realized profit exceeds the remaining open cost (house money), so a
+    # percent against that base is meaningless — the only % shown is the
+    # current position's, same as the 吳大師持股 tab.
     liq_value = unrealized_cost + unrealized_pnl       # 目前淨值 = sum of liquidation values (after fee/tax)
-    deployed_capital = unrealized_cost - total_pnl     # 投入本金 = net cash in = cost - reinvested realized
-    overall_gain = liq_value - deployed_capital        # 累計總損益 = 已實 + 未實 (since inception)
+    overall_gain = total_pnl + unrealized_pnl          # 累計總損益 = 已實 + 未實 (since inception)
     overall_color = PROFIT_COLOR if overall_gain > 0 else (LOSS_COLOR if overall_gain < 0 else "#FFFFFF")
+    unreal_card_color = PROFIT_COLOR if unrealized_pnl > 0 else (LOSS_COLOR if unrealized_pnl < 0 else "#475569")
 
     st.markdown(f"### {T(lang, 'Key Metrics', '關鍵指標')}")
-    # Row 1 = the 3 headline financial cards. The trading-activity stats below are
+    # Row 1 = the 4 headline financial cards. The trading-activity stats below are
     # a light secondary strip (not heavy colored cards) so the eye lands on value.
-    k1, k2, k3 = st.columns(3, gap="medium")
+    k1, k2, k3, k4 = st.columns(4, gap="medium")
 
     def calc_wr(df_in):
         if df_in.empty: return 0.0
@@ -2414,8 +2414,15 @@ try:
     with k1:
         KPI_CARD(T(lang, "Net Value", "目前淨值"), fmt_money(liq_value, CURRENCY_RATE, CURRENCY_SYMBOL), NEUTRAL_BLUE, T(lang, "after fee/tax", "扣費稅後 · 即時"))
     with k2:
-        KPI_CARD(T(lang, "Invested", "投入本金"), fmt_money(deployed_capital, CURRENCY_RATE, CURRENCY_SYMBOL), "#475569", T(lang, "net cash in (from trades)", "淨投入 · 由交易計算"))
+        KPI_CARD(T(lang, "Position Cost", "此次投入成本"), fmt_money(unrealized_cost, CURRENCY_RATE, CURRENCY_SYMBOL), "#475569", T(lang, "open positions", "目前持倉成本"))
     with k3:
+        KPI_CARD(
+            T(lang, "Unrealized P/L", "此次未實現損益"),
+            fmt_signed_money(unrealized_pnl, CURRENCY_RATE, CURRENCY_SYMBOL),
+            unreal_card_color,
+            f"{fmt_signed_pct(unrealized_pct)} · {T(lang, 'after fee/tax', '扣費稅後')}",
+        )
+    with k4:
         _pl_breakdown = (
             f"{T(lang, 'Realized', '已實')} {fmt_signed_money(total_pnl, CURRENCY_RATE, CURRENCY_SYMBOL)}"
             f" · {T(lang, 'Unrealized', '未實')} {fmt_signed_money(unrealized_pnl, CURRENCY_RATE, CURRENCY_SYMBOL)}"
