@@ -536,19 +536,22 @@ def build_master_text(snapshot, quote_cache=None):
         snapshot.get("positions"),
         snapshot.get("cash_twd", 0),
     )
-    # 成本 = 投入本金 (net cash deployed = total cost − reinvested realized).
-    # 未實 = overall gain since inception = 目前淨值 − 投入本金 (folds the
-    # reinvested realized P/L in, so it shows the buffer rather than today's drift).
-    deployed = snapshot['total_cost'] - snapshot.get('realized_pnl', 0)
-    overall = snapshot['total_liq'] - deployed
-    overall_pct = (overall / deployed * 100.0) if deployed else 0.0
+    # Mirrors the dashboard 關鍵指標 row: 成本 = CURRENT open-position cost,
+    # 未實 = current-position unrealized with the only % shown (per-position),
+    # 累計總損益 = 已實 + 未實 since inception. Deliberately no total return-%:
+    # net cash deployed (cost − realized) goes negative on house money, which
+    # makes any % against it meaningless.
+    realized = snapshot.get('realized_pnl', 0)
+    unrealized = snapshot.get('unrealized', 0)
+    overall = realized + unrealized
     lines = [
         "吳大師持股",
         "━━━━━━━━━━━━━━",
         "💼 總覽",
         f"淨值：{_fmt_money(snapshot['total_liq'])}",
-        f"成本：{_fmt_money(deployed)}",
-        f"未實：{overall:+,.0f} ({overall_pct:+.2f}%)",
+        f"成本：{_fmt_money(snapshot['total_cost'])}",
+        f"未實：{unrealized:+,.0f} ({snapshot.get('unrealized_pct', 0.0):+.2f}%)",
+        f"累計總損益：{overall:+,.0f}（已實 {realized:+,.0f}）",
         f"槓桿值：{snapshot.get('leverage_pct', 100.0):.0f}%",
         f"累計交易量：{_fmt_money(snapshot.get('trade_volume', 0))}",
         "",
