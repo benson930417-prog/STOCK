@@ -275,6 +275,7 @@ def _theme_chart(
             y=labels,
             orientation="h",
             marker_color=colors,
+            showlegend=False,
             text=text,
             textposition="outside",
             cliponaxis=False,
