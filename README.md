@@ -43,6 +43,15 @@ An AI agent on the dev machine can run the whole loop end-to-end with no human i
 - The exact SSH command (`ssh -i "<local key path>" ubuntu@80.225.204.45`) for the production server.
 - A permanent dashboard session URL (`http://80.225.204.45:8501/?session=<token>`) that skips the `VIEW_PASSWORD` gate, so the agent can open the dashboard in a browser tool and visually verify a deployed change.
 
+### AI sandbox and browser rules
+
+AI coding agents may run inside a restricted sandbox even though the repository, Chrome extension, SSH key, and production server exist on the host machine. Treat `EPERM`, `permission denied`, blocked network/DNS, unreadable host paths, or an SSH key rejected only because of sandbox ACLs as execution-boundary failures — not automatically as application bugs.
+
+1. **Use the connected Chrome extension first for live dashboard QA.** Open the permanent session URL from `CLAUDE.local.md` in the user's connected Chrome, navigate to the changed tab, interact with the real controls, read the rendered text, and take a screenshot. Do not begin by launching another local browser runtime or writing a remote Playwright workaround when the Chrome extension is available.
+2. **Move required commands outside the sandbox when the sandbox blocks them.** Use the agent host's explicit approval/escalation mechanism to rerun necessary network, SSH, Git, service, or host-file commands outside the sandbox. Ask for approval when required; do not repeatedly retry the same command inside the sandbox.
+3. **Do not weaken host security to escape the sandbox.** Never broadly relax ACLs on the user's home directory, `AppData`, SSH key, or secret files. Prefer approved outside-sandbox execution. If a temporary restricted copy is genuinely unavoidable, keep it under a verified temp directory and remove it immediately.
+4. **Browser fallback order:** connected Chrome extension → in-app browser (if Chrome is unavailable) → server-side headless browser only when neither connected browser works. State the fallback reason briefly.
+
 The loop:
 
 1. Edit locally and run checks (`python -m py_compile ...`, `bash -n ...`).
@@ -54,7 +63,7 @@ The loop:
    ```
 
    For README/doc-only changes, the `git pull` alone is enough — skip pip and restarts.
-4. Verify in the browser: open the permanent session URL from `CLAUDE.local.md` with the browser tool, navigate to the affected tab, and confirm the change actually renders (screenshot / read the page text). If `CLAUDE.local.md` is missing (fresh machine), ask the user for the session URL or `VIEW_PASSWORD` — do not guess.
+4. Verify in the browser: open the permanent session URL from `CLAUDE.local.md` with the connected Chrome extension first, navigate to the affected tab, interact with the changed controls, and confirm the change actually renders (screenshot and rendered text). If `CLAUDE.local.md` is missing (fresh machine), ask the user for the session URL or `VIEW_PASSWORD` — do not guess.
 5. Report to the user what changed, what was deployed, and what was visually verified.
 
 Notes:
