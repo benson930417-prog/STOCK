@@ -9,7 +9,7 @@ three different questions separate:
 
 That separation prevents a single large rebalance from masquerading as a
 sustained trend and lets the user inspect any shared history window, not just a
-hard-coded five sessions.
+single hard-coded decision window.
 """
 from __future__ import annotations
 
@@ -648,8 +648,8 @@ def render_tag_flow_tab(
     with control_b:
         window = st.radio(
             "觀察期間",
-            ["1日", "5日", "20日", "全部", "自訂"],
-            index=1,
+            ["1日", "5日", "10日", "20日", "60日", "120日", "240日", "全部", "自訂"],
+            index=2,
             horizontal=True,
             key="tag_flow_window",
         )
@@ -661,6 +661,11 @@ def render_tag_flow_tab(
     if not available_dates:
         st.info("所選 ETF 沒有共同可比較日期。")
         return
+    if len(available_dates) < 240:
+        st.caption(
+            f"目前三檔 ETF 只有 {len(available_dates)} 個共同交易日；"
+            "較長期間會自動使用全部可用共同資料，之後會隨每日快取自然累積。"
+        )
 
     if window == "自訂":
         default_start = available_dates[max(0, len(available_dates) - 20)]
@@ -673,7 +678,16 @@ def render_tag_flow_tab(
         start_index, end_index = available_dates.index(start), available_dates.index(end)
         selected_dates = available_dates[start_index : end_index + 1]
     else:
-        counts = {"1日": 1, "5日": 5, "20日": 20, "全部": len(available_dates)}
+        counts = {
+            "1日": 1,
+            "5日": 5,
+            "10日": 10,
+            "20日": 20,
+            "60日": 60,
+            "120日": 120,
+            "240日": 240,
+            "全部": len(available_dates),
+        }
         selected_dates = available_dates[-min(counts[window], len(available_dates)) :]
 
     theme_rows, stock_rows = _aggregate(data, selected_etfs, selected_dates)

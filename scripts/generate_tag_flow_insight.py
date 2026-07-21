@@ -15,6 +15,7 @@ import argparse
 from collections import defaultdict
 from datetime import datetime
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -29,8 +30,8 @@ OUT = DATA / "tag_flow_insight.json"
 SUMMARY_DIR = DATA / "summaries"
 
 ETFS = ["00403A", "00981A", "00991A"]
-LOOKBACK = 5
-RECENT_DAYS = 2
+LOOKBACK = 10
+RECENT_DAYS = 3
 MAX_SECTORS = 3
 MAX_SELL_SECTORS = 3
 MAX_STOCKS = 5
@@ -174,11 +175,11 @@ def _draw_mini_trend(
         return
     draw.text(
         (left, top),
-        "5日每日相對力道",
+        f"{LOOKBACK}日每日相對力道",
         font=CARD_FONTS["chart"],
         fill=CARD_MUTED,
     )
-    total_text = f"5日合計 {row['strength']:+.2f}%"
+    total_text = f"{LOOKBACK}日合計 {row['strength']:+.2f}%"
     total_w = _text_width(draw, total_text, CARD_FONTS["chart"])
     draw.text(
         (right - total_w, top),
@@ -454,7 +455,7 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
         )
         draw.text(
             (84, y + 83),
-            "需同時符合 5 日明確淨賣，且至少兩檔 ETF 同向。",
+            f"需同時符合 {LOOKBACK} 日明確淨賣，且至少兩檔 ETF 同向。",
             font=CARD_FONTS["body"],
             fill=CARD_MUTED,
         )
@@ -534,7 +535,7 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
     )
 
     footer_y = conclusion_y + 177
-    footer = "類股 only · 近 5 個共同交易日 · 同一尺度趨勢圖 · 共買／共賣池皆需 3/3 ETF"
+    footer = f"類股 only · 近 {LOOKBACK} 個共同交易日 · 同一尺度趨勢圖 · 共買／共賣池皆需 3/3 ETF"
     footer_w = _text_width(draw, footer, CARD_FONTS["footer"])
     draw.text(
         ((CARD_WIDTH - footer_w) / 2, footer_y),
@@ -674,11 +675,15 @@ def _sector_reason(row: dict, n_dates: int) -> str:
         breadth = "三檔主動 ETF 同步加碼"
     else:
         breadth = "多數主動 ETF 同向加碼"
+    persistence_days = max(3, math.ceil(n_dates * 0.8))
     persistence = (
-        "買盤具持續性" if row["buy_days"] >= max(3, n_dates - 1)
+        "買盤具持續性" if row["buy_days"] >= persistence_days
         else "近期買盤轉強"
     )
-    return f"{breadth}，{persistence}，而且最近兩日力道高於前三日。"
+    return (
+        f"{breadth}，{persistence}，而且最近 {RECENT_DAYS} 日力道"
+        f"高於前 {LOOKBACK - RECENT_DAYS} 日。"
+    )
 
 
 def _sell_reason(row: dict, n_dates: int) -> str:
@@ -686,14 +691,15 @@ def _sell_reason(row: dict, n_dates: int) -> str:
         breadth = "三檔主動 ETF 同步減碼"
     else:
         breadth = "多數主動 ETF 同向減碼"
+    persistence_days = max(3, math.ceil(n_dates * 0.8))
     persistence = (
-        "賣壓具持續性" if row["sell_days"] >= max(3, n_dates - 1)
+        "賣壓具持續性" if row["sell_days"] >= persistence_days
         else "近期轉為明顯賣超"
     )
     if not row["latest_negative"]:
         acceleration = "但最新一日已轉正，賣壓正在緩和"
     elif row["acceleration"] < -MIN_ACCELERATION:
-        acceleration = "而且最近兩日賣壓加重"
+        acceleration = f"而且最近 {RECENT_DAYS} 日賣壓加重"
     else:
         acceleration = "最新一日仍在減碼"
     return f"{breadth}，{persistence}，{acceleration}。"
@@ -707,7 +713,7 @@ def _render_line(
 ) -> str:
     lines = [
         "🔥 吳大師｜ETF 類股洞察",
-        f"截至 {as_of}｜近 5 個共同交易日",
+        f"截至 {as_of}｜近 {LOOKBACK} 個共同交易日",
         "",
         "🔴 買盤主線",
     ]
@@ -741,7 +747,7 @@ def _render_line(
         lines.extend(
             [
                 "本期沒有明確重度減碼類股。",
-                "條件：5 日明確淨賣，且至少兩檔 ETF 同向。",
+                f"條件：{LOOKBACK} 日明確淨賣，且至少兩檔 ETF 同向。",
                 "",
             ]
         )
@@ -812,8 +818,9 @@ def generate() -> dict:
         },
         "methodology": (
             "category-only; strong = positive equal-weight normalized flow; "
-            "accelerating = latest 2-session daily average above prior 3; "
-            "heavy selling = negative 5-session flow with at least 2 ETFs net "
+            f"accelerating = latest {RECENT_DAYS}-session daily average above "
+            f"prior {LOOKBACK - RECENT_DAYS}; "
+            f"heavy selling = negative {LOOKBACK}-session flow with at least 2 ETFs net "
             "selling; latest-session direction labels whether pressure is worsening, "
             "continuing, or easing; stock pools require same-direction "
             "normalized flow from all 3 ETFs"
