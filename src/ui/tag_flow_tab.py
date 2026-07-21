@@ -14,6 +14,7 @@ hard-coded five sessions.
 from __future__ import annotations
 
 from collections import defaultdict
+from html import escape
 import json
 
 import pandas as pd
@@ -22,6 +23,9 @@ import streamlit as st
 
 ETF_LABEL = {"00403A": "403", "00981A": "981", "00991A": "991"}
 EPSILON = 1e-6
+BUY_COLOR = "#E74C3C"
+SELL_COLOR = "#2ECC71"
+NEUTRAL_COLOR = "#94A3B8"
 
 
 def _fmt_ratio(value: float) -> str:
@@ -33,6 +37,94 @@ def _fmt_money(value_twd: float, *, signed: bool = True) -> str:
     sign = "+" if signed and value_yi > 0 else ""
     decimals = 2 if abs(value_yi) < 1 else 1
     return f"{sign}{value_yi:.{decimals}f}億"
+
+
+def _direction_label(value: float) -> str:
+    if value > EPSILON:
+        return "🔴 加碼"
+    if value < -EPSILON:
+        return "🟢 減碼"
+    return "⚪ 持平"
+
+
+def _direction_style(
+    frame: pd.DataFrame, value_column: str
+) -> pd.io.formats.style.Styler:
+    """Color every decision column from one numeric direction source."""
+    raw_values = frame[value_column].to_dict()
+    visible = frame.drop(columns=[value_column])
+    emphasized = {
+        "方向",
+        "區間約買賣",
+        "相對力道",
+        "最新一日",
+    }
+
+    def style_row(row: pd.Series) -> list[str]:
+        value = raw_values[row.name]
+        color = (
+            BUY_COLOR
+            if value > EPSILON
+            else SELL_COLOR
+            if value < -EPSILON
+            else NEUTRAL_COLOR
+        )
+        return [
+            f"color: {color}; font-weight: 700;" if column in emphasized else ""
+            for column in row.index
+        ]
+
+    return visible.style.apply(style_row, axis=1)
+
+
+def _render_legend() -> None:
+    st.markdown(
+        f"""
+        <div class="tf-legend">
+          <span><i style="background:{BUY_COLOR}"></i><b>紅色＝加碼／買進</b></span>
+          <span><i style="background:{SELL_COLOR}"></i><b>綠色＝減碼／賣出</b></span>
+          <span><i style="background:{NEUTRAL_COLOR}"></i>灰色＝接近持平</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _summary_cards(theme_rows: list[dict], n_dates: int, n_etfs: int) -> None:
+    positive = [row for row in theme_rows if row["flow"] > EPSILON]
+    negative = [row for row in theme_rows if row["flow"] < -EPSILON]
+    cards: list[str] = []
+
+    if positive:
+        row = max(positive, key=lambda item: item["flow"])
+        cards.append(
+            f"""
+            <div class="tf-summary tf-buy">
+              <div class="tf-kicker">🔴 最強加碼</div>
+              <div class="tf-theme">{escape(str(row['theme']))}</div>
+              <div class="tf-money">約 {_fmt_money(row['money'])}</div>
+              <div class="tf-detail">相對力道 {row['flow']:+.2f}% · {row['buy_days']}/{n_dates} 日偏買 · {row['buyers']}/{n_etfs} ETF 淨買</div>
+            </div>
+            """
+        )
+    if negative:
+        row = min(negative, key=lambda item: item["flow"])
+        cards.append(
+            f"""
+            <div class="tf-summary tf-sell">
+              <div class="tf-kicker">🟢 最強減碼</div>
+              <div class="tf-theme">{escape(str(row['theme']))}</div>
+              <div class="tf-money">約 {_fmt_money(row['money'])}</div>
+              <div class="tf-detail">相對力道 {row['flow']:+.2f}% · {row['sell_days']}/{n_dates} 日偏賣 · {row['sellers']}/{n_etfs} ETF 淨賣</div>
+            </div>
+            """
+        )
+
+    if cards:
+        st.markdown(
+            '<div class="tf-summary-grid">' + "".join(cards) + "</div>",
+            unsafe_allow_html=True,
+        )
 
 
 def _load(data_dir):
@@ -258,11 +350,9 @@ def _theme_chart(
     text = []
     custom = []
     for row in shown:
-        aligned_days = row["buy_days"] if row["flow"] >= 0 else row["sell_days"]
-        aligned_etfs = row["buyers"] if row["flow"] >= 0 else row["sellers"]
+        direction = "加碼" if row["flow"] >= 0 else "減碼"
         text.append(
-            f"約 {_fmt_money(row['money'])} · 規模比 {row['flow']:+.2f}% · "
-            f"{aligned_days}/{n_dates}日 · {aligned_etfs}/{n_etfs} ETF"
+            f"{direction} 約 {_fmt_money(row['money'])} · 力道 {row['flow']:+.2f}%"
         )
         drivers = "、".join(
             f"{stock['name']} 約{_fmt_money(stock['money'])}"
@@ -296,8 +386,8 @@ def _theme_chart(
             customdata=custom,
             hovertemplate=(
                 "<b>%{y}</b><br>區間約 %{customdata[1]:+.2f} 億"
-                "<br>平均規模比 %{x:+.2f}%"
-                "<br>最新日約 %{customdata[2]:+.2f} 億 / 規模比 %{customdata[0]:+.2f}%"
+                "<br>相對力道 %{x:+.2f}%（已按 ETF 大小調整）"
+                "<br>最新日約 %{customdata[2]:+.2f} 億 / 力道 %{customdata[0]:+.2f}%"
                 "<br>偏買 / 偏賣：%{customdata[3]} / %{customdata[4]} 日"
                 "<br>ETF 淨買 / 淨賣：%{customdata[5]} / %{customdata[6]}"
                 "<br>主要個股：%{customdata[7]}<extra></extra>"
@@ -320,7 +410,7 @@ def _theme_chart(
                 customdata=[[row["latest_money"] / 100_000_000.0] for row in shown],
                 hovertemplate=(
                     "<b>%{y}</b><br>最新日約 %{customdata[0]:+.2f} 億"
-                    "<br>規模比 %{x:+.2f}%<extra></extra>"
+                    "<br>相對力道 %{x:+.2f}%<extra></extra>"
                 ),
             )
         )
@@ -328,9 +418,9 @@ def _theme_chart(
     fig.update_layout(
         template="streamlit",
         height=max(390, 31 * len(shown) + 120),
-        margin={"l": 8, "r": 260, "t": 28, "b": 58},
+        margin={"l": 8, "r": 205, "t": 28, "b": 58},
         xaxis={
-            "title": "平均規模比（每檔 ETF 買賣金額 ÷ 自身基金規模，%）",
+            "title": "← 減碼｜相對力道（已按 ETF 大小調整）｜加碼 →",
             "range": [-cap * 1.42, cap * 1.42],
             "zeroline": False,
         },
@@ -376,7 +466,7 @@ def _timeline_chart(
         go.Bar(
             x=dates,
             y=daily_money_yi,
-            name="每日約買賣（億元）",
+            name="每日估計買賣（億元）",
             marker_color=colors,
             opacity=0.58,
             hovertemplate="%{x}<br>當日約 %{y:+.2f} 億<extra></extra>",
@@ -386,12 +476,12 @@ def _timeline_chart(
         go.Scatter(
             x=dates,
             y=cumulative,
-            name="累積規模比",
+            name="累積相對力道",
             mode="lines+markers",
             line={"color": line_color, "width": 3},
             marker={"size": 6},
             yaxis="y2",
-            hovertemplate="%{x}<br>累積規模比 %{y:+.2f}%<extra></extra>",
+            hovertemplate="%{x}<br>累積相對力道 %{y:+.2f}%<extra></extra>",
         )
     )
     fig.add_hline(y=0, line_width=1, line_color="rgba(128,128,128,0.45)")
@@ -403,36 +493,15 @@ def _timeline_chart(
         barmode="relative",
         legend={"orientation": "h", "y": 1.08, "x": 0},
         xaxis={"type": "category", "tickangle": -35 if len(dates) > 12 else 0},
-        yaxis={"title": "每日約買賣（億元）", "zeroline": False},
+        yaxis={"title": "每日估計買賣（億元）", "zeroline": False},
         yaxis2={
-            "title": "累積規模比（%）",
+            "title": "累積相對力道（%）",
             "overlaying": "y",
             "side": "right",
             "zeroline": False,
         },
     )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-
-
-def _readout(theme_rows: list[dict], n_dates: int, n_etfs: int) -> str:
-    positive = [row for row in theme_rows if row["flow"] > EPSILON]
-    negative = [row for row in theme_rows if row["flow"] < -EPSILON]
-    clauses = []
-    if positive:
-        top = max(positive, key=lambda row: row["flow"])
-        clauses.append(
-            f"**{top['theme']}** 加碼最明顯（約 {_fmt_money(top['money'])}；"
-            f"規模比 {top['flow']:+.2f}%；"
-            f"{top['buy_days']}/{n_dates} 日偏買；{top['buyers']}/{n_etfs} ETF 淨買）"
-        )
-    if negative:
-        bottom = min(negative, key=lambda row: row["flow"])
-        clauses.append(
-            f"**{bottom['theme']}** 減碼最明顯（約 {_fmt_money(bottom['money'])}；"
-            f"規模比 {bottom['flow']:+.2f}%；"
-            f"{bottom['sell_days']}/{n_dates} 日偏賣；{bottom['sellers']}/{n_etfs} ETF 淨賣）"
-        )
-    return "；".join(clauses) + "。" if clauses else "此區間沒有可辨識的題材流向。"
 
 
 def _etf_breakdown(theme: dict, dates: list[str], selected_etfs: list[str]) -> pd.DataFrame:
@@ -442,17 +511,20 @@ def _etf_breakdown(theme: dict, dates: list[str], selected_etfs: list[str]) -> p
         daily_money = theme["daily_money_by_etf"].get(etf, {})
         values = [daily.get(date, 0.0) for date in dates]
         money_values = [daily_money.get(date, 0.0) for date in dates]
+        total_flow = sum(values)
         rows.append(
             {
                 "ETF": ETF_LABEL.get(etf, etf),
+                "方向": _direction_label(total_flow),
+                "區間約買賣": _fmt_money(sum(money_values)),
+                "相對力道": _fmt_ratio(total_flow),
+                "最新一日": _fmt_money(money_values[-1]),
                 "最新基金規模": _fmt_money(
                     theme["fund_size_by_etf"].get(etf, 0.0), signed=False
                 ),
-                "區間約買賣": _fmt_money(sum(money_values)),
-                "規模比": _fmt_ratio(sum(values)),
-                "最新約買賣": _fmt_money(money_values[-1]),
                 "偏買日": sum(value > EPSILON for value in values),
                 "偏賣日": sum(value < -EPSILON for value in values),
+                "_direction": total_flow,
             }
         )
     return pd.DataFrame(rows)
@@ -483,16 +555,19 @@ def _stock_table(
                 "個股": f"{row['name']} · {row['id']}",
                 "概念（附註）": "、".join(row["concepts"][:3]) or "—",
                 "產業": row["category"],
+                "方向": _direction_label(row["flow"]),
                 "區間約買賣": _fmt_money(row["money"]),
-                "規模比": _fmt_ratio(row["flow"]),
-                "最新約買賣": _fmt_money(row["latest_money"]),
+                "相對力道": _fmt_ratio(row["flow"]),
+                "最新一日": _fmt_money(row["latest_money"]),
                 "同向日": f"{aligned_days}/{n_dates}",
                 "ETF 共識": consensus if n_etfs > 1 else "—",
                 "最大單日": percentile,
+                "_direction": row["flow"],
             }
         )
+    display_frame = pd.DataFrame(display_rows)
     st.dataframe(
-        pd.DataFrame(display_rows),
+        _direction_style(display_frame, "_direction"),
         use_container_width=True,
         hide_index=True,
         column_config={
@@ -511,11 +586,39 @@ def render_tag_flow_tab(
     LOSS_COLOR="#2ECC71",
     **kwargs,
 ):
+    # This view intentionally follows the Taiwan-market convention regardless of
+    # the dashboard's optional Western color toggle: red is buying, green is selling.
+    PROFIT_COLOR = BUY_COLOR
+    LOSS_COLOR = SELL_COLOR
+    st.markdown(
+        """
+        <style>
+        .tf-legend {display:flex; flex-wrap:wrap; gap:.65rem 1.25rem; align-items:center;
+          padding:.7rem .9rem; margin:.3rem 0 1rem; border:1px solid rgba(148,163,184,.24);
+          border-radius:.7rem; background:rgba(148,163,184,.06); font-size:.92rem}
+        .tf-legend span {display:inline-flex; align-items:center; gap:.42rem}
+        .tf-legend i {width:.7rem; height:.7rem; border-radius:50%; display:inline-block}
+        .tf-summary-grid {display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+          gap:.8rem; margin:.35rem 0 1.25rem}
+        .tf-summary {padding:1rem 1.05rem; border-radius:.8rem; border-left:5px solid;
+          background:rgba(148,163,184,.06)}
+        .tf-buy {border-color:#E74C3C; background:rgba(231,76,60,.10)}
+        .tf-sell {border-color:#2ECC71; background:rgba(46,204,113,.10)}
+        .tf-kicker {font-size:.82rem; font-weight:700; opacity:.82; margin-bottom:.2rem}
+        .tf-theme {font-size:1.12rem; font-weight:750}
+        .tf-money {font-size:1.5rem; font-weight:800; line-height:1.35}
+        .tf-buy .tf-money {color:#E74C3C}.tf-sell .tf-money {color:#2ECC71}
+        .tf-detail {font-size:.84rem; opacity:.82; margin-top:.18rem}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
     st.subheader("主動 ETF 題材流向")
     st.caption(
-        "看持股張數變化，不把股價上漲誤認成加碼。先比較題材的區間配置變動，"
-        "再拆成持續性、ETF 共識與個股來源；所有題材統計只使用單一類股分類。"
+        "先看紅色加碼、綠色減碼；億元看實際金額感，相對力道用來公平比較不同大小的 ETF。"
+        "所有題材統計只使用單一類股分類。"
     )
+    _render_legend()
 
     data = _load(DATA_DIR)
     if not data:
@@ -531,7 +634,7 @@ def render_tag_flow_tab(
     control_a, control_b = st.columns([1.1, 1.4])
     with control_a:
         selected_etfs = st.multiselect(
-            "ETF 範圍",
+            "選擇 ETF",
             data.get("etfs", []),
             default=data.get("etfs", []),
             format_func=lambda etf: f"{ETF_LABEL.get(etf, etf)}（{etf}）",
@@ -539,7 +642,7 @@ def render_tag_flow_tab(
         )
     with control_b:
         window = st.radio(
-            "時間範圍",
+            "觀察期間",
             ["1日", "5日", "20日", "全部", "自訂"],
             index=1,
             horizontal=True,
@@ -580,22 +683,21 @@ def render_tag_flow_tab(
         f"{date_label} · {n_dates} 個共同交易日 · {n_etfs} 檔 ETF · "
         f"資料產生 {data.get('generated', '—')}｜類股每股只歸一類，各題材可直接比較。"
     )
-    st.markdown("**區間判讀｜** " + _readout(theme_rows, n_dates, n_etfs))
+    _summary_cards(theme_rows, n_dates, n_etfs)
 
-    st.markdown("#### 題材全景")
+    st.markdown("#### ① 類股資金方向")
     st.caption(
-        "橫條按規模比排序，讓大型 981 不會自然壓過其他 ETF；標籤同時顯示三檔合計約買賣億元。"
-        "規模比＝每檔 ETF 買賣金額 ÷ 自身基金規模，再對所選 ETF 取平均。"
-        "空心菱形是最新一日，用來辨認區間趨勢是否正在反轉。"
+        "紅色往右是加碼，綠色往左是減碼。長條按『相對力道』排序，已校正 ETF 大小，"
+        "所以大型 981 不會自然排前；標籤上的億元是三檔合計估計金額。◇ 代表最新一日。"
     )
     _theme_chart(theme_rows, n_dates, n_etfs, PROFIT_COLOR, LOSS_COLOR)
 
     if theme_rows:
         st.divider()
-        st.markdown("#### 題材拆解")
+        st.markdown("#### ② 點一個類股看趨勢")
         theme_names = [row["theme"] for row in theme_rows]
         selected_theme_name = st.selectbox(
-            "選一個題材，查看它是持續累積、單日跳升，還是哪一檔 ETF 在主導",
+            "選擇類股",
             theme_names,
             key="tag_flow_theme_detail",
         )
@@ -609,18 +711,20 @@ def render_tag_flow_tab(
             PROFIT_COLOR,
             LOSS_COLOR,
         )
+        st.caption("長條：每天估計買賣億元（紅買、綠賣）｜折線：累積相對力道（已校正 ETF 大小）")
+        breakdown = _etf_breakdown(selected_theme, selected_dates, selected_etfs)
         st.dataframe(
-            _etf_breakdown(selected_theme, selected_dates, selected_etfs),
+            _direction_style(breakdown, "_direction"),
             use_container_width=True,
             hide_index=True,
         )
 
-        st.markdown("**主要個股來源**")
+        st.markdown("#### ③ 主要個股來源")
         contributing_ids = {stock["id"] for stock in selected_theme["top_stocks"]}
         _stock_table(stock_rows, n_dates, n_etfs, contributing_ids, limit=12)
 
     st.divider()
-    st.markdown("#### 全部個股訊號")
+    st.markdown("#### ④ 全部個股訊號")
     stock_filter = st.radio(
         "個股篩選",
         ["全部", "淨加碼", "淨減碼", "ETF 共識", "異常單日"],
@@ -646,7 +750,7 @@ def render_tag_flow_tab(
         st.markdown(
             """
 - **約買賣（億元）**：依張數變化、持股權重與當日基金規模反推的台幣金額，三檔 ETF 直接加總。因揭露權重與基金規模有四捨五入，所以是估計值，適合建立金額感、不適合單獨比較誰更積極。
-- **規模比（%）**：先把每檔 ETF 的買賣金額除以自己的基金規模，再對所選 ETF 取平均。這是圖表排序依據，因此 981 規模較大不會自動取得較高排名。它不是報酬率，也不會把持股上漲造成的權重增加算成買進。
+- **相對力道（% 規模）**：先把每檔 ETF 的買賣金額除以自己的基金規模，再對所選 ETF 取平均。這是圖表排序依據，因此 981 規模較大不會自動取得較高排名。它不是報酬率，也不會把持股上漲造成的權重增加算成買進。
 - **同向日**：題材每日淨流向與區間總方向相同的交易日數；大數字但只有一天同向，通常是單次換股，不是持續布局。
 - **ETF 共識**：每檔 ETF 在整個區間的淨方向。`3買 / 0賣` 比單一 ETF 買進更有廣度，但仍不是投資建議。
 - **最大單日 P 值**：該筆交易相對同一 ETF 之前 20 個交易日出手大小的經驗百分位；P95 代表比先前約 95% 的交易更大。每一天只使用當時已知的歷史，不偷看未來。

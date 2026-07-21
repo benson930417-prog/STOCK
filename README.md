@@ -119,7 +119,7 @@ Notes:
 | `src/ui/etf_tab.py` | Active/passive ETF dashboard views and daily operation report UI. |
 | `src/ui/etf_compare_tab.py` | ETF comparison tab backed by the local `data/etf_bench/etf_bench.sqlite` database. |
 | `src/ui/market_pulse_tab.py` | Market pulse tab using ETF benchmark/index history and regime calculations. |
-| `src/ui/tag_flow_tab.py` | 題材流向 tab: flexible 1/5/20/all/custom shared-session ranges, 類股-only aggregation, persistence, ETF consensus, timeline, and stock drill-down. Ranks by normalized 規模比 for fair cross-fund comparison and shows estimated 億元 as intuitive context. 概念 labels appear only as stock-level notes and never enter interpretation. Pure render of `data/tag_flow.json` (no network). |
+| `src/ui/tag_flow_tab.py` | 題材流向 tab: flexible 1/5/20/all/custom shared-session ranges, 類股-only aggregation, persistence, ETF consensus, timeline, and stock drill-down. Ranks by normalized 相對力道 for fair cross-fund comparison and shows estimated 億元 as intuitive context. Uses the Taiwan convention consistently: red = 加碼/買進, green = 減碼/賣出. 概念 labels appear only as stock-level notes and never enter interpretation. Pure render of `data/tag_flow.json` (no network). |
 
 Dashboard authentication uses `VIEW_PASSWORD` and `ADMIN_PASSWORD` from Streamlit secrets, environment variables, or `/home/ubuntu/.stock_secrets` depending on the runtime.
 
@@ -561,7 +561,8 @@ Each of these is a trap that has already caused a wrong result or a missed step.
 
 13. **題材流向 interpretation is 類股-only.** Every theme ranking, chart, summary, persistence calculation, ETF-consensus calculation, filter, and drill-down in `src/ui/tag_flow_tab.py` must aggregate by the stock's single `category` field. Never aggregate, rank, score, filter, or narrate using 概念股 labels. Concepts may be retained in the cache only so the stock tables can show them immediately beside the stock as a clearly labeled display-only note.
 
-14. **題材流向 ranks by 規模比; 億元 is context only.** A larger fund such as 00981A naturally trades more cash, so actual TWD must never drive theme ranking or the "most added/trimmed" narrative. Rank with normalized ActiveWeight (each ETF's estimated trade cash ÷ its own disclosed fund size, averaged across selected ETFs). Show estimated 億元 beside it for intuition and label it as approximate because disclosed weights/fund sizes are rounded. The drill-down timeline uses actual 億元 bars plus a normalized cumulative 規模比 line.
+14. **題材流向 ranks by 相對力道; 億元 is context only.** A larger fund such as 00981A naturally trades more cash, so actual TWD must never drive theme ranking or the "most added/trimmed" narrative. Rank with normalized ActiveWeight (each ETF's estimated trade cash ÷ its own disclosed fund size, averaged across selected ETFs). Show estimated 億元 beside it for intuition and label it as approximate because disclosed weights/fund sizes are rounded. The drill-down timeline uses actual 億元 bars plus a normalized cumulative 相對力道 line.
+15. **題材流向 always uses Taiwan direction colors.** Red means 加碼/買進, green means 減碼/賣出, and gray means near-flat. Apply that convention to summary cards, charts, and decision columns even if another dashboard surface uses a Western color toggle. Color describes flow direction, not guaranteed future performance.
 
 ## ETF Maintenance Playbook For Agents
 
