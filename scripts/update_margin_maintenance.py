@@ -429,7 +429,27 @@ def main() -> int:
         cached_dates = set(pd.to_datetime(existing["date"], errors="coerce").dt.date.dropna())
         dates = [date for date in dates if date.date() not in cached_dates]
         print(f"[margin-risk] backfill missing_dates={len(dates)} cached={len(cached_dates)}")
-    df, fetched, errors = refresh_cache(args.output, dates, workers=args.workers)
+    # A one-year initialization can run for tens of minutes against the two
+    # official exchanges. Checkpoint it in small atomic batches so a dropped
+    # SSH session or a transient endpoint failure never discards all progress.
+    if args.backfill_years and dates:
+        df = load_existing(args.output)
+        fetched = 0
+        errors = 0
+        batch_size = 25
+        for start in range(0, len(dates), batch_size):
+            batch = dates[start : start + batch_size]
+            df, batch_fetched, batch_errors = refresh_cache(
+                args.output, batch, workers=args.workers
+            )
+            fetched += batch_fetched
+            errors += batch_errors
+            print(
+                f"[margin-risk] checkpoint={min(start + batch_size, len(dates))}/{len(dates)} "
+                f"cached={len(df)} fetched={fetched} errors={errors}"
+            )
+    else:
+        df, fetched, errors = refresh_cache(args.output, dates, workers=args.workers)
     if df.empty:
         print(f"[margin-risk] no rows written path={args.output} errors={errors}")
         return 1
