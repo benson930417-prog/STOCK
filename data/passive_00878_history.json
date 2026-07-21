@@ -8254,5 +8254,197 @@
         "shares": 14283000
       }
     ]
+  },
+  "2026-07-21": {
+    "date": "2026-07-21",
+    "meta": {
+      "fund_size": 590447131498.0,
+      "nav": 32.19,
+      "outstanding_units": 18345290000,
+      "closing_price": 32.05,
+      "source_url": "https://www.cathaysite.com.tw/ETF/detail/ECN?tab=etf3"
+    },
+    "holdings": [
+      {
+        "id": "2891.TW",
+        "name": "中信金",
+        "weight_pct": 9.76,
+        "shares": 919444000
+      },
+      {
+        "id": "2382.TW",
+        "name": "廣達",
+        "weight_pct": 9.72,
+        "shares": 177141000
+      },
+      {
+        "id": "2882.TW",
+        "name": "國泰金",
+        "weight_pct": 5.99,
+        "shares": 369289486
+      },
+      {
+        "id": "2357.TW",
+        "name": "華碩",
+        "weight_pct": 4.76,
+        "shares": 38167000
+      },
+      {
+        "id": "2303.TW",
+        "name": "聯電",
+        "weight_pct": 4.18,
+        "shares": 183678000
+      },
+      {
+        "id": "2603.TW",
+        "name": "長榮",
+        "weight_pct": 3.76,
+        "shares": 109474000
+      },
+      {
+        "id": "2887.TW",
+        "name": "台新新光金",
+        "weight_pct": 3.57,
+        "shares": 608249270
+      },
+      {
+        "id": "2379.TW",
+        "name": "瑞昱",
+        "weight_pct": 3.28,
+        "shares": 25748000
+      },
+      {
+        "id": "2454.TW",
+        "name": "聯發科",
+        "weight_pct": 3.07,
+        "shares": 4935000
+      },
+      {
+        "id": "2886.TW",
+        "name": "兆豐金",
+        "weight_pct": 2.83,
+        "shares": 343589964
+      },
+      {
+        "id": "2881.TW",
+        "name": "富邦金",
+        "weight_pct": 2.74,
+        "shares": 130819945
+      },
+      {
+        "id": "3711.TW",
+        "name": "日月光投控",
+        "weight_pct": 2.74,
+        "shares": 25514000
+      },
+      {
+        "id": "2880.TW",
+        "name": "華南金",
+        "weight_pct": 2.66,
+        "shares": 384925000
+      },
+      {
+        "id": "1216.TW",
+        "name": "統一",
+        "weight_pct": 2.64,
+        "shares": 195517000
+      },
+      {
+        "id": "3034.TW",
+        "name": "聯詠",
+        "weight_pct": 2.54,
+        "shares": 31536000
+      },
+      {
+        "id": "4904.TW",
+        "name": "遠傳",
+        "weight_pct": 2.53,
+        "shares": 146352000
+      },
+      {
+        "id": "5347.TW",
+        "name": "世界先進",
+        "weight_pct": 2.52,
+        "shares": 95842442
+      },
+      {
+        "id": "3045.TW",
+        "name": "台灣大",
+        "weight_pct": 2.52,
+        "shares": 132828000
+      },
+      {
+        "id": "4958.TW",
+        "name": "臻鼎-KY",
+        "weight_pct": 2.43,
+        "shares": 28150000
+      },
+      {
+        "id": "2885.TW",
+        "name": "元大金",
+        "weight_pct": 2.39,
+        "shares": 230616516
+      },
+      {
+        "id": "2412.TW",
+        "name": "中華電",
+        "weight_pct": 2.36,
+        "shares": 100417000
+      },
+      {
+        "id": "2912.TW",
+        "name": "統一超",
+        "weight_pct": 2.17,
+        "shares": 52837000
+      },
+      {
+        "id": "2301.TW",
+        "name": "光寶科",
+        "weight_pct": 2.16,
+        "shares": 61590000
+      },
+      {
+        "id": "3231.TW",
+        "name": "緯創",
+        "weight_pct": 2.05,
+        "shares": 80968000
+      },
+      {
+        "id": "2376.TW",
+        "name": "技嘉",
+        "weight_pct": 1.96,
+        "shares": 34020000
+      },
+      {
+        "id": "2618.TW",
+        "name": "長榮航",
+        "weight_pct": 1.96,
+        "shares": 273866000
+      },
+      {
+        "id": "5876.TW",
+        "name": "上海商銀",
+        "weight_pct": 1.94,
+        "shares": 250725590
+      },
+      {
+        "id": "2356.TW",
+        "name": "英業達",
+        "weight_pct": 1.91,
+        "shares": 187806000
+      },
+      {
+        "id": "5871.TW",
+        "name": "中租-KY",
+        "weight_pct": 1.84,
+        "shares": 87949080
+      },
+      {
+        "id": "3293.TW",
+        "name": "鈊  象",
+        "weight_pct": 1.74,
+        "shares": 14283000
+      }
+    ]
   }
 }
