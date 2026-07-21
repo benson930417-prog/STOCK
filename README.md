@@ -135,7 +135,7 @@ Common LINE commands:
 |---|---|
 | `981`, `988`, `0050`, `830`, `878`, `891`, `918`, `9805`, `9820` | ETF quote card/report for the mapped ETF. |
 | `吳大師` | Master holding portfolio card. |
-| `題材洞察` | Decision-only summary of strong/accelerating 類股 and stocks bought by all three Taiwan active ETFs. The 吳大師 reply exposes this as a quick-reply button. |
+| `題材洞察` | Latest decision-only image card of strong/accelerating 類股 and stocks bought by all three Taiwan active ETFs. The 吳大師 reply exposes this as a quick-reply button. |
 | `市場脈動` | Latest generated market pulse image. |
 | `油價` | WTI and Brent TradingView text quotes plus charts. |
 | `匯率` | USD/TWD, USD/CHF, and USD/JPY TradingView text quotes plus charts. |
@@ -274,7 +274,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/fetch_passive_009820.py` | Fetches 009820 passive ETF holdings/history. |
 | `scripts/build_stock_tags.py` | Scrapes cmoney forum per stock → `data/stock_tags.json` (one 類股 category plus 概念股 labels retained only as stock-level notes). Incremental; covers the union of active-ETF holdings; monthly refresh. Powers the 題材流向 tab. |
 | `scripts/build_tag_flow.py` | Theme-flow engine → `data/tag_flow.json`. Stores price-drift-free daily ActiveWeight observations plus estimated TWD cash flow (`ActiveWeight × disclosed fund size`) for every available ETF session, with no-look-ahead empirical trade-size percentiles from each ETF's prior 20 sessions. The UI aggregates any selected range. Reads histories only, no network. |
-| `scripts/generate_tag_flow_insight.py` | Converts the category-only flow cache into one shared decision-focused insight for the daily admin email and LINE `題材洞察` reply. Strong/accelerating sectors use equal-weight normalized ETF flow; the stock pool requires all three Taiwan active ETFs to be net buyers. |
+| `scripts/generate_tag_flow_insight.py` | Converts the category-only flow cache into one shared decision-focused insight plus `data/summaries/tag_flow_insight_latest.jpg` for the daily admin email, scheduled LINE image, and on-demand `題材洞察` reply. Strong/accelerating sectors use equal-weight normalized ETF flow; the stock pool requires all three Taiwan active ETFs to be net buyers. |
 | `scripts/generate_etf_summary.py` | Builds daily ETF summary images for LINE broadcast. |
 | `scripts/generate_market_pulse_summary.py` | Renders the market pulse summary image served by the LINE `市場脈動` command. |
 | `scripts/generate_quote_card.py` | Shared quote-card image renderer for ETF/master-holding views. |
@@ -369,13 +369,14 @@ Tracked files in `data/` are source/history state that should move with the repo
 | `data/master_meta.json` | Master portfolio metadata/state. |
 | `data/master_trades.csv` | Manual trade ledger for the master portfolio. |
 | `data/summaries/market_pulse_latest.jpg` | Latest generated Market Pulse LINE image. |
+| `data/summaries/tag_flow_insight_latest.jpg` | Latest generated 主動 ETF 類股洞察 LINE card. It is regenerated, committed, and pushed by the daily job. |
 
 Ignored generated data:
 
 | Path | Producer |
 |---|---|
 | `data/images/` | `chart_service.py`, quote-card renderers, webhook responses. |
-| `data/summaries/` | `generate_market_pulse_summary.py` and report generators. |
+| `data/summaries/` | Generated report images. Everything is ignored except the explicitly tracked `market_pulse_latest.jpg` and `tag_flow_insight_latest.jpg` cards. |
 | `data/quote_cache/` | Quote monitor services. |
 | `data/market_pulse_volume.csv` | Server-local TWSE market turnover/volume cache from `scripts/update_market_pulse_volume.py`. |
 | `data/fonts/` | Local font assets if installed on the server. |
@@ -569,7 +570,7 @@ Each of these is a trap that has already caused a wrong result or a missed step.
 
 16. **The daily Cmoney `[OK]` must prove the live parser, not just reuse cache.** `update_and_notify.sh` runs `build_stock_tags.py --probe 2308`, which re-fetches one stable category page every run while also filling missing holdings. Failed/missing categories remain retryable and must make the step `PARTIAL_FAIL`; the admin email includes `[cmoney-tags]` coverage and canary output. Never interpret 概念股 in the generated insight.
 
-17. **Email and LINE 題材洞察 share one cache.** `scripts/generate_tag_flow_insight.py` writes `data/tag_flow_insight.json`; the daily email prints its `email_text`, and `api/webhook.py` replies with its `line_text`. Do not implement separate ranking or narrative logic in the webhook. Sector ranking is category-only and normalized equally per ETF; a stock enters `三檔共買池` only when 00403A, 00981A, and 00991A are all net buyers over the same five common sessions.
+17. **Email and LINE 題材洞察 share one generator/cache.** `scripts/generate_tag_flow_insight.py` writes both `data/tag_flow_insight.json` and the tracked `data/summaries/tag_flow_insight_latest.jpg`. The daily email prints `email_text`; the scheduled 18:30 LINE run and the on-demand `題材洞察` reply serve the generated image. Do not implement separate ranking or narrative logic in the webhook. Sector ranking is category-only and normalized equally per ETF; a stock enters `三檔共買池` only when 00403A, 00981A, and 00991A are all net buyers over the same five common sessions. Never run the full daily script merely to test this card because that would send the paid broadcast; render the generator directly and inspect the JPG instead.
 
 ## ETF Maintenance Playbook For Agents
 

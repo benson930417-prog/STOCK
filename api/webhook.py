@@ -132,10 +132,13 @@ def tag_flow_insight_quick_reply():
         ]
     )
 
-def load_tag_flow_insight_text():
+def load_tag_flow_insight_payload():
     path = os.path.join(parent_dir, "data", "tag_flow_insight.json")
     with open(path, encoding="utf-8") as fh:
-        payload = json.load(fh)
+        return json.load(fh)
+
+def load_tag_flow_insight_text():
+    payload = load_tag_flow_insight_payload()
     text = str(payload.get("line_text") or "").strip()
     if not text:
         raise RuntimeError("tag_flow_insight.json has no line_text")
@@ -816,12 +819,22 @@ def handle_message(event):
 
     elif is_tag_flow_insight:
         try:
+            payload = load_tag_flow_insight_payload()
+            filename = os.path.basename(
+                str(payload.get("image") or "tag_flow_insight_latest.jpg")
+            )
+            if not filename.lower().endswith((".jpg", ".jpeg", ".png")):
+                raise RuntimeError(f"Unsupported insight image: {filename}")
+            image_path = os.path.join(parent_dir, "data", "summaries", filename)
+            if not os.path.exists(image_path):
+                raise FileNotFoundError(f"Missing cached insight image: {image_path}")
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/summaries/{filename}?t={int(os.path.getmtime(image_path))}"
             reply_line(
                 event.reply_token,
-                TextSendMessage(text=load_tag_flow_insight_text()),
+                ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
             )
         except Exception as e:
-            print("Theme insight cache reply failed:", e)
+            print("Theme insight image reply failed:", e)
             reply_line(
                 event.reply_token,
                 TextSendMessage(text="今日類股洞察尚未更新完成，請稍後再試。"),

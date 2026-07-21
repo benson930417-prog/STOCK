@@ -118,7 +118,7 @@ record_step_ok() {
                 metrics=$(grep -E "^\[cmoney-tags\]" "$logfile" | sed 's/^/          /')
                 ;;
             "generate theme insight")
-                metrics=$(grep -E "^\[theme-insight\]" "$logfile" | sed 's/^/          /')
+                metrics=$(grep -E "^(\[theme-insight\]|Saved data/summaries/tag_flow_insight_latest\.jpg)" "$logfile" | sed 's/^/          /')
                 ;;
             "LINE broadcast active reports")
                 metrics=$(tail -n 5 "$logfile" | sed 's/^/          /')
@@ -434,6 +434,24 @@ def _broadcast(objs):
 
 for i in range(0, len(messages), LINE_MAX_OBJECTS):
     _broadcast(messages[i:i + LINE_MAX_OBJECTS])
+
+# The decision card is intentionally a separate daily image: active-ETF
+# reports already fill LINE's five-object limit (one header + four images).
+# Keep this push here, inside the sanctioned 18:30 broadcast path only.
+insight_path = "data/summaries/tag_flow_insight_latest.jpg"
+if os.path.exists(insight_path):
+    insight_url = (
+        "https://linechatbot.duckdns.org/api/webhook/summaries/"
+        f"tag_flow_insight_latest.jpg?t={cache_buster}"
+    )
+    _broadcast([{
+        "type": "image",
+        "originalContentUrl": insight_url,
+        "previewImageUrl": insight_url,
+    }])
+    print("Daily category insight image broadcast: OK")
+else:
+    print(f"Daily category insight image missing; skipped: {insight_path}")
 PY
     elif [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ]; then
         printf "  [SKIP] LINE broadcast: LINE_TOKEN not set\n" >> "$SUMMARY_FILE"

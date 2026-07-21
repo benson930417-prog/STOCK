@@ -36,6 +36,7 @@ data/etf_*_summary_*.jpg
 # but still ignore the dated copies and everything else under summaries/.
 data/summaries/*
 !data/summaries/market_pulse_latest.jpg
+!data/summaries/tag_flow_insight_latest.jpg
 
 # Local design previews for the score chart (throwaway)
 data/_preview_*
