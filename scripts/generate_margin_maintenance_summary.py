@@ -158,9 +158,9 @@ def render_html(df: pd.DataFrame) -> str:
 
   <div class="hero">
     <div class="big">
-      <div class="label">全市場融資擔保估算率</div>
+      <div class="label">非 ETF 融資擔保估算率</div>
       <div class="number">{snapshot.estimate_pct:.1f}%</div>
-      <div class="sub">融資擔保市值 {snapshot.collateral_billion:,.0f} 億 ÷ 融資餘額 {snapshot.financing_billion:,.0f} 億</div>
+      <div class="sub">非 ETF 擔保市值 {snapshot.collateral_billion:,.0f} 億 ÷ 官方融資餘額 {snapshot.financing_billion:,.0f} 億</div>
     </div>
     <div class="metrics">
       <div class="metric"><div class="label">近 1 日</div><b>{_fmt_change(snapshot.change_1d)}</b></div>
@@ -181,9 +181,9 @@ def render_html(df: pd.DataFrame) -> str:
     <div class="insight"><b>上市 / 上櫃</b><span>{float(latest['twse_estimate_pct']):.1f}% / {float(latest['tpex_estimate_pct']):.1f}%，避免單一市場遮住風險。</span></div>
   </div>
 
-  <div class="formula"><b>公開資料估算：</b>（上市 + 上櫃融資張數 × 收盤價）÷ 全市場融資金額餘額。
+  <div class="formula"><b>公開資料估算：</b>Σ（上市 + 上櫃非 ETF 融資張數 × 收盤價）÷ 官方全市場融資金額餘額。ETF 只從分子排除；本日排除約 {float(latest['excluded_etf_collateral_billion']):,.0f} 億元。
     130% / 166% 是個別信用帳戶的法規參考，不是這條全市場估算線的精準斷頭門檻；本卡不等同 MacroMicro 專有序列。</div>
-  <div class="footer">來源：TWSE MI_MARGN / MI_INDEX、TPEx 融資融券餘額 / 每日收盤行情。每日 18:30 快取。紅色＝改善，綠色＝惡化。本卡僅供風險觀察，不是買賣訊號。</div>
+  <div class="footer">來源：TWSE MI_MARGN / MI_INDEX、TPEx 融資融券餘額 / 每日收盤行情。分子不含 ETF；每日 18:30 快取。紅色＝改善，綠色＝惡化。本卡僅供風險觀察，不是買賣訊號。</div>
 </body>
 </html>"""
 

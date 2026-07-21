@@ -7,7 +7,7 @@ daily open-data series containing every client's supplementary collateral.
 
 Estimate used here::
 
-    sum(margin balance units * closing price * 1,000)
+    sum(non-ETF margin balance units * closing price * 1,000)
     ------------------------------------------------ * 100
         aggregate outstanding financing amount
 
@@ -72,6 +72,8 @@ COLUMNS = [
     "twse_financing_billion",
     "tpex_collateral_billion",
     "tpex_financing_billion",
+    "excluded_etf_collateral_billion",
+    "excluded_etf_count",
     "taiex_close",
     "twse_matched",
     "twse_total",
@@ -86,12 +88,19 @@ class MarketSlice:
     financing_thousand: float
     matched: int
     total: int
+    excluded_etf_thousand: float
+    excluded_etf_count: int
 
     @property
     def estimate_pct(self) -> float:
         if self.financing_thousand <= 0:
             return math.nan
         return self.collateral_thousand / self.financing_thousand * 100.0
+
+
+def _is_etf_code(code: str) -> bool:
+    """TWSE/TPEx ETF symbols use the 00-prefixed exchange code family."""
+    return code.startswith("00")
 
 
 def _number(value: Any) -> float:
@@ -169,6 +178,8 @@ def _twse_slice(margin_payload: dict[str, Any], price_payload: dict[str, Any]) -
             prices[code] = price
 
     collateral_thousand = 0.0
+    excluded_etf_thousand = 0.0
+    excluded_etf_count = 0
     total = 0
     matched = 0
     margin_fields = margin_table.get("fields") or []
@@ -186,8 +197,13 @@ def _twse_slice(margin_payload: dict[str, Any], price_payload: dict[str, Any]) -
         units = _number(raw[balance_index])
         if not code or not math.isfinite(units) or units < 0:
             continue
-        total += 1
         price = prices.get(code)
+        if _is_etf_code(code):
+            excluded_etf_count += 1
+            if price is not None:
+                excluded_etf_thousand += units * price
+            continue
+        total += 1
         if price is None:
             continue
         # One exchange trading unit is normally 1,000 shares.  Multiplying
@@ -220,7 +236,14 @@ def _twse_slice(margin_payload: dict[str, Any], price_payload: dict[str, Any]) -
         if math.isfinite(taiex_close):
             break
 
-    return MarketSlice(collateral_thousand, financing_thousand, matched, total), taiex_close
+    return MarketSlice(
+        collateral_thousand,
+        financing_thousand,
+        matched,
+        total,
+        excluded_etf_thousand,
+        excluded_etf_count,
+    ), taiex_close
 
 
 def _tpex_slice(margin_payload: dict[str, Any], price_payload: dict[str, Any]) -> MarketSlice:
@@ -236,6 +259,8 @@ def _tpex_slice(margin_payload: dict[str, Any], price_payload: dict[str, Any]) -
             prices[code] = price
 
     collateral_thousand = 0.0
+    excluded_etf_thousand = 0.0
+    excluded_etf_count = 0
     total = 0
     matched = 0
     for raw in margin_table.get("data") or []:
@@ -244,8 +269,13 @@ def _tpex_slice(margin_payload: dict[str, Any], price_payload: dict[str, Any]) -
         units = _number(row.get("資餘額"))
         if not code or not math.isfinite(units) or units < 0:
             continue
-        total += 1
         price = prices.get(code)
+        if _is_etf_code(code):
+            excluded_etf_count += 1
+            if price is not None:
+                excluded_etf_thousand += units * price
+            continue
+        total += 1
         if price is None:
             continue
         collateral_thousand += units * price
@@ -259,7 +289,14 @@ def _tpex_slice(margin_payload: dict[str, Any], price_payload: dict[str, Any]) -
             break
     if not math.isfinite(financing_thousand) or financing_thousand <= 0:
         raise ValueError("TPEx aggregate financing amount is unavailable")
-    return MarketSlice(collateral_thousand, financing_thousand, matched, total)
+    return MarketSlice(
+        collateral_thousand,
+        financing_thousand,
+        matched,
+        total,
+        excluded_etf_thousand,
+        excluded_etf_count,
+    )
 
 
 def _roc_date(date: pd.Timestamp) -> str:
@@ -301,6 +338,7 @@ def fetch_date(date: pd.Timestamp) -> dict[str, Any] | None:
     twse, taiex_close = _twse_slice(twse_margin, twse_prices)
     tpex = _tpex_slice(tpex_margin, tpex_prices)
     collateral = twse.collateral_thousand + tpex.collateral_thousand
+    excluded_etf = twse.excluded_etf_thousand + tpex.excluded_etf_thousand
     financing = twse.financing_thousand + tpex.financing_thousand
     if financing <= 0 or collateral <= 0:
         raise ValueError("Official reports returned non-positive aggregate values")
@@ -318,6 +356,8 @@ def fetch_date(date: pd.Timestamp) -> dict[str, Any] | None:
         "twse_financing_billion": twse.financing_thousand * to_billion,
         "tpex_collateral_billion": tpex.collateral_thousand * to_billion,
         "tpex_financing_billion": tpex.financing_thousand * to_billion,
+        "excluded_etf_collateral_billion": excluded_etf * to_billion,
+        "excluded_etf_count": twse.excluded_etf_count + tpex.excluded_etf_count,
         "taiex_close": taiex_close,
         "twse_matched": twse.matched,
         "twse_total": twse.total,
@@ -469,6 +509,7 @@ def main() -> int:
         f"[margin-risk] rows={len(df):,} range={df['date'].min()}..{df['date'].max()} "
         f"latest={float(latest['estimate_pct']):.2f}% "
         f"financing={float(latest['financing_balance_billion']):,.0f}億 "
+        f"etf_excluded={float(latest['excluded_etf_collateral_billion']):,.0f}億 "
         f"coverage={coverage[0]}/{coverage[1]} fetched={fetched} errors={errors} "
         f"path={args.output}"
     )

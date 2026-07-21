@@ -145,7 +145,7 @@ def _financing_chart(df: pd.DataFrame) -> go.Figure:
 def render_margin_risk_tab(*, lang: str, T, DATA_DIR) -> None:
     del lang, T, DATA_DIR  # this Taiwan-market page is intentionally Chinese-first
     st.subheader("融資風險雷達")
-    st.caption("TWSE + TPEx 官方每日資料｜公開資料估算｜每天 18:30 更新快取")
+    st.caption("TWSE + TPEx 官方每日資料｜分子排除 ETF｜每天 18:30 更新快取")
 
     df = load_margin_cache()
     if df.empty:
@@ -158,7 +158,7 @@ def render_margin_risk_tab(*, lang: str, T, DATA_DIR) -> None:
     d1_color = "#ef4444" if (snapshot.change_1d or 0) > 0 else "#22c55e" if (snapshot.change_1d or 0) < 0 else "#f8fafc"
     d5_color = "#ef4444" if (snapshot.change_5d or 0) > 0 else "#22c55e" if (snapshot.change_5d or 0) < 0 else "#f8fafc"
     with k1:
-        st.markdown(_metric_html("全市場估算率", f"{snapshot.estimate_pct:.1f}%", f"近 1 日 {_fmt_change(snapshot.change_1d)}", d1_color), unsafe_allow_html=True)
+        st.markdown(_metric_html("非 ETF 估算率", f"{snapshot.estimate_pct:.1f}%", f"近 1 日 {_fmt_change(snapshot.change_1d)}", d1_color), unsafe_allow_html=True)
     with k2:
         st.markdown(_metric_html("近 5 日變化", _fmt_change(snapshot.change_5d), snapshot.direction, d5_color), unsafe_allow_html=True)
     with k3:
@@ -210,10 +210,13 @@ def render_margin_risk_tab(*, lang: str, T, DATA_DIR) -> None:
     with right:
         latest = df.iloc[-1]
         percentile = "資料不足" if snapshot.percentile_1y is None else f"第 {snapshot.percentile_1y:.0f} 百分位"
+        excluded_etf = latest.get("excluded_etf_collateral_billion")
+        excluded_etf_text = f"{float(excluded_etf):,.0f} 億元" if pd.notna(excluded_etf) else "資料累積中"
         st.markdown("#### 今天怎麼讀")
         st.markdown(
             f"""
-            - **擔保估算市值：** {snapshot.collateral_billion:,.0f} 億元
+            - **非 ETF 擔保估算市值：** {snapshot.collateral_billion:,.0f} 億元
+            - **已從分子排除的 ETF 市值：** {excluded_etf_text}
             - **融資借款餘額：** {snapshot.financing_billion:,.0f} 億元
             - **近一年位置：** {percentile}
             - **上市估算：** {float(latest['twse_estimate_pct']):.1f}%
@@ -225,7 +228,10 @@ def render_margin_risk_tab(*, lang: str, T, DATA_DIR) -> None:
     with st.expander("這個數字怎麼算？為什麼和新聞網站不一定一樣？"):
         st.markdown(
             """
-            **公式：**（上市融資張數 × 收盤價 + 上櫃融資張數 × 收盤價）÷（上市 + 上櫃融資金額餘額）× 100。
+            **公式：** Σ（上市 + 上櫃的**非 ETF**融資張數 × 收盤價）÷（上市 + 上櫃官方融資金額餘額）× 100。
+
+            依你提供的 MacroMicro 說明，ETF 從**分子**的融資股票市值排除；分母仍使用交易所公布的統一融資餘額。
+            本頁採用相同原則，並涵蓋 TWSE + TPEx，而不是只看單一市場。
 
             分子、分母都來自 TWSE / TPEx 每日報表。它很適合觀察**全市場槓桿緩衝的方向與速度**，
             但不包含券商客戶帳戶中的補繳擔保品，也不是交易所公布的「全市場實際帳戶平均」。

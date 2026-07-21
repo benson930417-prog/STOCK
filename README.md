@@ -365,11 +365,11 @@ The feature is a transparent **public-data estimate**, not a copied vendor serie
 
 ```text
 全市場融資擔保估算率
-= Σ(TWSE + TPEx 今日融資餘額張數 × 當日收盤價 × 1,000)
+= Σ(TWSE + TPEx 非 ETF 今日融資餘額張數 × 當日收盤價 × 1,000)
   ÷ Σ(TWSE + TPEx 今日融資金額餘額) × 100
 ```
 
-Official inputs are TWSE `MI_MARGN` + `MI_INDEX` and TPEx `融資融券餘額` + `每日收盤行情`. The denominator reports are in 仟元; the cache converts displayed money to 億元. The legal 130% call and 166% cure levels are shown only as **account-level references**. They must never be described as exact trigger lines for the aggregate estimate because the public reports do not include supplementary collateral held inside each client's whole account.
+Official inputs are TWSE `MI_MARGN` + `MI_INDEX` and TPEx `融資融券餘額` + `每日收盤行情`. ETF codes (the exchanges' `00...` family) are excluded from the numerator, following MacroMicro's published methodology note; the denominator deliberately remains the exchanges' unified aggregate financing balance. The cache records the excluded ETF collateral value so this adjustment is auditable. The denominator reports are in 仟元; the cache converts displayed money to 億元. The legal 130% call and 166% cure levels are shown only as **account-level references**. They must never be described as exact trigger lines for the aggregate estimate because the public reports do not include supplementary collateral held inside each client's whole account.
 
 The system has three read/write boundaries:
 
@@ -600,7 +600,7 @@ Each of these is a trap that has already caused a wrong result or a missed step.
 
 17. **Email and LINE 題材洞察 share one generator/cache.** `scripts/generate_tag_flow_insight.py` writes both `data/tag_flow_insight.json` and the tracked `data/summaries/tag_flow_insight_latest.jpg`. The daily email prints `email_text`; the scheduled 18:30 LINE run and the on-demand `題材洞察` reply serve the generated image. Do not implement separate ranking or narrative logic in the webhook. Sector ranking and every mini trend are category-only and normalized equally per ETF. A heavy sell must be net negative across five sessions with at least two net-selling ETFs; the latest session determines whether its badge says pressure is worsening, continuing, or easing. Slowing positive flow is only `降溫`, never `賣壓`. A stock enters `三檔共買池` or `三檔共賣池` only when 00403A, 00981A, and 00991A all agree over the same five common sessions. Never run the full daily script merely to test this card because that would send the paid broadcast; render the generator directly and inspect the JPG instead.
 
-18. **融資風險 is an estimate, not an official account-average series.** The exchanges publish margin-share balances, prices, and aggregate financing amounts, but not every brokerage customer's supplementary collateral. Always label the result `全市場融資擔保估算率` / `公開資料估算`; never call it the official `台股平均融資維持率`, never claim it reproduces MacroMicro, and never describe 130% as this aggregate line's exact forced-liquidation trigger. Only `scripts/update_margin_maintenance.py` may call TWSE/TPEx. The dashboard and webhook are cache-only. Red means improving buffer and green means worsening buffer, per the site's Taiwan color convention. The `吳大師` card must keep both quick replies (`今日類股洞察` and `融資風險`).
+18. **融資風險 is an estimate, not an official account-average series.** The exchanges publish margin-share balances, prices, and aggregate financing amounts, but not every brokerage customer's supplementary collateral. Its numerator must exclude the exchange `00...` ETF code family while its denominator retains the official aggregate financing balance, matching MacroMicro's published ETF-exclusion principle; do not silently put ETFs back into the numerator. Always label the result `全市場融資擔保估算率` / `公開資料估算`; never call it the official `台股平均融資維持率`, never claim it reproduces MacroMicro, and never describe 130% as this aggregate line's exact forced-liquidation trigger. Only `scripts/update_margin_maintenance.py` may call TWSE/TPEx. The dashboard and webhook are cache-only. Red means improving buffer and green means worsening buffer, per the site's Taiwan color convention. The `吳大師` card must keep both quick replies (`今日類股洞察` and `融資風險`).
 
 ## ETF Maintenance Playbook For Agents
 
