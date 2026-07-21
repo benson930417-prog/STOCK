@@ -12,26 +12,26 @@ app = FastAPI()
 
 # Configuration
 CHART_TABS = {
-    "oil": "https://www.tradingview.com/symbols/USOIL/?exchange=FXCM&timeframe=5D",
-    "brent": "https://www.tradingview.com/symbols/RUS-BR1!/?timeframe=5D",
-    "bond": "https://www.tradingview.com/symbols/TVC-US10Y/?timeframe=5D",
-    "gold": "https://www.tradingview.com/symbols/GOLD/?timeframe=5D",
-    "usdtwd": "https://www.tradingview.com/symbols/FX_IDC-USDTWD/?timeframe=5D",
-    "usdjpy": "https://www.tradingview.com/symbols/OANDA-USDJPY/?timeframe=5D",
-    "usdchf": "https://www.tradingview.com/symbols/OANDA-USDCHF/?timeframe=5D",
+    "oil": "https://www.tradingview.com/symbols/USOIL/?exchange=FXCM&timeframe=1M",
+    "brent": "https://www.tradingview.com/symbols/RUS-BR1!/?timeframe=1M",
+    "bond": "https://www.tradingview.com/symbols/TVC-US10Y/?timeframe=1M",
+    "gold": "https://www.tradingview.com/symbols/GOLD/?timeframe=1M",
+    "usdtwd": "https://www.tradingview.com/symbols/FX_IDC-USDTWD/?timeframe=1M",
+    "usdjpy": "https://www.tradingview.com/symbols/OANDA-USDJPY/?timeframe=1M",
+    "usdchf": "https://www.tradingview.com/symbols/OANDA-USDCHF/?timeframe=1M",
     # NASDAQ 24h CFD — intraday indicator, 1-day window (it trades round the clock).
     "nasdaq": "https://www.tradingview.com/symbols/IG-NASDAQ/?timeframe=1D",
 }
 
 # Chinese titles for each chart key
 CHART_META = {
-    "oil":    {"title": "WTI 輕原油 (5日)", "display_title": "輕原油", "emoji": "🛢️", "precision": 2, "unit": "美元"},
-    "brent":  {"title": "布蘭特原油 (5日)", "display_title": "布蘭特原油", "emoji": "🛢️", "precision": 2, "unit": "美元"},
-    "bond":   {"title": "10年期公債殖利率 (5日)", "display_title": "美國10年期公債殖利率", "emoji": "📈", "precision": 3, "unit": "%"},
-    "gold":   {"title": "黃金現貨 (5日)", "display_title": "黃金 GOLD", "emoji": "🥇", "precision": 2, "unit": "USD"},
-    "usdtwd": {"title": "美元兌台幣 (5日)", "display_title": "美元兌台幣", "emoji": "💵", "precision": 3, "unit": "台幣"},
-    "usdjpy": {"title": "美元兌日幣 (5日)", "display_title": "美元兌日幣", "emoji": "💴", "precision": 2, "unit": "日圓"},
-    "usdchf": {"title": "美元兌瑞郎 (5日)", "display_title": "美元兌瑞郎", "emoji": "💷", "precision": 4, "unit": "瑞郎"},
+    "oil":    {"title": "WTI 輕原油 (1個月)", "display_title": "輕原油", "emoji": "🛢️", "precision": 2, "unit": "美元"},
+    "brent":  {"title": "布蘭特原油 (1個月)", "display_title": "布蘭特原油", "emoji": "🛢️", "precision": 2, "unit": "美元"},
+    "bond":   {"title": "10年期公債殖利率 (1個月)", "display_title": "美國10年期公債殖利率", "emoji": "📈", "precision": 3, "unit": "%"},
+    "gold":   {"title": "黃金現貨 (1個月)", "display_title": "黃金 GOLD", "emoji": "🥇", "precision": 2, "unit": "USD"},
+    "usdtwd": {"title": "美元兌台幣 (1個月)", "display_title": "美元兌台幣", "emoji": "💵", "precision": 3, "unit": "台幣"},
+    "usdjpy": {"title": "美元兌日幣 (1個月)", "display_title": "美元兌日幣", "emoji": "💴", "precision": 2, "unit": "日圓"},
+    "usdchf": {"title": "美元兌瑞郎 (1個月)", "display_title": "美元兌瑞郎", "emoji": "💷", "precision": 4, "unit": "瑞郎"},
     # Intraday indicator: 1-day chart, show only the real-time change (no 5d/1m/6m).
     "nasdaq": {"title": "那斯達克 NASDAQ (即時)", "display_title": "那斯達克 NASDAQ", "emoji": "📈",
                "precision": 2, "unit": "", "perf_labels": [("1d", "即時漲跌：")], "perf_header": None},
