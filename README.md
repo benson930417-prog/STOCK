@@ -135,7 +135,7 @@ Common LINE commands:
 |---|---|
 | `981`, `988`, `0050`, `830`, `878`, `891`, `918`, `9805`, `9820` | ETF quote card/report for the mapped ETF. |
 | `吳大師` | Master holding portfolio card. |
-| `題材洞察` | Latest decision-only image card of strong/accelerating 類股 and stocks bought by all three Taiwan active ETFs. The 吳大師 reply exposes this as a quick-reply button. |
+| `題材洞察` | Latest decision-only image card: strong/accelerating buys, genuine heavy-selling categories when present, a five-session trend under every listed category, and strict 3/3 common buy/sell stock pools. Available as a visible Page 1 rich-menu tile and as an 吳大師 quick reply. |
 | `市場脈動` | Latest generated market pulse image. |
 | `油價` | WTI and Brent TradingView text quotes plus charts. |
 | `匯率` | USD/TWD, USD/CHF, and USD/JPY TradingView text quotes plus charts. |
@@ -274,7 +274,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/fetch_passive_009820.py` | Fetches 009820 passive ETF holdings/history. |
 | `scripts/build_stock_tags.py` | Scrapes cmoney forum per stock → `data/stock_tags.json` (one 類股 category plus 概念股 labels retained only as stock-level notes). Incremental; covers the union of active-ETF holdings; monthly refresh. Powers the 題材流向 tab. |
 | `scripts/build_tag_flow.py` | Theme-flow engine → `data/tag_flow.json`. Stores price-drift-free daily ActiveWeight observations plus estimated TWD cash flow (`ActiveWeight × disclosed fund size`) for every available ETF session, with no-look-ahead empirical trade-size percentiles from each ETF's prior 20 sessions. The UI aggregates any selected range. Reads histories only, no network. |
-| `scripts/generate_tag_flow_insight.py` | Converts the category-only flow cache into one shared decision-focused insight plus `data/summaries/tag_flow_insight_latest.jpg` for the daily admin email, scheduled LINE image, and on-demand `題材洞察` reply. Strong/accelerating sectors use equal-weight normalized ETF flow; the stock pool requires all three Taiwan active ETFs to be net buyers. |
+| `scripts/generate_tag_flow_insight.py` | Converts the category-only flow cache into one shared decision-focused insight plus `data/summaries/tag_flow_insight_latest.jpg` for the daily admin email, scheduled LINE image, and on-demand `題材洞察` reply. The card shows a same-scale five-session normalized trend beneath every listed category. Buy leaders require positive/accelerating equal-weight ETF flow; heavy sells require negative five-session flow and at least two net-selling ETFs, while the latest session labels the pressure as worsening, continuing, or easing. Common buy/sell stock pools require all three ETFs to agree. |
 | `scripts/generate_etf_summary.py` | Builds daily ETF summary images for LINE broadcast. |
 | `scripts/generate_market_pulse_summary.py` | Renders the market pulse summary image served by the LINE `市場脈動` command. |
 | `scripts/generate_quote_card.py` | Shared quote-card image renderer for ETF/master-holding views. |
@@ -524,7 +524,7 @@ Run this when LINE rich-menu buttons change:
 cd /home/ubuntu/STOCK && source venv/bin/activate && source /home/ubuntu/.stock_secrets && python scripts/setup_rich_menu.py
 ```
 
-The rich menu uses three LINE rich-menu aliases. Page 1 is fast market/macro, Page 2 is the primary ETF watchlist, and Page 3 is ETF overflow. Navigation convention is fixed: previous page is bottom-left, next page is bottom-right, and the last page uses bottom-right `首頁` until another page is needed.
+The rich menu uses three LINE rich-menu aliases. Page 1 is fast market/macro plus direct `市場脈動`, `吳大師`, and `類股洞察` actions; Page 2 is the primary ETF watchlist, and Page 3 is ETF overflow. Navigation convention is fixed: previous page is bottom-left, next page is bottom-right, and the last page uses bottom-right `首頁` until another page is needed.
 
 ## ⚠️ Invariants & Gotchas (read before editing)
 
@@ -570,7 +570,7 @@ Each of these is a trap that has already caused a wrong result or a missed step.
 
 16. **The daily Cmoney `[OK]` must prove the live parser, not just reuse cache.** `update_and_notify.sh` runs `build_stock_tags.py --probe 2308`, which re-fetches one stable category page every run while also filling missing holdings. Failed/missing categories remain retryable and must make the step `PARTIAL_FAIL`; the admin email includes `[cmoney-tags]` coverage and canary output. Never interpret 概念股 in the generated insight.
 
-17. **Email and LINE 題材洞察 share one generator/cache.** `scripts/generate_tag_flow_insight.py` writes both `data/tag_flow_insight.json` and the tracked `data/summaries/tag_flow_insight_latest.jpg`. The daily email prints `email_text`; the scheduled 18:30 LINE run and the on-demand `題材洞察` reply serve the generated image. Do not implement separate ranking or narrative logic in the webhook. Sector ranking is category-only and normalized equally per ETF; a stock enters `三檔共買池` only when 00403A, 00981A, and 00991A are all net buyers over the same five common sessions. Never run the full daily script merely to test this card because that would send the paid broadcast; render the generator directly and inspect the JPG instead.
+17. **Email and LINE 題材洞察 share one generator/cache.** `scripts/generate_tag_flow_insight.py` writes both `data/tag_flow_insight.json` and the tracked `data/summaries/tag_flow_insight_latest.jpg`. The daily email prints `email_text`; the scheduled 18:30 LINE run and the on-demand `題材洞察` reply serve the generated image. Do not implement separate ranking or narrative logic in the webhook. Sector ranking and every mini trend are category-only and normalized equally per ETF. A heavy sell must be net negative across five sessions with at least two net-selling ETFs; the latest session determines whether its badge says pressure is worsening, continuing, or easing. Slowing positive flow is only `降溫`, never `賣壓`. A stock enters `三檔共買池` or `三檔共賣池` only when 00403A, 00981A, and 00991A all agree over the same five common sessions. Never run the full daily script merely to test this card because that would send the paid broadcast; render the generator directly and inspect the JPG instead.
 
 ## ETF Maintenance Playbook For Agents
 

@@ -32,13 +32,15 @@ ETFS = ["00403A", "00981A", "00991A"]
 LOOKBACK = 5
 RECENT_DAYS = 2
 MAX_SECTORS = 3
+MAX_SELL_SECTORS = 3
 MAX_STOCKS = 5
 EPSILON = 1e-6
 MIN_STRENGTH = 0.05
 MIN_ACCELERATION = 0.005
 
 CARD_WIDTH = 1200
-CARD_HEIGHT = 1500
+SECTOR_CARD_HEIGHT = 350
+SECTOR_CARD_GAP = 14
 CARD_BG = (8, 13, 23)
 CARD_PANEL = (18, 26, 39)
 CARD_PANEL_ALT = (22, 31, 46)
@@ -80,10 +82,14 @@ CARD_FONTS = {
     "subtitle": _font(25),
     "rank": _font(35, True),
     "sector": _font(39, True),
+    "section": _font(28, True),
+    "section_note": _font(20),
     "badge": _font(21, True),
     "body": _font(25),
     "body_bold": _font(25, True),
     "chip": _font(24, True),
+    "chart": _font(19, True),
+    "chart_date": _font(16),
     "cooling": _font(28, True),
     "footer": _font(20),
 }
@@ -136,13 +142,84 @@ def _wrap_chars(
     return lines or [""]
 
 
-def _draw_trend_arrow(draw: ImageDraw.ImageDraw, x: int, y: int) -> None:
-    points = [(x, y + 38), (x + 30, y + 10), (x + 54, y + 28), (x + 92, y - 10)]
-    draw.line(points, fill=CARD_RED, width=8, joint="curve")
-    draw.polygon(
-        [(x + 92, y - 10), (x + 70, y - 4), (x + 87, y + 13)],
-        fill=CARD_RED,
+def _draw_section_title(
+    draw: ImageDraw.ImageDraw,
+    top: int,
+    title: str,
+    note: str,
+    color: tuple[int, int, int],
+) -> None:
+    draw.rounded_rectangle((54, top + 8, 62, top + 40), radius=4, fill=color)
+    draw.text((78, top), title, font=CARD_FONTS["section"], fill=CARD_TEXT)
+    title_w = _text_width(draw, title, CARD_FONTS["section"])
+    draw.text(
+        (94 + title_w, top + 8),
+        note,
+        font=CARD_FONTS["section_note"],
+        fill=CARD_MUTED,
     )
+
+
+def _draw_mini_trend(
+    draw: ImageDraw.ImageDraw,
+    row: dict,
+    dates: list[str],
+    left: int,
+    top: int,
+    right: int,
+    scale: float,
+) -> None:
+    values = [float(value) for value in row.get("daily", [])]
+    if not values:
+        return
+    draw.text(
+        (left, top),
+        "5日每日相對力道",
+        font=CARD_FONTS["chart"],
+        fill=CARD_MUTED,
+    )
+    total_text = f"5日合計 {row['strength']:+.2f}%"
+    total_w = _text_width(draw, total_text, CARD_FONTS["chart"])
+    draw.text(
+        (right - total_w, top),
+        total_text,
+        font=CARD_FONTS["chart"],
+        fill=CARD_RED if row["strength"] >= 0 else CARD_GREEN,
+    )
+
+    graph_top = top + 31
+    zero_y = graph_top + 39
+    half_height = 35
+    graph_width = right - left
+    cell_width = graph_width / len(values)
+    draw.line((left, zero_y, right, zero_y), fill=CARD_LINE, width=2)
+    points: list[tuple[float, float]] = []
+    for index, value in enumerate(values):
+        center_x = left + cell_width * (index + 0.5)
+        end_y = zero_y - max(-1.0, min(1.0, value / scale)) * half_height
+        color = CARD_RED if value >= 0 else CARD_GREEN
+        bar_half = min(21, int(cell_width * 0.16))
+        y0, y1 = sorted((zero_y, end_y))
+        if abs(y1 - y0) < 2:
+            y0, y1 = zero_y - 1, zero_y + 1
+        draw.rounded_rectangle(
+            (center_x - bar_half, y0, center_x + bar_half, y1),
+            radius=4,
+            fill=color,
+        )
+        points.append((center_x, end_y))
+        date_text = dates[index][5:].replace("-", "/") if index < len(dates) else ""
+        date_w = _text_width(draw, date_text, CARD_FONTS["chart_date"])
+        draw.text(
+            (center_x - date_w / 2, graph_top + 82),
+            date_text,
+            font=CARD_FONTS["chart_date"],
+            fill=CARD_SLATE,
+        )
+    if len(points) > 1:
+        draw.line(points, fill=CARD_TEXT, width=3, joint="curve")
+    for x, y in points:
+        draw.ellipse((x - 4, y - 4, x + 4, y + 4), fill=CARD_TEXT)
 
 
 def _draw_sector_card(
@@ -150,64 +227,78 @@ def _draw_sector_card(
     row: dict,
     rank: int,
     top: int,
+    dates: list[str],
+    chart_scale: float,
+    direction: str,
 ) -> None:
+    buying = direction == "buy"
+    accent = CARD_RED if buying else CARD_GREEN
+    soft = CARD_RED_SOFT if buying else CARD_GREEN_SOFT
     left, right = 54, CARD_WIDTH - 54
-    bottom = top + 276
+    bottom = top + SECTOR_CARD_HEIGHT
     _rounded(draw, (left, top, right, bottom), 24, CARD_PANEL, CARD_LINE, 2)
-    draw.rounded_rectangle((left, top, left + 9, bottom), radius=5, fill=CARD_RED)
+    draw.rounded_rectangle((left, top, left + 9, bottom), radius=5, fill=accent)
 
-    rank_box = (left + 28, top + 28, left + 92, top + 92)
-    _rounded(draw, rank_box, 18, CARD_RED_SOFT, CARD_RED, 2)
+    rank_box = (left + 28, top + 25, left + 92, top + 89)
+    _rounded(draw, rank_box, 18, soft, accent, 2)
     rank_text = str(rank)
     rank_w = _text_width(draw, rank_text, CARD_FONTS["rank"])
     draw.text(
-        (rank_box[0] + (64 - rank_w) / 2, top + 34),
+        (rank_box[0] + (64 - rank_w) / 2, top + 31),
         rank_text,
         font=CARD_FONTS["rank"],
-        fill=CARD_RED,
+        fill=accent,
     )
 
     draw.text(
-        (left + 116, top + 28),
+        (left + 116, top + 25),
         row["category"],
         font=CARD_FONTS["sector"],
         fill=CARD_TEXT,
     )
-    badge_text = "強勢 × 加速"
+    if buying:
+        badge_text = "強勢 × 加速"
+    elif not row["latest_negative"]:
+        badge_text = "賣壓緩和"
+    elif row["acceleration"] < -MIN_ACCELERATION:
+        badge_text = "賣壓加重"
+    else:
+        badge_text = "持續減碼"
     badge_w = _text_width(draw, badge_text, CARD_FONTS["badge"]) + 40
-    badge_box = (right - badge_w - 132, top + 32, right - 132, top + 76)
-    _rounded(draw, badge_box, 18, CARD_RED_SOFT, None)
+    badge_box = (right - badge_w - 28, top + 30, right - 28, top + 74)
+    _rounded(draw, badge_box, 18, soft, None)
     draw.text(
-        (badge_box[0] + 20, top + 41),
+        (badge_box[0] + 20, top + 39),
         badge_text,
         font=CARD_FONTS["badge"],
-        fill=CARD_RED,
+        fill=accent,
     )
-    _draw_trend_arrow(draw, right - 112, top + 46)
 
-    reason = _sector_reason(row, LOOKBACK)
+    reason = _sector_reason(row, LOOKBACK) if buying else _sell_reason(row, LOOKBACK)
     reason_lines = _wrap_chars(draw, reason, CARD_FONTS["body"], right - left - 170)
-    for index, line in enumerate(reason_lines):
+    for index, line in enumerate(reason_lines[:2]):
         draw.text(
-            (left + 116, top + 96 + index * 37),
+            (left + 116, top + 88 + index * 34),
             line,
             font=CARD_FONTS["body"],
             fill=CARD_MUTED,
         )
 
-    label_y = top + 188
+    label_y = top + 153
+    pool_key = "stocks_all_three" if buying else "stocks_all_three_selling"
+    pool_label = "三檔共買池" if buying else "三檔共賣池"
     draw.text(
         (left + 116, label_y),
-        "三檔共買池",
+        pool_label,
         font=CARD_FONTS["body_bold"],
         fill=CARD_TEXT,
     )
     chip_x = left + 300
-    names = [stock["name"] for stock in row.get("stocks_all_three", [])]
+    names = [stock["name"] for stock in row.get(pool_key, [])]
     if not names:
         draw.text(
             (chip_x, label_y),
-            "尚未形成同股共識",
+            "沒有同一檔股票形成 3/3 共識",
             font=CARD_FONTS["body"],
             fill=CARD_SLATE,
         )
@@ -220,8 +311,8 @@ def _draw_sector_card(
                 draw,
                 (chip_x, label_y - 5, chip_x + chip_w, label_y + 39),
                 18,
-                CARD_RED_SOFT,
-                CARD_RED,
+                soft,
+                accent,
                 1,
             )
             draw.text(
@@ -232,9 +323,35 @@ def _draw_sector_card(
             )
             chip_x += chip_w + 12
 
+    draw.line((left + 116, top + 207, right - 28, top + 207), fill=CARD_LINE, width=1)
+    _draw_mini_trend(
+        draw,
+        row,
+        dates,
+        left + 116,
+        top + 218,
+        right - 28,
+        chart_scale,
+    )
+
 
 def _render_card(payload: dict) -> tuple[Path, Path]:
-    img = Image.new("RGB", (CARD_WIDTH, CARD_HEIGHT), CARD_BG)
+    sectors = payload.get("sectors", [])[:MAX_SECTORS]
+    selling = payload.get("selling", [])[:MAX_SELL_SECTORS]
+    cooling = payload.get("cooling")
+    buy_block_height = (
+        len(sectors) * SECTOR_CARD_HEIGHT + max(0, len(sectors) - 1) * SECTOR_CARD_GAP
+        if sectors else 142
+    )
+    sell_block_height = (
+        len(selling) * SECTOR_CARD_HEIGHT + max(0, len(selling) - 1) * SECTOR_CARD_GAP
+        if selling else 142
+    )
+    card_height = (
+        220 + 48 + buy_block_height + 30 + 48 + sell_block_height
+        + (130 if cooling else 0) + 178 + 88
+    )
+    img = Image.new("RGB", (CARD_WIDTH, card_height), CARD_BG)
     draw = ImageDraw.Draw(img)
 
     # Subtle top glow keeps the dark report family resemblance without
@@ -269,89 +386,123 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
     )
     draw.text(
         (56, 162),
-        "抓主線，不看雜訊｜403 · 981 · 991｜紅色加碼 · 綠色降溫",
+        "買與賣都看｜403 · 981 · 991｜紅色加碼 · 綠色減碼",
         font=CARD_FONTS["subtitle"],
         fill=CARD_MUTED,
     )
 
-    sectors = payload.get("sectors", [])[:MAX_SECTORS]
-    start_y = 225
+    dates = payload.get("window", {}).get("dates", [])
+    chart_rows = sectors + selling
+    chart_scale = max(
+        [abs(float(value)) for row in chart_rows for value in row.get("daily", [])]
+        + [0.05]
+    )
+
+    y = 220
+    _draw_section_title(draw, y, "買盤主線", "淨加碼、近期加速，且至少兩檔 ETF 同向", CARD_RED)
+    y += 48
     if sectors:
         for index, row in enumerate(sectors, 1):
-            _draw_sector_card(draw, row, index, start_y + (index - 1) * 294)
+            _draw_sector_card(draw, row, index, y, dates, chart_scale, "buy")
+            y += SECTOR_CARD_HEIGHT + SECTOR_CARD_GAP
+        y -= SECTOR_CARD_GAP
     else:
         _rounded(
             draw,
-            (54, start_y, CARD_WIDTH - 54, start_y + 360),
+            (54, y, CARD_WIDTH - 54, y + 142),
             24,
             CARD_PANEL,
             CARD_LINE,
             2,
         )
         draw.text(
-            (90, start_y + 70),
+            (84, y + 25),
             "目前沒有明確主線",
             font=CARD_FONTS["sector"],
             fill=CARD_TEXT,
         )
-        lines = _wrap_chars(
-            draw,
-            "沒有類股同時符合淨加碼、買盤加速與多數 ETF 同向。先觀察，不把單一 ETF 換股當成共識。",
-            CARD_FONTS["body"],
-            CARD_WIDTH - 180,
-            3,
+        draw.text(
+            (84, y + 83),
+            "沒有類股同時符合淨加碼、買盤加速與多數 ETF 同向。",
+            font=CARD_FONTS["body"],
+            fill=CARD_MUTED,
         )
-        for index, line in enumerate(lines):
-            draw.text(
-                (90, start_y + 140 + index * 40),
-                line,
-                font=CARD_FONTS["body"],
-                fill=CARD_MUTED,
-            )
+        y += 142
 
-    cooling = payload.get("cooling")
-    cooling_y = 1120
-    if cooling:
+    y += 30
+    _draw_section_title(draw, y, "賣壓警示", "實際淨減碼，不把單純降溫誤叫成賣出", CARD_GREEN)
+    y += 48
+    if selling:
+        for index, row in enumerate(selling, 1):
+            _draw_sector_card(draw, row, index, y, dates, chart_scale, "sell")
+            y += SECTOR_CARD_HEIGHT + SECTOR_CARD_GAP
+        y -= SECTOR_CARD_GAP
+    else:
         _rounded(
             draw,
-            (54, cooling_y, CARD_WIDTH - 54, cooling_y + 112),
+            (54, y, CARD_WIDTH - 54, y + 142),
+            24,
+            CARD_PANEL,
+            CARD_LINE,
+            2,
+        )
+        draw.text(
+            (84, y + 25),
+            "本期沒有明確重度減碼類股",
+            font=CARD_FONTS["sector"],
+            fill=CARD_TEXT,
+        )
+        draw.text(
+            (84, y + 83),
+            "需同時符合 5 日明確淨賣，且至少兩檔 ETF 同向。",
+            font=CARD_FONTS["body"],
+            fill=CARD_MUTED,
+        )
+        y += 142
+
+    if cooling:
+        y += 18
+        _rounded(
+            draw,
+            (54, y, CARD_WIDTH - 54, y + 112),
             22,
             CARD_GREEN_SOFT,
             CARD_GREEN,
             2,
         )
-        draw.rounded_rectangle((54, cooling_y, 63, cooling_y + 112), radius=5, fill=CARD_GREEN)
+        draw.rounded_rectangle((54, y, 63, y + 112), radius=5, fill=CARD_GREEN)
         draw.text(
-            (84, cooling_y + 24),
+            (84, y + 24),
             "降溫提醒",
             font=CARD_FONTS["badge"],
             fill=CARD_GREEN,
         )
         draw.text(
-            (225, cooling_y + 19),
+            (225, y + 19),
             cooling["category"],
             font=CARD_FONTS["cooling"],
             fill=CARD_TEXT,
         )
         draw.text(
-            (225, cooling_y + 61),
-            "仍有買盤，但近期力道已放慢。",
+            (225, y + 61),
+            "仍是淨買，但近期力道放慢；這不是淨賣出。",
             font=CARD_FONTS["body"],
             fill=CARD_MUTED,
         )
+        y += 112
 
-    conclusion_y = 1254
+    conclusion_y = y + 24
     _rounded(
         draw,
-        (54, conclusion_y, CARD_WIDTH - 54, conclusion_y + 136),
+        (54, conclusion_y, CARD_WIDTH - 54, conclusion_y + 150),
         24,
-        CARD_RED_SOFT,
-        CARD_RED,
+        CARD_PANEL_ALT,
+        CARD_LINE,
         2,
     )
     draw.text(
         (84, conclusion_y + 22),
-        "今日優先觀察",
+        "紅｜優先觀察",
         font=CARD_FONTS["badge"],
         fill=CARD_RED,
     )
@@ -360,22 +511,33 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
         for stock in row.get("stocks_all_three", []):
             if stock["name"] not in pool_names:
                 pool_names.append(stock["name"])
-    conclusion = "、".join(pool_names[:6]) if pool_names else "等待三檔 ETF 形成同股共識"
-    conclusion_lines = _wrap_chars(
-        draw, conclusion, CARD_FONTS["cooling"], CARD_WIDTH - 170, 2
+    buy_conclusion = "、".join(pool_names[:6]) if pool_names else "等待三檔 ETF 形成同股共識"
+    draw.text(
+        (225, conclusion_y + 17),
+        buy_conclusion,
+        font=CARD_FONTS["cooling"],
+        fill=CARD_TEXT,
     )
-    for index, line in enumerate(conclusion_lines):
-        draw.text(
-            (84, conclusion_y + 62 + index * 40),
-            line,
-            font=CARD_FONTS["cooling"],
-            fill=CARD_TEXT,
-        )
+    draw.line((84, conclusion_y + 73, CARD_WIDTH - 84, conclusion_y + 73), fill=CARD_LINE, width=1)
+    draw.text(
+        (84, conclusion_y + 94),
+        "綠｜賣壓留意",
+        font=CARD_FONTS["badge"],
+        fill=CARD_GREEN,
+    )
+    sell_categories = "、".join(row["category"] for row in selling)
+    draw.text(
+        (225, conclusion_y + 89),
+        sell_categories or "本期沒有明確重度減碼類股",
+        font=CARD_FONTS["cooling"],
+        fill=CARD_TEXT,
+    )
 
-    footer = "類股 only · 近 5 個共同交易日 · 最近 2 日高於前 3 日 · 共買池需 3/3 ETF"
+    footer_y = conclusion_y + 177
+    footer = "類股 only · 近 5 個共同交易日 · 同一尺度趨勢圖 · 共買／共賣池皆需 3/3 ETF"
     footer_w = _text_width(draw, footer, CARD_FONTS["footer"])
     draw.text(
-        ((CARD_WIDTH - footer_w) / 2, 1435),
+        ((CARD_WIDTH - footer_w) / 2, footer_y),
         footer,
         font=CARD_FONTS["footer"],
         fill=CARD_SLATE,
@@ -383,7 +545,7 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
     note = "此卡是資金行為摘要，不是投資建議"
     note_w = _text_width(draw, note, CARD_FONTS["footer"])
     draw.text(
-        ((CARD_WIDTH - note_w) / 2, 1467),
+        ((CARD_WIDTH - note_w) / 2, footer_y + 32),
         note,
         font=CARD_FONTS["footer"],
         fill=CARD_SLATE,
@@ -460,22 +622,33 @@ def _aggregate(data: dict, dates: list[str]) -> list[dict]:
         acceleration = recent_avg - prior_avg
         daily = [sector["by_date"].get(date, 0.0) for date in dates]
 
-        stock_pool = []
+        stock_buy_pool = []
+        stock_sell_pool = []
         for stock in sector["stocks"].values():
             stock_by_etf = dict(stock["by_etf"])
             buyers = sum(stock_by_etf.get(etf, 0.0) > EPSILON for etf in ETFS)
+            sellers = sum(stock_by_etf.get(etf, 0.0) < -EPSILON for etf in ETFS)
             stock_strength = sum(
                 stock_by_etf.get(etf, 0.0) for etf in ETFS
             ) / len(ETFS)
             if buyers == len(ETFS) and stock_strength > EPSILON:
-                stock_pool.append(
+                stock_buy_pool.append(
                     {
                         "id": stock["id"],
                         "name": stock["name"],
                         "strength": round(stock_strength, 4),
                     }
                 )
-        stock_pool.sort(key=lambda row: -row["strength"])
+            if sellers == len(ETFS) and stock_strength < -EPSILON:
+                stock_sell_pool.append(
+                    {
+                        "id": stock["id"],
+                        "name": stock["name"],
+                        "strength": round(stock_strength, 4),
+                    }
+                )
+        stock_buy_pool.sort(key=lambda row: -row["strength"])
+        stock_sell_pool.sort(key=lambda row: row["strength"])
 
         results.append(
             {
@@ -483,9 +656,14 @@ def _aggregate(data: dict, dates: list[str]) -> list[dict]:
                 "strength": round(strength, 4),
                 "acceleration": round(acceleration, 4),
                 "buyers": sum(by_etf.get(etf, 0.0) > EPSILON for etf in ETFS),
+                "sellers": sum(by_etf.get(etf, 0.0) < -EPSILON for etf in ETFS),
                 "buy_days": sum(value > EPSILON for value in daily),
+                "sell_days": sum(value < -EPSILON for value in daily),
                 "latest_positive": daily[-1] > EPSILON,
-                "stocks_all_three": stock_pool[:MAX_STOCKS],
+                "latest_negative": daily[-1] < -EPSILON,
+                "daily": [round(value, 4) for value in daily],
+                "stocks_all_three": stock_buy_pool[:MAX_STOCKS],
+                "stocks_all_three_selling": stock_sell_pool[:MAX_STOCKS],
             }
         )
     return results
@@ -503,34 +681,74 @@ def _sector_reason(row: dict, n_dates: int) -> str:
     return f"{breadth}，{persistence}，而且最近兩日力道高於前三日。"
 
 
-def _render_line(as_of: str, sectors: list[dict], cooling: dict | None) -> str:
+def _sell_reason(row: dict, n_dates: int) -> str:
+    if row["sellers"] == 3:
+        breadth = "三檔主動 ETF 同步減碼"
+    else:
+        breadth = "多數主動 ETF 同向減碼"
+    persistence = (
+        "賣壓具持續性" if row["sell_days"] >= max(3, n_dates - 1)
+        else "近期轉為明顯賣超"
+    )
+    if not row["latest_negative"]:
+        acceleration = "但最新一日已轉正，賣壓正在緩和"
+    elif row["acceleration"] < -MIN_ACCELERATION:
+        acceleration = "而且最近兩日賣壓加重"
+    else:
+        acceleration = "最新一日仍在減碼"
+    return f"{breadth}，{persistence}，{acceleration}。"
+
+
+def _render_line(
+    as_of: str,
+    sectors: list[dict],
+    selling: list[dict],
+    cooling: dict | None,
+) -> str:
     lines = [
         "🔥 吳大師｜ETF 類股洞察",
         f"截至 {as_of}｜近 5 個共同交易日",
         "",
+        "🔴 買盤主線",
     ]
     if not sectors:
+        lines.append(
+            "目前沒有同時符合『淨加碼＋正在加速＋至少兩檔 ETF 同向』的明確主線。"
+        )
+    else:
+        for index, row in enumerate(sectors, 1):
+            lines.append(f"主線 {index}｜{row['category']}：強勢加速")
+            lines.append(_sector_reason(row, LOOKBACK))
+            names = [stock["name"] for stock in row["stocks_all_three"]]
+            if names:
+                lines.append("三檔共買池：" + "、".join(names))
+            else:
+                lines.append("三檔共買池：暫無同一檔個股獲三檔同步加碼")
+            lines.append("")
+
+    lines.extend(["", "🟢 賣壓警示"])
+    if selling:
+        for index, row in enumerate(selling, 1):
+            lines.append(f"減碼 {index}｜{row['category']}：明確淨賣")
+            lines.append(_sell_reason(row, LOOKBACK))
+            names = [stock["name"] for stock in row["stocks_all_three_selling"]]
+            if names:
+                lines.append("三檔共賣池：" + "、".join(names))
+            else:
+                lines.append("三檔共賣池：類股有賣壓，但沒有同一檔股票形成 3/3 共識")
+            lines.append("")
+    else:
         lines.extend(
             [
-                "目前沒有同時符合『淨加碼＋正在加速＋至少兩檔 ETF 同向』的明確主線。",
-                "結論：先觀察，不把單一 ETF 的換股誤認成市場共識。",
+                "本期沒有明確重度減碼類股。",
+                "條件：5 日明確淨賣，且至少兩檔 ETF 同向。",
+                "",
             ]
         )
-        return "\n".join(lines)
-
-    for index, row in enumerate(sectors, 1):
-        lines.append(f"主線 {index}｜{row['category']}：強勢加速")
-        lines.append(_sector_reason(row, LOOKBACK))
-        names = [stock["name"] for stock in row["stocks_all_three"]]
-        if names:
-            lines.append("三檔共買池：" + "、".join(names))
-        else:
-            lines.append("三檔共買池：暫無同一檔個股獲三檔同步加碼")
-        lines.append("")
 
     if cooling:
         lines.append(
-            f"降溫提醒｜{cooling['category']}：仍有買盤，但近期力道已放慢。"
+            f"降溫提醒｜{cooling['category']}：仍是淨買，但近期力道已放慢；這不是淨賣出。"
         )
         lines.append("")
     pool_names = []
@@ -538,10 +756,9 @@ def _render_line(as_of: str, sectors: list[dict], cooling: dict | None) -> str:
         for stock in row["stocks_all_three"]:
             if stock["name"] not in pool_names:
                 pool_names.append(stock["name"])
-    if pool_names:
-        lines.append("一句話：優先追蹤三檔 ETF 同步買進的「" + "、".join(pool_names[:6]) + "」，其餘只列觀察。")
-    else:
-        lines.append("一句話：類股方向正在轉強，但尚未形成同一檔個股的三方共識，先觀察。")
+    buy_summary = "、".join(pool_names[:6]) if pool_names else "尚未形成 3/3 同股共識"
+    sell_summary = "、".join(row["category"] for row in selling) or "本期無明確重度減碼"
+    lines.append(f"一句話｜紅：{buy_summary}｜綠：{sell_summary}")
     return "\n".join(lines).strip()
 
 
@@ -565,6 +782,15 @@ def generate() -> dict:
         key=lambda row: (-row["buyers"], -row["strength"], -row["acceleration"])
     )
     selected = candidates[:MAX_SECTORS]
+    selling_candidates = [
+        row for row in rows
+        if row["strength"] <= -MIN_STRENGTH
+        and row["sellers"] >= 2
+    ]
+    selling_candidates.sort(
+        key=lambda row: (-row["sellers"], row["strength"], row["acceleration"])
+    )
+    selling = selling_candidates[:MAX_SELL_SECTORS]
     cooling_rows = [
         row for row in rows
         if row["strength"] > MIN_STRENGTH
@@ -572,7 +798,7 @@ def generate() -> dict:
         and row["buyers"] >= 2
     ]
     cooling = max(cooling_rows, key=lambda row: row["strength"], default=None)
-    line_text = _render_line(selected_dates[-1], selected, cooling)
+    line_text = _render_line(selected_dates[-1], selected, selling, cooling)
     payload = {
         "schema_version": 1,
         "generated": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -587,9 +813,13 @@ def generate() -> dict:
         "methodology": (
             "category-only; strong = positive equal-weight normalized flow; "
             "accelerating = latest 2-session daily average above prior 3; "
-            "stock pool requires positive normalized flow from all 3 ETFs"
+            "heavy selling = negative 5-session flow with at least 2 ETFs net "
+            "selling; latest-session direction labels whether pressure is worsening, "
+            "continuing, or easing; stock pools require same-direction "
+            "normalized flow from all 3 ETFs"
         ),
         "sectors": selected,
+        "selling": selling,
         "cooling": cooling,
         "line_text": line_text,
         "email_text": line_text,
@@ -603,7 +833,8 @@ def generate() -> dict:
     print(
         f"[theme-insight] as_of={payload['as_of']} common_sessions={len(selected_dates)} "
         f"strong_accelerating={len(selected)} "
-        f"leaders={','.join(row['category'] for row in selected) or 'none'}"
+        f"leaders={','.join(row['category'] for row in selected) or 'none'} "
+        f"heavy_selling={','.join(row['category'] for row in selling) or 'none'}"
     )
     print(f"Saved {latest_image.relative_to(ROOT)}")
     print(f"Saved {dated_image.relative_to(ROOT)}")

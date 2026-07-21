@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated": "2026-07-22T00:42:35+10:00",
+  "generated": "2026-07-22T00:53:58+10:00",
   "source_generated": "2026-07-22 00:04:25",
   "as_of": "2026-07-21",
   "window": {
@@ -19,35 +19,63 @@
       "00991A"
     ]
   },
-  "methodology": "category-only; strong = positive equal-weight normalized flow; accelerating = latest 2-session daily average above prior 3; stock pool requires positive normalized flow from all 3 ETFs",
+  "methodology": "category-only; strong = positive equal-weight normalized flow; accelerating = latest 2-session daily average above prior 3; heavy selling = negative 5-session flow with at least 2 ETFs net selling; latest-session direction labels whether pressure is worsening, continuing, or easing; stock pools require same-direction normalized flow from all 3 ETFs",
   "sectors": [
     {
       "category": "電源供應器",
       "strength": 0.6456,
       "acceleration": 0.2368,
       "buyers": 3,
+      "sellers": 0,
       "buy_days": 5,
+      "sell_days": 0,
       "latest_positive": true,
+      "latest_negative": false,
+      "daily": [
+        0.0383,
+        0.0275,
+        0.0374,
+        0.015,
+        0.5274
+      ],
       "stocks_all_three": [
         {
           "id": "2308",
           "name": "台達電子",
           "strength": 0.6456
         }
-      ]
+      ],
+      "stocks_all_three_selling": []
     },
     {
       "category": "IC-封測",
       "strength": 0.4864,
       "acceleration": 0.0395,
       "buyers": 3,
+      "sellers": 0,
       "buy_days": 4,
+      "sell_days": 1,
       "latest_positive": true,
+      "latest_negative": false,
+      "daily": [
+        0.2352,
+        0.0471,
+        -0.0379,
+        0.1869,
+        0.055
+      ],
       "stocks_all_three": [
         {
           "id": "3711",
           "name": "日月光投",
           "strength": 0.3601
+        }
+      ],
+      "stocks_all_three_selling": [
+        {
+          "id": "6515",
+          "name": "穎崴科技",
+          "strength": -0.1574
         }
       ]
     },
@@ -56,15 +84,88 @@
       "strength": 0.424,
       "acceleration": 0.0387,
       "buyers": 3,
+      "sellers": 0,
       "buy_days": 3,
+      "sell_days": 0,
       "latest_positive": true,
+      "latest_negative": false,
+      "daily": [
+        0.208,
+        0.0,
+        0.0,
+        0.1126,
+        0.1034
+      ],
       "stocks_all_three": [
         {
           "id": "3037",
           "name": "欣興電子",
           "strength": 0.1411
         }
-      ]
+      ],
+      "stocks_all_three_selling": []
+    }
+  ],
+  "selling": [
+    {
+      "category": "被動元件",
+      "strength": -0.3872,
+      "acceleration": -0.2373,
+      "buyers": 0,
+      "sellers": 2,
+      "buy_days": 1,
+      "sell_days": 3,
+      "latest_positive": false,
+      "latest_negative": true,
+      "daily": [
+        0.1728,
+        0.0,
+        -0.1204,
+        -0.135,
+        -0.3046
+      ],
+      "stocks_all_three": [],
+      "stocks_all_three_selling": []
+    },
+    {
+      "category": "IC-代工",
+      "strength": -0.2776,
+      "acceleration": -0.1073,
+      "buyers": 0,
+      "sellers": 2,
+      "buy_days": 0,
+      "sell_days": 2,
+      "latest_positive": false,
+      "latest_negative": true,
+      "daily": [
+        0.0,
+        -0.0378,
+        0.0,
+        0.0,
+        -0.2399
+      ],
+      "stocks_all_three": [],
+      "stocks_all_three_selling": []
+    },
+    {
+      "category": "PCB-製造",
+      "strength": -0.157,
+      "acceleration": -0.078,
+      "buyers": 0,
+      "sellers": 2,
+      "buy_days": 0,
+      "sell_days": 3,
+      "latest_positive": false,
+      "latest_negative": true,
+      "daily": [
+        0.0,
+        0.0,
+        -0.0007,
+        -0.147,
+        -0.0093
+      ],
+      "stocks_all_three": [],
+      "stocks_all_three_selling": []
     }
   ],
   "cooling": {
@@ -72,11 +173,22 @@
     "strength": 0.3187,
     "acceleration": -0.053,
     "buyers": 3,
+    "sellers": 0,
     "buy_days": 5,
+    "sell_days": 0,
     "latest_positive": true,
-    "stocks_all_three": []
+    "latest_negative": false,
+    "daily": [
+      0.1757,
+      0.0429,
+      0.0363,
+      0.0416,
+      0.0223
+    ],
+    "stocks_all_three": [],
+    "stocks_all_three_selling": []
   },
-  "line_text": "🔥 吳大師｜ETF 類股洞察\n截至 2026-07-21｜近 5 個共同交易日\n\n主線 1｜電源供應器：強勢加速\n三檔主動 ETF 同步加碼，買盤具持續性，而且最近兩日力道高於前三日。\n三檔共買池：台達電子\n\n主線 2｜IC-封測：強勢加速\n三檔主動 ETF 同步加碼，買盤具持續性，而且最近兩日力道高於前三日。\n三檔共買池：日月光投\n\n主線 3｜ABF：強勢加速\n三檔主動 ETF 同步加碼，近期買盤轉強，而且最近兩日力道高於前三日。\n三檔共買池：欣興電子\n\n降溫提醒｜IC-設計：仍有買盤，但近期力道已放慢。\n\n一句話：優先追蹤三檔 ETF 同步買進的「台達電子、日月光投、欣興電子」，其餘只列觀察。",
-  "email_text": "🔥 吳大師｜ETF 類股洞察\n截至 2026-07-21｜近 5 個共同交易日\n\n主線 1｜電源供應器：強勢加速\n三檔主動 ETF 同步加碼，買盤具持續性，而且最近兩日力道高於前三日。\n三檔共買池：台達電子\n\n主線 2｜IC-封測：強勢加速\n三檔主動 ETF 同步加碼，買盤具持續性，而且最近兩日力道高於前三日。\n三檔共買池：日月光投\n\n主線 3｜ABF：強勢加速\n三檔主動 ETF 同步加碼，近期買盤轉強，而且最近兩日力道高於前三日。\n三檔共買池：欣興電子\n\n降溫提醒｜IC-設計：仍有買盤，但近期力道已放慢。\n\n一句話：優先追蹤三檔 ETF 同步買進的「台達電子、日月光投、欣興電子」，其餘只列觀察。",
+  "line_text": "🔥 吳大師｜ETF 類股洞察\n截至 2026-07-21｜近 5 個共同交易日\n\n🔴 買盤主線\n主線 1｜電源供應器：強勢加速\n三檔主動 ETF 同步加碼，買盤具持續性，而且最近兩日力道高於前三日。\n三檔共買池：台達電子\n\n主線 2｜IC-封測：強勢加速\n三檔主動 ETF 同步加碼，買盤具持續性，而且最近兩日力道高於前三日。\n三檔共買池：日月光投\n\n主線 3｜ABF：強勢加速\n三檔主動 ETF 同步加碼，近期買盤轉強，而且最近兩日力道高於前三日。\n三檔共買池：欣興電子\n\n\n🟢 賣壓警示\n減碼 1｜被動元件：明確淨賣\n多數主動 ETF 同向減碼，近期轉為明顯賣超，而且最近兩日賣壓加重。\n三檔共賣池：類股有賣壓，但沒有同一檔股票形成 3/3 共識\n\n減碼 2｜IC-代工：明確淨賣\n多數主動 ETF 同向減碼，近期轉為明顯賣超，而且最近兩日賣壓加重。\n三檔共賣池：類股有賣壓，但沒有同一檔股票形成 3/3 共識\n\n減碼 3｜PCB-製造：明確淨賣\n多數主動 ETF 同向減碼，近期轉為明顯賣超，而且最近兩日賣壓加重。\n三檔共賣池：類股有賣壓，但沒有同一檔股票形成 3/3 共識\n\n降溫提醒｜IC-設計：仍是淨買，但近期力道已放慢；這不是淨賣出。\n\n一句話｜紅：台達電子、日月光投、欣興電子｜綠：被動元件、IC-代工、PCB-製造",
+  "email_text": "🔥 吳大師｜ETF 類股洞察\n截至 2026-07-21｜近 5 個共同交易日\n\n🔴 買盤主線\n主線 1｜電源供應器：強勢加速\n三檔主動 ETF 同步加碼，買盤具持續性，而且最近兩日力道高於前三日。\n三檔共買池：台達電子\n\n主線 2｜IC-封測：強勢加速\n三檔主動 ETF 同步加碼，買盤具持續性，而且最近兩日力道高於前三日。\n三檔共買池：日月光投\n\n主線 3｜ABF：強勢加速\n三檔主動 ETF 同步加碼，近期買盤轉強，而且最近兩日力道高於前三日。\n三檔共買池：欣興電子\n\n\n🟢 賣壓警示\n減碼 1｜被動元件：明確淨賣\n多數主動 ETF 同向減碼，近期轉為明顯賣超，而且最近兩日賣壓加重。\n三檔共賣池：類股有賣壓，但沒有同一檔股票形成 3/3 共識\n\n減碼 2｜IC-代工：明確淨賣\n多數主動 ETF 同向減碼，近期轉為明顯賣超，而且最近兩日賣壓加重。\n三檔共賣池：類股有賣壓，但沒有同一檔股票形成 3/3 共識\n\n減碼 3｜PCB-製造：明確淨賣\n多數主動 ETF 同向減碼，近期轉為明顯賣超，而且最近兩日賣壓加重。\n三檔共賣池：類股有賣壓，但沒有同一檔股票形成 3/3 共識\n\n降溫提醒｜IC-設計：仍是淨買，但近期力道已放慢；這不是淨賣出。\n\n一句話｜紅：台達電子、日月光投、欣興電子｜綠：被動元件、IC-代工、PCB-製造",
   "image": "tag_flow_insight_latest.jpg"
 }
