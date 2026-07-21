@@ -54,6 +54,7 @@ TPEX_PRICE_URL = (
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; STOCK-dashboard/1.0; daily official-data cache)",
     "Accept": "application/json,text/plain,*/*",
+    "Connection": "close",
 }
 COLUMNS = [
     "date",
@@ -359,14 +360,16 @@ def target_dates(days: int, backfill_years: int) -> list[pd.Timestamp]:
     return list(pd.bdate_range(start=start, end=today))
 
 
-def refresh_cache(path: Path, dates: list[pd.Timestamp], workers: int = 3) -> tuple[pd.DataFrame, int, int]:
+def refresh_cache(path: Path, dates: list[pd.Timestamp], workers: int = 2) -> tuple[pd.DataFrame, int, int]:
     existing = load_existing(path)
     rows: list[dict[str, Any]] = []
     errors = 0
+    completed = 0
     with ThreadPoolExecutor(max_workers=max(1, min(int(workers), 6))) as pool:
         futures = {pool.submit(fetch_date, date): date for date in dates}
         for future in as_completed(futures):
             date = futures[future]
+            completed += 1
             try:
                 row = future.result()
                 if row:
@@ -374,10 +377,19 @@ def refresh_cache(path: Path, dates: list[pd.Timestamp], workers: int = 3) -> tu
             except Exception as exc:
                 errors += 1
                 print(f"[margin-risk] WARN {date.date()}: {type(exc).__name__}: {exc}")
+            if len(dates) >= 30 and (completed % 25 == 0 or completed == len(dates)):
+                print(
+                    f"[margin-risk] progress={completed}/{len(dates)} "
+                    f"fetched={len(rows)} errors={errors}"
+                )
 
-    frames = [existing]
+    frames: list[pd.DataFrame] = []
+    if not existing.empty:
+        frames.append(existing)
     if rows:
         frames.append(pd.DataFrame(rows, columns=COLUMNS))
+    if not frames:
+        return pd.DataFrame(columns=COLUMNS), 0, errors
     combined = pd.concat(frames, ignore_index=True)
     if not combined.empty:
         combined = (
@@ -401,7 +413,7 @@ def main() -> int:
         default=0,
         help="One-time history init; overrides --days.",
     )
-    parser.add_argument("--workers", type=int, default=3, help="Concurrent dates (max 6).")
+    parser.add_argument("--workers", type=int, default=2, help="Concurrent dates (max 6).")
     parser.add_argument("--output", type=Path, default=DEFAULT_CACHE_PATH)
     args = parser.parse_args()
 
@@ -423,7 +435,9 @@ def main() -> int:
         f"coverage={coverage[0]}/{coverage[1]} fetched={fetched} errors={errors} "
         f"path={args.output}"
     )
-    return 0 if fetched > 0 or errors == 0 else 1
+    # Any exhausted official-endpoint retry should be visible as PARTIAL_FAIL
+    # in the daily admin email. Existing cached rows are preserved either way.
+    return 0 if errors == 0 else 1
 
 
 if __name__ == "__main__":
