@@ -47,7 +47,8 @@ CARD_TEXT = (244, 247, 252)
 CARD_MUTED = (154, 166, 184)
 CARD_RED = (239, 68, 68)
 CARD_RED_SOFT = (72, 29, 35)
-CARD_AMBER = (245, 158, 11)
+CARD_GREEN = (34, 197, 94)
+CARD_GREEN_SOFT = (13, 55, 38)
 CARD_SLATE = (100, 116, 139)
 
 
@@ -268,7 +269,7 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
     )
     draw.text(
         (56, 162),
-        "抓主線，不看雜訊｜403 · 981 · 991｜紅色代表同步加碼",
+        "抓主線，不看雜訊｜403 · 981 · 991｜紅色加碼 · 綠色降溫",
         font=CARD_FONTS["subtitle"],
         fill=CARD_MUTED,
     )
@@ -315,16 +316,16 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
             draw,
             (54, cooling_y, CARD_WIDTH - 54, cooling_y + 112),
             22,
-            CARD_PANEL_ALT,
-            CARD_LINE,
+            CARD_GREEN_SOFT,
+            CARD_GREEN,
             2,
         )
-        draw.rounded_rectangle((54, cooling_y, 63, cooling_y + 112), radius=5, fill=CARD_AMBER)
+        draw.rounded_rectangle((54, cooling_y, 63, cooling_y + 112), radius=5, fill=CARD_GREEN)
         draw.text(
             (84, cooling_y + 24),
             "降溫提醒",
             font=CARD_FONTS["badge"],
-            fill=CARD_AMBER,
+            fill=CARD_GREEN,
         )
         draw.text(
             (225, cooling_y + 19),
