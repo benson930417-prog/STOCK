@@ -27,6 +27,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 import re
 import sys
@@ -133,6 +134,8 @@ def main() -> int:
                     help="re-scrape every stock, ignoring the cache")
     ap.add_argument("--only", default="",
                     help="comma-separated stock ids to (re)scrape")
+    ap.add_argument("--probe", default="",
+                    help="comma-separated cached stock ids to recheck as live canaries")
     ap.add_argument("--delay", type=float, default=0.7,
                     help="seconds between requests (be polite)")
     args = ap.parse_args()
@@ -148,38 +151,72 @@ def main() -> int:
     elif args.refresh_all:
         targets = sorted(universe)
     else:
-        targets = [s for s in sorted(universe) if s not in tags]
+        # Empty/failed cache entries must remain retryable.  The previous code
+        # treated a cached {category: None} as complete forever.
+        targets = [
+            s for s in sorted(universe)
+            if not tags.get(s, {}).get("category")
+        ]
+
+    probes = [s.strip() for s in args.probe.split(",") if s.strip()]
+    for sid in probes:
+        if sid in universe and sid not in targets:
+            targets.append(sid)
 
     print(f"universe={len(universe)} cached={len(tags)} to_fetch={len(targets)}")
     ok = fail = 0
+    probe_results: dict[str, str] = {}
     for i, sid in enumerate(targets, 1):
         name = universe.get(sid, tags.get(sid, {}).get("name", ""))
+        previous = tags.get(sid)
         try:
             parsed = parse_tags(fetch(sid))
             parsed["name"] = name
-            if not parsed.get("category") and not parsed.get("concepts"):
-                raise ValueError("no tags parsed")
+            if not parsed.get("category"):
+                raise ValueError("no category parsed")
+            parsed["checked_at_utc"] = datetime.now(timezone.utc).isoformat().replace(
+                "+00:00", "Z"
+            )
             tags[sid] = parsed
             ok += 1
             cat = parsed.get("category_full") or parsed.get("category") or "?"
+            if sid in probes:
+                probe_results[sid] = parsed.get("category") or "?"
             cons = ",".join(c["name"] for c in parsed["concepts"][:4])
             print(f"  [{i}/{len(targets)}] {sid} {name} -> {cat} | {cons}")
         except Exception as e:  # noqa: BLE001 — keep the crawl alive, log the miss
             fail += 1
             print(f"  [{i}/{len(targets)}] {sid} {name} -> FAIL {type(e).__name__}: {e}",
                   file=sys.stderr)
-            tags.setdefault(sid, {"name": name, "category": None, "concepts": []})
+            # Preserve a previously valid category during a transient outage;
+            # never create an empty cache entry that suppresses tomorrow's retry.
+            if previous and previous.get("category"):
+                tags[sid] = previous
         time.sleep(args.delay)
+
+    covered = sum(
+        bool(tags.get(sid, {}).get("category")) for sid in universe
+    )
+    missing = len(universe) - covered
 
     payload = {
         "generated": time.strftime("%Y-%m-%d %H:%M:%S"),
         "source": "cmoney.tw/forum/stock",
         "count": len(tags),
+        "coverage": {"covered": covered, "universe": len(universe), "missing": missing},
         "tags": tags,
     }
     OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"wrote {OUT}  ok={ok} fail={fail} total={len(tags)}")
-    return 0
+    probe_text = ",".join(
+        f"{sid}:{probe_results.get(sid, 'FAIL')}" for sid in probes
+    ) or "none"
+    status = "OK" if fail == 0 and missing == 0 else "PARTIAL"
+    print(
+        f"[cmoney-tags] status={status} coverage={covered}/{len(universe)} "
+        f"missing={missing} fetched_ok={ok} failed={fail} probe={probe_text}"
+    )
+    return 0 if status == "OK" else 1
 
 
 if __name__ == "__main__":

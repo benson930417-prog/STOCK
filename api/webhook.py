@@ -1,7 +1,18 @@
 from flask import Flask, request, send_from_directory
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent, JoinEvent, ImageSendMessage, PostbackEvent
+from linebot.models import (
+    FollowEvent,
+    ImageSendMessage,
+    JoinEvent,
+    MessageAction,
+    MessageEvent,
+    PostbackEvent,
+    QuickReply,
+    QuickReplyButton,
+    TextMessage,
+    TextSendMessage,
+)
 import time
 import os
 import sys
@@ -107,6 +118,28 @@ def parse_etf_quote_command(text):
 def is_master_holding_command(text):
     normalized = unicodedata.normalize("NFKC", text).strip()
     return "吳大師" in normalized
+
+def is_tag_flow_insight_command(text):
+    normalized = unicodedata.normalize("NFKC", text).strip()
+    return normalized in {"題材洞察", "類股洞察", "ETF題材洞察"}
+
+def tag_flow_insight_quick_reply():
+    return QuickReply(
+        items=[
+            QuickReplyButton(
+                action=MessageAction(label="🔥 今日類股洞察", text="題材洞察")
+            )
+        ]
+    )
+
+def load_tag_flow_insight_text():
+    path = os.path.join(parent_dir, "data", "tag_flow_insight.json")
+    with open(path, encoding="utf-8") as fh:
+        payload = json.load(fh)
+    text = str(payload.get("line_text") or "").strip()
+    if not text:
+        raise RuntimeError("tag_flow_insight.json has no line_text")
+    return text
 
 def is_daily_update_command(text):
     # Admin command: exact match only (no aliases/fuzzy matching).
@@ -743,18 +776,33 @@ def webhook():
 def handle_message(event):
     user_msg = event.message.text.strip()
     is_master_holding = is_master_holding_command(user_msg)
+    is_tag_flow_insight = is_tag_flow_insight_command(user_msg)
     is_daily_update = is_daily_update_command(user_msg)
     is_gold = is_gold_command(user_msg)
     is_market_pulse = is_market_pulse_command(user_msg)
     refetch_target = parse_refetch_command(user_msg)
-    etf_quote_ticker = None if is_daily_update or is_master_holding or is_gold or is_market_pulse or refetch_target else parse_etf_quote_command(user_msg)
+    etf_quote_ticker = (
+        None
+        if is_daily_update
+        or is_master_holding
+        or is_tag_flow_insight
+        or is_gold
+        or is_market_pulse
+        or refetch_target
+        else parse_etf_quote_command(user_msg)
+    )
     print(f"LINE text={user_msg!r} parsed_etf={etf_quote_ticker} refetch={refetch_target} daily_update={is_daily_update}", flush=True)
     if is_master_holding:
         try:
             from scripts.master_holding_quote_card import load_cached_master_quote_card
 
             text, output_paths, cache = load_cached_master_quote_card()
-            messages = [TextSendMessage(text=text)]
+            messages = [
+                TextSendMessage(
+                    text=text,
+                    quick_reply=tag_flow_insight_quick_reply(),
+                )
+            ]
             for output_path in output_paths[:2]:
                 img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
                 messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
@@ -764,6 +812,19 @@ def handle_message(event):
             reply_line(
                 event.reply_token,
                 TextSendMessage(text="吳大師持股暫時無法產生，請稍後再試。")
+            )
+
+    elif is_tag_flow_insight:
+        try:
+            reply_line(
+                event.reply_token,
+                TextSendMessage(text=load_tag_flow_insight_text()),
+            )
+        except Exception as e:
+            print("Theme insight cache reply failed:", e)
+            reply_line(
+                event.reply_token,
+                TextSendMessage(text="今日類股洞察尚未更新完成，請稍後再試。"),
             )
 
     elif is_market_pulse:
@@ -907,6 +968,7 @@ def handle_message(event):
             "• 9805 — 009805 持股即時表\n"
             "• 9820 — 009820 持股即時表\n"
             "• 吳大師 — 投資組合與展開持股\n"
+            "• 題材洞察 — 強勢加速類股與三檔 ETF 共買池\n"
             "• id — 取得使用者或群組 ID"
         ))
         )

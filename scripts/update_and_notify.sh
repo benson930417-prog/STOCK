@@ -114,6 +114,12 @@ record_step_ok() {
             "market pulse volume cache")
                 metrics=$(grep -E "^\[market-volume\]" "$logfile" | sed 's/^/          /')
                 ;;
+            "build stock tags (incremental)")
+                metrics=$(grep -E "^\[cmoney-tags\]" "$logfile" | sed 's/^/          /')
+                ;;
+            "generate theme insight")
+                metrics=$(grep -E "^\[theme-insight\]" "$logfile" | sed 's/^/          /')
+                ;;
             "LINE broadcast active reports")
                 metrics=$(tail -n 5 "$logfile" | sed 's/^/          /')
                 ;;
@@ -254,8 +260,23 @@ run_step "generate_market_pulse_summary" python scripts/generate_market_pulse_su
 # Theme-flow (題材流向) tab: refresh any missing stock tags (incremental, only new
 # holdings hit cmoney), then rebuild the ETF theme-flow map. build_tag_flow is
 # pure-local; if the tag scrape hiccups it still runs off the cached tags.
-run_step "build stock tags (incremental)" python scripts/build_stock_tags.py
+run_step "build stock tags (incremental)" python scripts/build_stock_tags.py --probe 2308
 run_step "build tag flow"                 python scripts/build_tag_flow.py
+if run_step "generate theme insight"      python scripts/generate_tag_flow_insight.py; then
+    {
+        echo
+        echo "ETF 類股洞察"
+        echo "──────────"
+        python scripts/generate_tag_flow_insight.py --print email
+    } >> "$SUMMARY_FILE"
+else
+    {
+        echo
+        echo "ETF 類股洞察"
+        echo "──────────"
+        echo "本次洞察產生失敗，請查看 failure details。"
+    } >> "$SUMMARY_FILE"
+fi
 
 # ──────────────────────────────────────────────────────────────────────────
 # 3. Detect which ETFs got NEW DATA this run
