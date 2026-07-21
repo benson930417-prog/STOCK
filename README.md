@@ -29,7 +29,7 @@ Prefer one-shot SSH commands for routine deploys because they are auditable and 
 For README-only/doc changes, deployment usually means only:
 
 ```bash
-cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash
+cd /home/ubuntu/STOCK && git -c pull.rebase=false pull --ff-only origin main
 ```
 
 For code changes, use the **Standard Deployment** command in this README and restart the relevant services. If service files changed, also copy service templates and run `sudo systemctl daemon-reload`.
@@ -51,6 +51,7 @@ AI coding agents may run inside a restricted sandbox even though the repository,
 2. **Move required commands outside the sandbox when the sandbox blocks them.** Use the agent host's explicit approval/escalation mechanism to rerun necessary network, SSH, Git, service, or host-file commands outside the sandbox. Ask for approval when required; do not repeatedly retry the same command inside the sandbox.
 3. **Do not weaken host security to escape the sandbox.** Never broadly relax ACLs on the user's home directory, `AppData`, SSH key, or secret files. Prefer approved outside-sandbox execution. If a temporary restricted copy is genuinely unavoidable, keep it under a verified temp directory and remove it immediately.
 4. **Browser fallback order:** connected Chrome extension → in-app browser (if Chrome is unavailable) → server-side headless browser only when neither connected browser works. State the fallback reason briefly.
+5. **A missing local command alias is not an application failure.** In the Codex desktop sandbox, `python`, Git, or another host-installed binary may not be on `PATH`. Load and use the desktop workspace dependency runtime when available; do not install a second interpreter or change application code merely because the sandbox alias is absent. On production, always use `/home/ubuntu/STOCK/venv/bin/python` (or activate that virtualenv first).
 
 The loop:
 
@@ -59,7 +60,7 @@ The loop:
 3. Deploy with a one-shot SSH command (key path from `CLAUDE.local.md`):
 
    ```bash
-   ssh -i "<KEY_PATH>" ubuntu@80.225.204.45 "cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash && source venv/bin/activate && pip install -r requirements.txt -q && sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service"
+   ssh -i "<KEY_PATH>" ubuntu@80.225.204.45 "cd /home/ubuntu/STOCK && git -c pull.rebase=false pull --ff-only origin main && source venv/bin/activate && pip install -r requirements.txt -q && sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service"
    ```
 
    For README/doc-only changes, the `git pull` alone is enough — skip pip and restarts.
@@ -70,6 +71,8 @@ Notes:
 
 - The server repo may be ahead of the local checkout because the 18:30 daily job auto-commits data. Run `git pull origin main --rebase --autostash` locally before committing.
 - The dashboard is Streamlit: after a `stock-dashboard.service` restart it needs a few seconds before the page responds; reload once if the first browser load looks broken.
+
+**Production working-tree safety.** The daily job legitimately leaves some tracked latest-data files modified between commits, commonly `data/stock_tags.json`, `data/tag_flow.json`, `data/tag_flow_insight.json`, and the tracked latest summary JPGs. Before every deploy, run `git status --short` on the server. Never use `git reset --hard`, `git clean`, or a whole-tree restore/stash just to make a pull succeed. If the incoming commit does not touch the dirty paths, use the explicit fast-forward command shown above; `-c pull.rebase=false` matters because the server's configured rebase mode otherwise rejects an unstaged working tree even with `--ff-only`. If an incoming commit does touch a dirty generated path, back up only that exact path under `/tmp`, restore only that path, fast-forward, then regenerate it with its documented producer. Preserve all unrelated live data.
 
 ## Runtime Map
 
@@ -115,12 +118,15 @@ Notes:
 | File | Purpose |
 |---|---|
 | `src/__init__.py` | Marks `src` as an import package. |
+| `src/margin_risk.py` | Shared read-only financing-risk model used by both the dashboard and LINE card: cache loading, 1/5/20-session changes, risk wording, legal 130%/166% account-level references, and Taiwan direction colors. It never fetches data. |
 | `src/ui/__init__.py` | Marks UI helpers as an import package. |
 | `src/ui/etf_tab.py` | Active/passive ETF dashboard views and daily operation report UI. |
 | `src/ui/etf_compare_tab.py` | ETF comparison tab backed by the local `data/etf_bench/etf_bench.sqlite` database. |
 | `src/ui/market_pulse_tab.py` | Market pulse tab using ETF benchmark/index history and regime calculations. |
 | `src/ui/margin_risk_tab.py` | 融資風險 tab: flexible 1m/3m/6m/1y/all/custom history, TAIEX overlay, financing-balance context, and a plain-language risk conclusion. Pure render of `data/margin_maintenance.csv` (no network). |
 | `src/ui/tag_flow_tab.py` | 題材流向 tab: flexible 1/5/10/20/60/120/240/all/custom shared-session ranges (10 sessions is the default decision view), 類股-only aggregation, persistence, ETF consensus, timeline, and stock drill-down. Ranks by normalized 相對力道 for fair cross-fund comparison and shows estimated 億元 as intuitive context. Uses the Taiwan convention consistently: red = 加碼/買進, green = 減碼/賣出. 概念 labels appear only as stock-level notes and never enter interpretation. Pure render of `data/tag_flow.json` (no network). |
+
+題材流向 periods mean the latest **common trading sessions** across the selected ETFs, not calendar days. When 60/120/240 days exceeds the shared history currently available, the UI uses every available common session and states that limitation; it must never pad, duplicate, or silently imply that the longer history exists. This interactive window is separate from the fixed 10-common-session LINE/email decision card.
 
 Dashboard authentication uses `VIEW_PASSWORD` and `ADMIN_PASSWORD` from Streamlit secrets, environment variables, or `/home/ubuntu/.stock_secrets` depending on the runtime.
 
@@ -199,6 +205,8 @@ All LINE market commands (`油價`, `匯率`, `債券`, `黃金`, `那斯達克`
 
 **Snapshot crop rules.** Generic 1-month charts (`oil`, `brent`, `bond`, `gold`, `usdtwd`, `usdjpy`, `usdchf`) may detect the chart's `y` and `height`, but they must use the full TradingView viewport width: `clip.x = 0` and `clip.width = window.innerWidth`. Their LINE quote text remains the same four performance rows (`1日`, `1週`, `1月`, `6月`); only the plotted chart window is one month. Do not crop or shift the x-axis for generic charts; the right price axis and last-price marker live at the far right edge. NASDAQ is the exception: it uses a separate IG-NASDAQ 24h branch with its own `1200x900` viewport, fixed `y`/`height`, 1-day button click, and trading-session overlay. Do not "simplify" NASDAQ into the generic crop path unless it is manually reverified.
 
+**Chart-service restart timing.** `stock-chart.service` preloads all eight TradingView pages before port `5005` becomes ready; a production restart can therefore take roughly 60–90 seconds. Early `curl: (7) Failed to connect` lines during that warm-up are expected. Wait for `curl -fsS http://127.0.0.1:5005/docs`, then regenerate the requested caches with `scripts/monitor_market_charts.py ... --once`, and finally confirm both `stock-chart.service` and `stock-market-chart-monitor.service` are `active`. Running the monitor or opening the cached public JPGs is safe and sends no LINE message.
+
 The `/snapshot` response includes `clip` and `viewport`; `monitor_market_charts.py` stores those fields in `data/quote_cache/market_<key>.json`. If a chart image looks cropped, check those values first. For generic charts, `clip.x` should be `0`.
 
 ### Adding a Cached Market Chart Monitor
@@ -249,7 +257,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 8. Deploy on the server.
 
    ```bash
-   cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now stock-market-chart-monitor.service && sudo systemctl restart stock-chart.service stock-market-chart-monitor.service stock-webhook.service
+   cd /home/ubuntu/STOCK && git -c pull.rebase=false pull --ff-only origin main && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now stock-market-chart-monitor.service && sudo systemctl restart stock-chart.service stock-market-chart-monitor.service stock-webhook.service
    ```
 
 9. Verify the cache, then test LINE.
@@ -373,7 +381,7 @@ Official inputs are TWSE `MI_MARGN` + `MI_INDEX` and TPEx `融資融券餘額` +
 
 The system has three read/write boundaries:
 
-- `scripts/update_margin_maintenance.py` is the only network writer. Daily: `--days 10`; one-time history: `--backfill-years 1` (skips cached dates, so rerunning repairs only gaps; add `--force` only for an intentional full refresh).
+- `scripts/update_margin_maintenance.py` is the only network writer. Daily: `--days 10`; one-time history: `--backfill-years 1` (skips cached dates, so rerunning repairs only gaps; add `--force` only for an intentional full refresh). Official requests retry transient failures, preserve existing rows, and a long backfill writes atomic 25-date checkpoints. If SSH or an exchange fails midway, rerun the same command to resume the missing dates; do not delete the CSV.
 - `src/ui/margin_risk_tab.py` only reads `data/margin_maintenance.csv` and offers 1m/3m/6m/1y/all/custom ranges.
 - `scripts/generate_margin_maintenance_summary.py` reads that same cache and writes the tracked latest LINE card. `api/webhook.py` only serves the cached JPG; it must never recalculate or fetch data on demand.
 
@@ -511,7 +519,7 @@ sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemc
 Use this after pulling new code on the server:
 
 ```bash
-cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash && source venv/bin/activate && pip install -r requirements.txt -q && sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service
+cd /home/ubuntu/STOCK && git -c pull.rebase=false pull --ff-only origin main && source venv/bin/activate && pip install -r requirements.txt -q && sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard.service
 ```
 
 If service files changed:
@@ -753,7 +761,7 @@ After editing, re-run the grep from Invariant #2 and confirm the only remaining 
 
 16. Deployment commands after merging/pulling on the server.
     ```bash
-    cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash && source venv/bin/activate && pip install -r requirements.txt -q && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now stock-quote-monitor-<ticker-lower>.service && sudo systemctl restart stock-dashboard.service stock-webhook.service stock-master-holding-monitor.service stock-quote-monitor-<ticker-lower>.service
+    cd /home/ubuntu/STOCK && git -c pull.rebase=false pull --ff-only origin main && source venv/bin/activate && pip install -r requirements.txt -q && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now stock-quote-monitor-<ticker-lower>.service && sudo systemctl restart stock-dashboard.service stock-webhook.service stock-master-holding-monitor.service stock-quote-monitor-<ticker-lower>.service
     ```
     If the rich menu changed:
     ```bash
@@ -823,7 +831,7 @@ Work the **Add One ETF touch-point table in reverse** — remove the ticker from
 
 11. Deployment commands after deleting an ETF.
     ```bash
-    cd /home/ubuntu/STOCK && git pull origin main --rebase --autostash && sudo systemctl disable --now stock-quote-monitor-<ticker-lower>.service && sudo rm -f /etc/systemd/system/stock-quote-monitor-<ticker-lower>.service && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl restart stock-dashboard.service stock-webhook.service stock-master-holding-monitor.service
+    cd /home/ubuntu/STOCK && git -c pull.rebase=false pull --ff-only origin main && sudo systemctl disable --now stock-quote-monitor-<ticker-lower>.service && sudo rm -f /etc/systemd/system/stock-quote-monitor-<ticker-lower>.service && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl restart stock-dashboard.service stock-webhook.service stock-master-holding-monitor.service
     ```
     If the rich menu changed:
     ```bash
