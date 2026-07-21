@@ -16,6 +16,7 @@ from __future__ import annotations
 from collections import defaultdict
 from html import escape
 import json
+from textwrap import dedent
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -98,26 +99,30 @@ def _summary_cards(theme_rows: list[dict], n_dates: int, n_etfs: int) -> None:
     if positive:
         row = max(positive, key=lambda item: item["flow"])
         cards.append(
-            f"""
-            <div class="tf-summary tf-buy">
-              <div class="tf-kicker">🔴 最強加碼</div>
-              <div class="tf-theme">{escape(str(row['theme']))}</div>
-              <div class="tf-money">約 {_fmt_money(row['money'])}</div>
-              <div class="tf-detail">相對力道 {row['flow']:+.2f}% · {row['buy_days']}/{n_dates} 日偏買 · {row['buyers']}/{n_etfs} ETF 淨買</div>
-            </div>
-            """
+            dedent(
+                f"""
+                <div class="tf-summary tf-buy">
+                  <div class="tf-kicker">🔴 最強加碼</div>
+                  <div class="tf-theme">{escape(str(row['theme']))}</div>
+                  <div class="tf-money">約 {_fmt_money(row['money'])}</div>
+                  <div class="tf-detail">相對力道 {row['flow']:+.2f}% · {row['buy_days']}/{n_dates} 日偏買 · {row['buyers']}/{n_etfs} ETF 淨買</div>
+                </div>
+                """
+            ).strip()
         )
     if negative:
         row = min(negative, key=lambda item: item["flow"])
         cards.append(
-            f"""
-            <div class="tf-summary tf-sell">
-              <div class="tf-kicker">🟢 最強減碼</div>
-              <div class="tf-theme">{escape(str(row['theme']))}</div>
-              <div class="tf-money">約 {_fmt_money(row['money'])}</div>
-              <div class="tf-detail">相對力道 {row['flow']:+.2f}% · {row['sell_days']}/{n_dates} 日偏賣 · {row['sellers']}/{n_etfs} ETF 淨賣</div>
-            </div>
-            """
+            dedent(
+                f"""
+                <div class="tf-summary tf-sell">
+                  <div class="tf-kicker">🟢 最強減碼</div>
+                  <div class="tf-theme">{escape(str(row['theme']))}</div>
+                  <div class="tf-money">約 {_fmt_money(row['money'])}</div>
+                  <div class="tf-detail">相對力道 {row['flow']:+.2f}% · {row['sell_days']}/{n_dates} 日偏賣 · {row['sellers']}/{n_etfs} ETF 淨賣</div>
+                </div>
+                """
+            ).strip()
         )
 
     if cards:
