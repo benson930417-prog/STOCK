@@ -46,19 +46,12 @@ def _shared_dates(data: dict, selected_etfs: list[str]) -> list[str]:
     return sorted(set.intersection(*available))
 
 
-def _theme_keys(stock: dict, lens: str) -> list[str]:
-    if lens == "產業類股":
-        return [stock.get("category") or "未分類"]
-    return list(dict.fromkeys(stock.get("concepts") or []))
-
-
 def _aggregate(
     data: dict,
     selected_etfs: list[str],
     selected_dates: list[str],
-    lens: str,
 ) -> tuple[list[dict], list[dict]]:
-    """Aggregate observations for the currently selected UI state."""
+    """Aggregate observations by the stock's single 類股 classification."""
     etf_set = set(selected_etfs)
     date_set = set(selected_dates)
     n_etfs = max(1, len(selected_etfs))
@@ -108,49 +101,23 @@ def _aggregate(
                 if percentile >= 95:
                     stock["outlier_days"] += 1
 
-            for theme_name in _theme_keys(move, lens):
-                theme = themes.setdefault(
-                    theme_name,
-                    {
-                        "theme": theme_name,
-                        "flow_sum": 0.0,
-                        "flow_by_etf": defaultdict(float),
-                        "flow_by_date": defaultdict(float),
-                        "daily_by_etf": defaultdict(lambda: defaultdict(float)),
-                        "stock_flows": defaultdict(float),
-                    },
-                )
-                theme["flow_sum"] += flow
-                theme["flow_by_etf"][etf] += flow
-                theme["flow_by_date"][date] += flow
-                theme["daily_by_etf"][etf][date] += flow
-                theme["stock_flows"][stock_id] += flow
-
-    # Concept providers often attach several labels to the exact same set of
-    # traded stocks (for example one 台達電 move may surface as 物聯網, 電感 and
-    # BBU).  Showing three identical bars creates false corroboration.  When the
-    # evidence set is identical, collapse the aliases into one row instead of
-    # counting or displaying the same move repeatedly.
-    if lens == "概念題材":
-        collapsed: dict[tuple[str, ...], dict] = {}
-        for theme in themes.values():
-            signature = tuple(sorted(theme["stock_flows"]))
-            if not signature:
-                continue
-            if signature in collapsed:
-                collapsed[signature]["aliases"].append(theme["theme"])
-            else:
-                theme["aliases"] = [theme["theme"]]
-                collapsed[signature] = theme
-        themes = {}
-        for theme in collapsed.values():
-            aliases = theme.pop("aliases")
-            theme["theme"] = (
-                "／".join(aliases)
-                if len(aliases) <= 3
-                else "／".join(aliases[:3]) + f" 等{len(aliases)}項"
+            theme_name = move.get("category") or "未分類"
+            theme = themes.setdefault(
+                theme_name,
+                {
+                    "theme": theme_name,
+                    "flow_sum": 0.0,
+                    "flow_by_etf": defaultdict(float),
+                    "flow_by_date": defaultdict(float),
+                    "daily_by_etf": defaultdict(lambda: defaultdict(float)),
+                    "stock_flows": defaultdict(float),
+                },
             )
-            themes[theme["theme"]] = theme
+            theme["flow_sum"] += flow
+            theme["flow_by_etf"][etf] += flow
+            theme["flow_by_date"][date] += flow
+            theme["daily_by_etf"][etf][date] += flow
+            theme["stock_flows"][stock_id] += flow
 
     stock_rows: list[dict] = []
     for stock in stocks.values():
@@ -445,8 +412,8 @@ def _stock_table(
         display_rows.append(
             {
                 "個股": f"{row['name']} · {row['id']}",
+                "概念（附註）": "、".join(row["concepts"][:3]) or "—",
                 "產業": row["category"],
-                "概念": "、".join(row["concepts"][:3]) or "—",
                 "區間流向": _fmt(row["flow"]),
                 "最新日": _fmt(row["latest"]),
                 "同向日": f"{aligned_days}/{n_dates}",
@@ -460,7 +427,7 @@ def _stock_table(
         hide_index=True,
         column_config={
             "個股": st.column_config.TextColumn(width="medium"),
-            "概念": st.column_config.TextColumn(width="large"),
+            "概念（附註）": st.column_config.TextColumn(width="large"),
         },
     )
 
@@ -477,7 +444,7 @@ def render_tag_flow_tab(
     st.subheader("主動 ETF 題材流向")
     st.caption(
         "看持股張數變化，不把股價上漲誤認成加碼。先比較題材的區間配置變動，"
-        "再拆成持續性、ETF 共識與個股來源。"
+        "再拆成持續性、ETF 共識與個股來源；所有題材統計只使用單一類股分類。"
     )
 
     data = _load(DATA_DIR)
@@ -491,7 +458,7 @@ def render_tag_flow_tab(
         st.warning("題材資料仍是舊格式，請先執行 `python scripts/build_tag_flow.py` 更新。")
         return
 
-    control_a, control_b, control_c = st.columns([1.25, 1, 1.35])
+    control_a, control_b = st.columns([1.1, 1.4])
     with control_a:
         selected_etfs = st.multiselect(
             "ETF 範圍",
@@ -501,13 +468,6 @@ def render_tag_flow_tab(
             key="tag_flow_etfs",
         )
     with control_b:
-        lens = st.radio(
-            "題材層級",
-            ["概念題材", "產業類股"],
-            horizontal=True,
-            key="tag_flow_lens",
-        )
-    with control_c:
         window = st.radio(
             "時間範圍",
             ["1日", "5日", "20日", "全部", "自訂"],
@@ -538,7 +498,7 @@ def render_tag_flow_tab(
         counts = {"1日": 1, "5日": 5, "20日": 20, "全部": len(available_dates)}
         selected_dates = available_dates[-min(counts[window], len(available_dates)) :]
 
-    theme_rows, stock_rows = _aggregate(data, selected_etfs, selected_dates, lens)
+    theme_rows, stock_rows = _aggregate(data, selected_etfs, selected_dates)
     n_dates = len(selected_dates)
     n_etfs = len(selected_etfs)
     date_label = (
@@ -546,14 +506,9 @@ def render_tag_flow_tab(
         if n_dates == 1
         else f"{selected_dates[0]} → {selected_dates[-1]}"
     )
-    overlap_note = (
-        "概念可重疊；相同個股組合的標籤已合併，其餘各列請勿相加。"
-        if lens == "概念題材"
-        else "產業類股每股只歸一類，各題材可直接比較。"
-    )
     st.caption(
         f"{date_label} · {n_dates} 個共同交易日 · {n_etfs} 檔 ETF · "
-        f"資料產生 {data.get('generated', '—')}｜{overlap_note}"
+        f"資料產生 {data.get('generated', '—')}｜類股每股只歸一類，各題材可直接比較。"
     )
     st.markdown("**區間判讀｜** " + _readout(theme_rows, n_dates, n_etfs))
 
@@ -623,7 +578,7 @@ def render_tag_flow_tab(
 - **同向日**：題材每日淨流向與區間總方向相同的交易日數；大數字但只有一天同向，通常是單次換股，不是持續布局。
 - **ETF 共識**：每檔 ETF 在整個區間的淨方向。`3買 / 0賣` 比單一 ETF 買進更有廣度，但仍不是投資建議。
 - **最大單日 P 值**：該筆交易相對同一 ETF 之前 20 個交易日出手大小的經驗百分位；P95 代表比先前約 95% 的交易更大。每一天只使用當時已知的歷史，不偷看未來。
-- **概念標籤**：同一個股組合若對應多個概念，畫面會合併成一列，避免把同一筆買進看成多個獨立訊號；不同列仍可能共享個股，因此不可加總。
+- **類股是唯一解讀層**：所有排名、圖表、趨勢與共識只按每檔股票的單一類股加總。
 - 日期只使用所選 ETF **共同有資料**的交易日，避免把缺資料誤當成零交易。
             """
         )
