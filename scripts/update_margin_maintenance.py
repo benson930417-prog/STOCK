@@ -54,8 +54,13 @@ TPEX_PRICE_URL = (
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; STOCK-dashboard/1.0; daily official-data cache)",
     "Accept": "application/json,text/plain,*/*",
+    # The legacy TPEx endpoint occasionally truncates compressed/chunked
+    # responses. Asking for identity encoding makes its small JSON payloads
+    # substantially more reliable from the production host.
+    "Accept-Encoding": "identity",
     "Connection": "close",
 }
+OFFICIAL_RETRIES = 4
 COLUMNS = [
     "date",
     "estimate_pct",
@@ -107,7 +112,7 @@ def _number(value: Any) -> float:
 
 def _get_json(url: str, params: dict[str, str], timeout: int = 30) -> dict[str, Any]:
     last_error: Exception | None = None
-    for attempt in range(3):
+    for attempt in range(OFFICIAL_RETRIES):
         try:
             response = requests.get(
                 url,
@@ -123,9 +128,11 @@ def _get_json(url: str, params: dict[str, str], timeout: int = 30) -> dict[str, 
             return payload
         except Exception as exc:  # exchanges occasionally reset a connection
             last_error = exc
-            if attempt < 2:
+            if attempt < OFFICIAL_RETRIES - 1:
                 time.sleep(0.8 * (attempt + 1))
-    raise RuntimeError(f"Official endpoint failed after 3 attempts: {url}: {last_error}")
+    raise RuntimeError(
+        f"Official endpoint failed after {OFFICIAL_RETRIES} attempts: {url}: {last_error}"
+    )
 
 
 def _table(payload: dict[str, Any], *, field: str) -> dict[str, Any]:
