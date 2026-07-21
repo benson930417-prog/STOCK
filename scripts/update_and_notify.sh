@@ -251,6 +251,12 @@ run_step "step5 score (append today)"    python -m scripts.etf_benchmark.step5_s
 run_step "market pulse volume cache"     python scripts/update_market_pulse_volume.py --months 4
 run_step "generate_market_pulse_summary" python scripts/generate_market_pulse_summary.py
 
+# Theme-flow (題材流向) tab: refresh any missing stock tags (incremental, only new
+# holdings hit cmoney), then rebuild the ETF theme-flow map. build_tag_flow is
+# pure-local; if the tag scrape hiccups it still runs off the cached tags.
+run_step "build stock tags (incremental)" python scripts/build_stock_tags.py
+run_step "build tag flow"                 python scripts/build_tag_flow.py
+
 # ──────────────────────────────────────────────────────────────────────────
 # 3. Detect which ETFs got NEW DATA this run
 # ──────────────────────────────────────────────────────────────────────────

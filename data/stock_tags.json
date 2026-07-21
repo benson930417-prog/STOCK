@@ -1,0 +1,2747 @@
+{
+  "generated": "2026-07-21 23:08:02",
+  "source": "cmoney.tw/forum/stock",
+  "count": 100,
+  "tags": {
+    "2308": {
+      "category": "電源供應器",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50080",
+          "name": "物聯網",
+          "avg_pct": 7.69
+        },
+        {
+          "id": "C50856",
+          "name": "電感",
+          "avg_pct": 7.56
+        },
+        {
+          "id": "C50918",
+          "name": "BBU",
+          "avg_pct": 7.39
+        },
+        {
+          "id": "C50878",
+          "name": "MIH概念股",
+          "avg_pct": 7.37
+        },
+        {
+          "id": "C50490",
+          "name": "氫燃料電池",
+          "avg_pct": 7.34
+        }
+      ],
+      "category_id": "C23170",
+      "category_full": "電子中游-電源供應器",
+      "name": "台達電子"
+    },
+    "6274": {
+      "category": "PCB-材料設備",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50866",
+          "name": "銅箔基板",
+          "avg_pct": 8.84
+        },
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        }
+      ],
+      "category_id": "C23130",
+      "category_full": "電子上游-PCB-材料設備",
+      "name": "台燿科技"
+    },
+    "3653": {
+      "category": "散熱零組件",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50800",
+          "name": "散熱模組",
+          "avg_pct": 8.56
+        },
+        {
+          "id": "C50863",
+          "name": "連接器",
+          "avg_pct": 5.7
+        },
+        {
+          "id": "C50850",
+          "name": "PS5",
+          "avg_pct": 4.79
+        },
+        {
+          "id": "C50830",
+          "name": "AMD",
+          "avg_pct": 4.24
+        },
+        {
+          "id": "C50899",
+          "name": "ChatGPT",
+          "avg_pct": 4.11
+        }
+      ],
+      "category_id": "C30024",
+      "category_full": "電子中游-散熱零組件",
+      "name": "健策精密"
+    },
+    "2327": {
+      "category": "被動元件",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50853",
+          "name": "被動元件",
+          "avg_pct": 6.89
+        },
+        {
+          "id": "C50854",
+          "name": "電容",
+          "avg_pct": 5.59
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50280",
+          "name": "車聯網",
+          "avg_pct": 4.56
+        }
+      ],
+      "category_id": "C23090",
+      "category_full": "電子上游-被動元件",
+      "name": "國巨股份"
+    },
+    "1303": {
+      "category": "塑膠",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50889",
+          "name": "醫療器材耗材",
+          "avg_pct": 4.49
+        },
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 4.16
+        }
+      ],
+      "category_id": "C13010",
+      "category_full": "傳產-塑膠",
+      "name": "南亞塑膠"
+    },
+    "1319": {
+      "category": "汽車零組件",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50878",
+          "name": "MIH概念股",
+          "avg_pct": 7.37
+        },
+        {
+          "id": "C50903",
+          "name": "鴻海MIH電動車平台",
+          "avg_pct": 7.31
+        }
+      ],
+      "category_id": "C22020",
+      "category_full": "傳產-汽車零組件",
+      "name": "東陽"
+    },
+    "1326": {
+      "category": "塑膠",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50878",
+          "name": "MIH概念股",
+          "avg_pct": 7.37
+        },
+        {
+          "id": "C50930",
+          "name": "鈣鈦礦",
+          "avg_pct": 3.98
+        },
+        {
+          "id": "C50330",
+          "name": "TPP",
+          "avg_pct": 3.05
+        }
+      ],
+      "category_id": "C13010",
+      "category_full": "傳產-塑膠",
+      "name": "台化"
+    },
+    "1477": {
+      "category": "紡織纖維",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50330",
+          "name": "TPP",
+          "avg_pct": 3.05
+        },
+        {
+          "id": "C50840",
+          "name": "雙十一",
+          "avg_pct": 2.26
+        },
+        {
+          "id": "C50875",
+          "name": "NIKE",
+          "avg_pct": 0.79
+        },
+        {
+          "id": "C50340",
+          "name": "UA",
+          "avg_pct": 0.72
+        },
+        {
+          "id": "C50580",
+          "name": "三孩政策",
+          "avg_pct": 0.16
+        }
+      ],
+      "category_id": "C14010",
+      "category_full": "傳產-紡織纖維",
+      "name": "聚陽實業"
+    },
+    "1519": {
+      "category": "電機",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50861",
+          "name": "變壓器",
+          "avg_pct": 7.32
+        },
+        {
+          "id": "C50640",
+          "name": "風電",
+          "avg_pct": 6.91
+        },
+        {
+          "id": "C50500",
+          "name": "電動車",
+          "avg_pct": 6.43
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50900",
+          "name": "碳權",
+          "avg_pct": 4.23
+        }
+      ],
+      "category_id": "C15010",
+      "category_full": "傳產-電機",
+      "name": "華城電機"
+    },
+    "1560": {
+      "category": "IC-代工",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50909",
+          "name": "CoWoS",
+          "avg_pct": 4.15
+        },
+        {
+          "id": "C50910",
+          "name": "次世代半導體",
+          "avg_pct": 3.8
+        }
+      ],
+      "category_id": "C23020",
+      "category_full": "電子上游-IC-代工",
+      "name": "中砂"
+    },
+    "1590": {
+      "category": "電機",
+      "group": "傳產",
+      "concepts": [],
+      "category_id": "C15010",
+      "category_full": "傳產-電機",
+      "name": "亞德客-KY"
+    },
+    "1815": {
+      "category": "PCB-材料設備",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        }
+      ],
+      "category_id": "C23130",
+      "category_full": "電子上游-PCB-材料設備",
+      "name": "富喬"
+    },
+    "2002": {
+      "category": "鋼鐵",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50903",
+          "name": "鴻海MIH電動車平台",
+          "avg_pct": 7.31
+        },
+        {
+          "id": "C50660",
+          "name": "軍工",
+          "avg_pct": 7.01
+        },
+        {
+          "id": "C50900",
+          "name": "碳權",
+          "avg_pct": 4.23
+        },
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 4.16
+        },
+        {
+          "id": "C50570",
+          "name": "DANCE",
+          "avg_pct": 3.88
+        }
+      ],
+      "category_id": "C20010",
+      "category_full": "傳產-鋼鐵",
+      "name": "中鋼"
+    },
+    "2049": {
+      "category": "電機",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50902",
+          "name": "無人機",
+          "avg_pct": 7.53
+        },
+        {
+          "id": "C50660",
+          "name": "軍工",
+          "avg_pct": 7.01
+        },
+        {
+          "id": "C50907",
+          "name": "3D列印",
+          "avg_pct": 6.38
+        },
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 4.16
+        },
+        {
+          "id": "C50210",
+          "name": "航太",
+          "avg_pct": 3.92
+        }
+      ],
+      "category_id": "C15010",
+      "category_full": "傳產-電機",
+      "name": "上銀"
+    },
+    "2059": {
+      "category": "金屬製品",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        },
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        },
+        {
+          "id": "C50926",
+          "name": "AWS",
+          "avg_pct": 4.4
+        }
+      ],
+      "category_id": "C30026",
+      "category_full": "電子中游-金屬製品",
+      "name": "川湖科技"
+    },
+    "2303": {
+      "category": "IC-代工",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50902",
+          "name": "無人機",
+          "avg_pct": 7.53
+        },
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        },
+        {
+          "id": "C50260",
+          "name": "穿載式裝置",
+          "avg_pct": 4.62
+        },
+        {
+          "id": "C50830",
+          "name": "AMD",
+          "avg_pct": 4.24
+        },
+        {
+          "id": "C50900",
+          "name": "碳權",
+          "avg_pct": 4.23
+        }
+      ],
+      "category_id": "C23020",
+      "category_full": "電子上游-IC-代工",
+      "name": "聯華電子"
+    },
+    "2313": {
+      "category": "PCB-製造",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50710",
+          "name": "軌道衛星",
+          "avg_pct": 8.89
+        },
+        {
+          "id": "C50928",
+          "name": "低軌衛星",
+          "avg_pct": 8.39
+        },
+        {
+          "id": "C50851",
+          "name": "PCB",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50906",
+          "name": "小米",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50070",
+          "name": "Tesla",
+          "avg_pct": 7.22
+        }
+      ],
+      "category_id": "C23120",
+      "category_full": "電子上游-PCB-製造",
+      "name": "華通電腦"
+    },
+    "2317": {
+      "category": "EMS",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50080",
+          "name": "物聯網",
+          "avg_pct": 7.69
+        },
+        {
+          "id": "C50906",
+          "name": "小米",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50878",
+          "name": "MIH概念股",
+          "avg_pct": 7.37
+        },
+        {
+          "id": "C50903",
+          "name": "鴻海MIH電動車平台",
+          "avg_pct": 7.31
+        },
+        {
+          "id": "C50867",
+          "name": "Chromebook",
+          "avg_pct": 7.24
+        }
+      ],
+      "category_id": "C23270",
+      "category_full": "電子中游-EMS",
+      "name": "鴻海精密"
+    },
+    "2330": {
+      "category": "IC-代工",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50912",
+          "name": "AI PC",
+          "avg_pct": 4.83
+        },
+        {
+          "id": "C50850",
+          "name": "PS5",
+          "avg_pct": 4.79
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        },
+        {
+          "id": "C50925",
+          "name": "TPU",
+          "avg_pct": 4.7
+        }
+      ],
+      "category_id": "C23020",
+      "category_full": "電子上游-IC-代工",
+      "name": "台灣積體"
+    },
+    "2337": {
+      "category": "記憶體製造",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50080",
+          "name": "物聯網",
+          "avg_pct": 7.69
+        },
+        {
+          "id": "C50903",
+          "name": "鴻海MIH電動車平台",
+          "avg_pct": 7.31
+        },
+        {
+          "id": "C50070",
+          "name": "Tesla",
+          "avg_pct": 7.22
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50500",
+          "name": "電動車",
+          "avg_pct": 6.43
+        }
+      ],
+      "category_id": "C23030",
+      "category_full": "電子上游-記憶體製造",
+      "name": "旺宏電子"
+    },
+    "2344": {
+      "category": "記憶體製造",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50878",
+          "name": "MIH概念股",
+          "avg_pct": 7.37
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50907",
+          "name": "3D列印",
+          "avg_pct": 6.38
+        },
+        {
+          "id": "C50220",
+          "name": "ADAS",
+          "avg_pct": 5.51
+        },
+        {
+          "id": "C50913",
+          "name": "記憶體",
+          "avg_pct": 5.38
+        }
+      ],
+      "category_id": "C23030",
+      "category_full": "電子上游-記憶體製造",
+      "name": "華邦電子"
+    },
+    "2345": {
+      "category": "網通",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50350",
+          "name": "5G",
+          "avg_pct": 6.55
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50911",
+          "name": "光通訊",
+          "avg_pct": 6.09
+        },
+        {
+          "id": "C50720",
+          "name": "遠距教學",
+          "avg_pct": 5.82
+        },
+        {
+          "id": "C50926",
+          "name": "AWS",
+          "avg_pct": 4.4
+        }
+      ],
+      "category_id": "C23260",
+      "category_full": "電子中游-網通",
+      "name": "智邦科技"
+    },
+    "2357": {
+      "category": "筆記型電腦",
+      "group": "電子下游",
+      "concepts": [
+        {
+          "id": "C50080",
+          "name": "物聯網",
+          "avg_pct": 7.69
+        },
+        {
+          "id": "C50867",
+          "name": "Chromebook",
+          "avg_pct": 7.24
+        },
+        {
+          "id": "C50350",
+          "name": "5G",
+          "avg_pct": 6.55
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        }
+      ],
+      "category_id": "C23380",
+      "category_full": "電子下游-筆記型電腦",
+      "name": "華碩"
+    },
+    "2360": {
+      "category": "儀器設備工程",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50902",
+          "name": "無人機",
+          "avg_pct": 7.53
+        },
+        {
+          "id": "C50878",
+          "name": "MIH概念股",
+          "avg_pct": 7.37
+        },
+        {
+          "id": "C50070",
+          "name": "Tesla",
+          "avg_pct": 7.22
+        },
+        {
+          "id": "C50660",
+          "name": "軍工",
+          "avg_pct": 7.01
+        },
+        {
+          "id": "C50500",
+          "name": "電動車",
+          "avg_pct": 6.43
+        }
+      ],
+      "category_id": "C23240",
+      "category_full": "電子中游-儀器設備工程",
+      "name": "致茂電子"
+    },
+    "2368": {
+      "category": "PCB-製造",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50851",
+          "name": "PCB",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50925",
+          "name": "TPU",
+          "avg_pct": 4.7
+        },
+        {
+          "id": "C50926",
+          "name": "AWS",
+          "avg_pct": 4.4
+        }
+      ],
+      "category_id": "C23120",
+      "category_full": "電子上游-PCB-製造",
+      "name": "金像電子"
+    },
+    "2382": {
+      "category": "筆記型電腦",
+      "group": "電子下游",
+      "concepts": [
+        {
+          "id": "C50867",
+          "name": "Chromebook",
+          "avg_pct": 7.24
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50510",
+          "name": "智慧城市",
+          "avg_pct": 5.13
+        },
+        {
+          "id": "C50912",
+          "name": "AI PC",
+          "avg_pct": 4.83
+        }
+      ],
+      "category_id": "C23380",
+      "category_full": "電子下游-筆記型電腦",
+      "name": "廣達電腦"
+    },
+    "2383": {
+      "category": "PCB-材料設備",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50710",
+          "name": "軌道衛星",
+          "avg_pct": 8.89
+        },
+        {
+          "id": "C50866",
+          "name": "銅箔基板",
+          "avg_pct": 8.84
+        },
+        {
+          "id": "C50928",
+          "name": "低軌衛星",
+          "avg_pct": 8.39
+        },
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        }
+      ],
+      "category_id": "C23130",
+      "category_full": "電子上游-PCB-材料設備",
+      "name": "台光電子"
+    },
+    "2404": {
+      "category": "儀器設備工程",
+      "group": "電子中游",
+      "concepts": [],
+      "category_id": "C23240",
+      "category_full": "電子中游-儀器設備工程",
+      "name": "漢唐集成"
+    },
+    "2408": {
+      "category": "記憶體製造",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50913",
+          "name": "記憶體",
+          "avg_pct": 5.38
+        },
+        {
+          "id": "C50912",
+          "name": "AI PC",
+          "avg_pct": 4.83
+        },
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        },
+        {
+          "id": "C50874",
+          "name": "虛擬貨幣",
+          "avg_pct": 4.38
+        }
+      ],
+      "category_id": "C23030",
+      "category_full": "電子上游-記憶體製造",
+      "name": "南亞科技"
+    },
+    "2412": {
+      "category": "電信服務",
+      "group": "電子下游",
+      "concepts": [
+        {
+          "id": "C50350",
+          "name": "5G",
+          "avg_pct": 6.55
+        },
+        {
+          "id": "C50510",
+          "name": "智慧城市",
+          "avg_pct": 5.13
+        },
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 4.88
+        },
+        {
+          "id": "C50280",
+          "name": "車聯網",
+          "avg_pct": 4.56
+        },
+        {
+          "id": "C50320",
+          "name": "MWC",
+          "avg_pct": 4.48
+        }
+      ],
+      "category_id": "C23320",
+      "category_full": "電子下游-電信服務",
+      "name": "中華電信"
+    },
+    "2439": {
+      "category": "消費電子",
+      "group": "電子下游",
+      "concepts": [
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50410",
+          "name": "人工智慧",
+          "avg_pct": 4.68
+        },
+        {
+          "id": "C50260",
+          "name": "穿載式裝置",
+          "avg_pct": 4.62
+        },
+        {
+          "id": "C50820",
+          "name": "iPhone",
+          "avg_pct": 4.52
+        },
+        {
+          "id": "C50440",
+          "name": "智慧音箱",
+          "avg_pct": 4.42
+        }
+      ],
+      "category_id": "C23390",
+      "category_full": "電子下游-消費電子",
+      "name": "美律"
+    },
+    "2449": {
+      "category": "IC-封測",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50090",
+          "name": "Type C",
+          "avg_pct": 5.71
+        },
+        {
+          "id": "C50410",
+          "name": "人工智慧",
+          "avg_pct": 4.68
+        },
+        {
+          "id": "C50260",
+          "name": "穿載式裝置",
+          "avg_pct": 4.62
+        },
+        {
+          "id": "C50180",
+          "name": "NFC",
+          "avg_pct": 4.27
+        }
+      ],
+      "category_id": "C23060",
+      "category_full": "電子上游-IC-封測",
+      "name": "京元電子"
+    },
+    "2454": {
+      "category": "IC-設計",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50876",
+          "name": "快速充電",
+          "avg_pct": 9.83
+        },
+        {
+          "id": "C50040",
+          "name": "Apple Pay",
+          "avg_pct": 9.61
+        },
+        {
+          "id": "C50620",
+          "name": "無線耳機",
+          "avg_pct": 9.44
+        },
+        {
+          "id": "C50879",
+          "name": "Wifi 7",
+          "avg_pct": 9.41
+        },
+        {
+          "id": "C50919",
+          "name": "ASIC",
+          "avg_pct": 9.25
+        }
+      ],
+      "category_id": "C23010",
+      "category_full": "電子上游-IC-設計",
+      "name": "聯發科技"
+    },
+    "2455": {
+      "category": "半導體元件",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50911",
+          "name": "光通訊",
+          "avg_pct": 6.09
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        },
+        {
+          "id": "C50360",
+          "name": "FANG",
+          "avg_pct": 4.36
+        }
+      ],
+      "category_id": "C30017",
+      "category_full": "電子上游-半導體元件",
+      "name": "全新"
+    },
+    "2481": {
+      "category": "IC-製造",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50900",
+          "name": "碳權",
+          "avg_pct": 4.23
+        },
+        {
+          "id": "C50873",
+          "name": "功率半導體",
+          "avg_pct": 3.91
+        }
+      ],
+      "category_id": "C23050",
+      "category_full": "電子上游-IC-製造",
+      "name": "強茂"
+    },
+    "2492": {
+      "category": "被動元件",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50906",
+          "name": "小米",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50853",
+          "name": "被動元件",
+          "avg_pct": 6.89
+        },
+        {
+          "id": "C50854",
+          "name": "電容",
+          "avg_pct": 5.59
+        },
+        {
+          "id": "C50180",
+          "name": "NFC",
+          "avg_pct": 4.27
+        }
+      ],
+      "category_id": "C23090",
+      "category_full": "電子上游-被動元件",
+      "name": "華新科技"
+    },
+    "2603": {
+      "category": "航運",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 4.16
+        }
+      ],
+      "category_id": "C26010",
+      "category_full": "傳產-航運",
+      "name": "長榮海運"
+    },
+    "2645": {
+      "category": "電機",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50902",
+          "name": "無人機",
+          "avg_pct": 7.53
+        },
+        {
+          "id": "C50660",
+          "name": "軍工",
+          "avg_pct": 7.01
+        },
+        {
+          "id": "C50923",
+          "name": "無人機",
+          "avg_pct": 4.43
+        }
+      ],
+      "category_id": "C15010",
+      "category_full": "傳產-電機",
+      "name": "長榮航太"
+    },
+    "2881": {
+      "category": "金控",
+      "group": "金融",
+      "concepts": [
+        {
+          "id": "C50550",
+          "name": "A股入摩",
+          "avg_pct": 5.84
+        },
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 4.16
+        },
+        {
+          "id": "C50160",
+          "name": "行動支付",
+          "avg_pct": 4.03
+        },
+        {
+          "id": "C50240",
+          "name": "福建自貿區",
+          "avg_pct": 1.82
+        }
+      ],
+      "category_id": "C28010",
+      "category_full": "金融-金控",
+      "name": "富邦金融"
+    },
+    "2882": {
+      "category": "金控",
+      "group": "金融",
+      "concepts": [
+        {
+          "id": "C50550",
+          "name": "A股入摩",
+          "avg_pct": 5.84
+        },
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 4.88
+        },
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 4.16
+        },
+        {
+          "id": "C50160",
+          "name": "行動支付",
+          "avg_pct": 4.03
+        },
+        {
+          "id": "C50840",
+          "name": "雙十一",
+          "avg_pct": 2.26
+        }
+      ],
+      "category_id": "C28010",
+      "category_full": "金融-金控",
+      "name": "國泰金融"
+    },
+    "2883": {
+      "category": "金控",
+      "group": "金融",
+      "concepts": [
+        {
+          "id": "C50550",
+          "name": "A股入摩",
+          "avg_pct": 5.84
+        }
+      ],
+      "category_id": "C28010",
+      "category_full": "金融-金控",
+      "name": "凱基金融"
+    },
+    "2885": {
+      "category": "金控",
+      "group": "金融",
+      "concepts": [
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 4.88
+        }
+      ],
+      "category_id": "C28010",
+      "category_full": "金融-金控",
+      "name": "元大金融"
+    },
+    "2890": {
+      "category": "金控",
+      "group": "金融",
+      "concepts": [
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 4.88
+        },
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 4.16
+        },
+        {
+          "id": "C50240",
+          "name": "福建自貿區",
+          "avg_pct": 1.82
+        }
+      ],
+      "category_id": "C28010",
+      "category_full": "金融-金控",
+      "name": "永豐金融"
+    },
+    "2891": {
+      "category": "金控",
+      "group": "金融",
+      "concepts": [
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 4.88
+        },
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 4.16
+        },
+        {
+          "id": "C50160",
+          "name": "行動支付",
+          "avg_pct": 4.03
+        },
+        {
+          "id": "C50240",
+          "name": "福建自貿區",
+          "avg_pct": 1.82
+        }
+      ],
+      "category_id": "C28010",
+      "category_full": "金融-金控",
+      "name": "中國信託"
+    },
+    "3008": {
+      "category": "光學鏡片",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50902",
+          "name": "無人機",
+          "avg_pct": 7.53
+        },
+        {
+          "id": "C50906",
+          "name": "小米",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        },
+        {
+          "id": "C50260",
+          "name": "穿載式裝置",
+          "avg_pct": 4.62
+        }
+      ],
+      "category_id": "C23200",
+      "category_full": "電子中游-光學鏡片",
+      "name": "大立光"
+    },
+    "3017": {
+      "category": "NB與手機零組件",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50800",
+          "name": "散熱模組",
+          "avg_pct": 8.56
+        },
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50912",
+          "name": "AI PC",
+          "avg_pct": 4.83
+        },
+        {
+          "id": "C50926",
+          "name": "AWS",
+          "avg_pct": 4.4
+        }
+      ],
+      "category_id": "C23210",
+      "category_full": "電子中游-NB與手機零組件",
+      "name": "奇鋐科技"
+    },
+    "3026": {
+      "category": "被動元件",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50853",
+          "name": "被動元件",
+          "avg_pct": 6.89
+        },
+        {
+          "id": "C50854",
+          "name": "電容",
+          "avg_pct": 5.59
+        }
+      ],
+      "category_id": "C23090",
+      "category_full": "電子上游-被動元件",
+      "name": "禾伸堂企"
+    },
+    "3036": {
+      "category": "IC-通路",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50902",
+          "name": "無人機",
+          "avg_pct": 7.53
+        },
+        {
+          "id": "C50906",
+          "name": "小米",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50903",
+          "name": "鴻海MIH電動車平台",
+          "avg_pct": 7.31
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50220",
+          "name": "ADAS",
+          "avg_pct": 5.51
+        }
+      ],
+      "category_id": "C23070",
+      "category_full": "電子上游-IC-通路",
+      "name": "文曄科技"
+    },
+    "3037": {
+      "category": "ABF",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50852",
+          "name": "IC載板",
+          "avg_pct": 8.74
+        },
+        {
+          "id": "C50851",
+          "name": "PCB",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50906",
+          "name": "小米",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50931",
+          "name": "玻璃基板",
+          "avg_pct": 7.08
+        },
+        {
+          "id": "C50908",
+          "name": "太陽能",
+          "avg_pct": 6.92
+        }
+      ],
+      "category_id": "C30021",
+      "category_full": "電子上游-ABF",
+      "name": "欣興電子"
+    },
+    "3042": {
+      "category": "被動元件",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50906",
+          "name": "小米",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50853",
+          "name": "被動元件",
+          "avg_pct": 6.89
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50857",
+          "name": "石英元件",
+          "avg_pct": 4.93
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        }
+      ],
+      "category_id": "C23090",
+      "category_full": "電子上游-被動元件",
+      "name": "台灣晶技"
+    },
+    "3044": {
+      "category": "PCB-製造",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50851",
+          "name": "PCB",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50906",
+          "name": "小米",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        }
+      ],
+      "category_id": "C23120",
+      "category_full": "電子上游-PCB-製造",
+      "name": "健鼎科技"
+    },
+    "3045": {
+      "category": "電信服務",
+      "group": "電子下游",
+      "concepts": [
+        {
+          "id": "C50350",
+          "name": "5G",
+          "avg_pct": 6.55
+        },
+        {
+          "id": "C50510",
+          "name": "智慧城市",
+          "avg_pct": 5.13
+        },
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 4.88
+        },
+        {
+          "id": "C50320",
+          "name": "MWC",
+          "avg_pct": 4.48
+        },
+        {
+          "id": "C50180",
+          "name": "NFC",
+          "avg_pct": 4.27
+        }
+      ],
+      "category_id": "C23320",
+      "category_full": "電子下游-電信服務",
+      "name": "台灣大哥"
+    },
+    "3081": {
+      "category": "半導體元件",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        },
+        {
+          "id": "C50350",
+          "name": "5G",
+          "avg_pct": 6.55
+        },
+        {
+          "id": "C50911",
+          "name": "光通訊",
+          "avg_pct": 6.09
+        },
+        {
+          "id": "C50925",
+          "name": "TPU",
+          "avg_pct": 4.7
+        },
+        {
+          "id": "C50881",
+          "name": "元宇宙",
+          "avg_pct": 4.22
+        }
+      ],
+      "category_id": "C30017",
+      "category_full": "電子上游-半導體元件",
+      "name": "聯亞光電"
+    },
+    "3105": {
+      "category": "IC-代工",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50710",
+          "name": "軌道衛星",
+          "avg_pct": 8.89
+        },
+        {
+          "id": "C50350",
+          "name": "5G",
+          "avg_pct": 6.55
+        },
+        {
+          "id": "C50220",
+          "name": "ADAS",
+          "avg_pct": 5.51
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        }
+      ],
+      "category_id": "C23020",
+      "category_full": "電子上游-IC-代工",
+      "name": "穩懋"
+    },
+    "3189": {
+      "category": "ABF",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50852",
+          "name": "IC載板",
+          "avg_pct": 8.74
+        },
+        {
+          "id": "C50851",
+          "name": "PCB",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50931",
+          "name": "玻璃基板",
+          "avg_pct": 7.08
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50912",
+          "name": "AI PC",
+          "avg_pct": 4.83
+        }
+      ],
+      "category_id": "C30021",
+      "category_full": "電子上游-ABF",
+      "name": "景碩科技"
+    },
+    "3211": {
+      "category": "二次電池",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50918",
+          "name": "BBU",
+          "avg_pct": 7.39
+        },
+        {
+          "id": "C50490",
+          "name": "氫燃料電池",
+          "avg_pct": 7.34
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        },
+        {
+          "id": "C50917",
+          "name": "GB200",
+          "avg_pct": 4.36
+        }
+      ],
+      "category_id": "C30023",
+      "category_full": "電子中游-二次電池",
+      "name": "順達"
+    },
+    "3217": {
+      "category": "連接元件",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50090",
+          "name": "Type C",
+          "avg_pct": 5.71
+        },
+        {
+          "id": "C50863",
+          "name": "連接器",
+          "avg_pct": 5.7
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        }
+      ],
+      "category_id": "C23110",
+      "category_full": "電子上游-連接元件",
+      "name": "優群"
+    },
+    "3231": {
+      "category": "筆記型電腦",
+      "group": "電子下游",
+      "concepts": [
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50912",
+          "name": "AI PC",
+          "avg_pct": 4.83
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        }
+      ],
+      "category_id": "C23380",
+      "category_full": "電子下游-筆記型電腦",
+      "name": "緯創資通"
+    },
+    "3264": {
+      "category": "IC-封測",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50220",
+          "name": "ADAS",
+          "avg_pct": 5.51
+        },
+        {
+          "id": "C50280",
+          "name": "車聯網",
+          "avg_pct": 4.56
+        },
+        {
+          "id": "C50180",
+          "name": "NFC",
+          "avg_pct": 4.27
+        },
+        {
+          "id": "C50160",
+          "name": "行動支付",
+          "avg_pct": 4.03
+        }
+      ],
+      "category_id": "C23060",
+      "category_full": "電子上游-IC-封測",
+      "name": "欣銓"
+    },
+    "3324": {
+      "category": "散熱零組件",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50800",
+          "name": "散熱模組",
+          "avg_pct": 8.56
+        },
+        {
+          "id": "C50902",
+          "name": "無人機",
+          "avg_pct": 7.53
+        },
+        {
+          "id": "C50906",
+          "name": "小米",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50600",
+          "name": "挖礦技術",
+          "avg_pct": 7.23
+        },
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        }
+      ],
+      "category_id": "C30024",
+      "category_full": "電子中游-散熱零組件",
+      "name": "雙鴻科技"
+    },
+    "3376": {
+      "category": "連接元件",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50620",
+          "name": "無線耳機",
+          "avg_pct": 9.44
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50260",
+          "name": "穿載式裝置",
+          "avg_pct": 4.62
+        },
+        {
+          "id": "C50700",
+          "name": "摺疊機",
+          "avg_pct": 3.58
+        }
+      ],
+      "category_id": "C23110",
+      "category_full": "電子上游-連接元件",
+      "name": "新日興"
+    },
+    "3443": {
+      "category": "IP/ASIC",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50919",
+          "name": "ASIC",
+          "avg_pct": 9.25
+        },
+        {
+          "id": "C50927",
+          "name": "LPU",
+          "avg_pct": 7.96
+        },
+        {
+          "id": "C50914",
+          "name": "HBM",
+          "avg_pct": 7.09
+        },
+        {
+          "id": "C50920",
+          "name": "矽智財IP",
+          "avg_pct": 6.63
+        },
+        {
+          "id": "C50090",
+          "name": "Type C",
+          "avg_pct": 5.71
+        }
+      ],
+      "category_id": "C30019",
+      "category_full": "電子上游-IP/ASIC",
+      "name": "創意"
+    },
+    "3529": {
+      "category": "IP/ASIC",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50040",
+          "name": "Apple Pay",
+          "avg_pct": 9.61
+        },
+        {
+          "id": "C50920",
+          "name": "矽智財IP",
+          "avg_pct": 6.63
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 4.88
+        },
+        {
+          "id": "C50410",
+          "name": "人工智慧",
+          "avg_pct": 4.68
+        }
+      ],
+      "category_id": "C30019",
+      "category_full": "電子上游-IP/ASIC",
+      "name": "力旺"
+    },
+    "3533": {
+      "category": "連接元件",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50090",
+          "name": "Type C",
+          "avg_pct": 5.71
+        },
+        {
+          "id": "C50863",
+          "name": "連接器",
+          "avg_pct": 5.7
+        },
+        {
+          "id": "C50830",
+          "name": "AMD",
+          "avg_pct": 4.24
+        }
+      ],
+      "category_id": "C23110",
+      "category_full": "電子上游-連接元件",
+      "name": "嘉澤"
+    },
+    "3583": {
+      "category": "IC-半導體設備",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50931",
+          "name": "玻璃基板",
+          "avg_pct": 7.08
+        },
+        {
+          "id": "C50908",
+          "name": "太陽能",
+          "avg_pct": 6.92
+        },
+        {
+          "id": "C50907",
+          "name": "3D列印",
+          "avg_pct": 6.38
+        },
+        {
+          "id": "C50921",
+          "name": "3DIC聯盟",
+          "avg_pct": 4.45
+        },
+        {
+          "id": "C50909",
+          "name": "CoWoS",
+          "avg_pct": 4.15
+        }
+      ],
+      "category_id": "C30015",
+      "category_full": "電子上游-IC-半導體設備",
+      "name": "辛耘"
+    },
+    "3661": {
+      "category": "IP/ASIC",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50919",
+          "name": "ASIC",
+          "avg_pct": 9.25
+        },
+        {
+          "id": "C50927",
+          "name": "LPU",
+          "avg_pct": 7.96
+        },
+        {
+          "id": "C50920",
+          "name": "矽智財IP",
+          "avg_pct": 6.63
+        },
+        {
+          "id": "C50410",
+          "name": "人工智慧",
+          "avg_pct": 4.68
+        },
+        {
+          "id": "C50926",
+          "name": "AWS",
+          "avg_pct": 4.4
+        }
+      ],
+      "category_id": "C30019",
+      "category_full": "電子上游-IP/ASIC",
+      "name": "世芯-KY"
+    },
+    "3665": {
+      "category": "連接元件",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50878",
+          "name": "MIH概念股",
+          "avg_pct": 7.37
+        },
+        {
+          "id": "C50070",
+          "name": "Tesla",
+          "avg_pct": 7.22
+        },
+        {
+          "id": "C50908",
+          "name": "太陽能",
+          "avg_pct": 6.92
+        },
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        }
+      ],
+      "category_id": "C23110",
+      "category_full": "電子上游-連接元件",
+      "name": "貿聯-KY"
+    },
+    "3711": {
+      "category": "IC-封測",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        },
+        {
+          "id": "C50550",
+          "name": "A股入摩",
+          "avg_pct": 5.84
+        },
+        {
+          "id": "C50916",
+          "name": "FOPLP扇出型封裝",
+          "avg_pct": 5.13
+        },
+        {
+          "id": "C50912",
+          "name": "AI PC",
+          "avg_pct": 4.83
+        },
+        {
+          "id": "C50820",
+          "name": "iPhone",
+          "avg_pct": 4.52
+        }
+      ],
+      "category_id": "C23060",
+      "category_full": "電子上游-IC-封測",
+      "name": "日月光投"
+    },
+    "4958": {
+      "category": "PCB-製造",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50852",
+          "name": "IC載板",
+          "avg_pct": 8.74
+        },
+        {
+          "id": "C50851",
+          "name": "PCB",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50878",
+          "name": "MIH概念股",
+          "avg_pct": 7.37
+        },
+        {
+          "id": "C50903",
+          "name": "鴻海MIH電動車平台",
+          "avg_pct": 7.31
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        }
+      ],
+      "category_id": "C23120",
+      "category_full": "電子上游-PCB-製造",
+      "name": "臻鼎-KY"
+    },
+    "4966": {
+      "category": "IC-設計",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50090",
+          "name": "Type C",
+          "avg_pct": 5.71
+        },
+        {
+          "id": "C50912",
+          "name": "AI PC",
+          "avg_pct": 4.83
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50820",
+          "name": "iPhone",
+          "avg_pct": 4.52
+        },
+        {
+          "id": "C50881",
+          "name": "元宇宙",
+          "avg_pct": 4.22
+        }
+      ],
+      "category_id": "C23010",
+      "category_full": "電子上游-IC-設計",
+      "name": "譜瑞-KY"
+    },
+    "4979": {
+      "category": "通訊設備",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50911",
+          "name": "光通訊",
+          "avg_pct": 6.09
+        },
+        {
+          "id": "C50899",
+          "name": "ChatGPT",
+          "avg_pct": 4.11
+        }
+      ],
+      "category_id": "C23250",
+      "category_full": "電子中游-通訊設備",
+      "name": "華星光"
+    },
+    "5274": {
+      "category": "IC-設計",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50899",
+          "name": "ChatGPT",
+          "avg_pct": 4.11
+        }
+      ],
+      "category_id": "C23010",
+      "category_full": "電子上游-IC-設計",
+      "name": "信驊科技"
+    },
+    "5347": {
+      "category": "IC-代工",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        },
+        {
+          "id": "C50130",
+          "name": "生物辨識",
+          "avg_pct": 3.93
+        },
+        {
+          "id": "C50200",
+          "name": "指紋辨識",
+          "avg_pct": 3.92
+        },
+        {
+          "id": "C50873",
+          "name": "功率半導體",
+          "avg_pct": 3.91
+        },
+        {
+          "id": "C50910",
+          "name": "次世代半導體",
+          "avg_pct": 3.8
+        }
+      ],
+      "category_id": "C23020",
+      "category_full": "電子上游-IC-代工",
+      "name": "世界先進"
+    },
+    "5439": {
+      "category": "PCB-製造",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50851",
+          "name": "PCB",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50500",
+          "name": "電動車",
+          "avg_pct": 6.43
+        }
+      ],
+      "category_id": "C23120",
+      "category_full": "電子上游-PCB-製造",
+      "name": "高技"
+    },
+    "5536": {
+      "category": "儀器設備工程",
+      "group": "電子中游",
+      "concepts": [],
+      "category_id": "C23240",
+      "category_full": "電子中游-儀器設備工程",
+      "name": "聖暉*"
+    },
+    "5871": {
+      "category": "其他",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50908",
+          "name": "太陽能",
+          "avg_pct": 6.92
+        },
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 4.88
+        },
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 4.16
+        },
+        {
+          "id": "C50760",
+          "name": "東協",
+          "avg_pct": 1.16
+        }
+      ],
+      "category_id": "C29020",
+      "category_full": "傳產-其他",
+      "name": "中租-KY"
+    },
+    "6139": {
+      "category": "儀器設備工程",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50550",
+          "name": "A股入摩",
+          "avg_pct": 5.84
+        }
+      ],
+      "category_id": "C23240",
+      "category_full": "電子中游-儀器設備工程",
+      "name": "亞翔"
+    },
+    "6147": {
+      "category": "IC-封測",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        },
+        {
+          "id": "C50260",
+          "name": "穿載式裝置",
+          "avg_pct": 4.62
+        },
+        {
+          "id": "C50820",
+          "name": "iPhone",
+          "avg_pct": 4.52
+        },
+        {
+          "id": "C50460",
+          "name": "3D感測",
+          "avg_pct": 4.04
+        }
+      ],
+      "category_id": "C23060",
+      "category_full": "電子上游-IC-封測",
+      "name": "頎邦"
+    },
+    "6187": {
+      "category": "IC-半導體設備",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50921",
+          "name": "3DIC聯盟",
+          "avg_pct": 4.45
+        },
+        {
+          "id": "C50909",
+          "name": "CoWoS",
+          "avg_pct": 4.15
+        },
+        {
+          "id": "C50200",
+          "name": "指紋辨識",
+          "avg_pct": 3.92
+        }
+      ],
+      "category_id": "C30015",
+      "category_full": "電子上游-IC-半導體設備",
+      "name": "萬潤"
+    },
+    "6191": {
+      "category": "PCB-製造",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50851",
+          "name": "PCB",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50925",
+          "name": "TPU",
+          "avg_pct": 4.7
+        }
+      ],
+      "category_id": "C23120",
+      "category_full": "電子上游-PCB-製造",
+      "name": "精成科"
+    },
+    "6196": {
+      "category": "儀器設備工程",
+      "group": "電子中游",
+      "concepts": [],
+      "category_id": "C23240",
+      "category_full": "電子中游-儀器設備工程",
+      "name": "帆宣"
+    },
+    "6223": {
+      "category": "IC-封測",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50925",
+          "name": "TPU",
+          "avg_pct": 4.7
+        },
+        {
+          "id": "C50909",
+          "name": "CoWoS",
+          "avg_pct": 4.15
+        }
+      ],
+      "category_id": "C23060",
+      "category_full": "電子上游-IC-封測",
+      "name": "旺矽科技"
+    },
+    "6239": {
+      "category": "IC-封測",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50914",
+          "name": "HBM",
+          "avg_pct": 7.09
+        },
+        {
+          "id": "C50916",
+          "name": "FOPLP扇出型封裝",
+          "avg_pct": 5.13
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50260",
+          "name": "穿載式裝置",
+          "avg_pct": 4.62
+        }
+      ],
+      "category_id": "C23060",
+      "category_full": "電子上游-IC-封測",
+      "name": "力成科技"
+    },
+    "6271": {
+      "category": "IC-封測",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50710",
+          "name": "軌道衛星",
+          "avg_pct": 8.89
+        },
+        {
+          "id": "C50851",
+          "name": "PCB",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50460",
+          "name": "3D感測",
+          "avg_pct": 4.04
+        }
+      ],
+      "category_id": "C23060",
+      "category_full": "電子上游-IC-封測",
+      "name": "同欣電"
+    },
+    "6278": {
+      "category": "PCB-製造",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50851",
+          "name": "PCB",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 4.77
+        },
+        {
+          "id": "C50380",
+          "name": "Micro LED",
+          "avg_pct": 4.18
+        },
+        {
+          "id": "C50790",
+          "name": "MiniLED",
+          "avg_pct": 4.06
+        }
+      ],
+      "category_id": "C23120",
+      "category_full": "電子上游-PCB-製造",
+      "name": "台表科"
+    },
+    "6415": {
+      "category": "IC-設計",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        },
+        {
+          "id": "C50899",
+          "name": "ChatGPT",
+          "avg_pct": 4.11
+        }
+      ],
+      "category_id": "C23010",
+      "category_full": "電子上游-IC-設計",
+      "name": "矽力*-KY"
+    },
+    "6442": {
+      "category": "通訊設備",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50911",
+          "name": "光通訊",
+          "avg_pct": 6.09
+        },
+        {
+          "id": "C50863",
+          "name": "連接器",
+          "avg_pct": 5.7
+        },
+        {
+          "id": "C50925",
+          "name": "TPU",
+          "avg_pct": 4.7
+        }
+      ],
+      "category_id": "C23250",
+      "category_full": "電子中游-通訊設備",
+      "name": "光紅建聖"
+    },
+    "6488": {
+      "category": "晶圓材料",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50910",
+          "name": "次世代半導體",
+          "avg_pct": 3.8
+        },
+        {
+          "id": "C50530",
+          "name": "矽晶圓",
+          "avg_pct": 4.64
+        }
+      ],
+      "category_id": "C30016",
+      "category_full": "電子上游-晶圓材料",
+      "name": "環球晶"
+    },
+    "6505": {
+      "category": "塑膠",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50900",
+          "name": "碳權",
+          "avg_pct": 4.23
+        }
+      ],
+      "category_id": "C13010",
+      "category_full": "傳產-塑膠",
+      "name": "台塑石化"
+    },
+    "6510": {
+      "category": "IC-封測",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50925",
+          "name": "TPU",
+          "avg_pct": 4.7
+        },
+        {
+          "id": "C50899",
+          "name": "ChatGPT",
+          "avg_pct": 4.11
+        }
+      ],
+      "category_id": "C23060",
+      "category_full": "電子上游-IC-封測",
+      "name": "中華精測"
+    },
+    "6515": {
+      "category": "IC-封測",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50921",
+          "name": "3DIC聯盟",
+          "avg_pct": 4.45
+        },
+        {
+          "id": "C50909",
+          "name": "CoWoS",
+          "avg_pct": 4.15
+        }
+      ],
+      "category_id": "C23060",
+      "category_full": "電子上游-IC-封測",
+      "name": "穎崴科技"
+    },
+    "6669": {
+      "category": "EMS",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        },
+        {
+          "id": "C50905",
+          "name": "美元升值",
+          "avg_pct": 6.32
+        },
+        {
+          "id": "C50924",
+          "name": "Oracle甲骨文",
+          "avg_pct": 4.61
+        },
+        {
+          "id": "C50926",
+          "name": "AWS",
+          "avg_pct": 4.4
+        },
+        {
+          "id": "C50917",
+          "name": "GB200",
+          "avg_pct": 4.36
+        }
+      ],
+      "category_id": "C23270",
+      "category_full": "電子中游-EMS",
+      "name": "緯穎科技"
+    },
+    "6805": {
+      "category": "連接元件",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        }
+      ],
+      "category_id": "C23110",
+      "category_full": "電子上游-連接元件",
+      "name": "富世達股"
+    },
+    "7769": {
+      "category": "IC-半導體設備",
+      "group": "電子上游",
+      "concepts": [],
+      "category_id": "C30015",
+      "category_full": "電子上游-IC-半導體設備",
+      "name": "鴻勁精密"
+    },
+    "8046": {
+      "category": "ABF",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50852",
+          "name": "IC載板",
+          "avg_pct": 8.74
+        },
+        {
+          "id": "C50851",
+          "name": "PCB",
+          "avg_pct": 7.51
+        },
+        {
+          "id": "C50931",
+          "name": "玻璃基板",
+          "avg_pct": 7.08
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 6.44
+        },
+        {
+          "id": "C50220",
+          "name": "ADAS",
+          "avg_pct": 5.51
+        }
+      ],
+      "category_id": "C30021",
+      "category_full": "電子上游-ABF",
+      "name": "南亞電路"
+    },
+    "8150": {
+      "category": "IC-封測",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50260",
+          "name": "穿載式裝置",
+          "avg_pct": 4.62
+        },
+        {
+          "id": "C50130",
+          "name": "生物辨識",
+          "avg_pct": 3.93
+        },
+        {
+          "id": "C50200",
+          "name": "指紋辨識",
+          "avg_pct": 3.92
+        }
+      ],
+      "category_id": "C23060",
+      "category_full": "電子上游-IC-封測",
+      "name": "南茂"
+    },
+    "8210": {
+      "category": "機殼",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        }
+      ],
+      "category_id": "C23230",
+      "category_full": "電子中游-機殼",
+      "name": "勤誠興業"
+    },
+    "8299": {
+      "category": "記憶體IC設計",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50903",
+          "name": "鴻海MIH電動車平台",
+          "avg_pct": 7.31
+        },
+        {
+          "id": "C50090",
+          "name": "Type C",
+          "avg_pct": 5.71
+        },
+        {
+          "id": "C50913",
+          "name": "記憶體",
+          "avg_pct": 5.38
+        },
+        {
+          "id": "C50850",
+          "name": "PS5",
+          "avg_pct": 4.79
+        },
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 4.73
+        }
+      ],
+      "category_id": "C30018",
+      "category_full": "電子上游-記憶體IC設計",
+      "name": "群聯電子"
+    },
+    "8358": {
+      "category": "PCB-材料設備",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50500",
+          "name": "電動車",
+          "avg_pct": 6.43
+        },
+        {
+          "id": "C50865",
+          "name": "銅箔",
+          "avg_pct": 6.33
+        },
+        {
+          "id": "C50830",
+          "name": "AMD",
+          "avg_pct": 4.24
+        }
+      ],
+      "category_id": "C23130",
+      "category_full": "電子上游-PCB-材料設備",
+      "name": "金居"
+    },
+    "8996": {
+      "category": "電機",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50490",
+          "name": "氫燃料電池",
+          "avg_pct": 7.34
+        },
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 6.73
+        },
+        {
+          "id": "C50917",
+          "name": "GB200",
+          "avg_pct": 4.36
+        }
+      ],
+      "category_id": "C15010",
+      "category_full": "傳產-電機",
+      "name": "高力熱處"
+    }
+  }
+}
