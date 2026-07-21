@@ -110,7 +110,7 @@ Notes:
 | `src/ui/etf_tab.py` | Active/passive ETF dashboard views and daily operation report UI. |
 | `src/ui/etf_compare_tab.py` | ETF comparison tab backed by the local `data/etf_bench/etf_bench.sqlite` database. |
 | `src/ui/market_pulse_tab.py` | Market pulse tab using ETF benchmark/index history and regime calculations. |
-| `src/ui/tag_flow_tab.py` | 題材流向 tab: what themes the 3 TW active ETFs are buying. Pure render of `data/tag_flow.json` (no network). |
+| `src/ui/tag_flow_tab.py` | 題材流向 tab: flexible 1/5/20/all/custom shared-session ranges, concept/category views, persistence, ETF consensus, timeline, and stock drill-down. Pure render of `data/tag_flow.json` (no network). |
 
 Dashboard authentication uses `VIEW_PASSWORD` and `ADMIN_PASSWORD` from Streamlit secrets, environment variables, or `/home/ubuntu/.stock_secrets` depending on the runtime.
 
@@ -263,7 +263,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/fetch_passive_009805.py` | Fetches 009805 passive ETF holdings/history. |
 | `scripts/fetch_passive_009820.py` | Fetches 009820 passive ETF holdings/history. |
 | `scripts/build_stock_tags.py` | Scrapes cmoney forum per stock → `data/stock_tags.json` (類股 category + 概念股 concept tags). Incremental; covers the union of active-ETF holdings; monthly refresh. Powers the 題材流向 tab. |
-| `scripts/build_tag_flow.py` | Theme-flow engine → `data/tag_flow.json`. Computes per-ETF ActiveWeight money-flow (today + 5d), per-ETF 7-session baseline thresholds (加碼/大幅加碼), tag aggregation, and the 5d heatmap. Reads histories only, no network. |
+| `scripts/build_tag_flow.py` | Theme-flow engine → `data/tag_flow.json`. Stores price-drift-free daily ActiveWeight observations for every available ETF session, with no-look-ahead empirical trade-size percentiles from each ETF's prior 20 sessions. The UI aggregates any selected range. Reads histories only, no network. |
 | `scripts/generate_etf_summary.py` | Builds daily ETF summary images for LINE broadcast. |
 | `scripts/generate_market_pulse_summary.py` | Renders the market pulse summary image served by the LINE `市場脈動` command. |
 | `scripts/generate_quote_card.py` | Shared quote-card image renderer for ETF/master-holding views. |
@@ -353,7 +353,7 @@ Tracked files in `data/` are source/history state that should move with the repo
 | `data/passive_*_history.json` | Passive ETF official history snapshots for 0050, 0056, 00830, 00878, 00891, 00918, 009805, and 009820. |
 | `data/passive_*_log.json` | Passive ETF fetch logs/status. |
 | `data/stock_tags.json` | cmoney theme-tag map (類股 + 概念股) for active-ETF holdings; built by `scripts/build_stock_tags.py`, refreshed monthly in the daily job. |
-| `data/tag_flow.json` | 題材流向 tab data (theme money-flow, today + 5d, heatmap); rebuilt daily by `scripts/build_tag_flow.py`. |
+| `data/tag_flow.json` | 題材流向 tab daily observation store (schema v2: per ETF/session/stock ActiveWeight flow and trailing percentile context); rebuilt daily by `scripts/build_tag_flow.py`. |
 | `data/master_manual_positions.json` | Manual master portfolio positions. |
 | `data/master_meta.json` | Master portfolio metadata/state. |
 | `data/master_trades.csv` | Manual trade ledger for the master portfolio. |

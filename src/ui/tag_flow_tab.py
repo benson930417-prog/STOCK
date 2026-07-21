@@ -1,20 +1,19 @@
-"""主動 ETF 題材流向 tab — what themes the 3 TW active ETFs are buying today.
+"""Interactive active-ETF theme-flow explorer.
 
-Pure render: reads data/tag_flow.json (built by scripts/build_tag_flow.py in the
-18:30 job) and never touches the network — same discipline as market_pulse_tab.
+This is a pure renderer over ``data/tag_flow.json``.  It deliberately keeps
+three different questions separate:
 
-The signal is ActiveWeight money-flow = (money an ETF traded on a stock) / fund
-size × 100 — price-drift free and self-normalising across fund sizes. "加碼 / 大幅
-加碼" is judged against each ETF's own trailing-7-session trade-size distribution.
+* magnitude: how much portfolio weight the selected ETFs actively moved;
+* persistence: on how many sessions the theme moved in the same direction;
+* consensus: how many selected ETFs ended the range buying or selling it.
 
-Sections:
-  1. 今日 / 5日 題材流向   — which themes got net money (bar), today or 5-day.
-  2. 5 日題材熱力圖         — theme × session heatmap: a building trend vs a blip.
-  3. 共識個股             — stocks multiple ETFs bought, or 大幅 moves vs baseline.
-  4. 個別 ETF 展開         — one ETF's biggest adds / trims, tagged.
+That separation prevents a single large rebalance from masquerading as a
+sustained trend and lets the user inspect any shared history window, not just a
+hard-coded five sessions.
 """
 from __future__ import annotations
 
+from collections import defaultdict
 import json
 
 import pandas as pd
@@ -22,187 +21,608 @@ import plotly.graph_objects as go
 import streamlit as st
 
 ETF_LABEL = {"00403A": "403", "00981A": "981", "00991A": "991"}
+EPSILON = 1e-6
 
 
-def _fmt(v: float) -> str:
-    return f"{v:+.2f}%" if v else "0.00%"
+def _fmt(value: float) -> str:
+    return f"{value:+.2f} pp" if abs(value) > EPSILON else "0.00 pp"
 
 
-def _load(DATA_DIR):
-    p = DATA_DIR / "tag_flow.json"
-    if not p.exists():
+def _load(data_dir):
+    path = data_dir / "tag_flow.json"
+    if not path.exists():
         return None
     try:
-        return json.loads(p.read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 - a broken cache should not crash the app
         return None
 
 
-def _tag_bar(tags, pos_color, neg_color, title):
-    rows = [t for t in tags if abs(t["flow_total"]) > 1e-6 and t["tag"] != "未分類"][:14]
-    if not rows:
-        st.info("此區間無明顯題材資金流動。")
-        return
-    rows = rows[::-1]  # plotly plots bottom-up
-    labels = [f'{t["tag"]}' for t in rows]
-    vals = [t["flow_total"] for t in rows]
-    colors = [pos_color if v > 0 else neg_color for v in vals]
-    text = [f'{_fmt(v)} · {t["n_etf"]}檔ETF' for v, t in zip(vals, rows)]
-    fig = go.Figure(go.Bar(
-        x=vals, y=labels, orientation="h",
-        marker_color=colors, text=text, textposition="outside",
-        hovertext=[
-            "  ".join(f'{s["name"]}{_fmt(s["flow"])}' for s in t["stocks"][:5])
-            for t in rows
-        ],
-        hoverinfo="text",
-    ))
-    fig.update_layout(
-        title=title, height=max(340, 26 * len(rows) + 90),
-        margin=dict(l=10, r=40, t=48, b=10),
-        xaxis_title="淨買賣 佔基金規模 %（三檔 ETF 加總）",
-        yaxis=dict(tickfont=dict(size=13)),
-        showlegend=False,
-    )
-    fig.add_vline(x=0, line_width=1, line_color="#888")
-    st.plotly_chart(fig, use_container_width=True)
+def _shared_dates(data: dict, selected_etfs: list[str]) -> list[str]:
+    by_etf = data.get("dates", {}).get("by_etf", {})
+    available = [set(by_etf.get(etf, [])) for etf in selected_etfs]
+    if not available:
+        return []
+    return sorted(set.intersection(*available))
 
 
-def _heatmap(heat, pos_color, neg_color):
-    tags, dates, matrix = heat["tags"], heat["dates"], heat["matrix"]
-    if not tags or not dates:
-        st.info("熱力圖資料不足。")
-        return
-    # reverse so the strongest 5-day theme is on top
-    tags_r, matrix_r = tags[::-1], matrix[::-1]
-    cap = max((abs(v) for row in matrix_r for v in row), default=1.0) or 1.0
-    fig = go.Figure(go.Heatmap(
-        z=matrix_r, x=[d[5:] for d in dates], y=tags_r,
-        zmid=0, zmin=-cap, zmax=cap,
-        colorscale=[[0, neg_color], [0.5, "#f5f5f5"], [1, pos_color]],
-        text=[[_fmt(v) if abs(v) > 1e-6 else "" for v in row] for row in matrix_r],
-        texttemplate="%{text}", textfont=dict(size=11),
-        colorbar=dict(title="% 基金"),
-        hovertemplate="%{y}<br>%{x}: %{z:+.2f}%<extra></extra>",
-    ))
-    fig.update_layout(
-        height=max(320, 30 * len(tags_r) + 80),
-        margin=dict(l=10, r=10, t=20, b=10),
-        yaxis=dict(tickfont=dict(size=12)),
-        xaxis=dict(side="top"),
-    )
-    st.plotly_chart(fig, use_container_width=True)
+def _theme_keys(stock: dict, lens: str) -> list[str]:
+    if lens == "產業類股":
+        return [stock.get("category") or "未分類"]
+    return list(dict.fromkeys(stock.get("concepts") or []))
 
 
-def _consensus_table(stocks, etfs):
-    rows = []
-    for s in stocks:
-        big = any("大幅" in m for m in s.get("mag_by_etf", {}).values())
-        multi = (s["n_buyers"] >= 2) or (s["n_sellers"] >= 2)
-        if not (big or multi):
+def _aggregate(
+    data: dict,
+    selected_etfs: list[str],
+    selected_dates: list[str],
+    lens: str,
+) -> tuple[list[dict], list[dict]]:
+    """Aggregate observations for the currently selected UI state."""
+    etf_set = set(selected_etfs)
+    date_set = set(selected_dates)
+    n_etfs = max(1, len(selected_etfs))
+    latest = selected_dates[-1]
+
+    themes: dict[str, dict] = {}
+    stocks: dict[str, dict] = {}
+
+    for observation in data.get("observations", []):
+        etf = observation.get("etf")
+        date = observation.get("date")
+        if etf not in etf_set or date not in date_set:
             continue
-        per = "  ".join(
-            f'{ETF_LABEL.get(e, e)} {_fmt(f)}' for e, f in s["flow_by_etf"].items()
+
+        for move in observation.get("stocks", []):
+            stock_id = str(move.get("id", ""))
+            flow = float(move.get("flow", 0.0))
+            stock = stocks.setdefault(
+                stock_id,
+                {
+                    "id": stock_id,
+                    "name": move.get("name", stock_id),
+                    "category": move.get("category") or "未分類",
+                    "group": move.get("group") or "",
+                    "concepts": move.get("concepts") or [],
+                    "flow_sum": 0.0,
+                    "flow_by_etf": defaultdict(float),
+                    "flow_by_date": defaultdict(float),
+                    "latest_by_etf": defaultdict(float),
+                    "max_percentile": None,
+                    "notable_days": 0,
+                    "outlier_days": 0,
+                },
+            )
+            stock["flow_sum"] += flow
+            stock["flow_by_etf"][etf] += flow
+            stock["flow_by_date"][date] += flow
+            if date == latest:
+                stock["latest_by_etf"][etf] += flow
+            percentile = move.get("percentile")
+            if percentile is not None:
+                stock["max_percentile"] = max(
+                    stock["max_percentile"] or 0.0, float(percentile)
+                )
+                if percentile >= 80:
+                    stock["notable_days"] += 1
+                if percentile >= 95:
+                    stock["outlier_days"] += 1
+
+            for theme_name in _theme_keys(move, lens):
+                theme = themes.setdefault(
+                    theme_name,
+                    {
+                        "theme": theme_name,
+                        "flow_sum": 0.0,
+                        "flow_by_etf": defaultdict(float),
+                        "flow_by_date": defaultdict(float),
+                        "daily_by_etf": defaultdict(lambda: defaultdict(float)),
+                        "stock_flows": defaultdict(float),
+                    },
+                )
+                theme["flow_sum"] += flow
+                theme["flow_by_etf"][etf] += flow
+                theme["flow_by_date"][date] += flow
+                theme["daily_by_etf"][etf][date] += flow
+                theme["stock_flows"][stock_id] += flow
+
+    # Concept providers often attach several labels to the exact same set of
+    # traded stocks (for example one 台達電 move may surface as 物聯網, 電感 and
+    # BBU).  Showing three identical bars creates false corroboration.  When the
+    # evidence set is identical, collapse the aliases into one row instead of
+    # counting or displaying the same move repeatedly.
+    if lens == "概念題材":
+        collapsed: dict[tuple[str, ...], dict] = {}
+        for theme in themes.values():
+            signature = tuple(sorted(theme["stock_flows"]))
+            if not signature:
+                continue
+            if signature in collapsed:
+                collapsed[signature]["aliases"].append(theme["theme"])
+            else:
+                theme["aliases"] = [theme["theme"]]
+                collapsed[signature] = theme
+        themes = {}
+        for theme in collapsed.values():
+            aliases = theme.pop("aliases")
+            theme["theme"] = (
+                "／".join(aliases)
+                if len(aliases) <= 3
+                else "／".join(aliases[:3]) + f" 等{len(aliases)}項"
+            )
+            themes[theme["theme"]] = theme
+
+    stock_rows: list[dict] = []
+    for stock in stocks.values():
+        flow_by_etf = dict(stock["flow_by_etf"])
+        flow_by_date = dict(stock["flow_by_date"])
+        net = stock["flow_sum"] / n_etfs
+        latest_flow = sum(stock["latest_by_etf"].values()) / n_etfs
+        stock.update(
+            {
+                "flow": net,
+                "latest": latest_flow,
+                "flow_by_etf": flow_by_etf,
+                "flow_by_date": flow_by_date,
+                "buyers": sum(value > EPSILON for value in flow_by_etf.values()),
+                "sellers": sum(value < -EPSILON for value in flow_by_etf.values()),
+                "buy_days": sum(value > EPSILON for value in flow_by_date.values()),
+                "sell_days": sum(value < -EPSILON for value in flow_by_date.values()),
+            }
         )
-        rows.append({
-            "個股": f'{s["name"]}',
-            "題材": s["category"] + (f' · {s["concepts"][0]}' if s.get("concepts") else ""),
-            "淨流向": _fmt(s["flow_total"]),
-            "強度": s.get("mag", ""),
-            "共識": ("🟢×" + str(s["n_buyers"])) if s["n_buyers"] >= s["n_sellers"]
-            else ("🔴×" + str(s["n_sellers"])),
-            "各ETF": per,
-        })
-    if not rows:
-        st.info("今日無多檔 ETF 共識或大幅加減碼的個股。")
+        stock_rows.append(stock)
+    stock_rows.sort(key=lambda row: -abs(row["flow"]))
+
+    theme_rows: list[dict] = []
+    for theme in themes.values():
+        flow_by_etf = dict(theme["flow_by_etf"])
+        daily_raw = dict(theme["flow_by_date"])
+        net = theme["flow_sum"] / n_etfs
+        daily = {date: daily_raw.get(date, 0.0) / n_etfs for date in selected_dates}
+        direction_days = sum(
+            value > EPSILON if net >= 0 else value < -EPSILON
+            for value in daily.values()
+        )
+        top_stock_ids = sorted(
+            theme["stock_flows"],
+            key=lambda sid: -abs(theme["stock_flows"][sid]),
+        )[:5]
+        stock_names = {row["id"]: row["name"] for row in stock_rows}
+        theme_rows.append(
+            {
+                "theme": theme["theme"],
+                "flow": net,
+                "latest": daily.get(latest, 0.0),
+                "flow_by_etf": flow_by_etf,
+                "daily": daily,
+                "daily_by_etf": {
+                    etf: dict(values) for etf, values in theme["daily_by_etf"].items()
+                },
+                "buyers": sum(value > EPSILON for value in flow_by_etf.values()),
+                "sellers": sum(value < -EPSILON for value in flow_by_etf.values()),
+                "buy_days": sum(value > EPSILON for value in daily.values()),
+                "sell_days": sum(value < -EPSILON for value in daily.values()),
+                "direction_days": direction_days,
+                "top_stocks": [
+                    {
+                        "id": stock_id,
+                        "name": stock_names.get(stock_id, stock_id),
+                        "flow": theme["stock_flows"][stock_id] / n_etfs,
+                    }
+                    for stock_id in top_stock_ids
+                ],
+            }
+        )
+    theme_rows.sort(key=lambda row: -abs(row["flow"]))
+    return theme_rows, stock_rows
+
+
+def _top_sided(rows: list[dict], per_side: int = 7) -> list[dict]:
+    positive = sorted(
+        (row for row in rows if row["flow"] > EPSILON),
+        key=lambda row: -row["flow"],
+    )[:per_side]
+    negative = sorted(
+        (row for row in rows if row["flow"] < -EPSILON),
+        key=lambda row: row["flow"],
+    )[:per_side]
+    selected = positive + negative
+    if not selected:
+        selected = rows[: per_side * 2]
+    return sorted(selected, key=lambda row: row["flow"])
+
+
+def _theme_chart(
+    rows: list[dict],
+    n_dates: int,
+    n_etfs: int,
+    profit_color: str,
+    loss_color: str,
+):
+    shown = _top_sided(rows)
+    if not shown:
+        st.info("此範圍沒有可顯示的題材交易。")
         return
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+    labels = [row["theme"] for row in shown]
+    values = [row["flow"] for row in shown]
+    colors = [profit_color if value > 0 else loss_color for value in values]
+    text = []
+    custom = []
+    for row in shown:
+        aligned_days = row["buy_days"] if row["flow"] >= 0 else row["sell_days"]
+        aligned_etfs = row["buyers"] if row["flow"] >= 0 else row["sellers"]
+        text.append(f"{_fmt(row['flow'])} · {aligned_days}/{n_dates}日 · {aligned_etfs}/{n_etfs} ETF")
+        drivers = "、".join(
+            f"{stock['name']} {_fmt(stock['flow'])}" for stock in row["top_stocks"][:4]
+        )
+        custom.append(
+            [
+                row["latest"],
+                row["buy_days"],
+                row["sell_days"],
+                row["buyers"],
+                row["sellers"],
+                drivers,
+            ]
+        )
+
+    cap = max(max(abs(value) for value in values), 0.1)
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=values,
+            y=labels,
+            orientation="h",
+            marker_color=colors,
+            text=text,
+            textposition="outside",
+            cliponaxis=False,
+            customdata=custom,
+            hovertemplate=(
+                "<b>%{y}</b><br>區間 %{x:+.2f} pp<br>最新日 %{customdata[0]:+.2f} pp"
+                "<br>偏買 / 偏賣：%{customdata[1]} / %{customdata[2]} 日"
+                "<br>ETF 淨買 / 淨賣：%{customdata[3]} / %{customdata[4]}"
+                "<br>主要個股：%{customdata[5]}<extra></extra>"
+            ),
+        )
+    )
+    if n_dates > 1:
+        fig.add_trace(
+            go.Scatter(
+                x=[row["latest"] for row in shown],
+                y=labels,
+                mode="markers",
+                name="最新一日",
+                marker={
+                    "symbol": "diamond-open",
+                    "size": 9,
+                    "color": [profit_color if row["latest"] >= 0 else loss_color for row in shown],
+                    "line": {"width": 2},
+                },
+                hovertemplate="<b>%{y}</b><br>最新日 %{x:+.2f} pp<extra></extra>",
+            )
+        )
+    fig.add_vline(x=0, line_width=1, line_color="rgba(128,128,128,0.55)")
+    fig.update_layout(
+        template="streamlit",
+        height=max(390, 31 * len(shown) + 120),
+        margin={"l": 8, "r": 190, "t": 28, "b": 58},
+        xaxis={
+            "title": "平均每檔 ETF 累計主動配置變動（百分點）",
+            "range": [-cap * 1.42, cap * 1.42],
+            "zeroline": False,
+        },
+        yaxis={"categoryorder": "array", "categoryarray": labels},
+        legend={"orientation": "h", "y": 1.05, "x": 1, "xanchor": "right"},
+        showlegend=n_dates > 1,
+        hoverlabel={"align": "left"},
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
-def _etf_drill(stocks, etf, pos_color, neg_color):
+def _timeline_chart(
+    theme: dict,
+    dates: list[str],
+    selected_etfs: list[str],
+    profit_color: str,
+    loss_color: str,
+):
+    n_etfs = len(selected_etfs)
+    daily = [
+        sum(theme["daily_by_etf"].get(etf, {}).get(date, 0.0) for etf in selected_etfs)
+        / n_etfs
+        for date in dates
+    ]
+    cumulative = []
+    running = 0.0
+    for value in daily:
+        running += value
+        cumulative.append(running)
+
+    colors = [profit_color if value >= 0 else loss_color for value in daily]
+    line_color = profit_color if cumulative[-1] >= 0 else loss_color
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=dates,
+            y=daily,
+            name="每日流向",
+            marker_color=colors,
+            opacity=0.58,
+            hovertemplate="%{x}<br>當日 %{y:+.2f} pp<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=dates,
+            y=cumulative,
+            name="區間累積",
+            mode="lines+markers",
+            line={"color": line_color, "width": 3},
+            marker={"size": 6},
+            yaxis="y2",
+            hovertemplate="%{x}<br>累積 %{y:+.2f} pp<extra></extra>",
+        )
+    )
+    fig.add_hline(y=0, line_width=1, line_color="rgba(128,128,128,0.45)")
+    fig.update_layout(
+        template="streamlit",
+        height=350,
+        margin={"l": 8, "r": 18, "t": 28, "b": 36},
+        hovermode="x unified",
+        barmode="relative",
+        legend={"orientation": "h", "y": 1.08, "x": 0},
+        xaxis={"type": "category", "tickangle": -35 if len(dates) > 12 else 0},
+        yaxis={"title": "每日 pp", "zeroline": False},
+        yaxis2={
+            "title": "累積 pp",
+            "overlaying": "y",
+            "side": "right",
+            "zeroline": False,
+        },
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
+def _readout(theme_rows: list[dict], n_dates: int, n_etfs: int) -> str:
+    positive = [row for row in theme_rows if row["flow"] > EPSILON]
+    negative = [row for row in theme_rows if row["flow"] < -EPSILON]
+    clauses = []
+    if positive:
+        top = max(positive, key=lambda row: row["flow"])
+        clauses.append(
+            f"**{top['theme']}** 加碼最明顯（{_fmt(top['flow'])}；"
+            f"{top['buy_days']}/{n_dates} 日偏買；{top['buyers']}/{n_etfs} ETF 淨買）"
+        )
+    if negative:
+        bottom = min(negative, key=lambda row: row["flow"])
+        clauses.append(
+            f"**{bottom['theme']}** 減碼最明顯（{_fmt(bottom['flow'])}；"
+            f"{bottom['sell_days']}/{n_dates} 日偏賣；{bottom['sellers']}/{n_etfs} ETF 淨賣）"
+        )
+    return "；".join(clauses) + "。" if clauses else "此區間沒有可辨識的題材流向。"
+
+
+def _etf_breakdown(theme: dict, dates: list[str], selected_etfs: list[str]) -> pd.DataFrame:
     rows = []
-    for s in stocks:
-        f = s["flow_by_etf"].get(etf)
-        if not f:
-            continue
-        rows.append({
-            "個股": s["name"],
-            "題材": s["category"],
-            "動作": s["mag_by_etf"].get(etf, ""),
-            "流向": f,
-        })
-    rows.sort(key=lambda r: -abs(r["流向"]))
+    for etf in selected_etfs:
+        daily = theme["daily_by_etf"].get(etf, {})
+        values = [daily.get(date, 0.0) for date in dates]
+        rows.append(
+            {
+                "ETF": ETF_LABEL.get(etf, etf),
+                "區間累計": _fmt(sum(values)),
+                "最新一日": _fmt(values[-1]),
+                "偏買日": sum(value > EPSILON for value in values),
+                "偏賣日": sum(value < -EPSILON for value in values),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _stock_table(
+    rows: list[dict],
+    n_dates: int,
+    n_etfs: int,
+    stock_ids: set[str] | None = None,
+    limit: int = 30,
+):
+    if stock_ids is not None:
+        rows = [row for row in rows if row["id"] in stock_ids]
     if not rows:
-        st.info("此 ETF 於此區間無異動。")
+        st.info("此條件下沒有個股交易。")
         return
-    df = pd.DataFrame(rows[:20])
-    df["流向"] = df["流向"].map(_fmt)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+
+    display_rows = []
+    for row in rows[:limit]:
+        aligned_days = row["buy_days"] if row["flow"] >= 0 else row["sell_days"]
+        consensus = f"{row['buyers']}買 / {row['sellers']}賣"
+        percentile = (
+            f"P{row['max_percentile']:.0f}" if row["max_percentile"] is not None else "樣本不足"
+        )
+        display_rows.append(
+            {
+                "個股": f"{row['name']} · {row['id']}",
+                "產業": row["category"],
+                "概念": "、".join(row["concepts"][:3]) or "—",
+                "區間流向": _fmt(row["flow"]),
+                "最新日": _fmt(row["latest"]),
+                "同向日": f"{aligned_days}/{n_dates}",
+                "ETF 共識": consensus if n_etfs > 1 else "—",
+                "最大單日": percentile,
+            }
+        )
+    st.dataframe(
+        pd.DataFrame(display_rows),
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "個股": st.column_config.TextColumn(width="medium"),
+            "概念": st.column_config.TextColumn(width="large"),
+        },
+    )
 
 
-def render_tag_flow_tab(*, lang=None, T=None, DATA_DIR=None,
-                        PROFIT_COLOR="#2ECC71", LOSS_COLOR="#E74C3C", **kwargs):
-    st.subheader("🏷️ 主動 ETF 題材流向")
+def render_tag_flow_tab(
+    *,
+    lang=None,
+    T=None,
+    DATA_DIR=None,
+    PROFIT_COLOR="#E74C3C",
+    LOSS_COLOR="#2ECC71",
+    **kwargs,
+):
+    st.subheader("主動 ETF 題材流向")
     st.caption(
-        "追蹤 00403A / 00981A / 00991A 三檔主動 ETF 每日**實際買賣的張數**換算成資金流"
-        "（佔基金規模 %，已排除股價漲跌雜訊），並依 cmoney 類股／概念股歸類成題材。"
-        "「加碼／大幅加碼」是相對各 ETF 自己近 7 日的平均出手大小判定。"
+        "看持股張數變化，不把股價上漲誤認成加碼。先比較題材的區間配置變動，"
+        "再拆成持續性、ETF 共識與個股來源。"
     )
 
     data = _load(DATA_DIR)
     if not data:
-        st.warning("尚無題材流向資料。請於伺服器執行 "
-                   "`python scripts/build_stock_tags.py` 與 "
-                   "`python scripts/build_tag_flow.py`（已納入每日 18:30 排程）。")
+        st.warning(
+            "尚無題材流向資料。請執行 `python scripts/build_stock_tags.py` 與 "
+            "`python scripts/build_tag_flow.py`。"
+        )
+        return
+    if data.get("schema_version") != 2:
+        st.warning("題材資料仍是舊格式，請先執行 `python scripts/build_tag_flow.py` 更新。")
         return
 
-    d = data["dates"]
-    st.caption(f"資料日期：{d['prev']} → **{d['cur']}**（今日）；"
-               f"5 日視窗自 {d['base5']} 起。產生時間 {data.get('generated','')}")
+    control_a, control_b, control_c = st.columns([1.25, 1, 1.35])
+    with control_a:
+        selected_etfs = st.multiselect(
+            "ETF 範圍",
+            data.get("etfs", []),
+            default=data.get("etfs", []),
+            format_func=lambda etf: f"{ETF_LABEL.get(etf, etf)}（{etf}）",
+            key="tag_flow_etfs",
+        )
+    with control_b:
+        lens = st.radio(
+            "題材層級",
+            ["概念題材", "產業類股"],
+            horizontal=True,
+            key="tag_flow_lens",
+        )
+    with control_c:
+        window = st.radio(
+            "時間範圍",
+            ["1日", "5日", "20日", "全部", "自訂"],
+            index=1,
+            horizontal=True,
+            key="tag_flow_window",
+        )
 
-    # ---- 1. theme flow bar, today / 5d toggle ----
-    win = st.radio("時間區間", ["今日", "近 5 日"], horizontal=True,
-                   label_visibility="collapsed")
-    block = data["today"] if win == "今日" else data["d5"]
-    _tag_bar(block["tags"], PROFIT_COLOR, LOSS_COLOR,
-             f"{win}題材資金流向（類股）")
+    if not selected_etfs:
+        st.info("請至少選擇一檔 ETF。")
+        return
+    available_dates = _shared_dates(data, selected_etfs)
+    if not available_dates:
+        st.info("所選 ETF 沒有共同可比較日期。")
+        return
 
-    with st.expander("概念股題材（多標籤，含 cmoney 日均漲跌動能）"):
-        _tag_bar(block["concepts"], PROFIT_COLOR, LOSS_COLOR,
-                 f"{win}題材資金流向（概念股）")
+    if window == "自訂":
+        default_start = available_dates[max(0, len(available_dates) - 20)]
+        start, end = st.select_slider(
+            "自訂交易日範圍",
+            options=available_dates,
+            value=(default_start, available_dates[-1]),
+            key="tag_flow_custom_range",
+        )
+        start_index, end_index = available_dates.index(start), available_dates.index(end)
+        selected_dates = available_dates[start_index : end_index + 1]
+    else:
+        counts = {"1日": 1, "5日": 5, "20日": 20, "全部": len(available_dates)}
+        selected_dates = available_dates[-min(counts[window], len(available_dates)) :]
+
+    theme_rows, stock_rows = _aggregate(data, selected_etfs, selected_dates, lens)
+    n_dates = len(selected_dates)
+    n_etfs = len(selected_etfs)
+    date_label = (
+        selected_dates[-1]
+        if n_dates == 1
+        else f"{selected_dates[0]} → {selected_dates[-1]}"
+    )
+    overlap_note = (
+        "概念可重疊；相同個股組合的標籤已合併，其餘各列請勿相加。"
+        if lens == "概念題材"
+        else "產業類股每股只歸一類，各題材可直接比較。"
+    )
+    st.caption(
+        f"{date_label} · {n_dates} 個共同交易日 · {n_etfs} 檔 ETF · "
+        f"資料產生 {data.get('generated', '—')}｜{overlap_note}"
+    )
+    st.markdown("**區間判讀｜** " + _readout(theme_rows, n_dates, n_etfs))
+
+    st.markdown("#### 題材全景")
+    st.caption(
+        "橫條是所選 ETF 的平均累計配置變動；右側同時顯示同向交易日與 ETF 共識。"
+        "空心菱形是最新一日，用來辨認區間趨勢是否正在反轉。"
+    )
+    _theme_chart(theme_rows, n_dates, n_etfs, PROFIT_COLOR, LOSS_COLOR)
+
+    if theme_rows:
+        st.divider()
+        st.markdown("#### 題材拆解")
+        theme_names = [row["theme"] for row in theme_rows]
+        selected_theme_name = st.selectbox(
+            "選一個題材，查看它是持續累積、單日跳升，還是哪一檔 ETF 在主導",
+            theme_names,
+            key="tag_flow_theme_detail",
+        )
+        selected_theme = next(
+            row for row in theme_rows if row["theme"] == selected_theme_name
+        )
+        _timeline_chart(
+            selected_theme,
+            selected_dates,
+            selected_etfs,
+            PROFIT_COLOR,
+            LOSS_COLOR,
+        )
+        st.dataframe(
+            _etf_breakdown(selected_theme, selected_dates, selected_etfs),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        st.markdown("**主要個股來源**")
+        contributing_ids = {stock["id"] for stock in selected_theme["top_stocks"]}
+        _stock_table(stock_rows, n_dates, n_etfs, contributing_ids, limit=12)
 
     st.divider()
+    st.markdown("#### 全部個股訊號")
+    stock_filter = st.radio(
+        "個股篩選",
+        ["全部", "淨加碼", "淨減碼", "ETF 共識", "異常單日"],
+        horizontal=True,
+        key="tag_flow_stock_filter",
+    )
+    filtered_stocks = stock_rows
+    if stock_filter == "淨加碼":
+        filtered_stocks = [row for row in stock_rows if row["flow"] > EPSILON]
+    elif stock_filter == "淨減碼":
+        filtered_stocks = [row for row in stock_rows if row["flow"] < -EPSILON]
+    elif stock_filter == "ETF 共識":
+        filtered_stocks = [
+            row
+            for row in stock_rows
+            if max(row["buyers"], row["sellers"]) >= min(2, n_etfs)
+        ]
+    elif stock_filter == "異常單日":
+        filtered_stocks = [row for row in stock_rows if row["outlier_days"] > 0]
+    _stock_table(filtered_stocks, n_dates, n_etfs)
 
-    # ---- 2. 5-day heatmap ----
-    st.markdown("#### 📊 近 5 日題材熱力圖")
-    st.caption("每格為當日該題材的淨資金流（佔基金規模 %，三檔加總）。"
-               "連續多日同色＝資金持續進出，單日一格＝可能只是雜訊。")
-    _heatmap(data["heatmap"], PROFIT_COLOR, LOSS_COLOR)
-
-    st.divider()
-
-    # ---- 3. consensus stocks ----
-    st.markdown("#### 🎯 共識個股（多檔 ETF 同買／同賣 或 大幅加減碼）")
-    st.caption("今日訊號。「強度」以各 ETF 近 7 日平均出手大小為基準；"
-               "🟢×n 代表 n 檔 ETF 同向買進。")
-    _consensus_table(data["today"]["stocks"], data["etfs"])
-
-    st.divider()
-
-    # ---- 4. per-ETF drilldown ----
-    st.markdown("#### 🔍 個別 ETF 展開")
-    c1, c2 = st.columns([1, 3])
-    with c1:
-        etf = st.selectbox("ETF", data["etfs"],
-                           format_func=lambda e: f'{ETF_LABEL.get(e, e)}（{e}）')
-        win2 = st.radio("區間", ["今日", "近 5 日"], key="drill_win")
-    block2 = data["today"] if win2 == "今日" else data["d5"]
-    with c2:
-        b = data["baseline"].get(etf, {})
-        if b:
-            st.caption(
-                f"{ETF_LABEL.get(etf, etf)} 近 7 日平均單筆出手 "
-                f"{b.get('mean', 0):.2f}%，加碼門檻(1σ) {b.get('one_sigma', 0):.2f}%，"
-                f"大幅門檻(2σ) {b.get('two_sigma', 0):.2f}%（佔基金規模）。"
-            )
-        _etf_drill(block2["stocks"], etf, PROFIT_COLOR, LOSS_COLOR)
+    with st.expander("怎麼讀這些數字"):
+        st.markdown(
+            """
+- **區間流向（pp）**：張數變化換算為該 ETF 資產的配置百分點，再對所選 ETF 取平均。它不是報酬率，也不會把持股上漲造成的權重增加算成買進。
+- **同向日**：題材每日淨流向與區間總方向相同的交易日數；大數字但只有一天同向，通常是單次換股，不是持續布局。
+- **ETF 共識**：每檔 ETF 在整個區間的淨方向。`3買 / 0賣` 比單一 ETF 買進更有廣度，但仍不是投資建議。
+- **最大單日 P 值**：該筆交易相對同一 ETF 之前 20 個交易日出手大小的經驗百分位；P95 代表比先前約 95% 的交易更大。每一天只使用當時已知的歷史，不偷看未來。
+- **概念標籤**：同一個股組合若對應多個概念，畫面會合併成一列，避免把同一筆買進看成多個獨立訊號；不同列仍可能共享個股，因此不可加總。
+- 日期只使用所選 ETF **共同有資料**的交易日，避免把缺資料誤當成零交易。
+            """
+        )

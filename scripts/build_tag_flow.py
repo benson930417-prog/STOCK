@@ -1,33 +1,30 @@
 #!/usr/bin/env python3
-"""Build data/tag_flow.json — what themes the 3 TW active ETFs are buying/selling.
+"""Build the daily observation store used by the ETF theme-flow tab.
 
-Signal (reuses the website's existing 操作日報 measure, see src/ui/etf_tab.py):
+The first version of this feature pre-aggregated only ``today`` and ``5d``.
+That made the UI fast, but also made every other analysis window impossible.
+This builder now stores one price-drift-free observation per ETF/session.  The
+Streamlit tab can therefore aggregate any available date range without network
+access and without rebuilding the data.
 
-    ActiveWeight = Δshares * (weight_pct / shares)
-                 = (money traded on the stock) / fund_size * 100
+Signal (the same measure used by ``src/ui/etf_tab.py``)::
 
-i.e. the net money an ETF put into (or pulled out of) a stock, expressed as a
-percent of the fund's own size. This is price-drift free (it counts the traded
-shares only, not the revaluation of the existing position) and self-normalising
-across funds of different size — a 10億 buy is "big" or "small" purely relative to
-how large the fund is.
+    ActiveWeight = delta_shares * (weight_pct / shares)
+                 = money traded on the stock / fund size * 100
 
-"How big is big" is judged per-ETF against its OWN trailing-7-session distribution
-of per-trade |ActiveWeight|:
-    加碼 / 減碼        : |flow| >= mean + 1σ
-    大幅加碼 / 大幅減碼 : |flow| >= mean + 2σ
-so the threshold self-adjusts as the fund grows or shrinks.
+The result is a portfolio-weight-equivalent percentage-point flow.  Positive is
+an active buy and negative is an active sell; changes caused only by the stock
+price do not appear.
 
-Flows are aggregated to themes via data/stock_tags.json (cmoney 類股 category as
-the primary one-tag-per-stock bucket; 概念股 concepts as secondary).
-
-Outputs today (cur vs prev session) and a 5-session window, plus a per-session
-theme heatmap. Streamlit only reads the JSON — no computation at render time.
-
-Run daily from the 18:30 job (free, local, no network).
+For context, every daily stock move is ranked against that ETF's *prior*
+20-session distribution of absolute trade sizes.  Empirical percentiles are
+used instead of mean-plus-sigma thresholds because trade sizes are skewed and a
+single huge rebalance otherwise moves the definition of "large" too much.
+Nothing from the current day enters its own reference distribution.
 """
 from __future__ import annotations
 
+import bisect
 import json
 import math
 import statistics
@@ -44,198 +41,212 @@ ETFS = {
     "00981A": DATA / "etf_00981A_history.json",
     "00991A": DATA / "etf_00991A_history.json",
 }
-WINDOW = 5          # sessions for the medium-term view
-BASELINE_SESSIONS = 7   # sessions used for the per-ETF "usual trade size" baseline
+
+BASELINE_SESSIONS = 20
+MIN_BASELINE_TRADES = 20
 UNTAGGED = "未分類"
 
 
-def load_history(path: Path) -> dict:
+def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
 
-def per_share_weight(h: dict) -> float:
-    s = h.get("shares") or 0
-    return (h.get("weight_pct", 0.0) / s) if s else 0.0
+def per_share_weight(holding: dict) -> float:
+    shares = holding.get("shares") or 0
+    return (holding.get("weight_pct", 0.0) / shares) if shares else 0.0
 
 
 def flow_between(cur_day: dict, base_day: dict) -> dict[str, dict]:
-    """Per-stock ActiveWeight flow from base_day -> cur_day for one ETF.
-
-    Returns {id: {name, flow, dshares}}. flow > 0 = net buy (% of fund)."""
-    cur = {h["id"]: h for h in cur_day.get("holdings", [])}
-    base = {h["id"]: h for h in base_day.get("holdings", [])}
+    """Return stock-level ActiveWeight flow between two disclosed holdings."""
+    cur = {str(h["id"]): h for h in cur_day.get("holdings", [])}
+    base = {str(h["id"]): h for h in base_day.get("holdings", [])}
     out: dict[str, dict] = {}
-    for sid, c in cur.items():
-        b = base.get(sid)
-        if b is None:  # brand-new position: the whole current weight is the buy
-            out[sid] = {"name": c["name"], "flow": c.get("weight_pct", 0.0),
-                        "dshares": c.get("shares", 0)}
+
+    for stock_id, current in cur.items():
+        previous = base.get(stock_id)
+        if previous is None:
+            out[stock_id] = {
+                "name": current.get("name", stock_id),
+                "flow": float(current.get("weight_pct", 0.0)),
+                "dshares": int(current.get("shares", 0) or 0),
+            }
             continue
-        ds = c.get("shares", 0) - b.get("shares", 0)
-        if ds == 0:
+
+        delta_shares = int(current.get("shares", 0) or 0) - int(
+            previous.get("shares", 0) or 0
+        )
+        if delta_shares == 0:
             continue
-        perw = per_share_weight(c) if c.get("shares") else per_share_weight(b)
-        out[sid] = {"name": c["name"], "flow": ds * perw, "dshares": ds}
-    for sid, b in base.items():  # fully removed position: a full sell
-        if sid not in cur:
-            out[sid] = {"name": b["name"], "flow": -b.get("weight_pct", 0.0),
-                        "dshares": -b.get("shares", 0)}
+        per_weight = (
+            per_share_weight(current)
+            if current.get("shares")
+            else per_share_weight(previous)
+        )
+        out[stock_id] = {
+            "name": current.get("name", previous.get("name", stock_id)),
+            "flow": delta_shares * per_weight,
+            "dshares": delta_shares,
+        }
+
+    for stock_id, previous in base.items():
+        if stock_id not in cur:
+            out[stock_id] = {
+                "name": previous.get("name", stock_id),
+                "flow": -float(previous.get("weight_pct", 0.0)),
+                "dshares": -int(previous.get("shares", 0) or 0),
+            }
     return out
 
 
-def baseline_stats(dates: list[str], hist: dict) -> dict:
-    """Distribution of per-trade |flow| over the last BASELINE_SESSIONS pairs."""
-    mags: list[float] = []
-    recent = dates[-(BASELINE_SESSIONS + 1):]
-    for prev, cur in zip(recent, recent[1:]):
-        for v in flow_between(hist[cur], hist[prev]).values():
-            m = abs(v["flow"])
-            if m > 1e-9:
-                mags.append(m)
-    if not mags:
-        return {"mean": 0.0, "std": 0.0, "one_sigma": 0.0, "two_sigma": 0.0, "n": 0}
-    mean = statistics.fmean(mags)
-    std = statistics.pstdev(mags) if len(mags) > 1 else 0.0
-    return {"mean": mean, "std": std, "one_sigma": mean + std,
-            "two_sigma": mean + 2 * std, "n": len(mags)}
+def _quantile(sorted_values: list[float], q: float) -> float:
+    """Small dependency-free linear quantile, equivalent to common defaults."""
+    if not sorted_values:
+        return 0.0
+    pos = (len(sorted_values) - 1) * q
+    lo = math.floor(pos)
+    hi = math.ceil(pos)
+    if lo == hi:
+        return sorted_values[lo]
+    return sorted_values[lo] + (sorted_values[hi] - sorted_values[lo]) * (pos - lo)
 
 
-def magnitude(flow: float, base: dict) -> str:
-    m = abs(flow)
-    buy = flow > 0
-    if base["two_sigma"] and m >= base["two_sigma"]:
-        return "大幅加碼" if buy else "大幅減碼"
-    if base["one_sigma"] and m >= base["one_sigma"]:
-        return "加碼" if buy else "減碼"
-    return "買進" if buy else "賣出"
+def baseline_summary(sample: list[float]) -> dict:
+    ordered = sorted(sample)
+    if not ordered:
+        return {"n": 0, "median": 0.0, "p80": 0.0, "p95": 0.0}
+    return {
+        "n": len(ordered),
+        "median": round(statistics.median(ordered), 4),
+        "p80": round(_quantile(ordered, 0.80), 4),
+        "p95": round(_quantile(ordered, 0.95), 4),
+    }
 
 
-def aggregate(hist_flows: dict[str, dict[str, dict]], tags: dict,
-              baselines: dict) -> tuple[list, list, list]:
-    """Combine per-ETF stock flows into per-stock, per-tag, per-concept rows.
+def empirical_percentile(value: float, sample: list[float]) -> float | None:
+    if len(sample) < MIN_BASELINE_TRADES:
+        return None
+    ordered = sorted(sample)
+    return round(100.0 * bisect.bisect_right(ordered, abs(value)) / len(ordered), 1)
 
-    hist_flows: {etf: {id: {name, flow, dshares}}}
-    """
-    etfs = list(hist_flows)
-    # ---- per stock ----
-    stock_rows: dict[str, dict] = {}
-    for etf, flows in hist_flows.items():
-        for sid, v in flows.items():
-            tg = tags.get(sid, {})
-            r = stock_rows.setdefault(sid, {
-                "id": sid, "name": v["name"],
-                "category": tg.get("category") or UNTAGGED,
-                "group": tg.get("group") or "",
-                "concepts": [c["name"] for c in tg.get("concepts", [])][:4],
-                "flow_by_etf": {}, "flow_total": 0.0,
-                "mag_by_etf": {}, "n_buyers": 0, "n_sellers": 0,
-            })
-            r["flow_by_etf"][etf] = round(v["flow"], 4)
-            r["flow_total"] += v["flow"]
-            r["mag_by_etf"][etf] = magnitude(v["flow"], baselines[etf])
-            if v["flow"] > 0:
-                r["n_buyers"] += 1
-            elif v["flow"] < 0:
-                r["n_sellers"] += 1
-    for r in stock_rows.values():
-        r["flow_total"] = round(r["flow_total"], 4)
-        # strongest single-ETF magnitude label, worst (大幅) first
-        order = {"大幅加碼": 3, "大幅減碼": 3, "加碼": 2, "減碼": 2, "買進": 1, "賣出": 1}
-        r["mag"] = max(r["mag_by_etf"].values(), key=lambda m: order.get(m, 0)) \
-            if r["mag_by_etf"] else ""
-    stocks = sorted(stock_rows.values(), key=lambda r: -abs(r["flow_total"]))
 
-    # ---- per category tag ----
-    def group_rows(key_fn):
-        acc: dict[str, dict] = {}
-        for r in stock_rows.values():
-            for key, group in key_fn(r):
-                a = acc.setdefault(key, {"tag": key, "group": group,
-                                         "flow_total": 0.0,
-                                         "flow_by_etf": {e: 0.0 for e in etfs},
-                                         "stocks": []})
-                a["flow_total"] += r["flow_total"]
-                for e, f in r["flow_by_etf"].items():
-                    a["flow_by_etf"][e] += f
-                a["stocks"].append({"id": r["id"], "name": r["name"],
-                                    "flow": r["flow_total"]})
+def move_label(flow: float, percentile: float | None) -> str:
+    direction = "加碼" if flow > 0 else "減碼"
+    if percentile is None:
+        return direction
+    if percentile >= 95:
+        return f"異常{direction}"
+    if percentile >= 80:
+        return f"明顯{direction}"
+    return direction
+
+
+def build_observations(etf: str, history: dict, tags: dict) -> list[dict]:
+    dates = sorted(history)
+    pair_flows = [
+        flow_between(history[cur], history[prev])
+        for prev, cur in zip(dates, dates[1:])
+    ]
+    observations: list[dict] = []
+
+    for pair_index, (prev_date, date) in enumerate(zip(dates, dates[1:])):
+        # Only completed sessions before this observation are allowed into its
+        # baseline.  Flatten moves across the most recent N sessions.
+        first_prior_pair = max(0, pair_index - BASELINE_SESSIONS)
+        prior_magnitudes = [
+            abs(move["flow"])
+            for prior in pair_flows[first_prior_pair:pair_index]
+            for move in prior.values()
+            if abs(move["flow"]) > 1e-9
+        ]
+        baseline = baseline_summary(prior_magnitudes)
         rows = []
-        for a in acc.values():
-            a["flow_total"] = round(a["flow_total"], 4)
-            a["flow_by_etf"] = {e: round(v, 4) for e, v in a["flow_by_etf"].items()}
-            a["n_etf"] = sum(1 for v in a["flow_by_etf"].values() if abs(v) > 1e-6)
-            a["stocks"] = sorted(a["stocks"], key=lambda s: -abs(s["flow"]))[:8]
-            rows.append(a)
-        return sorted(rows, key=lambda a: -abs(a["flow_total"]))
-
-    tag_rows = group_rows(lambda r: [(r["category"], r["group"])])
-    concept_rows = group_rows(
-        lambda r: [(c, "概念股") for c in r["concepts"]]
-    )
-    return stocks, tag_rows, concept_rows
+        for stock_id, move in pair_flows[pair_index].items():
+            flow = float(move["flow"])
+            if abs(flow) <= 1e-9:
+                continue
+            tag = tags.get(stock_id, {})
+            percentile = empirical_percentile(flow, prior_magnitudes)
+            concepts = [
+                concept.get("name", "").strip()
+                for concept in tag.get("concepts", [])
+                if concept.get("name", "").strip()
+            ]
+            rows.append(
+                {
+                    "id": stock_id,
+                    "name": tag.get("name") or move["name"],
+                    "category": tag.get("category") or UNTAGGED,
+                    "group": tag.get("group") or "",
+                    "concepts": concepts,
+                    "flow": round(flow, 4),
+                    "dshares": move["dshares"],
+                    "percentile": percentile,
+                    "label": move_label(flow, percentile),
+                }
+            )
+        rows.sort(key=lambda row: -abs(row["flow"]))
+        observations.append(
+            {
+                "etf": etf,
+                "date": date,
+                "prev_date": prev_date,
+                "baseline": baseline,
+                "stocks": rows,
+            }
+        )
+    return observations
 
 
 def main() -> int:
-    tags = load_history(TAGS_FILE).get("tags", {})
-    hists = {e: load_history(p) for e, p in ETFS.items() if p.exists()}
-    hists = {e: h for e, h in hists.items() if h}
-    if not hists:
+    tags = load_json(TAGS_FILE).get("tags", {})
+    histories = {
+        etf: load_json(path)
+        for etf, path in ETFS.items()
+        if path.exists()
+    }
+    histories = {etf: hist for etf, hist in histories.items() if len(hist) >= 2}
+    if not histories:
         print("no ETF histories found")
         return 1
 
-    # common session axis = union of dates, sorted; each ETF uses its own nearest
-    all_dates = sorted({d for h in hists.values() for d in h})
-    cur = all_dates[-1]
-    prev = all_dates[-2]
-    base5 = all_dates[-min(WINDOW + 1, len(all_dates))]
-    sessions = all_dates[-min(WINDOW, len(all_dates) - 1):]  # last WINDOW pairs' cur dates
+    observations = [
+        observation
+        for etf, history in histories.items()
+        for observation in build_observations(etf, history, tags)
+    ]
+    observations.sort(key=lambda item: (item["date"], item["etf"]))
 
-    baselines = {e: baseline_stats(sorted(h), h) for e, h in hists.items()}
-
-    def flows_for(cur_d: str, base_d: str) -> dict[str, dict[str, dict]]:
-        res = {}
-        for e, h in hists.items():
-            hd = sorted(h)
-            # nearest available <= requested date for this ETF
-            c = max([d for d in hd if d <= cur_d], default=None)
-            b = max([d for d in hd if d <= base_d], default=None)
-            if c and b and c != b:
-                res[e] = flow_between(h[c], h[b])
-        return res
-
-    today_stocks, today_tags, today_concepts = aggregate(
-        flows_for(cur, prev), tags, baselines)
-    d5_stocks, d5_tags, d5_concepts = aggregate(
-        flows_for(cur, base5), tags, baselines)
-
-    # ---- heatmap: per-session net flow per top category tag ----
-    session_pairs = list(zip(all_dates[-(WINDOW + 1):], all_dates[-WINDOW:]))
-    per_session_tag: list[dict] = []
-    for b, c in session_pairs:
-        _, tg, _ = aggregate(flows_for(c, b), tags, baselines)
-        per_session_tag.append({t["tag"]: t["flow_total"] for t in tg})
-    heat_tags = [t["tag"] for t in d5_tags if t["tag"] != UNTAGGED][:14]
-    heatmap = {
-        "tags": heat_tags,
-        "dates": [c for _, c in session_pairs],
-        "matrix": [[round(ps.get(t, 0.0), 4) for ps in per_session_tag]
-                   for t in heat_tags],
+    dates_by_etf = {
+        etf: [row["date"] for row in observations if row["etf"] == etf]
+        for etf in histories
     }
+    common_dates = sorted(
+        set.intersection(*(set(dates) for dates in dates_by_etf.values()))
+    )
 
     payload = {
+        "schema_version": 2,
         "generated": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "etfs": list(hists),
-        "dates": {"cur": cur, "prev": prev, "base5": base5, "sessions": sessions},
-        "baseline": {e: {k: round(v, 4) if isinstance(v, float) else v
-                         for k, v in b.items()} for e, b in baselines.items()},
-        "today": {"stocks": today_stocks, "tags": today_tags,
-                  "concepts": today_concepts},
-        "d5": {"stocks": d5_stocks, "tags": d5_tags, "concepts": d5_concepts},
-        "heatmap": heatmap,
+        "etfs": list(histories),
+        "dates": {
+            "by_etf": dates_by_etf,
+            "common": common_dates,
+            "latest": max(row["date"] for row in observations),
+        },
+        "methodology": {
+            "signal": "ActiveWeight = delta shares * current weight / current shares",
+            "unit": "portfolio-weight-equivalent percentage points",
+            "baseline_sessions": BASELINE_SESSIONS,
+            "notable_percentile": 80,
+            "outlier_percentile": 95,
+        },
+        "observations": observations,
     }
     OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"wrote {OUT}  cur={cur} prev={prev} base5={base5} "
-          f"tags={len(today_tags)} stocks={len(today_stocks)}")
+    print(
+        f"wrote {OUT}  observations={len(observations)} "
+        f"common_sessions={len(common_dates)} latest={payload['dates']['latest']}"
+    )
     return 0
 
 
