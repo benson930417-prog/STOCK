@@ -373,7 +373,7 @@ Official inputs are TWSE `MI_MARGN` + `MI_INDEX` and TPEx `融資融券餘額` +
 
 The system has three read/write boundaries:
 
-- `scripts/update_margin_maintenance.py` is the only network writer. Daily: `--days 10`; one-time history: `--backfill-years 1`.
+- `scripts/update_margin_maintenance.py` is the only network writer. Daily: `--days 10`; one-time history: `--backfill-years 1` (skips cached dates, so rerunning repairs only gaps; add `--force` only for an intentional full refresh).
 - `src/ui/margin_risk_tab.py` only reads `data/margin_maintenance.csv` and offers 1m/3m/6m/1y/all/custom ranges.
 - `scripts/generate_margin_maintenance_summary.py` reads that same cache and writes the tracked latest LINE card. `api/webhook.py` only serves the cached JPG; it must never recalculate or fetch data on demand.
 

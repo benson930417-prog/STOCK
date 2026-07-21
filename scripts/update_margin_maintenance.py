@@ -413,12 +413,22 @@ def main() -> int:
         default=0,
         help="One-time history init; overrides --days.",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="With --backfill-years, refetch dates already present in the cache.",
+    )
     parser.add_argument("--workers", type=int, default=2, help="Concurrent dates (max 6).")
     parser.add_argument("--output", type=Path, default=DEFAULT_CACHE_PATH)
     args = parser.parse_args()
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     dates = target_dates(args.days, args.backfill_years)
+    if args.backfill_years and not args.force and args.output.exists():
+        existing = load_existing(args.output)
+        cached_dates = set(pd.to_datetime(existing["date"], errors="coerce").dt.date.dropna())
+        dates = [date for date in dates if date.date() not in cached_dates]
+        print(f"[margin-risk] backfill missing_dates={len(dates)} cached={len(cached_dates)}")
     df, fetched, errors = refresh_cache(args.output, dates, workers=args.workers)
     if df.empty:
         print(f"[margin-risk] no rows written path={args.output} errors={errors}")
