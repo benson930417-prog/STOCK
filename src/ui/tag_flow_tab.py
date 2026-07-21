@@ -24,8 +24,15 @@ ETF_LABEL = {"00403A": "403", "00981A": "981", "00991A": "991"}
 EPSILON = 1e-6
 
 
-def _fmt(value: float) -> str:
-    return f"{value:+.2f} pp" if abs(value) > EPSILON else "0.00 pp"
+def _fmt_ratio(value: float) -> str:
+    return f"{value:+.2f}% 規模" if abs(value) > EPSILON else "0.00% 規模"
+
+
+def _fmt_money(value_twd: float, *, signed: bool = True) -> str:
+    value_yi = value_twd / 100_000_000.0
+    sign = "+" if signed and value_yi > 0 else ""
+    decimals = 2 if abs(value_yi) < 1 else 1
+    return f"{sign}{value_yi:.{decimals}f}億"
 
 
 def _load(data_dir):
@@ -59,16 +66,21 @@ def _aggregate(
 
     themes: dict[str, dict] = {}
     stocks: dict[str, dict] = {}
+    latest_fund_sizes: dict[str, float] = {}
 
     for observation in data.get("observations", []):
         etf = observation.get("etf")
         date = observation.get("date")
         if etf not in etf_set or date not in date_set:
             continue
+        observation_fund_size = float(observation.get("fund_size") or 0.0)
+        if observation_fund_size:
+            latest_fund_sizes[etf] = observation_fund_size
 
         for move in observation.get("stocks", []):
             stock_id = str(move.get("id", ""))
             flow = float(move.get("flow", 0.0))
+            money_twd = float(move.get("money_twd") or 0.0)
             stock = stocks.setdefault(
                 stock_id,
                 {
@@ -78,19 +90,27 @@ def _aggregate(
                     "group": move.get("group") or "",
                     "concepts": move.get("concepts") or [],
                     "flow_sum": 0.0,
+                    "money_sum": 0.0,
                     "flow_by_etf": defaultdict(float),
+                    "money_by_etf": defaultdict(float),
                     "flow_by_date": defaultdict(float),
+                    "money_by_date": defaultdict(float),
                     "latest_by_etf": defaultdict(float),
+                    "latest_money_by_etf": defaultdict(float),
                     "max_percentile": None,
                     "notable_days": 0,
                     "outlier_days": 0,
                 },
             )
             stock["flow_sum"] += flow
+            stock["money_sum"] += money_twd
             stock["flow_by_etf"][etf] += flow
+            stock["money_by_etf"][etf] += money_twd
             stock["flow_by_date"][date] += flow
+            stock["money_by_date"][date] += money_twd
             if date == latest:
                 stock["latest_by_etf"][etf] += flow
+                stock["latest_money_by_etf"][etf] += money_twd
             percentile = move.get("percentile")
             if percentile is not None:
                 stock["max_percentile"] = max(
@@ -107,17 +127,27 @@ def _aggregate(
                 {
                     "theme": theme_name,
                     "flow_sum": 0.0,
+                    "money_sum": 0.0,
                     "flow_by_etf": defaultdict(float),
+                    "money_by_etf": defaultdict(float),
                     "flow_by_date": defaultdict(float),
+                    "money_by_date": defaultdict(float),
                     "daily_by_etf": defaultdict(lambda: defaultdict(float)),
+                    "daily_money_by_etf": defaultdict(lambda: defaultdict(float)),
                     "stock_flows": defaultdict(float),
+                    "stock_money": defaultdict(float),
                 },
             )
             theme["flow_sum"] += flow
+            theme["money_sum"] += money_twd
             theme["flow_by_etf"][etf] += flow
+            theme["money_by_etf"][etf] += money_twd
             theme["flow_by_date"][date] += flow
+            theme["money_by_date"][date] += money_twd
             theme["daily_by_etf"][etf][date] += flow
+            theme["daily_money_by_etf"][etf][date] += money_twd
             theme["stock_flows"][stock_id] += flow
+            theme["stock_money"][stock_id] += money_twd
 
     stock_rows: list[dict] = []
     for stock in stocks.values():
@@ -128,7 +158,9 @@ def _aggregate(
         stock.update(
             {
                 "flow": net,
+                "money": stock["money_sum"],
                 "latest": latest_flow,
+                "latest_money": sum(stock["latest_money_by_etf"].values()),
                 "flow_by_etf": flow_by_etf,
                 "flow_by_date": flow_by_date,
                 "buyers": sum(value > EPSILON for value in flow_by_etf.values()),
@@ -159,12 +191,20 @@ def _aggregate(
             {
                 "theme": theme["theme"],
                 "flow": net,
+                "money": theme["money_sum"],
                 "latest": daily.get(latest, 0.0),
+                "latest_money": theme["money_by_date"].get(latest, 0.0),
                 "flow_by_etf": flow_by_etf,
+                "money_by_etf": dict(theme["money_by_etf"]),
                 "daily": daily,
                 "daily_by_etf": {
                     etf: dict(values) for etf, values in theme["daily_by_etf"].items()
                 },
+                "daily_money_by_etf": {
+                    etf: dict(values)
+                    for etf, values in theme["daily_money_by_etf"].items()
+                },
+                "fund_size_by_etf": dict(latest_fund_sizes),
                 "buyers": sum(value > EPSILON for value in flow_by_etf.values()),
                 "sellers": sum(value < -EPSILON for value in flow_by_etf.values()),
                 "buy_days": sum(value > EPSILON for value in daily.values()),
@@ -175,6 +215,7 @@ def _aggregate(
                         "id": stock_id,
                         "name": stock_names.get(stock_id, stock_id),
                         "flow": theme["stock_flows"][stock_id] / n_etfs,
+                        "money": theme["stock_money"][stock_id],
                     }
                     for stock_id in top_stock_ids
                 ],
@@ -219,13 +260,19 @@ def _theme_chart(
     for row in shown:
         aligned_days = row["buy_days"] if row["flow"] >= 0 else row["sell_days"]
         aligned_etfs = row["buyers"] if row["flow"] >= 0 else row["sellers"]
-        text.append(f"{_fmt(row['flow'])} · {aligned_days}/{n_dates}日 · {aligned_etfs}/{n_etfs} ETF")
+        text.append(
+            f"約 {_fmt_money(row['money'])} · 規模比 {row['flow']:+.2f}% · "
+            f"{aligned_days}/{n_dates}日 · {aligned_etfs}/{n_etfs} ETF"
+        )
         drivers = "、".join(
-            f"{stock['name']} {_fmt(stock['flow'])}" for stock in row["top_stocks"][:4]
+            f"{stock['name']} 約{_fmt_money(stock['money'])}"
+            for stock in row["top_stocks"][:4]
         )
         custom.append(
             [
                 row["latest"],
+                row["money"] / 100_000_000.0,
+                row["latest_money"] / 100_000_000.0,
                 row["buy_days"],
                 row["sell_days"],
                 row["buyers"],
@@ -248,10 +295,12 @@ def _theme_chart(
             cliponaxis=False,
             customdata=custom,
             hovertemplate=(
-                "<b>%{y}</b><br>區間 %{x:+.2f} pp<br>最新日 %{customdata[0]:+.2f} pp"
-                "<br>偏買 / 偏賣：%{customdata[1]} / %{customdata[2]} 日"
-                "<br>ETF 淨買 / 淨賣：%{customdata[3]} / %{customdata[4]}"
-                "<br>主要個股：%{customdata[5]}<extra></extra>"
+                "<b>%{y}</b><br>區間約 %{customdata[1]:+.2f} 億"
+                "<br>平均規模比 %{x:+.2f}%"
+                "<br>最新日約 %{customdata[2]:+.2f} 億 / 規模比 %{customdata[0]:+.2f}%"
+                "<br>偏買 / 偏賣：%{customdata[3]} / %{customdata[4]} 日"
+                "<br>ETF 淨買 / 淨賣：%{customdata[5]} / %{customdata[6]}"
+                "<br>主要個股：%{customdata[7]}<extra></extra>"
             ),
         )
     )
@@ -268,16 +317,20 @@ def _theme_chart(
                     "color": [profit_color if row["latest"] >= 0 else loss_color for row in shown],
                     "line": {"width": 2},
                 },
-                hovertemplate="<b>%{y}</b><br>最新日 %{x:+.2f} pp<extra></extra>",
+                customdata=[[row["latest_money"] / 100_000_000.0] for row in shown],
+                hovertemplate=(
+                    "<b>%{y}</b><br>最新日約 %{customdata[0]:+.2f} 億"
+                    "<br>規模比 %{x:+.2f}%<extra></extra>"
+                ),
             )
         )
     fig.add_vline(x=0, line_width=1, line_color="rgba(128,128,128,0.55)")
     fig.update_layout(
         template="streamlit",
         height=max(390, 31 * len(shown) + 120),
-        margin={"l": 8, "r": 190, "t": 28, "b": 58},
+        margin={"l": 8, "r": 260, "t": 28, "b": 58},
         xaxis={
-            "title": "平均每檔 ETF 累計主動配置變動（百分點）",
+            "title": "平均規模比（每檔 ETF 買賣金額 ÷ 自身基金規模，%）",
             "range": [-cap * 1.42, cap * 1.42],
             "zeroline": False,
         },
@@ -297,40 +350,48 @@ def _timeline_chart(
     loss_color: str,
 ):
     n_etfs = len(selected_etfs)
-    daily = [
+    daily_ratio = [
         sum(theme["daily_by_etf"].get(etf, {}).get(date, 0.0) for etf in selected_etfs)
         / n_etfs
         for date in dates
     ]
+    daily_money_yi = [
+        sum(
+            theme["daily_money_by_etf"].get(etf, {}).get(date, 0.0)
+            for etf in selected_etfs
+        )
+        / 100_000_000.0
+        for date in dates
+    ]
     cumulative = []
     running = 0.0
-    for value in daily:
+    for value in daily_ratio:
         running += value
         cumulative.append(running)
 
-    colors = [profit_color if value >= 0 else loss_color for value in daily]
+    colors = [profit_color if value >= 0 else loss_color for value in daily_money_yi]
     line_color = profit_color if cumulative[-1] >= 0 else loss_color
     fig = go.Figure()
     fig.add_trace(
         go.Bar(
             x=dates,
-            y=daily,
-            name="每日流向",
+            y=daily_money_yi,
+            name="每日約買賣（億元）",
             marker_color=colors,
             opacity=0.58,
-            hovertemplate="%{x}<br>當日 %{y:+.2f} pp<extra></extra>",
+            hovertemplate="%{x}<br>當日約 %{y:+.2f} 億<extra></extra>",
         )
     )
     fig.add_trace(
         go.Scatter(
             x=dates,
             y=cumulative,
-            name="區間累積",
+            name="累積規模比",
             mode="lines+markers",
             line={"color": line_color, "width": 3},
             marker={"size": 6},
             yaxis="y2",
-            hovertemplate="%{x}<br>累積 %{y:+.2f} pp<extra></extra>",
+            hovertemplate="%{x}<br>累積規模比 %{y:+.2f}%<extra></extra>",
         )
     )
     fig.add_hline(y=0, line_width=1, line_color="rgba(128,128,128,0.45)")
@@ -342,9 +403,9 @@ def _timeline_chart(
         barmode="relative",
         legend={"orientation": "h", "y": 1.08, "x": 0},
         xaxis={"type": "category", "tickangle": -35 if len(dates) > 12 else 0},
-        yaxis={"title": "每日 pp", "zeroline": False},
+        yaxis={"title": "每日約買賣（億元）", "zeroline": False},
         yaxis2={
-            "title": "累積 pp",
+            "title": "累積規模比（%）",
             "overlaying": "y",
             "side": "right",
             "zeroline": False,
@@ -360,13 +421,15 @@ def _readout(theme_rows: list[dict], n_dates: int, n_etfs: int) -> str:
     if positive:
         top = max(positive, key=lambda row: row["flow"])
         clauses.append(
-            f"**{top['theme']}** 加碼最明顯（{_fmt(top['flow'])}；"
+            f"**{top['theme']}** 加碼最明顯（約 {_fmt_money(top['money'])}；"
+            f"規模比 {top['flow']:+.2f}%；"
             f"{top['buy_days']}/{n_dates} 日偏買；{top['buyers']}/{n_etfs} ETF 淨買）"
         )
     if negative:
         bottom = min(negative, key=lambda row: row["flow"])
         clauses.append(
-            f"**{bottom['theme']}** 減碼最明顯（{_fmt(bottom['flow'])}；"
+            f"**{bottom['theme']}** 減碼最明顯（約 {_fmt_money(bottom['money'])}；"
+            f"規模比 {bottom['flow']:+.2f}%；"
             f"{bottom['sell_days']}/{n_dates} 日偏賣；{bottom['sellers']}/{n_etfs} ETF 淨賣）"
         )
     return "；".join(clauses) + "。" if clauses else "此區間沒有可辨識的題材流向。"
@@ -376,12 +439,18 @@ def _etf_breakdown(theme: dict, dates: list[str], selected_etfs: list[str]) -> p
     rows = []
     for etf in selected_etfs:
         daily = theme["daily_by_etf"].get(etf, {})
+        daily_money = theme["daily_money_by_etf"].get(etf, {})
         values = [daily.get(date, 0.0) for date in dates]
+        money_values = [daily_money.get(date, 0.0) for date in dates]
         rows.append(
             {
                 "ETF": ETF_LABEL.get(etf, etf),
-                "區間累計": _fmt(sum(values)),
-                "最新一日": _fmt(values[-1]),
+                "最新基金規模": _fmt_money(
+                    theme["fund_size_by_etf"].get(etf, 0.0), signed=False
+                ),
+                "區間約買賣": _fmt_money(sum(money_values)),
+                "規模比": _fmt_ratio(sum(values)),
+                "最新約買賣": _fmt_money(money_values[-1]),
                 "偏買日": sum(value > EPSILON for value in values),
                 "偏賣日": sum(value < -EPSILON for value in values),
             }
@@ -414,8 +483,9 @@ def _stock_table(
                 "個股": f"{row['name']} · {row['id']}",
                 "概念（附註）": "、".join(row["concepts"][:3]) or "—",
                 "產業": row["category"],
-                "區間流向": _fmt(row["flow"]),
-                "最新日": _fmt(row["latest"]),
+                "區間約買賣": _fmt_money(row["money"]),
+                "規模比": _fmt_ratio(row["flow"]),
+                "最新約買賣": _fmt_money(row["latest_money"]),
                 "同向日": f"{aligned_days}/{n_dates}",
                 "ETF 共識": consensus if n_etfs > 1 else "—",
                 "最大單日": percentile,
@@ -514,7 +584,8 @@ def render_tag_flow_tab(
 
     st.markdown("#### 題材全景")
     st.caption(
-        "橫條是所選 ETF 的平均累計配置變動；右側同時顯示同向交易日與 ETF 共識。"
+        "橫條按規模比排序，讓大型 981 不會自然壓過其他 ETF；標籤同時顯示三檔合計約買賣億元。"
+        "規模比＝每檔 ETF 買賣金額 ÷ 自身基金規模，再對所選 ETF 取平均。"
         "空心菱形是最新一日，用來辨認區間趨勢是否正在反轉。"
     )
     _theme_chart(theme_rows, n_dates, n_etfs, PROFIT_COLOR, LOSS_COLOR)
@@ -574,7 +645,8 @@ def render_tag_flow_tab(
     with st.expander("怎麼讀這些數字"):
         st.markdown(
             """
-- **區間流向（pp）**：張數變化換算為該 ETF 資產的配置百分點，再對所選 ETF 取平均。它不是報酬率，也不會把持股上漲造成的權重增加算成買進。
+- **約買賣（億元）**：依張數變化、持股權重與當日基金規模反推的台幣金額，三檔 ETF 直接加總。因揭露權重與基金規模有四捨五入，所以是估計值，適合建立金額感、不適合單獨比較誰更積極。
+- **規模比（%）**：先把每檔 ETF 的買賣金額除以自己的基金規模，再對所選 ETF 取平均。這是圖表排序依據，因此 981 規模較大不會自動取得較高排名。它不是報酬率，也不會把持股上漲造成的權重增加算成買進。
 - **同向日**：題材每日淨流向與區間總方向相同的交易日數；大數字但只有一天同向，通常是單次換股，不是持續布局。
 - **ETF 共識**：每檔 ETF 在整個區間的淨方向。`3買 / 0賣` 比單一 ETF 買進更有廣度，但仍不是投資建議。
 - **最大單日 P 值**：該筆交易相對同一 ETF 之前 20 個交易日出手大小的經驗百分位；P95 代表比先前約 95% 的交易更大。每一天只使用當時已知的歷史，不偷看未來。

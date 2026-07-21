@@ -119,7 +119,7 @@ Notes:
 | `src/ui/etf_tab.py` | Active/passive ETF dashboard views and daily operation report UI. |
 | `src/ui/etf_compare_tab.py` | ETF comparison tab backed by the local `data/etf_bench/etf_bench.sqlite` database. |
 | `src/ui/market_pulse_tab.py` | Market pulse tab using ETF benchmark/index history and regime calculations. |
-| `src/ui/tag_flow_tab.py` | 題材流向 tab: flexible 1/5/20/all/custom shared-session ranges, 類股-only aggregation, persistence, ETF consensus, timeline, and stock drill-down. 概念 labels appear only as stock-level notes and never enter interpretation. Pure render of `data/tag_flow.json` (no network). |
+| `src/ui/tag_flow_tab.py` | 題材流向 tab: flexible 1/5/20/all/custom shared-session ranges, 類股-only aggregation, persistence, ETF consensus, timeline, and stock drill-down. Ranks by normalized 規模比 for fair cross-fund comparison and shows estimated 億元 as intuitive context. 概念 labels appear only as stock-level notes and never enter interpretation. Pure render of `data/tag_flow.json` (no network). |
 
 Dashboard authentication uses `VIEW_PASSWORD` and `ADMIN_PASSWORD` from Streamlit secrets, environment variables, or `/home/ubuntu/.stock_secrets` depending on the runtime.
 
@@ -272,7 +272,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/fetch_passive_009805.py` | Fetches 009805 passive ETF holdings/history. |
 | `scripts/fetch_passive_009820.py` | Fetches 009820 passive ETF holdings/history. |
 | `scripts/build_stock_tags.py` | Scrapes cmoney forum per stock → `data/stock_tags.json` (one 類股 category plus 概念股 labels retained only as stock-level notes). Incremental; covers the union of active-ETF holdings; monthly refresh. Powers the 題材流向 tab. |
-| `scripts/build_tag_flow.py` | Theme-flow engine → `data/tag_flow.json`. Stores price-drift-free daily ActiveWeight observations for every available ETF session, with no-look-ahead empirical trade-size percentiles from each ETF's prior 20 sessions. The UI aggregates any selected range. Reads histories only, no network. |
+| `scripts/build_tag_flow.py` | Theme-flow engine → `data/tag_flow.json`. Stores price-drift-free daily ActiveWeight observations plus estimated TWD cash flow (`ActiveWeight × disclosed fund size`) for every available ETF session, with no-look-ahead empirical trade-size percentiles from each ETF's prior 20 sessions. The UI aggregates any selected range. Reads histories only, no network. |
 | `scripts/generate_etf_summary.py` | Builds daily ETF summary images for LINE broadcast. |
 | `scripts/generate_market_pulse_summary.py` | Renders the market pulse summary image served by the LINE `市場脈動` command. |
 | `scripts/generate_quote_card.py` | Shared quote-card image renderer for ETF/master-holding views. |
@@ -362,7 +362,7 @@ Tracked files in `data/` are source/history state that should move with the repo
 | `data/passive_*_history.json` | Passive ETF official history snapshots for 0050, 0056, 00830, 00878, 00891, 00918, 009805, and 009820. |
 | `data/passive_*_log.json` | Passive ETF fetch logs/status. |
 | `data/stock_tags.json` | cmoney stock-tag map for active-ETF holdings; 類股 is the sole aggregation field, while 概念股 is display-only stock metadata. Built by `scripts/build_stock_tags.py`, refreshed monthly in the daily job. |
-| `data/tag_flow.json` | 題材流向 tab daily observation store (schema v2: per ETF/session/stock ActiveWeight flow and trailing percentile context); rebuilt daily by `scripts/build_tag_flow.py`. |
+| `data/tag_flow.json` | 題材流向 tab daily observation store (schema v2: per ETF/session/stock normalized flow, estimated TWD cash flow, disclosed fund size, and trailing percentile context); rebuilt daily by `scripts/build_tag_flow.py`. |
 | `data/master_manual_positions.json` | Manual master portfolio positions. |
 | `data/master_meta.json` | Master portfolio metadata/state. |
 | `data/master_trades.csv` | Manual trade ledger for the master portfolio. |
@@ -560,6 +560,8 @@ Each of these is a trap that has already caused a wrong result or a missed step.
 12. **Cached TradingView charts use full x-width except NASDAQ.** Generic market charts (`oil`, `brent`, `bond`, `gold`, `usdtwd`, `usdjpy`, `usdchf`) should crop only vertically and must keep `clip.x=0`, `clip.width=window.innerWidth`; otherwise the right price axis/last-price marker gets cut off. NASDAQ is intentionally special: it uses IG-NASDAQ 24h, a fixed `1200x900` viewport, custom y/height, a 1-day click, and `overlay_market_sessions.py`. Do not share generic crop edits into NASDAQ unless reverified with a real screenshot.
 
 13. **題材流向 interpretation is 類股-only.** Every theme ranking, chart, summary, persistence calculation, ETF-consensus calculation, filter, and drill-down in `src/ui/tag_flow_tab.py` must aggregate by the stock's single `category` field. Never aggregate, rank, score, filter, or narrate using 概念股 labels. Concepts may be retained in the cache only so the stock tables can show them immediately beside the stock as a clearly labeled display-only note.
+
+14. **題材流向 ranks by 規模比; 億元 is context only.** A larger fund such as 00981A naturally trades more cash, so actual TWD must never drive theme ranking or the "most added/trimmed" narrative. Rank with normalized ActiveWeight (each ETF's estimated trade cash ÷ its own disclosed fund size, averaged across selected ETFs). Show estimated 億元 beside it for intuition and label it as approximate because disclosed weights/fund sizes are rounded. The drill-down timeline uses actual 億元 bars plus a normalized cumulative 規模比 line.
 
 ## ETF Maintenance Playbook For Agents
 

@@ -57,17 +57,21 @@ def per_share_weight(holding: dict) -> float:
 
 
 def flow_between(cur_day: dict, base_day: dict) -> dict[str, dict]:
-    """Return stock-level ActiveWeight flow between two disclosed holdings."""
+    """Return normalized and estimated-cash flow between two disclosures."""
     cur = {str(h["id"]): h for h in cur_day.get("holdings", [])}
     base = {str(h["id"]): h for h in base_day.get("holdings", [])}
+    cur_fund_size = float(cur_day.get("meta", {}).get("fund_size") or 0.0)
+    base_fund_size = float(base_day.get("meta", {}).get("fund_size") or 0.0)
     out: dict[str, dict] = {}
 
     for stock_id, current in cur.items():
         previous = base.get(stock_id)
         if previous is None:
+            flow = float(current.get("weight_pct", 0.0))
             out[stock_id] = {
                 "name": current.get("name", stock_id),
-                "flow": float(current.get("weight_pct", 0.0)),
+                "flow": flow,
+                "money_twd": flow / 100.0 * cur_fund_size if cur_fund_size else None,
                 "dshares": int(current.get("shares", 0) or 0),
             }
             continue
@@ -82,17 +86,21 @@ def flow_between(cur_day: dict, base_day: dict) -> dict[str, dict]:
             if current.get("shares")
             else per_share_weight(previous)
         )
+        flow = delta_shares * per_weight
         out[stock_id] = {
             "name": current.get("name", previous.get("name", stock_id)),
-            "flow": delta_shares * per_weight,
+            "flow": flow,
+            "money_twd": flow / 100.0 * cur_fund_size if cur_fund_size else None,
             "dshares": delta_shares,
         }
 
     for stock_id, previous in base.items():
         if stock_id not in cur:
+            flow = -float(previous.get("weight_pct", 0.0))
             out[stock_id] = {
                 "name": previous.get("name", stock_id),
-                "flow": -float(previous.get("weight_pct", 0.0)),
+                "flow": flow,
+                "money_twd": flow / 100.0 * base_fund_size if base_fund_size else None,
                 "dshares": -int(previous.get("shares", 0) or 0),
             }
     return out
@@ -179,6 +187,11 @@ def build_observations(etf: str, history: dict, tags: dict) -> list[dict]:
                     "group": tag.get("group") or "",
                     "concepts": concepts,
                     "flow": round(flow, 4),
+                    "money_twd": (
+                        round(float(move["money_twd"]), 0)
+                        if move.get("money_twd") is not None
+                        else None
+                    ),
                     "dshares": move["dshares"],
                     "percentile": percentile,
                     "label": move_label(flow, percentile),
@@ -190,6 +203,7 @@ def build_observations(etf: str, history: dict, tags: dict) -> list[dict]:
                 "etf": etf,
                 "date": date,
                 "prev_date": prev_date,
+                "fund_size": history[date].get("meta", {}).get("fund_size"),
                 "baseline": baseline,
                 "stocks": rows,
             }
@@ -236,6 +250,7 @@ def main() -> int:
         "methodology": {
             "signal": "ActiveWeight = delta shares * current weight / current shares",
             "unit": "portfolio-weight-equivalent percentage points",
+            "cash_estimate": "ActiveWeight / 100 * disclosed fund size (TWD)",
             "baseline_sessions": BASELINE_SESSIONS,
             "notable_percentile": 80,
             "outlier_percentile": 95,
