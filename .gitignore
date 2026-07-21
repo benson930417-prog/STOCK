@@ -28,6 +28,7 @@ data/images/
 data/fonts/
 data/quote_cache/
 data/market_pulse_volume.csv
+data/margin_maintenance.csv
 data/debug_00997A/
 data/test_*.html
 data/test_*.js
@@ -37,6 +38,7 @@ data/etf_*_summary_*.jpg
 data/summaries/*
 !data/summaries/market_pulse_latest.jpg
 !data/summaries/tag_flow_insight_latest.jpg
+!data/summaries/margin_maintenance_latest.jpg
 
 # Local design previews for the score chart (throwaway)
 data/_preview_*

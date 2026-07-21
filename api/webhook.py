@@ -20,6 +20,7 @@ import requests
 import re
 import unicodedata
 import json
+import csv
 import subprocess
 import threading
 import sqlite3
@@ -123,12 +124,15 @@ def is_tag_flow_insight_command(text):
     normalized = unicodedata.normalize("NFKC", text).strip()
     return normalized in {"題材洞察", "類股洞察", "ETF題材洞察"}
 
-def tag_flow_insight_quick_reply():
+def master_insight_quick_reply():
     return QuickReply(
         items=[
             QuickReplyButton(
                 action=MessageAction(label="🔥 今日類股洞察", text="題材洞察")
-            )
+            ),
+            QuickReplyButton(
+                action=MessageAction(label="⚠️ 融資風險", text="融資維持率")
+            ),
         ]
     )
 
@@ -161,6 +165,27 @@ def is_market_pulse_command(text):
         or "市场脉动" in normalized
         or compact in {"marketpulse", "pulse", "markethealth"}
     )
+
+def is_margin_risk_command(text):
+    normalized = unicodedata.normalize("NFKC", text).strip().lower()
+    compact = re.sub(r"[^0-9a-z\u4e00-\u9fff]", "", normalized)
+    return (
+        "融資維持率" in normalized
+        or "融資風險" in normalized
+        or compact in {"marginrisk", "marginmaintenance", "全市場融資"}
+    )
+
+def latest_margin_risk_date():
+    path = os.path.join(parent_dir, "data", "margin_maintenance.csv")
+    latest = None
+    with open(path, encoding="utf-8-sig", newline="") as fh:
+        for row in csv.DictReader(fh):
+            value = str(row.get("date") or "").strip()
+            if value and (latest is None or value > latest):
+                latest = value
+    if not latest:
+        raise RuntimeError("No date in margin_maintenance.csv")
+    return latest
 
 def latest_market_pulse_date():
     db_path = os.path.join(parent_dir, "data", "etf_bench", "etf_bench.sqlite")
@@ -783,6 +808,7 @@ def handle_message(event):
     is_daily_update = is_daily_update_command(user_msg)
     is_gold = is_gold_command(user_msg)
     is_market_pulse = is_market_pulse_command(user_msg)
+    is_margin_risk = is_margin_risk_command(user_msg)
     refetch_target = parse_refetch_command(user_msg)
     etf_quote_ticker = (
         None
@@ -791,6 +817,7 @@ def handle_message(event):
         or is_tag_flow_insight
         or is_gold
         or is_market_pulse
+        or is_margin_risk
         or refetch_target
         else parse_etf_quote_command(user_msg)
     )
@@ -803,7 +830,7 @@ def handle_message(event):
             messages = [
                 TextSendMessage(
                     text=text,
-                    quick_reply=tag_flow_insight_quick_reply(),
+                    quick_reply=master_insight_quick_reply(),
                 )
             ]
             for output_path in output_paths[:2]:
@@ -861,6 +888,30 @@ def handle_message(event):
             reply_line(
                 event.reply_token,
                 TextSendMessage(text="市場脈動截圖尚未更新完成，請稍後再試。")
+            )
+
+    elif is_margin_risk:
+        try:
+            filename = "margin_maintenance_latest.jpg"
+            image_path = os.path.join(parent_dir, "data", "summaries", filename)
+            if not os.path.exists(image_path):
+                raise FileNotFoundError(f"Missing cached margin-risk image: {image_path}")
+            latest_date = latest_margin_risk_date()
+            img_url = f"https://linechatbot.duckdns.org/api/webhook/summaries/{filename}?t={int(os.path.getmtime(image_path))}"
+            reply_line(
+                event.reply_token,
+                [
+                    TextSendMessage(
+                        text=f"融資風險雷達｜資料截至 {latest_date}\n公開資料估算，不等同個別帳戶維持率"
+                    ),
+                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
+                ],
+            )
+        except Exception as e:
+            print("Margin-risk cached image reply failed:", e)
+            reply_line(
+                event.reply_token,
+                TextSendMessage(text="融資風險圖卡尚未更新完成，請稍後再試。")
             )
 
     elif is_gold:

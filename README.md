@@ -119,11 +119,14 @@ Notes:
 | `src/ui/etf_tab.py` | Active/passive ETF dashboard views and daily operation report UI. |
 | `src/ui/etf_compare_tab.py` | ETF comparison tab backed by the local `data/etf_bench/etf_bench.sqlite` database. |
 | `src/ui/market_pulse_tab.py` | Market pulse tab using ETF benchmark/index history and regime calculations. |
+| `src/ui/margin_risk_tab.py` | 融資風險 tab: flexible 1m/3m/6m/1y/all/custom history, TAIEX overlay, financing-balance context, and a plain-language risk conclusion. Pure render of `data/margin_maintenance.csv` (no network). |
 | `src/ui/tag_flow_tab.py` | 題材流向 tab: flexible 1/5/20/all/custom shared-session ranges, 類股-only aggregation, persistence, ETF consensus, timeline, and stock drill-down. Ranks by normalized 相對力道 for fair cross-fund comparison and shows estimated 億元 as intuitive context. Uses the Taiwan convention consistently: red = 加碼/買進, green = 減碼/賣出. 概念 labels appear only as stock-level notes and never enter interpretation. Pure render of `data/tag_flow.json` (no network). |
 
 Dashboard authentication uses `VIEW_PASSWORD` and `ADMIN_PASSWORD` from Streamlit secrets, environment variables, or `/home/ubuntu/.stock_secrets` depending on the runtime.
 
 Market Pulse (`src/ui/market_pulse_tab.py`) is a dashboard view, not a live data fetcher. It reads the local ETF benchmark DB plus the server-local TWSE volume cache. Do not add slow network calls to the Streamlit render path; add a script/cache refresh step instead.
+
+Margin Risk (`src/ui/margin_risk_tab.py`) follows the same cache-only rule. It must never be presented as an exchange-published daily "average account maintenance rate": the public TWSE/TPEx inputs omit client-level supplementary collateral. The feature is explicitly the transparent `全市場融資擔保估算率` documented below.
 
 ## LINE Webhook
 
@@ -137,6 +140,7 @@ Common LINE commands:
 | `吳大師` | Master holding portfolio card. |
 | `題材洞察` | Latest decision-only image card: strong/accelerating buys, genuine heavy-selling categories when present, a five-session trend under every listed category, and strict 3/3 common buy/sell stock pools. Available as a visible Page 1 rich-menu tile and as an 吳大師 quick reply. |
 | `市場脈動` | Latest generated market pulse image. |
+| `融資維持率` / `融資風險` | Latest generated financing-risk image. This is also a visible quick-reply button under `吳大師`. |
 | `油價` | WTI and Brent TradingView text quotes plus charts. |
 | `匯率` | USD/TWD, USD/CHF, and USD/JPY TradingView text quotes plus charts. |
 | `債券` or `債卷` | US 10-year yield text quote and chart. |
@@ -277,6 +281,8 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/generate_tag_flow_insight.py` | Converts the category-only flow cache into one shared decision-focused insight plus `data/summaries/tag_flow_insight_latest.jpg` for the daily admin email, scheduled LINE image, and on-demand `題材洞察` reply. The card shows a same-scale five-session normalized trend beneath every listed category. Buy leaders require positive/accelerating equal-weight ETF flow; heavy sells require negative five-session flow and at least two net-selling ETFs, while the latest session labels the pressure as worsening, continuing, or easing. Common buy/sell stock pools require all three ETFs to agree. |
 | `scripts/generate_etf_summary.py` | Builds daily ETF summary images for LINE broadcast. |
 | `scripts/generate_market_pulse_summary.py` | Renders the market pulse summary image served by the LINE `市場脈動` command. |
+| `scripts/update_margin_maintenance.py` | Fetches official TWSE + TPEx daily margin balances/prices and writes the server-local `data/margin_maintenance.csv` public-data estimate cache. |
+| `scripts/generate_margin_maintenance_summary.py` | Renders the daily `data/summaries/margin_maintenance_latest.jpg` card served by the LINE `融資維持率` / `融資風險` command. |
 | `scripts/generate_quote_card.py` | Shared quote-card image renderer for ETF/master-holding views. |
 | `scripts/master_holding_quote_card.py` | Expands ETF holdings into the configured master portfolio and renders/caches its quote card. |
 | `scripts/master_manual_positions.py` | Manual position data/helpers for the master portfolio. |
@@ -321,13 +327,13 @@ final four-basket (股票/債券/商品/其他) design and rationale.
 First-time benchmark setup:
 
 ```bash
-cd /home/ubuntu/STOCK && source venv/bin/activate && python -m scripts.etf_benchmark.step1_universe && python -m scripts.etf_benchmark.step2_schema --reset && python -m scripts.etf_benchmark.step3_backfill && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score --backfill && python scripts/update_market_pulse_volume.py --backfill-years 5
+cd /home/ubuntu/STOCK && source venv/bin/activate && python -m scripts.etf_benchmark.step1_universe && python -m scripts.etf_benchmark.step2_schema --reset && python -m scripts.etf_benchmark.step3_backfill && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score --backfill && python scripts/update_market_pulse_volume.py --backfill-years 5 && python scripts/update_margin_maintenance.py --backfill-years 1 && python scripts/generate_margin_maintenance_summary.py
 ```
 
 Daily refresh uses:
 
 ```bash
-python -m scripts.etf_benchmark.step3_backfill --incremental && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score && python scripts/update_market_pulse_volume.py --months 4
+python -m scripts.etf_benchmark.step3_backfill --incremental && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score && python scripts/update_market_pulse_volume.py --months 4 && python scripts/update_margin_maintenance.py --days 10 && python scripts/generate_margin_maintenance_summary.py
 ```
 
 ### Market Pulse Data Flow
@@ -353,6 +359,26 @@ python scripts/update_market_pulse_volume.py --backfill-years 5
 
 Regime threshold must stay aligned: the dashboard imports `DEFAULT_THRESHOLD_PCT` from `scripts/etf_benchmark/step4_regimes.py` for its live ZigZag overlay and headline label. Do not hardcode a separate 4%/5% threshold in `src/ui/market_pulse_tab.py`.
 
+### Margin Risk Data Flow
+
+The feature is a transparent **public-data estimate**, not a copied vendor series and not the actual daily average of brokerage customer accounts:
+
+```text
+全市場融資擔保估算率
+= Σ(TWSE + TPEx 今日融資餘額張數 × 當日收盤價 × 1,000)
+  ÷ Σ(TWSE + TPEx 今日融資金額餘額) × 100
+```
+
+Official inputs are TWSE `MI_MARGN` + `MI_INDEX` and TPEx `融資融券餘額` + `每日收盤行情`. The denominator reports are in 仟元; the cache converts displayed money to 億元. The legal 130% call and 166% cure levels are shown only as **account-level references**. They must never be described as exact trigger lines for the aggregate estimate because the public reports do not include supplementary collateral held inside each client's whole account.
+
+The system has three read/write boundaries:
+
+- `scripts/update_margin_maintenance.py` is the only network writer. Daily: `--days 10`; one-time history: `--backfill-years 1`.
+- `src/ui/margin_risk_tab.py` only reads `data/margin_maintenance.csv` and offers 1m/3m/6m/1y/all/custom ranges.
+- `scripts/generate_margin_maintenance_summary.py` reads that same cache and writes the tracked latest LINE card. `api/webhook.py` only serves the cached JPG; it must never recalculate or fetch data on demand.
+
+The daily orchestrator logs `[margin-risk] rows=... latest=... financing=... coverage=...`. The admin email therefore proves that both exchanges were incorporated and reports price-match coverage. The card is generated every day but is not automatically broadcast; it is returned free as an on-demand LINE reply from the `吳大師` quick button.
+
 ## Data Directory
 
 Tracked files in `data/` are source/history state that should move with the repo:
@@ -370,15 +396,17 @@ Tracked files in `data/` are source/history state that should move with the repo
 | `data/master_trades.csv` | Manual trade ledger for the master portfolio. |
 | `data/summaries/market_pulse_latest.jpg` | Latest generated Market Pulse LINE image. |
 | `data/summaries/tag_flow_insight_latest.jpg` | Latest generated 主動 ETF 類股洞察 LINE card. It is regenerated, committed, and pushed by the daily job. |
+| `data/summaries/margin_maintenance_latest.jpg` | Latest generated 融資風險 LINE card. It is regenerated and committed by the daily job, then served on demand. |
 
 Ignored generated data:
 
 | Path | Producer |
 |---|---|
 | `data/images/` | `chart_service.py`, quote-card renderers, webhook responses. |
-| `data/summaries/` | Generated report images. Everything is ignored except the explicitly tracked `market_pulse_latest.jpg` and `tag_flow_insight_latest.jpg` cards. |
+| `data/summaries/` | Generated report images. Everything is ignored except the explicitly tracked `market_pulse_latest.jpg`, `tag_flow_insight_latest.jpg`, and `margin_maintenance_latest.jpg` cards. |
 | `data/quote_cache/` | Quote monitor services. |
 | `data/market_pulse_volume.csv` | Server-local TWSE market turnover/volume cache from `scripts/update_market_pulse_volume.py`. |
+| `data/margin_maintenance.csv` | Server-local TWSE+TPEx financing-collateral estimate from `scripts/update_margin_maintenance.py`. |
 | `data/fonts/` | Local font assets if installed on the server. |
 | `data/etf_bench/*.sqlite` | ETF benchmark pipeline. |
 
@@ -571,6 +599,8 @@ Each of these is a trap that has already caused a wrong result or a missed step.
 16. **The daily Cmoney `[OK]` must prove the live parser, not just reuse cache.** `update_and_notify.sh` runs `build_stock_tags.py --probe 2308`, which re-fetches one stable category page every run while also filling missing holdings. Failed/missing categories remain retryable and must make the step `PARTIAL_FAIL`; the admin email includes `[cmoney-tags]` coverage and canary output. Never interpret 概念股 in the generated insight.
 
 17. **Email and LINE 題材洞察 share one generator/cache.** `scripts/generate_tag_flow_insight.py` writes both `data/tag_flow_insight.json` and the tracked `data/summaries/tag_flow_insight_latest.jpg`. The daily email prints `email_text`; the scheduled 18:30 LINE run and the on-demand `題材洞察` reply serve the generated image. Do not implement separate ranking or narrative logic in the webhook. Sector ranking and every mini trend are category-only and normalized equally per ETF. A heavy sell must be net negative across five sessions with at least two net-selling ETFs; the latest session determines whether its badge says pressure is worsening, continuing, or easing. Slowing positive flow is only `降溫`, never `賣壓`. A stock enters `三檔共買池` or `三檔共賣池` only when 00403A, 00981A, and 00991A all agree over the same five common sessions. Never run the full daily script merely to test this card because that would send the paid broadcast; render the generator directly and inspect the JPG instead.
+
+18. **融資風險 is an estimate, not an official account-average series.** The exchanges publish margin-share balances, prices, and aggregate financing amounts, but not every brokerage customer's supplementary collateral. Always label the result `全市場融資擔保估算率` / `公開資料估算`; never call it the official `台股平均融資維持率`, never claim it reproduces MacroMicro, and never describe 130% as this aggregate line's exact forced-liquidation trigger. Only `scripts/update_margin_maintenance.py` may call TWSE/TPEx. The dashboard and webhook are cache-only. Red means improving buffer and green means worsening buffer, per the site's Taiwan color convention. The `吳大師` card must keep both quick replies (`今日類股洞察` and `融資風險`).
 
 ## ETF Maintenance Playbook For Agents
 

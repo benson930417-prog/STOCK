@@ -108,11 +108,14 @@ record_step_ok() {
             step5*)
                 metrics=$(grep -E "^\[step5\] (recorded|backfilled)" "$logfile" | sed 's/^/          /')
                 ;;
-            generate_etf_summary|generate_market_pulse_summary)
+            generate_etf_summary|generate_market_pulse_summary|"generate margin risk summary")
                 metrics=$(grep -E "^Saved " "$logfile" | sed 's/^/          /')
                 ;;
             "market pulse volume cache")
                 metrics=$(grep -E "^\[market-volume\]" "$logfile" | sed 's/^/          /')
+                ;;
+            "margin risk cache")
+                metrics=$(grep -E "^\[margin-risk\]" "$logfile" | tail -n 3 | sed 's/^/          /')
                 ;;
             "build stock tags (incremental)")
                 metrics=$(grep -E "^\[cmoney-tags\]" "$logfile" | sed 's/^/          /')
@@ -256,6 +259,8 @@ run_step "step4 regime tagger"           python -m scripts.etf_benchmark.step4_r
 run_step "step5 score (append today)"    python -m scripts.etf_benchmark.step5_score
 run_step "market pulse volume cache"     python scripts/update_market_pulse_volume.py --months 4
 run_step "generate_market_pulse_summary" python scripts/generate_market_pulse_summary.py
+run_step "margin risk cache"              python scripts/update_margin_maintenance.py --days 10
+run_step "generate margin risk summary"   python scripts/generate_margin_maintenance_summary.py
 
 # Theme-flow (題材流向) tab: refresh any missing stock tags (incremental, only new
 # holdings hit cmoney), then rebuild the ETF theme-flow map. build_tag_flow is

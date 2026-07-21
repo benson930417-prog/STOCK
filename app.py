@@ -43,6 +43,7 @@ import streamlit as st
 from src.ui.etf_tab import render_etf_tab, render_passive_etf_tab
 from src.ui.etf_compare_tab import render_etf_compare_tab
 from src.ui.market_pulse_tab import render_market_pulse_tab
+from src.ui.margin_risk_tab import render_margin_risk_tab
 from src.ui.tag_flow_tab import render_tag_flow_tab
 from scripts.master_manual_positions import (
     CASH_LABEL as MANUAL_CASH_LABEL,
@@ -2461,7 +2462,8 @@ try:
     hr()
 
     (tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf, tab_passive_etf,
-     tab_master_holding, tab_etf_compare, tab_market_pulse, tab_tag_flow) = st.tabs(
+     tab_master_holding, tab_etf_compare, tab_market_pulse, tab_margin_risk,
+     tab_tag_flow) = st.tabs(
         [
             T(lang, "Overview", "總覽"),
             T(lang, "Leaderboard", "排行"),
@@ -2472,6 +2474,7 @@ try:
             "吳大師持股",
             T(lang, "ETF Comparison", "ETF 比較"),
             "市場脈動",
+            "融資風險",
             "題材流向",
         ]
     )
@@ -3945,6 +3948,13 @@ try:
 
     with tab_market_pulse:
         render_market_pulse_tab(
+            lang=lang,
+            T=T,
+            DATA_DIR=DATA_DIR,
+        )
+
+    with tab_margin_risk:
+        render_margin_risk_tab(
             lang=lang,
             T=T,
             DATA_DIR=DATA_DIR,
