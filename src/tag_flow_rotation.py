@@ -26,6 +26,8 @@ CONFIRM_SESSIONS = 2
 MIN_PERCENTILE_HISTORY = 10
 ABSOLUTE_NOISE_FLOOR = 0.004
 DEFAULT_CHART_DAYS = 10
+RECENT_ALERT_DAYS = 3
+RECENT_ALERT_FLOOR = 0.05
 
 PHASES = {
     "buy_entering": {
@@ -121,6 +123,27 @@ def _empirical_percentile(value: float, history: list[float]) -> float | None:
         return None
     ordered = sorted(abs(item) for item in history)
     return round(100.0 * bisect_right(ordered, abs(value)) / len(ordered), 1)
+
+
+def strength_band(percentile: float | None) -> str:
+    """Turn an audit percentile into a plain-language user-facing band."""
+    if percentile is None:
+        return "歷史樣本累積中"
+    if percentile >= 80:
+        return "自身力道強"
+    if percentile >= 50:
+        return "自身力道中"
+    return "自身力道一般"
+
+
+def _rolling_total_percentile(values: list[float], window: int) -> float | None:
+    if len(values) <= window:
+        return None
+    totals = [
+        sum(values[max(0, index - window + 1) : index + 1])
+        for index in range(len(values))
+    ]
+    return _empirical_percentile(totals[-1], totals[:-1])
 
 
 def _candidate_phase(
@@ -316,6 +339,24 @@ def build_rotation_snapshot(
         percentile = _empirical_percentile(fast_series[-1], history_for_percentile)
         threshold = threshold_history[-1]
         pressure_score = fast_series[-1] / threshold if threshold else 0.0
+        recent_count = min(RECENT_ALERT_DAYS, len(dates))
+        recent_total = sum(daily[-recent_count:])
+        recent_by_etf = {
+            etf: sum(values[-recent_count:])
+            for etf, values in daily_by_etf.items()
+        }
+        recent_direction_floor = ABSOLUTE_NOISE_FLOOR * recent_count
+        recent_buyers = sum(
+            value > recent_direction_floor for value in recent_by_etf.values()
+        )
+        recent_sellers = sum(
+            value < -recent_direction_floor for value in recent_by_etf.values()
+        )
+        recent_alert_threshold = max(
+            RECENT_ALERT_FLOOR,
+            threshold * recent_count,
+        )
+        recent_percentile = _rolling_total_percentile(daily, recent_count)
         state_age = 0
         for phase in reversed(stable_history):
             if phase != stable_phase:
@@ -350,9 +391,19 @@ def build_rotation_snapshot(
             "background": round(background_series[-1], 4),
             "pressure_score": round(pressure_score, 3),
             "strength_percentile": percentile,
+            "strength_label": strength_band(percentile),
             "buyers": buyers,
             "sellers": sellers,
             "etf_count": len(selected_etfs),
+            "recent_3_total": round(recent_total, 4),
+            "recent_3_by_etf": {
+                etf: round(value, 4) for etf, value in recent_by_etf.items()
+            },
+            "recent_3_buyers": recent_buyers,
+            "recent_3_sellers": recent_sellers,
+            "recent_3_percentile": recent_percentile,
+            "recent_sell_alert": recent_total < -recent_alert_threshold,
+            "recent_buy_alert": recent_total > recent_alert_threshold,
             "window_totals": _window_totals(daily),
             "chart_dates": dates[-chart_count:],
             "daily": [round(value, 4) for value in daily[-chart_count:]],
@@ -391,8 +442,7 @@ def build_rotation_snapshot(
 
 def phase_explanation(row: dict) -> str:
     """Concise, explicit reason suitable for UI and LINE text."""
-    percentile = row.get("strength_percentile")
-    magnitude = f"自身歷史 P{percentile:.0f}" if percentile is not None else "歷史樣本累積中"
+    magnitude = row.get("strength_label") or strength_band(row.get("strength_percentile"))
     if row.get("fast", 0.0) > 0:
         breadth = f"{row['buyers']}/{row['etf_count']} ETF 近期偏買"
     elif row.get("fast", 0.0) < 0:

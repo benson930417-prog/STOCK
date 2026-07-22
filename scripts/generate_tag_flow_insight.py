@@ -53,8 +53,6 @@ CARD_RED = (239, 68, 68)
 CARD_RED_SOFT = (72, 29, 35)
 CARD_GREEN = (34, 197, 94)
 CARD_GREEN_SOFT = (13, 55, 38)
-CARD_AMBER = (245, 158, 11)
-CARD_AMBER_SOFT = (66, 43, 12)
 CARD_SLATE = (100, 116, 139)
 
 
@@ -336,7 +334,7 @@ def _draw_sector_card(
 def _render_card(payload: dict) -> tuple[Path, Path]:
     sectors = payload.get("sectors", [])[:MAX_SECTORS]
     selling = payload.get("selling", [])[:MAX_SELL_SECTORS]
-    cooling = payload.get("cooling")
+    warning = payload.get("warning")
     buy_block_height = (
         len(sectors) * SECTOR_CARD_HEIGHT + max(0, len(sectors) - 1) * SECTOR_CARD_GAP
         if sectors else 142
@@ -347,7 +345,7 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
     )
     card_height = (
         220 + 48 + buy_block_height + 30 + 48 + sell_block_height
-        + (130 if cooling else 0) + 178 + 88
+        + (130 if warning else 0) + 178 + 88
     )
     img = Image.new("RGB", (CARD_WIDTH, card_height), CARD_BG)
     draw = ImageDraw.Draw(img)
@@ -458,32 +456,36 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
         )
         y += 142
 
-    if cooling:
+    if warning:
         y += 18
         _rounded(
             draw,
             (54, y, CARD_WIDTH - 54, y + 112),
             22,
-            CARD_AMBER_SOFT,
-            CARD_AMBER,
+            CARD_GREEN_SOFT,
+            CARD_GREEN,
             2,
         )
-        draw.rounded_rectangle((54, y, 63, y + 112), radius=5, fill=CARD_AMBER)
+        draw.rounded_rectangle((54, y, 63, y + 112), radius=5, fill=CARD_GREEN)
         draw.text(
             (84, y + 24),
-            "輪動轉折",
+            "近期減碼警示",
             font=CARD_FONTS["badge"],
-            fill=CARD_AMBER,
+            fill=CARD_GREEN,
         )
         draw.text(
-            (225, y + 19),
-            cooling["category"],
+            (270, y + 19),
+            warning["category"],
             font=CARD_FONTS["cooling"],
             fill=CARD_TEXT,
         )
+        alert_reason = (
+            f"近3日 {warning.get('recent_3_total', 0.0):+.2f}%規模 · "
+            f"{warning.get('recent_3_sellers', 0)}/{warning.get('etf_count', 3)} ETF減碼"
+        )
         draw.text(
-            (225, y + 61),
-            cooling.get("phase_label", "背景與近期壓力正在交接"),
+            (270, y + 61),
+            alert_reason,
             font=CARD_FONTS["body"],
             fill=CARD_MUTED,
         )
@@ -523,7 +525,10 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
         font=CARD_FONTS["badge"],
         fill=CARD_GREEN,
     )
-    sell_categories = "、".join(row["category"] for row in selling)
+    sell_names = ([warning["category"]] if warning else []) + [
+        row["category"] for row in selling
+    ]
+    sell_categories = "、".join(dict.fromkeys(sell_names))
     draw.text(
         (330, conclusion_y + 89),
         sell_categories or "目前沒有已確認的減碼類股",
@@ -568,7 +573,7 @@ def _render_line(
     as_of: str,
     sectors: list[dict],
     selling: list[dict],
-    cooling: dict | None,
+    warning: dict | None,
 ) -> str:
     lines = [
         "🔥 吳大師｜ETF 類股洞察",
@@ -589,12 +594,15 @@ def _render_line(
                 lines.append("三檔共買池：目前沒有 3/3 ETF 同股買盤共識")
             lines.append("")
 
-    if cooling:
+    if warning:
         lines.extend(
             [
-                "🟠 輪動轉折",
-                f"{cooling['category']}：{cooling['phase_label']}",
-                phase_explanation(cooling),
+                "🟢 近期減碼警示（近 3 日）",
+                (
+                    f"{warning['category']}：{warning['recent_3_total']:+.2f}% 規模｜"
+                    f"{warning['recent_3_sellers']}/{warning['etf_count']} ETF 減碼"
+                ),
+                "這是即時警訊，不必等慢速背景完全翻空。",
                 "",
             ]
         )
@@ -618,7 +626,10 @@ def _render_line(
             if stock["name"] not in pool_names:
                 pool_names.append(stock["name"])
     buy_summary = "、".join(pool_names[:6]) if pool_names else "目前沒有 3/3 同股買盤共識"
-    sell_summary = "、".join(row["category"] for row in selling) or "目前沒有已確認減碼"
+    sell_names = ([warning["category"]] if warning else []) + [
+        row["category"] for row in selling
+    ]
+    sell_summary = "、".join(dict.fromkeys(sell_names)) or "目前沒有近期減碼警示"
     lines.append(f"一句話｜紅：{buy_summary}｜綠：{sell_summary}")
     return "\n".join(lines).strip()
 
@@ -639,16 +650,13 @@ def generate() -> dict:
         row for row in rows
         if row["phase_group"] == "sell" and row["confidence"] in {"高", "中"}
     ][:MAX_SELL_SECTORS]
-    transition_rows = [
-        row for row in rows
-        if row["phase_group"] == "transition" and not row.get("pending_phase")
-    ]
-    cooling = max(
-        transition_rows,
-        key=lambda row: abs(float(row["pressure_score"])),
+    warning_rows = [row for row in rows if row.get("recent_sell_alert")]
+    warning = min(
+        warning_rows,
+        key=lambda row: float(row.get("recent_3_total", 0.0)),
         default=None,
     )
-    line_text = _render_line(rotation["as_of"], selected, selling, cooling)
+    line_text = _render_line(rotation["as_of"], selected, selling, warning)
     payload = {
         "schema_version": 2,
         "generated": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -669,7 +677,7 @@ def generate() -> dict:
         ),
         "sectors": selected,
         "selling": selling,
-        "cooling": cooling,
+        "warning": warning,
         "line_text": line_text,
         "email_text": line_text,
     }
@@ -683,7 +691,8 @@ def generate() -> dict:
         f"[theme-insight] as_of={payload['as_of']} common_sessions={rotation['history_sessions']} "
         f"confirmed_buy={len(selected)} "
         f"leaders={','.join(row['category'] for row in selected) or 'none'} "
-        f"confirmed_sell={','.join(row['category'] for row in selling) or 'none'}"
+        f"confirmed_sell={','.join(row['category'] for row in selling) or 'none'} "
+        f"recent_sell_warning={warning['category'] if warning else 'none'}"
     )
     print(f"Saved {latest_image.relative_to(ROOT)}")
     print(f"Saved {dated_image.relative_to(ROOT)}")

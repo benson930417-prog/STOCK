@@ -94,54 +94,93 @@ def _render_legend() -> None:
 
 
 def _rotation_board(rows: list[dict]) -> None:
+    confidence_order = {"高": 0, "中": 1, "低": 2}
+    buy_rows = sorted(
+        (
+            row for row in rows
+            if row["phase_group"] == "buy" and row["confidence"] in {"高", "中"}
+        ),
+        key=lambda row: (
+            confidence_order.get(row["confidence"], 9),
+            -float(row.get("recent_3_total", 0.0)),
+        ),
+    )[:4]
+    turn_rows = sorted(
+        (
+            row for row in rows
+            if row.get("pending_phase")
+            in {"buy_entering", "buy_accelerating", "buy_continuing"}
+            and float(row.get("recent_3_total", 0.0)) > 0
+        ),
+        key=lambda row: -float(row.get("recent_3_total", 0.0)),
+    )[:3]
+    sell_rows = sorted(
+        (
+            row for row in rows
+            if row.get("recent_sell_alert") or row["phase_group"] == "sell"
+        ),
+        key=lambda row: float(row.get("recent_3_total", 0.0)),
+    )[:4]
     lanes = [
-        ("buy", "🔴 資金進場／延續", "買盤已由多數 ETF 確認"),
-        ("transition", "🟠 輪動轉折", "背景與近期壓力正在交接"),
-        ("sell", "🟢 近期減碼", "賣方壓力已由多數 ETF 確認"),
-        ("neutral", "⚪ 證據不足", "單一 ETF 或方向尚未形成共識"),
+        ("buy", "🔴 已確認買盤", "只列方向與 ETF 廣度都確認的前四名", buy_rows),
+        ("watch", "🟠 轉強觀察", "尚未滿兩日確認，只列最明顯三項", turn_rows),
+        ("alert", "🟢 近期減碼警示", "近 3 日明顯減碼；不等同長期趨勢", sell_rows),
     ]
     cards: list[str] = []
-    for group, title, note in lanes:
-        lane_rows = [row for row in rows if row["phase_group"] == group]
+    for group, title, note, lane_rows in lanes:
         items: list[str] = []
-        for row in lane_rows[:6]:
-            percentile = row.get("strength_percentile")
-            magnitude = f"自身 P{percentile:.0f}" if percentile is not None else "樣本累積中"
-            if row["fast"] > 0:
-                breadth = f"{row['buyers']}/{row['etf_count']} ETF 買"
-            elif row["fast"] < 0:
-                breadth = f"{row['sellers']}/{row['etf_count']} ETF 賣"
+        for row in lane_rows:
+            if group == "alert":
+                recent = float(row.get("recent_3_total", 0.0))
+                breadth = f"{row.get('recent_3_sellers', 0)}/{row['etf_count']} ETF 賣"
+                if row["phase_group"] == "sell" and row["confidence"] in {"高", "中"}:
+                    phase = "已確認減碼"
+                elif row.get("recent_3_sellers", 0) >= min(2, row["etf_count"]):
+                    phase = "近 3 日急減碼"
+                else:
+                    phase = "單一 ETF 減碼，待確認"
+                meta = f"近 3 日 {recent:+.2f}% 規模 · {breadth}"
+                pending = (
+                    "<div class='tf-alert-note'>背景仍偏買，這是轉弱警示</div>"
+                    if float(row.get("background", 0.0)) > 0 else ""
+                )
+            elif group == "watch":
+                phase = "轉強待確認"
+                recent = float(row.get("recent_3_total", 0.0))
+                meta = (
+                    f"近 3 日 {recent:+.2f}% 規模 · "
+                    f"{row.get('recent_3_buyers', 0)}/{row['etf_count']} ETF 買"
+                )
+                pending = "<div class='tf-pending'>再維持 1 日才升級為確認</div>"
             else:
-                breadth = "近期中性"
-            pending = (
-                f"<div class='tf-pending'>轉向待確認：{escape(row['pending_label'])}</div>"
-                if row.get("pending_label") else ""
-            )
+                phase = row["phase_label"]
+                meta = (
+                    f"{escape(row.get('strength_label', '自身力道一般'))} · "
+                    f"{row['buyers']}/{row['etf_count']} ETF 買 · "
+                    f"方向信心 {row['confidence']}"
+                )
+                pending = ""
             items.append(
                 dedent(
                     f"""
                     <div class="tf-rotation-item tf-rotation-{group}">
                       <div class="tf-rotation-name">{escape(row['category'])}</div>
-                      <div class="tf-rotation-phase">{escape(row['phase_label'])}</div>
-                      <div class="tf-rotation-meta">{magnitude} · {breadth} · 方向信心 {row['confidence']}</div>
+                      <div class="tf-rotation-phase">{escape(phase)}</div>
+                      <div class="tf-rotation-meta">{meta}</div>
                       {pending}
                     </div>
                     """
                 ).strip()
             )
         if not items:
-            items.append('<div class="tf-rotation-empty">目前沒有類股落在此階段</div>')
-        more = (
-            f"<div class='tf-rotation-more'>另有 {len(lane_rows) - 6} 類股，見完整表</div>"
-            if len(lane_rows) > 6 else ""
-        )
+            items.append('<div class="tf-rotation-empty">目前沒有需要顯示的訊號</div>')
         cards.append(
             dedent(
                 f"""
                 <div class="tf-rotation-lane">
                   <div class="tf-rotation-title">{title}</div>
                   <div class="tf-rotation-note">{note}</div>
-                  {''.join(items)}{more}
+                  {''.join(items)}
                 </div>
                 """
             ).strip()
@@ -155,7 +194,6 @@ def _rotation_board(rows: list[dict]) -> None:
 def _rotation_table(rows: list[dict]) -> pd.DataFrame:
     display = []
     for row in rows:
-        percentile = row.get("strength_percentile")
         pending = f" → 待確認：{row['pending_label']}" if row.get("pending_label") else ""
         if row["fast"] > 0:
             breadth = f"{row['buyers']}/{row['etf_count']} 偏買"
@@ -171,7 +209,12 @@ def _rotation_table(rows: list[dict]) -> pd.DataFrame:
                 "近期壓力": f"{row['fast']:+.3f}%",
                 "主方向": f"{row['trend']:+.3f}%",
                 "背景": f"{row['background']:+.3f}%",
-                "相對自身": f"P{percentile:.0f}" if percentile is not None else "樣本累積中",
+                "力道相對自身": row.get("strength_label", "歷史樣本累積中"),
+                "近3日警示": (
+                    f"🟢 {row.get('recent_3_total', 0.0):+.2f}% · "
+                    f"{row.get('recent_3_sellers', 0)}/{row['etf_count']} ETF 賣"
+                    if row.get("recent_sell_alert") else "—"
+                ),
                 "全類股排名": f"{row['cross_section_rank']}/{row['cross_section_total']}",
                 "ETF 確認": breadth,
                 "方向信心": row["confidence"],
@@ -604,9 +647,14 @@ def _stock_table(
     for row in rows[:limit]:
         aligned_days = row["buy_days"] if row["flow"] >= 0 else row["sell_days"]
         consensus = f"{row['buyers']}買 / {row['sellers']}賣"
-        percentile = (
-            f"P{row['max_percentile']:.0f}" if row["max_percentile"] is not None else "樣本不足"
-        )
+        if row["max_percentile"] is None:
+            single_day_size = "樣本不足"
+        elif row["max_percentile"] >= 95:
+            single_day_size = "極大"
+        elif row["max_percentile"] >= 80:
+            single_day_size = "偏大"
+        else:
+            single_day_size = "一般"
         display_rows.append(
             {
                 "個股": f"{row['name']} · {row['id']}",
@@ -618,7 +666,7 @@ def _stock_table(
                 "最新一日": _fmt_money(row["latest_money"]),
                 "同向日": f"{aligned_days}/{n_dates}",
                 "ETF 共識": consensus if n_etfs > 1 else "—",
-                "最大單日": percentile,
+                "最大單日異常": single_day_size,
                 "_direction": row["flow"],
             }
         )
@@ -666,7 +714,7 @@ def render_tag_flow_tab(
         .tf-money {font-size:1.5rem; font-weight:800; line-height:1.35}
         .tf-buy .tf-money {color:#E74C3C}.tf-sell .tf-money {color:#2ECC71}
         .tf-detail {font-size:.84rem; opacity:.82; margin-top:.18rem}
-        .tf-rotation-grid {display:grid; grid-template-columns:repeat(4,minmax(220px,1fr));
+        .tf-rotation-grid {display:grid; grid-template-columns:repeat(3,minmax(240px,1fr));
           gap:.8rem; margin:.5rem 0 1.1rem}
         .tf-rotation-lane {padding:.9rem; border:1px solid rgba(148,163,184,.22);
           border-radius:.85rem; background:rgba(148,163,184,.045)}
@@ -674,13 +722,14 @@ def render_tag_flow_tab(
         .tf-rotation-note {font-size:.76rem; opacity:.68; margin:.12rem 0 .7rem}
         .tf-rotation-item {padding:.68rem .72rem; margin:.48rem 0; border-radius:.65rem;
           border-left:4px solid #94A3B8; background:rgba(15,23,42,.35)}
-        .tf-rotation-buy {border-color:#E74C3C}.tf-rotation-sell {border-color:#2ECC71}
-        .tf-rotation-transition {border-color:#F59E0B}.tf-rotation-neutral {border-color:#94A3B8}
+        .tf-rotation-buy {border-color:#E74C3C}.tf-rotation-alert {border-color:#2ECC71}
+        .tf-rotation-watch {border-color:#F59E0B}
         .tf-rotation-name {font-weight:800; font-size:.98rem}
         .tf-rotation-phase {font-size:.83rem; margin-top:.12rem}
-        .tf-rotation-meta,.tf-pending,.tf-rotation-more,.tf-rotation-empty {
+        .tf-rotation-meta,.tf-pending,.tf-alert-note,.tf-rotation-empty {
           font-size:.73rem; opacity:.72; margin-top:.2rem}
         .tf-pending {color:#F59E0B; opacity:1}
+        .tf-alert-note {color:#2ECC71; opacity:1}
         @media (max-width:1100px){.tf-rotation-grid{grid-template-columns:repeat(2,minmax(220px,1fr))}}
         @media (max-width:650px){.tf-rotation-grid{grid-template-columns:1fr}}
         </style>
@@ -705,23 +754,13 @@ def render_tag_flow_tab(
         st.warning("題材資料仍是舊格式，請先執行 `python scripts/build_tag_flow.py` 更新。")
         return
 
-    control_a, control_b = st.columns([1.1, 1.4])
-    with control_a:
-        selected_etfs = st.multiselect(
-            "選擇 ETF",
-            data.get("etfs", []),
-            default=data.get("etfs", []),
-            format_func=lambda etf: f"{ETF_LABEL.get(etf, etf)}（{etf}）",
-            key="tag_flow_etfs",
-        )
-    with control_b:
-        window = st.radio(
-            "圖表顯示期間（不影響輪動故事）",
-            ["1日", "5日", "10日", "20日", "60日", "120日", "240日", "全部", "自訂"],
-            index=2,
-            horizontal=True,
-            key="tag_flow_window",
-        )
+    selected_etfs = st.multiselect(
+        "選擇 ETF",
+        data.get("etfs", []),
+        default=data.get("etfs", []),
+        format_func=lambda etf: f"{ETF_LABEL.get(etf, etf)}（{etf}）",
+        key="tag_flow_etfs",
+    )
 
     if not selected_etfs:
         st.info("請至少選擇一檔 ETF。")
@@ -730,11 +769,10 @@ def render_tag_flow_tab(
     if not available_dates:
         st.info("所選 ETF 沒有共同可比較日期。")
         return
-    if len(available_dates) < 240:
-        st.caption(
-            f"目前所選 ETF 只有 {len(available_dates)} 個共同交易日；"
-            "較長圖表會使用全部可用資料。輪動故事始終使用全部共同歷史，不受這個按鈕影響。"
-        )
+    st.caption(
+        f"共同歷史：{available_dates[0]} → {available_dates[-1]}，"
+        f"共 {len(available_dates)} 個交易日。輪動判斷使用全部共同歷史。"
+    )
 
     try:
         rotation = build_rotation_snapshot(data, selected_etfs, chart_days=10)
@@ -744,50 +782,14 @@ def render_tag_flow_tab(
     rotation_rows = rotation["rows"]
     rotation_by_category = {row["category"]: row for row in rotation_rows}
 
-    if window == "自訂":
-        default_start = available_dates[max(0, len(available_dates) - 20)]
-        start, end = st.select_slider(
-            "自訂交易日範圍",
-            options=available_dates,
-            value=(default_start, available_dates[-1]),
-            key="tag_flow_custom_range",
-        )
-        start_index, end_index = available_dates.index(start), available_dates.index(end)
-        selected_dates = available_dates[start_index : end_index + 1]
-    else:
-        counts = {
-            "1日": 1,
-            "5日": 5,
-            "10日": 10,
-            "20日": 20,
-            "60日": 60,
-            "120日": 120,
-            "240日": 240,
-            "全部": len(available_dates),
-        }
-        selected_dates = available_dates[-min(counts[window], len(available_dates)) :]
-
-    interval_theme_rows, stock_rows = _aggregate(data, selected_etfs, selected_dates)
     full_theme_rows, _ = _aggregate(data, selected_etfs, available_dates)
     full_theme_by_name = {row["theme"]: row for row in full_theme_rows}
-    n_dates = len(selected_dates)
-    n_etfs = len(selected_etfs)
-    date_label = (
-        selected_dates[-1]
-        if n_dates == 1
-        else f"{selected_dates[0]} → {selected_dates[-1]}"
-    )
-    st.caption(
-        f"圖表：{date_label} · {n_dates} 個共同交易日｜"
-        f"輪動判斷：截至 {rotation['as_of']}，使用全部 {rotation['history_sessions']} 個共同交易日｜"
-        f"資料產生 {data.get('generated', '—')}"
-    )
 
     st.markdown("#### ① 今日類股輪動階段")
     st.caption(
         "這套判斷不採固定區間：3 日 EWMA 看近期壓力、10 日 EWMA 看主方向、20 日 EWMA 看背景；"
-        "強度和本類股自己的歷史比較，方向需 ETF 廣度，轉換需連續 2 個交易日確認。"
-        "切換上方圖表期間不會改變這裡。"
+        "方向需 ETF 廣度，轉換需連續 2 個交易日確認。"
+        "另外獨立列出近 3 日急減碼，避免像被動元件這種新警訊被慢速背景掩蓋。"
     )
     _rotation_board(rotation_rows)
     with st.expander("查看完整輪動判斷與 3／5／10／20 日證據"):
@@ -796,6 +798,9 @@ def render_tag_flow_tab(
             "3／5／10／20 日只是查證數字，不參與階段命名；全類股排名按今日平滑後的近期壓力比較。"
         )
 
+    if not rotation_rows:
+        return
+
     if rotation_rows:
         st.divider()
         st.markdown("#### ② 點一個類股看趨勢")
@@ -803,10 +808,72 @@ def render_tag_flow_tab(
             row["category"] for row in rotation_rows
             if row["category"] in full_theme_by_name
         ]
-        selected_theme_name = st.selectbox(
-            "選擇類股",
-            theme_names,
-            key="tag_flow_theme_detail",
+        supported_counts = [
+            days for days in (1, 5, 10, 20, 60, 120, 240)
+            if days <= len(available_dates)
+        ]
+        window_options = [f"{days}日" for days in supported_counts] + ["全部", "自訂"]
+        default_window = "10日" if "10日" in window_options else "全部"
+        if st.session_state.get("tag_flow_window") not in window_options:
+            st.session_state["tag_flow_window"] = default_window
+
+        graph_control_a, graph_control_b = st.columns([1.0, 2.0])
+        with graph_control_a:
+            selected_theme_name = st.selectbox(
+                "選擇類股",
+                theme_names,
+                key="tag_flow_theme_detail",
+            )
+        with graph_control_b:
+            window = st.radio(
+                "這張圖要看幾個交易日",
+                window_options,
+                index=window_options.index(default_window),
+                horizontal=True,
+                key="tag_flow_window",
+            )
+
+        missing_counts = [
+            days for days in (60, 120, 240) if days > len(available_dates)
+        ]
+        if missing_counts:
+            st.caption(
+                f"目前只有 {len(available_dates)} 個共同交易日，"
+                f"所以 {'／'.join(str(days) for days in missing_counts)} 日按鈕先隱藏；"
+                "資料累積足夠後會自動出現。20 個交易日約等於一個月，並不是 20 個日曆日。"
+            )
+
+        if window == "自訂":
+            default_start = available_dates[max(0, len(available_dates) - 20)]
+            start, end = st.select_slider(
+                "自訂交易日範圍",
+                options=available_dates,
+                value=(default_start, available_dates[-1]),
+                key="tag_flow_custom_range",
+            )
+            start_index = available_dates.index(start)
+            end_index = available_dates.index(end)
+            selected_dates = available_dates[start_index : end_index + 1]
+        else:
+            counts = {
+                **{f"{days}日": days for days in supported_counts},
+                "全部": len(available_dates),
+            }
+            selected_dates = available_dates[-counts[window] :]
+
+        interval_theme_rows, stock_rows = _aggregate(
+            data, selected_etfs, selected_dates
+        )
+        n_dates = len(selected_dates)
+        n_etfs = len(selected_etfs)
+        date_label = (
+            selected_dates[-1]
+            if n_dates == 1
+            else f"{selected_dates[0]} → {selected_dates[-1]}"
+        )
+        st.caption(
+            f"圖表目前顯示：{date_label}，共 {n_dates} 個交易日。"
+            f"輪動判斷仍使用全部 {rotation['history_sessions']} 日，不受此按鈕影響。"
         )
         selected_theme = full_theme_by_name[selected_theme_name]
         selected_rotation = rotation_by_category[selected_theme_name]
@@ -814,6 +881,11 @@ def render_tag_flow_tab(
             f"**{selected_rotation['phase_label']}**　｜　"
             f"{phase_explanation(selected_rotation)}"
         )
+        if selected_rotation.get("recent_sell_alert"):
+            st.success(
+                f"🟢 近期減碼警示：近 3 日 {selected_rotation['recent_3_total']:+.2f}% 規模，"
+                f"{selected_rotation['recent_3_sellers']}/{selected_rotation['etf_count']} ETF 減碼。"
+            )
         _timeline_chart(
             selected_theme,
             selected_dates,
@@ -872,14 +944,15 @@ def render_tag_flow_tab(
         st.markdown(
             """
 - **輪動故事**：不使用 5／10／20 日區間加總下結論。近期壓力、主方向、背景分別使用半衰期 3／10／20 個交易日的 EWMA；舊交易會逐漸淡出，不會在窗口邊界整筆消失。
-- **相對自身 P 值**：今日平滑後壓力相對同一類股過去壓力的經驗百分位。P80 表示目前壓力幅度大於自身過去約 80% 的觀察，不是報酬率，也不是拿大型類股和小型類股硬比。
+- **自身力道強／中／一般**：原本的 P80、P64 已改成白話。「強」代表目前平滑力道大於這個類股自身過去至少 80% 的觀察；「中」代表約 50%～80%；其餘顯示「一般」。這不是報酬率，也不是跨類股硬比。
+- **近期減碼警示**：獨立檢查最近 3 個共同交易日。只要減碼幅度明顯就列出，並直接顯示幾檔 ETF 在賣；因此不必等慢速輪動階段完全翻空才看到警訊。
 - **輪動階段確認**：方向至少需要兩檔 ETF 同向；階段轉換需要連續兩個共同交易日。單一 ETF 的一次換股只會顯示證據不足或轉向待確認。
-- **圖表顯示期間**：只改變趨勢圖、區間億元與個股查證表。切換 5／10／20 日不會改變輪動階段、排名或 LINE 結論。
+- **圖表顯示期間**：放在趨勢圖正上方，只改變趨勢圖、區間億元與個股查證表。資料不足的 60／120／240 日按鈕會先隱藏，避免按了卻看起來沒有變化。
 - **約買賣（億元）**：依張數變化、持股權重與當日基金規模反推的台幣金額，三檔 ETF 直接加總。因揭露權重與基金規模有四捨五入，所以是估計值，適合建立金額感、不適合單獨比較誰更積極。
 - **相對力道（% 規模）**：先把每檔 ETF 的買賣金額除以自己的基金規模，再對所選 ETF 取平均。這是圖表排序依據，因此 981 規模較大不會自動取得較高排名。它不是報酬率，也不會把持股上漲造成的權重增加算成買進。
 - **同向日**：題材每日淨流向與區間總方向相同的交易日數；大數字但只有一天同向，通常是單次換股，不是持續布局。
 - **ETF 共識**：每檔 ETF 在整個區間的淨方向。`3買 / 0賣` 比單一 ETF 買進更有廣度，但仍不是投資建議。
-- **最大單日 P 值**：該筆交易相對同一 ETF 之前 20 個交易日出手大小的經驗百分位；P95 代表比先前約 95% 的交易更大。每一天只使用當時已知的歷史，不偷看未來。
+- **最大單日異常**：用白話顯示單筆交易相對同一 ETF 過去出手大小；大於過去 95% 顯示「極大」，80%～95% 顯示「偏大」，其餘顯示「一般」。每一天只使用當時已知的歷史，不偷看未來。
 - **類股是唯一解讀層**：所有排名、圖表、趨勢與共識只按每檔股票的單一類股加總。
 - 日期只使用所選 ETF **共同有資料**的交易日，避免把缺資料誤當成零交易。
             """

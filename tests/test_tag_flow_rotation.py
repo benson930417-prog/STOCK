@@ -68,8 +68,13 @@ class RotationSnapshotTests(unittest.TestCase):
             "trend",
             "background",
             "strength_percentile",
+            "strength_label",
             "buyers",
             "sellers",
+            "recent_3_total",
+            "recent_3_buyers",
+            "recent_3_sellers",
+            "recent_sell_alert",
             "confidence",
             "window_totals",
             "cross_section_rank",
@@ -97,6 +102,8 @@ class RotationSnapshotTests(unittest.TestCase):
             self.assertGreater(row["background"], 0)
             self.assertEqual("recent_selling", row["phase"])
             self.assertEqual("sell", row["phase_group"])
+            self.assertTrue(row["recent_sell_alert"])
+            self.assertEqual(3, row["recent_3_sellers"])
 
     def test_one_large_etf_cannot_create_a_confirmed_buy_story(self) -> None:
         data = _fixture(
