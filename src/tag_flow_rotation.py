@@ -188,37 +188,59 @@ def _confirmed_phase_history(candidates: list[str]) -> tuple[list[str], int]:
     return stable_history, run_length
 
 
-def _stock_consensus_pools(
+def _stock_pressure_pools(
     stocks: dict,
     dates: list[str],
     etfs: list[str],
     limit: int,
-) -> tuple[list[dict], list[dict]]:
-    buying: list[dict] = []
-    selling: list[dict] = []
+) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
+    """Rank stock contributors and preserve the strict all-ETF pools."""
+    buying_contributors: list[dict] = []
+    selling_contributors: list[dict] = []
+    consensus_buying: list[dict] = []
+    consensus_selling: list[dict] = []
     for stock in stocks.values():
+        raw_fast_by_etf: dict[str, float] = {}
         fast_by_etf: dict[str, float] = {}
         for etf in etfs:
             values = [stock["daily_by_etf"][etf].get(date, 0.0) for date in dates]
             fast = ewma_series(values, FAST_HALF_LIFE)[-1]
             threshold = _activity_threshold(values)
+            raw_fast_by_etf[etf] = fast
             fast_by_etf[etf] = fast if abs(fast) > threshold else 0.0
-        score = sum(fast_by_etf.values()) / len(etfs)
+        # EWMA is linear, so the raw per-stock average is the stock's actual
+        # contribution to the category's 3-session current pressure.
+        score = sum(raw_fast_by_etf.values()) / len(etfs)
         buyers = sum(value > 0 for value in fast_by_etf.values())
         sellers = sum(value < 0 for value in fast_by_etf.values())
         row = {
             "id": stock["id"],
             "name": stock["name"],
             "pressure": round(score, 4),
-            "by_etf": {etf: round(value, 4) for etf, value in fast_by_etf.items()},
+            "buyers": buyers,
+            "sellers": sellers,
+            "by_etf": {
+                etf: round(value, 4) for etf, value in raw_fast_by_etf.items()
+            },
         }
+        if score > 0:
+            buying_contributors.append(row)
+        elif score < 0:
+            selling_contributors.append(row)
         if buyers == len(etfs) and score > 0:
-            buying.append(row)
+            consensus_buying.append(row)
         if sellers == len(etfs) and score < 0:
-            selling.append(row)
-    buying.sort(key=lambda row: -row["pressure"])
-    selling.sort(key=lambda row: row["pressure"])
-    return buying[:limit], selling[:limit]
+            consensus_selling.append(row)
+    buying_contributors.sort(key=lambda row: -row["pressure"])
+    selling_contributors.sort(key=lambda row: row["pressure"])
+    consensus_buying.sort(key=lambda row: -row["pressure"])
+    consensus_selling.sort(key=lambda row: row["pressure"])
+    return (
+        buying_contributors[:limit],
+        selling_contributors[:limit],
+        consensus_buying[:limit],
+        consensus_selling[:limit],
+    )
 
 
 def _window_totals(values: list[float]) -> dict[str, float]:
@@ -341,7 +363,7 @@ def build_rotation_snapshot(
         else:
             confidence = "低"
 
-        buy_pool, sell_pool = _stock_consensus_pools(
+        top_buying, top_selling, buy_pool, sell_pool = _stock_pressure_pools(
             sector["stocks"], dates, selected_etfs, stock_pool_limit
         )
         chart_count = min(max(1, chart_days), len(dates))
@@ -373,6 +395,8 @@ def build_rotation_snapshot(
             "daily": [round(value, 4) for value in daily[-chart_count:]],
             "fast_series": [round(value, 4) for value in fast_series[-chart_count:]],
             "trend_series": [round(value, 4) for value in trend_series[-chart_count:]],
+            "top_buying_stocks": top_buying,
+            "top_selling_stocks": top_selling,
             "stocks_all_three": buy_pool,
             "stocks_all_three_selling": sell_pool,
         }

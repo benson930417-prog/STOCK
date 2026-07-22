@@ -75,6 +75,8 @@ class RotationSnapshotTests(unittest.TestCase):
             "current_buy_alert",
             "confidence",
             "window_totals",
+            "top_buying_stocks",
+            "top_selling_stocks",
             "cross_section_rank",
         )
         baseline = {field: rows[5][field] for field in invariant_fields}
@@ -86,6 +88,7 @@ class RotationSnapshotTests(unittest.TestCase):
         self.assertEqual(5, len(rows[5]["chart_dates"]))
         self.assertEqual(10, len(rows[10]["chart_dates"]))
         self.assertEqual(20, len(rows[20]["chart_dates"]))
+        self.assertEqual("測試股票", rows[20]["top_buying_stocks"][0]["name"])
 
     def test_rotation_boundary_is_a_transition_not_a_window_flip(self) -> None:
         # A long accumulation followed by three coordinated sell sessions:
@@ -103,6 +106,7 @@ class RotationSnapshotTests(unittest.TestCase):
             self.assertTrue(row["current_sell_alert"])
             self.assertEqual(3, row["sellers"])
             self.assertEqual({"10", "20"}, set(row["window_totals"]))
+            self.assertEqual("測試股票", row["top_selling_stocks"][0]["name"])
 
     def test_one_large_etf_cannot_create_a_confirmed_buy_story(self) -> None:
         data = _fixture(

@@ -171,6 +171,18 @@ def _rotation_board(rows: list[dict]) -> None:
             else:
                 phase = f"綜合判斷：{row['phase_label']} · 信心 {row['confidence']}"
                 pending = ""
+            stock_key = "top_selling_stocks" if group == "alert" else "top_buying_stocks"
+            stock_names = [
+                escape(str(stock.get("name") or stock.get("id") or ""))
+                for stock in row.get(stock_key, [])[:3]
+                if stock.get("name") or stock.get("id")
+            ]
+            attention = (
+                "<div class='tf-rotation-stocks'><span>留意個股</span>｜"
+                + "、".join(stock_names)
+                + "</div>"
+                if stock_names else ""
+            )
             items.append(
                 dedent(
                     f"""
@@ -178,6 +190,7 @@ def _rotation_board(rows: list[dict]) -> None:
                       <div class="tf-rotation-name">{escape(row['category'])}</div>
                       <div class="tf-rotation-phase">{escape(phase)}</div>
                       <div class="tf-rotation-meta">{meta}</div>
+                      {attention}
                       {pending}
                     </div>
                     """
@@ -734,6 +747,9 @@ def render_tag_flow_tab(
         .tf-rotation-phase {font-size:.83rem; margin-top:.12rem}
         .tf-rotation-meta,.tf-pending,.tf-alert-note,.tf-rotation-empty {
           font-size:.73rem; opacity:.72; margin-top:.2rem}
+        .tf-rotation-stocks {font-size:.70rem; color:#CBD5E1; opacity:.86;
+          margin-top:.32rem; line-height:1.35}
+        .tf-rotation-stocks span {font-weight:700; color:#E2E8F0}
         .tf-pending {color:#F59E0B; opacity:1}
         .tf-alert-note {color:#2ECC71; opacity:1}
         @media (max-width:1100px){.tf-rotation-grid{grid-template-columns:repeat(2,minmax(220px,1fr))}}
