@@ -36,7 +36,10 @@ class EtfActionSummaryTests(unittest.TestCase):
 
     def test_each_image_html_contains_one_complete_lane_only(self) -> None:
         signals = {
-            "buying": [_event(index) for index in range(6)],
+            "buying": [
+                *[_event(index) for index in range(5)],
+                _event(5, age=1),
+            ],
             "holding": [_event(index + 10) for index in range(4)],
             "selling": [_event(index + 20, age=1) for index in range(4)],
         }
@@ -49,6 +52,9 @@ class EtfActionSummaryTests(unittest.TestCase):
         self.assertEqual(6, buy.count('class="tfv2-card tfv2-buy"'))
         self.assertEqual(4, hold.count('class="tfv2-card tfv2-hold"'))
         self.assertEqual(4, sell.count('class="tfv2-card tfv2-sell"'))
+        self.assertIn('class="tfv2-age tfv2-age-current">本交易日確認', buy)
+        self.assertIn('class="tfv2-age tfv2-age-prior">前一交易日確認', buy)
+        self.assertIn('class="tfv2-age tfv2-age-latest">最新資料仍確認', hold)
         self.assertIn("測試股票0", buy)
         self.assertNotIn("測試股票10", buy)
         self.assertIn("測試股票13", hold)

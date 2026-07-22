@@ -41,7 +41,15 @@ ACTION_BOARD_CSS = r"""
 .tfv2-sell {border-color:#2ECC71}
 .tfv2-stock-row {display:flex; justify-content:space-between; gap:.65rem;
   align-items:baseline}
-.tfv2-age {font-size:.68rem; opacity:.58; white-space:nowrap; flex:none}
+.tfv2-age {display:inline-flex; align-items:center; border:1px solid;
+  border-radius:999px; padding:.13rem .42rem; font-size:.68rem; font-weight:720;
+  line-height:1.35; white-space:nowrap; flex:none}
+.tfv2-age-current {color:rgba(248,250,252,.94); background:rgba(226,232,240,.13);
+  border-color:rgba(226,232,240,.38); box-shadow:inset 0 0 0 1px rgba(255,255,255,.035)}
+.tfv2-age-prior {color:rgba(203,213,225,.72); background:transparent;
+  border-color:rgba(148,163,184,.2)}
+.tfv2-age-latest {color:rgba(203,213,225,.7); background:rgba(148,163,184,.06);
+  border-color:rgba(148,163,184,.16)}
 .tfv2-stock {font-size:1.08rem; font-weight:850; min-width:0}
 .tfv2-code {font-size:.72rem; font-weight:700; opacity:.58; margin-left:.42rem}
 .tfv2-fields {display:grid; gap:.18rem; margin-top:.42rem}
@@ -56,8 +64,11 @@ ACTION_BOARD_CSS = r"""
 def event_card(event: dict, group: str) -> str:
     if group == "hold":
         age = "最新資料仍確認"
+        age_class = "latest"
     else:
-        age = "本交易日確認" if event["age_sessions"] == 0 else "前一交易日確認"
+        is_current = event["age_sessions"] == 0
+        age = "本交易日確認" if is_current else "前一交易日確認"
+        age_class = "current" if is_current else "prior"
     evidence = "・".join(event.get("evidence_parts") or [event.get("reason", "")])
     stock_id = str(event.get("stock_id") or "")
     identity = escape(str(event["name"]))
@@ -82,7 +93,7 @@ def event_card(event: dict, group: str) -> str:
         f'<div class="tfv2-card tfv2-{group}">'
         '<div class="tfv2-stock-row">'
         f'<div class="tfv2-stock">{identity}</div>'
-        f'<span class="tfv2-age">{age}</span>'
+        f'<span class="tfv2-age tfv2-age-{age_class}">{age}</span>'
         "</div>"
         f'<div class="tfv2-fields">{field_html}</div>'
         "</div>"
