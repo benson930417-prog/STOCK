@@ -73,6 +73,7 @@ def flow_between(cur_day: dict, base_day: dict) -> dict[str, dict]:
                 "flow": flow,
                 "money_twd": flow / 100.0 * cur_fund_size if cur_fund_size else None,
                 "dshares": int(current.get("shares", 0) or 0),
+                "position_event": "new_position",
             }
             continue
 
@@ -92,6 +93,7 @@ def flow_between(cur_day: dict, base_day: dict) -> dict[str, dict]:
             "flow": flow,
             "money_twd": flow / 100.0 * cur_fund_size if cur_fund_size else None,
             "dshares": delta_shares,
+            "position_event": "increase" if delta_shares > 0 else "decrease",
         }
 
     for stock_id, previous in base.items():
@@ -102,6 +104,7 @@ def flow_between(cur_day: dict, base_day: dict) -> dict[str, dict]:
                 "flow": flow,
                 "money_twd": flow / 100.0 * base_fund_size if base_fund_size else None,
                 "dshares": -int(previous.get("shares", 0) or 0),
+                "position_event": "full_exit",
             }
     return out
 
@@ -193,6 +196,7 @@ def build_observations(etf: str, history: dict, tags: dict) -> list[dict]:
                         else None
                     ),
                     "dshares": move["dshares"],
+                    "position_event": move["position_event"],
                     "percentile": percentile,
                     "label": move_label(flow, percentile),
                 }
@@ -254,6 +258,7 @@ def main() -> int:
             "baseline_sessions": BASELINE_SESSIONS,
             "notable_percentile": 80,
             "outlier_percentile": 95,
+            "position_event": "new_position / increase / decrease / full_exit",
         },
         "observations": observations,
     }
