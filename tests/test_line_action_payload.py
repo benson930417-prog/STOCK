@@ -51,6 +51,7 @@ class LineActionPayloadTests(unittest.TestCase):
 
     def test_action_text_is_stock_level_and_plain(self) -> None:
         event = {
+            "stock_id": "2308",
             "name": "台達電",
             "category": "電源供應器",
             "event_type": "sell_to_buy",
@@ -68,11 +69,11 @@ class LineActionPayloadTests(unittest.TestCase):
         self.assertTrue(text.startswith("主動 ETF 動作\n━━━━━━━━━━━━━━"))
         self.assertIn("截至：7月22日", text)
         self.assertIn("🔴 買進觀察｜1 檔", text)
-        self.assertIn("01. 台達電（電源供應器）", text)
+        self.assertIn("01. 台達電（2308｜電源供應器）", text)
         self.assertIn("賣後轉買｜3/3 ETF 同步", text)
         self.assertNotIn("06/22", text)
         self.assertNotIn("類股洞察", text)
-        self.assertLessEqual(max(map(len, text.splitlines())), 24)
+        self.assertLessEqual(max(map(len, text.splitlines())), 28)
 
 
 if __name__ == "__main__":

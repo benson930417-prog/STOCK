@@ -118,7 +118,9 @@ def _lane(lines: list[str], title: str, events: list[dict], empty: str) -> None:
         return
     for index, event in enumerate(events, 1):
         category = str(event.get("category") or "未分類")
-        lines.append(f"{index:02d}. {event['name']}（{category}）")
+        stock_id = str(event.get("stock_id") or "").strip()
+        metadata = f"{stock_id}｜{category}" if stock_id else category
+        lines.append(f"{index:02d}. {event['name']}（{metadata}）")
         lines.append(f"　　{_mobile_evidence(event)}")
 
 
