@@ -122,43 +122,58 @@ def _rotation_board(rows: list[dict]) -> None:
         key=lambda row: float(row.get("recent_3_total", 0.0)),
     )[:4]
     lanes = [
-        ("buy", "🔴 已確認買盤", "只列方向與 ETF 廣度都確認的前四名", buy_rows),
-        ("watch", "🟠 轉強觀察", "尚未滿兩日確認，只列最明顯三項", turn_rows),
-        ("alert", "🟢 近期減碼警示", "近 3 日明顯減碼；不等同長期趨勢", sell_rows),
+        (
+            "buy",
+            "🔴 綜合判斷：買盤已確認",
+            "3／10／20 日綜合訊號已確認；卡片統一列近 3 日實際動作",
+            buy_rows,
+        ),
+        (
+            "watch",
+            "🟠 綜合判斷：轉強待確認",
+            "3／10／20 日綜合訊號剛轉強，需再維持 1 日",
+            turn_rows,
+        ),
+        (
+            "alert",
+            "🟢 近 3 日：減碼警示",
+            "只看最近 3 個交易日的急賣，可能早於 10／20 日背景轉弱",
+            sell_rows,
+        ),
     ]
     cards: list[str] = []
     for group, title, note, lane_rows in lanes:
         items: list[str] = []
         for row in lane_rows:
+            recent = float(row.get("recent_3_total", 0.0))
+            if recent > EPSILON:
+                recent_breadth = (
+                    f"{row.get('recent_3_buyers', 0)}/{row['etf_count']} ETF 買"
+                )
+            elif recent < -EPSILON:
+                recent_breadth = (
+                    f"{row.get('recent_3_sellers', 0)}/{row['etf_count']} ETF 賣"
+                )
+            else:
+                recent_breadth = "ETF 合計接近持平"
+            meta = f"近 3 日 {recent:+.2f}% 規模 · {recent_breadth}"
+
             if group == "alert":
-                recent = float(row.get("recent_3_total", 0.0))
-                breadth = f"{row.get('recent_3_sellers', 0)}/{row['etf_count']} ETF 賣"
                 if row["phase_group"] == "sell" and row["confidence"] in {"高", "中"}:
-                    phase = "已確認減碼"
+                    phase = "綜合判斷：已確認減碼"
                 elif row.get("recent_3_sellers", 0) >= min(2, row["etf_count"]):
-                    phase = "近 3 日急減碼"
+                    phase = "近 3 日警示：急減碼"
                 else:
-                    phase = "單一 ETF 減碼，待確認"
-                meta = f"近 3 日 {recent:+.2f}% 規模 · {breadth}"
+                    phase = "近 3 日警示：單一 ETF 減碼"
                 pending = (
-                    "<div class='tf-alert-note'>背景仍偏買，這是轉弱警示</div>"
+                    "<div class='tf-alert-note'>綜合背景仍偏買：先警示，尚未確認長期翻空</div>"
                     if float(row.get("background", 0.0)) > 0 else ""
                 )
             elif group == "watch":
-                phase = "轉強待確認"
-                recent = float(row.get("recent_3_total", 0.0))
-                meta = (
-                    f"近 3 日 {recent:+.2f}% 規模 · "
-                    f"{row.get('recent_3_buyers', 0)}/{row['etf_count']} ETF 買"
-                )
+                phase = "綜合判斷：轉強待確認"
                 pending = "<div class='tf-pending'>再維持 1 日才升級為確認</div>"
             else:
-                phase = row["phase_label"]
-                meta = (
-                    f"{escape(row.get('strength_label', '自身力道一般'))} · "
-                    f"{row['buyers']}/{row['etf_count']} ETF 買 · "
-                    f"方向信心 {row['confidence']}"
-                )
+                phase = f"綜合判斷：{row['phase_label']} · 信心 {row['confidence']}"
                 pending = ""
             items.append(
                 dedent(
@@ -785,17 +800,19 @@ def render_tag_flow_tab(
     full_theme_rows, _ = _aggregate(data, selected_etfs, available_dates)
     full_theme_by_name = {row["theme"]: row for row in full_theme_rows}
 
-    st.markdown("#### ① 今日類股輪動階段")
-    st.caption(
-        "這套判斷不採固定區間：3 日 EWMA 看近期壓力、10 日 EWMA 看主方向、20 日 EWMA 看背景；"
-        "方向需 ETF 廣度，轉換需連續 2 個交易日確認。"
-        "另外獨立列出近 3 日急減碼，避免像被動元件這種新警訊被慢速背景掩蓋。"
+    st.markdown(f"#### ① 最新類股輪動判斷｜截至 {rotation['as_of']}")
+    st.info(
+        "**怎麼判斷（不是只看今天）：** 每張卡的「近 3 日 ±X%」是最近 3 個共同交易日的實際合計。"
+        "卡片落在哪一欄，則把 **3 日半衰期＝現在壓力、10 日半衰期＝主方向、20 日半衰期＝背景** "
+        "合併判斷；3／10／20 是舊資料淡出的速度，不是三個會突然切斷的固定窗口。"
+        "至少 2 檔 ETF 同向，且新階段連續 2 日才確認。綠欄是例外的近 3 日急賣預警，"
+        "所以即使 10／20 日背景仍偏買，也會先提醒轉弱。"
     )
     _rotation_board(rotation_rows)
     with st.expander("查看完整輪動判斷與 3／5／10／20 日證據"):
         st.dataframe(_rotation_table(rotation_rows), use_container_width=True, hide_index=True)
         st.caption(
-            "3／5／10／20 日只是查證數字，不參與階段命名；全類股排名按今日平滑後的近期壓力比較。"
+            "3／5／10／20 日加總只是查證數字，不參與階段命名；全類股排名按最新平滑後的近期壓力比較。"
         )
 
     if not rotation_rows:
