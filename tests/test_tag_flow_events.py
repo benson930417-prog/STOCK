@@ -81,6 +81,8 @@ class TagFlowEventTests(unittest.TestCase):
 
         self.assertTrue(card.startswith('<div class="tfv2-card'))
         self.assertTrue(lane.startswith('<section class="tfv2-lane">'))
+        self.assertIn('<div class="tfv2-stock-row"><div class="tfv2-stock">', card)
+        self.assertNotIn("tfv2-card-top", card)
         self.assertNotIn("\n    <", card + lane)
 
     def test_tiny_routine_noise_is_hidden_but_tiny_new_position_surfaces(self) -> None:

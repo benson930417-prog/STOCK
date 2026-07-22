@@ -49,10 +49,10 @@ def _event_card(event: dict, group: str) -> str:
     # block, which makes Streamlit print the card markup instead of rendering it.
     return (
         f'<div class="tfv2-card tfv2-{group}">'
-        '<div class="tfv2-card-top">'
+        '<div class="tfv2-stock-row">'
+        f'<div class="tfv2-stock">{identity}</div>'
         f'<span class="tfv2-age">{age}</span>'
         '</div>'
-        f'<div class="tfv2-stock">{identity}</div>'
         f'<div class="tfv2-fields">{field_html}</div>'
         '</div>'
     )
@@ -103,10 +103,10 @@ def render_tag_flow_v2_tab(*, DATA_DIR=None, **kwargs):
           margin:.55rem 0; background:rgba(15,23,42,.48)}
         .tfv2-buy {border-color:#E74C3C}.tfv2-hold {border-color:#F5A623}
         .tfv2-sell {border-color:#2ECC71}
-        .tfv2-card-top {display:flex; justify-content:flex-end; gap:.5rem;
-          align-items:center; margin-bottom:.3rem}
+        .tfv2-stock-row {display:flex; justify-content:space-between; gap:.65rem;
+          align-items:baseline}
         .tfv2-age {font-size:.68rem; opacity:.58}
-        .tfv2-stock {font-size:1.08rem; font-weight:850}
+        .tfv2-stock {font-size:1.08rem; font-weight:850; min-width:0}
         .tfv2-code {font-size:.72rem; font-weight:700; opacity:.58; margin-left:.42rem}
         .tfv2-fields {display:grid; gap:.18rem; margin-top:.42rem}
         .tfv2-field {display:grid; grid-template-columns:2.9rem minmax(0,1fr);
