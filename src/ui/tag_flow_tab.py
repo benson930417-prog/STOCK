@@ -797,9 +797,6 @@ def render_tag_flow_tab(
     rotation_rows = rotation["rows"]
     rotation_by_category = {row["category"]: row for row in rotation_rows}
 
-    full_theme_rows, _ = _aggregate(data, selected_etfs, available_dates)
-    full_theme_by_name = {row["theme"]: row for row in full_theme_rows}
-
     st.markdown(f"#### ① 最新類股輪動判斷｜截至 {rotation['as_of']}")
     st.info(
         """
@@ -823,11 +820,7 @@ def render_tag_flow_tab(
 
     if rotation_rows:
         st.divider()
-        st.markdown("#### ② 點一個類股看趨勢")
-        theme_names = [
-            row["category"] for row in rotation_rows
-            if row["category"] in full_theme_by_name
-        ]
+        st.markdown("#### ② 先選查證期間")
         supported_counts = [
             days for days in (1, 5, 10, 20, 60, 120, 240)
             if days <= len(available_dates)
@@ -837,20 +830,12 @@ def render_tag_flow_tab(
         if st.session_state.get("tag_flow_window") not in window_options:
             st.session_state["tag_flow_window"] = default_window
 
-        graph_control_a, graph_control_b = st.columns([1.0, 2.0])
-        with graph_control_a:
-            selected_theme_name = st.selectbox(
-                "選擇類股",
-                theme_names,
-                key="tag_flow_theme_detail",
-            )
-        with graph_control_b:
-            window = st.radio(
-                "這張圖要看幾個交易日",
-                window_options,
-                horizontal=True,
-                key="tag_flow_window",
-            )
+        window = st.radio(
+            "觀察期間（只改變下方排行、類股趨勢與個股查證）",
+            window_options,
+            horizontal=True,
+            key="tag_flow_window",
+        )
 
         missing_counts = [
             days for days in (60, 120, 240) if days > len(available_dates)
@@ -891,10 +876,33 @@ def render_tag_flow_tab(
             else f"{selected_dates[0]} → {selected_dates[-1]}"
         )
         st.caption(
-            f"圖表目前顯示：{date_label}，共 {n_dates} 個交易日。"
-            f"輪動判斷仍使用全部 {rotation['history_sessions']} 日，不受此按鈕影響。"
+            f"下方查證範圍：{date_label}，共 {n_dates} 個交易日。"
+            f"上方最新輪動判斷仍使用全部 {rotation['history_sessions']} 日，不受這個期間影響。"
         )
-        selected_theme = full_theme_by_name[selected_theme_name]
+
+        st.markdown("#### ③ 所選期間類股排行")
+        st.caption(
+            "先看這個期間哪些類股加碼／減碼最明顯，再從排行下面選一個類股深入查看。"
+            "這裡是區間查證，不會改寫上方最新輪動判斷。"
+        )
+        _theme_chart(
+            interval_theme_rows, n_dates, n_etfs, PROFIT_COLOR, LOSS_COLOR
+        )
+
+        interval_theme_by_name = {
+            row["theme"]: row for row in interval_theme_rows
+        }
+        theme_names = [row["theme"] for row in interval_theme_rows]
+        if not theme_names:
+            st.info("這個期間沒有可選擇的類股交易。")
+            return
+        st.markdown("##### 從上方排行選一個類股看趨勢")
+        selected_theme_name = st.selectbox(
+            "選擇類股",
+            theme_names,
+            key="tag_flow_theme_detail",
+        )
+        selected_theme = interval_theme_by_name[selected_theme_name]
         selected_rotation = rotation_by_category[selected_theme_name]
         st.markdown(
             f"**{selected_rotation['phase_label']}**　｜　"
@@ -922,14 +930,6 @@ def render_tag_flow_tab(
             use_container_width=True,
             hide_index=True,
         )
-
-        with st.expander("③ 查看所選期間類股排行（只供查證）"):
-            st.caption(
-                "這裡刻意保留區間加總，讓你查證窗口差異；它不再產生『主線／轉弱』結論。"
-            )
-            _theme_chart(
-                interval_theme_rows, n_dates, n_etfs, PROFIT_COLOR, LOSS_COLOR
-            )
 
         st.markdown("#### ④ 所選類股的個股來源")
         contributing_ids = {stock["id"] for stock in selected_theme["top_stocks"]}
