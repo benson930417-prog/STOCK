@@ -460,10 +460,6 @@ def _theme_chart(
         text.append(
             f"{direction} 約 {_fmt_money(row['money'])} · 力道 {row['flow']:+.2f}%"
         )
-        drivers = "、".join(
-            f"{stock['name']} 約{_fmt_money(stock['money'])}"
-            for stock in row["top_stocks"][:4]
-        )
         custom.append(
             [
                 row["latest"],
@@ -473,7 +469,6 @@ def _theme_chart(
                 row["sell_days"],
                 row["buyers"],
                 row["sellers"],
-                drivers,
             ]
         )
 
@@ -495,8 +490,7 @@ def _theme_chart(
                 "<br>相對力道 %{x:+.2f}%（已按 ETF 大小調整）"
                 "<br>最新日約 %{customdata[2]:+.2f} 億 / 力道 %{customdata[0]:+.2f}%"
                 "<br>偏買 / 偏賣：%{customdata[3]} / %{customdata[4]} 日"
-                "<br>ETF 淨買 / 淨賣：%{customdata[5]} / %{customdata[6]}"
-                "<br>主要個股：%{customdata[7]}<extra></extra>"
+                "<br>ETF 淨買 / 淨賣：%{customdata[5]} / %{customdata[6]}<extra></extra>"
             ),
         )
     )
@@ -700,7 +694,7 @@ def render_tag_flow_tab(
     data = _load(DATA_DIR)
     if not data:
         st.warning(
-            "尚無題材流向資料。請執行 `python scripts/build_stock_tags.py` 與 "
+            "尚無類股輪動資料。請執行 `python scripts/build_stock_tags.py` 與 "
             "`python scripts/build_tag_flow.py`。"
         )
         return
@@ -771,7 +765,7 @@ def render_tag_flow_tab(
             st.session_state["tag_flow_window"] = default_window
 
         window = st.radio(
-            "觀察期間（只改變下方排行、類股趨勢與個股查證）",
+            "觀察期間（只改變下方類股排行、趨勢與 ETF 廣度查證）",
             window_options,
             horizontal=True,
             key="tag_flow_window",

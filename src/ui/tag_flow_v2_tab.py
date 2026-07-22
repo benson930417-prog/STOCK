@@ -109,7 +109,7 @@ def render_tag_flow_v2_tab(*, DATA_DIR=None, **kwargs):
 
     data = _load(DATA_DIR)
     if not data:
-        st.warning("尚無題材流向資料。")
+        st.warning("尚無 ETF 動作資料。")
         return
     selected_etfs = [etf for etf in ACTION_ETFS if etf in data.get("etfs", [])]
     if not selected_etfs:
