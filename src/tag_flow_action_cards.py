@@ -62,8 +62,15 @@ ACTION_BOARD_CSS = r"""
   margin-bottom:.08rem; color:rgba(203,213,225,.58); font-size:.62rem;
   font-weight:650; line-height:1.2}
 .tfv2-flow-chart {display:block; width:100%; height:2.35rem; overflow:visible}
+.tfv2-flow-time {display:flex; justify-content:space-between; margin-top:-.12rem;
+  color:rgba(203,213,225,.52); font-size:.58rem; font-weight:650;
+  line-height:1.1}
 .tfv2-flow-axis {stroke:rgba(148,163,184,.2); stroke-width:1}
-.tfv2-flow-frame {fill:none; stroke:rgba(226,232,240,.2); stroke-width:.8}
+.tfv2-flow-frame {stroke-width:1.1}
+.tfv2-flow-frame-prior {fill:rgba(226,232,240,.025);
+  stroke:rgba(226,232,240,.42)}
+.tfv2-flow-frame-current {fill:rgba(226,232,240,.055);
+  stroke:rgba(248,250,252,.68)}
 .tfv2-flow-buy {fill:#E76A5C; opacity:.76}
 .tfv2-flow-sell {fill:#45C879; opacity:.76}
 .tfv2-empty {font-size:.82rem; opacity:.66; padding:1.1rem .4rem}
@@ -89,8 +96,13 @@ def _flow_sparkline(event: dict) -> str:
     ]
     for index in range(max(0, len(trend) - 2), len(trend)):
         x = index * slot + 0.5
+        frame_class = (
+            "tfv2-flow-frame-current"
+            if index == len(trend) - 1
+            else "tfv2-flow-frame-prior"
+        )
         elements.append(
-            f'<rect class="tfv2-flow-frame" x="{x:.2f}" y="1" '
+            f'<rect class="tfv2-flow-frame {frame_class}" x="{x:.2f}" y="1" '
             f'width="{max(1.0, slot - 1):.2f}" height="{height - 2:g}" rx="2"/>'
         )
     for index, (row, value) in enumerate(zip(trend, values)):
@@ -110,11 +122,11 @@ def _flow_sparkline(event: dict) -> str:
     chart = "".join(elements)
     return (
         '<div class="tfv2-flow">'
-        '<div class="tfv2-flow-head"><span>20日規模比淨動作</span>'
-        '<span>早 ←　→ 近</span></div>'
+        '<div class="tfv2-flow-head"><span>20日規模比淨動作</span></div>'
         f'<svg class="tfv2-flow-chart" viewBox="0 0 {width:g} {height:g}" '
         f'role="img" aria-label="{escape(str(event.get("name") or ""))}最近20日規模比淨動作">'
-        f'{chart}</svg></div>'
+        f'{chart}</svg><div class="tfv2-flow-time"><span>20日前</span>'
+        '<span>最新</span></div></div>'
     )
 
 
