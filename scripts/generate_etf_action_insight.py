@@ -34,6 +34,12 @@ EVENT_PRIORITY = {
     "restart_sell": 2,
 }
 
+ETF_SHORT = {
+    "00403A": "403",
+    "00981A": "981",
+    "00991A": "991",
+}
+
 
 def _fresh_priority(event: dict) -> tuple:
     return (
@@ -52,28 +58,86 @@ def _selected(snapshot: dict) -> dict[str, list[dict]]:
     }
 
 
+def _etf_text(etfs: list[str]) -> str:
+    return "、".join(ETF_SHORT.get(etf, etf) for etf in etfs)
+
+
+def _mobile_detail(event: dict) -> str:
+    """Return one short evidence line that stays readable on a phone."""
+    category = str(event.get("category") or "未分類")
+    event_type = str(event.get("event_type") or "")
+    etfs = list(event.get("etfs") or [])
+    labels = _etf_text(etfs)
+
+    if event_type == "sell_to_buy":
+        return f"{category}・先賣後買"
+    if event_type == "buy_to_sell":
+        return f"{category}・先買後賣"
+    if event_type == "reentry_position":
+        new_etfs = list(event.get("new_etfs") or [])
+        continuing = [etf for etf in etfs if etf not in new_etfs]
+        pieces = []
+        if new_etfs:
+            pieces.append(f"{_etf_text(new_etfs)}重納")
+        if continuing:
+            pieces.append(f"{_etf_text(continuing)}續買")
+        return f"{category}・{'；'.join(pieces) or '重新納入持股'}"
+    if event_type in {"new_position", "trial_position"}:
+        new_etfs = list(event.get("new_etfs") or etfs)
+        action = "小部位新納入" if event_type == "trial_position" else "新納入"
+        return f"{category}・{_etf_text(new_etfs)}{action}"
+    if event_type == "full_exit":
+        exit_etfs = list(event.get("exit_etfs") or etfs)
+        return f"{category}・{_etf_text(exit_etfs)}移除持股"
+    if event_type == "conviction_buy":
+        buy_days = int(event.get("buy_days") or 0)
+        sell_days = int(event.get("sell_days") or 0)
+        return f"{category}・10日{buy_days}買{sell_days}賣・仍買"
+    if event_type in {"restart_buy", "restart_sell"}:
+        action = "買" if event_type == "restart_buy" else "賣"
+        return f"{category}・{labels}沉寂後重新{action}"
+    return f"{category}・{str(event.get('reason') or '持股動作已確認')}"
+
+
+def _signal_badge(event: dict) -> str:
+    event_type = str(event.get("event_type") or "")
+    breadth = int(event.get("breadth") or len(event.get("etfs") or []))
+    if event_type == "conviction_buy":
+        return f"{breadth}檔參與" if breadth else "仍在買"
+    if event_type in {"reentry_position", "new_position", "trial_position", "full_exit"}:
+        return ""
+    return f"{breadth}/3同步" if breadth else ""
+
+
 def _lane(lines: list[str], title: str, events: list[dict], empty: str) -> None:
     lines.append(title)
     if not events:
         lines.append(empty)
         return
-    for event in events:
-        category = str(event.get("category") or "未分類")
-        lines.append(
-            f"• {event['name']}（{category}）｜{event['event_label']}"
-        )
-        lines.append(
-            f"  {event['reason']}｜{event['confirmation_label']}"
-        )
+    for index, event in enumerate(events, 1):
+        badge = _signal_badge(event)
+        headline = f"{index}. {event['name']}｜{event['event_label']}"
+        if badge:
+            headline += f"｜{badge}"
+        lines.append(headline)
+        lines.append(f"   {_mobile_detail(event)}")
+
+
+def _display_date(as_of: str) -> str:
+    try:
+        parsed = datetime.strptime(as_of, "%Y-%m-%d")
+    except ValueError:
+        return as_of
+    return f"{parsed.month}月{parsed.day}日"
 
 
 def render_line_text(as_of: str, selected: dict[str, list[dict]]) -> str:
-    lines = [f"🔥 主動 ETF 買／抱／賣｜截至 {as_of}", ""]
-    _lane(lines, "🔴 買進觀察", selected["buying"], "目前沒有新的買進訊號。")
+    lines = [f"🔥 主動 ETF 動作｜截至 {_display_date(as_of)}", ""]
+    _lane(lines, "🔴 買進", selected["buying"], "本日無新買進訊號")
     lines.append("")
-    _lane(lines, "🟠 續抱參考", selected["holding"], "目前沒有持續加碼確認。")
+    _lane(lines, "🟠 續抱", selected["holding"], "本日無續抱確認")
     lines.append("")
-    _lane(lines, "🟢 賣出警示", selected["selling"], "目前沒有新的賣出警示。")
+    _lane(lines, "🟢 賣出", selected["selling"], "本日無新賣出訊號")
     text = "\n".join(lines).strip()
     if len(text) > 4500:
         raise RuntimeError(f"ETF action LINE text is unexpectedly long: {len(text)}")

@@ -3,7 +3,7 @@
 Three-page LINE Bot Rich Menu setup.
 
 Page 1 top:    油價  | 黃金   | 匯率   | 債券
-Page 1 bottom: 市場脈動 | 吳大師 | ETF動作 | 24小時那斯達克 | ▶更多
+Page 1 bottom: 市場脈動 | 吳大師 | ETF動作 | 那斯達克24h | ▶更多
 Page 2 top:    00878 | 00981A | 00988A | 00403A
 Page 2 bottom: ◀上一頁 | 00891 | 00830 | ▶更多
 Page 3 top:    009805 | 009820 | 0056 | 00918
@@ -66,8 +66,8 @@ PAGE1 = [
     # Row 2 — five direct actions; ETF 動作 returns the cached buy/hold/sell text.
     (0,    843, 500, 843, "脈", "市場脈動", "加權狀態",       ( 99, 102, 241), "message",        "市場脈動", False),
     (500,  843, 500, 843, "師", "吳大師",   "持股總覽",       (180,  83,   9), "message",        "吳大師", False),
-    (1000, 843, 500, 843, "動", "ETF 動作", "買進／續抱／賣出", (239,  68,  68), "message",        "ETF動作", False),
-    (1500, 843, 500, 843, "納", "24小時那斯達克", "美科技24h", (  8, 145, 178), "message",        "那斯達克", False),
+    (1000, 843, 500, 843, "動", "ETF 動作", "買・抱・賣",      (239,  68,  68), "message",        "ETF動作", False),
+    (1500, 843, 500, 843, "納", "那斯達克", "24 小時",         (  8, 145, 178), "message",        "那斯達克", False),
     (2000, 843, 500, 843, ">", "更多",     "ETF第二頁",      ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
 ]
 
@@ -152,17 +152,16 @@ def text_h(draw, text, font) -> int:
 
 
 # ── Image builder ─────────────────────────────────────────────────────────
-def _fit_label_font(draw, text, max_width, base=86, minimum=46):
-    """Largest bold label font (≤ base) whose width fits max_width — lets longer
-    labels like 24小時那斯達克 shrink instead of overflowing the cell."""
+def _fit_text_font(draw, text, max_width, *, base, minimum, bold):
+    """Largest font whose rendered width stays inside one menu tile."""
     size = base
-    while size > minimum:
-        font = load_font(size, bold=True)
+    while size >= minimum:
+        font = load_font(size, bold=bold)
         bbox = draw.textbbox((0, 0), text, font=font)
         if bbox[2] - bbox[0] <= max_width:
             return font
         size -= 4
-    return load_font(minimum, bold=True)
+    return load_font(minimum, bold=bold)
 
 
 def build_image(cells: list) -> Image.Image:
@@ -203,9 +202,15 @@ def build_image(cells: list) -> Image.Image:
         r_circle = 190 if w < 700 else 210
         gap1     = 36
         gap2     = 18
-        label_font = _fit_label_font(draw, label, (bx1 - bx0) - 32)
+        text_width = (bx1 - bx0) - 56
+        label_font = _fit_text_font(
+            draw, label, text_width, base=86, minimum=42, bold=True
+        )
+        subtitle_font = _fit_text_font(
+            draw, subtitle, text_width, base=68, minimum=38, bold=False
+        )
         lh = text_h(draw, label,    label_font)
-        sh = text_h(draw, subtitle, font_sub)
+        sh = text_h(draw, subtitle, subtitle_font)
         block_h  = r_circle * 2 + gap1 + lh + gap2 + sh
         top_pad  = ((by1 - by0) - block_h) // 2
         icon_cy  = by0 + top_pad + r_circle
@@ -223,7 +228,7 @@ def build_image(cells: list) -> Image.Image:
 
         # Subtitle
         sub_y = label_y + lh + gap2
-        draw.text((cx, sub_y), subtitle, font=font_sub, fill=SUBTEXT, anchor="mt")
+        draw.text((cx, sub_y), subtitle, font=subtitle_font, fill=SUBTEXT, anchor="mt")
 
     return img
 

@@ -34,7 +34,10 @@ class LineActionPayloadTests(unittest.TestCase):
 
         self.assertEqual(5, len(messages))
         self.assertEqual("text", messages[0]["type"])
+        self.assertTrue(messages[0]["text"].startswith("📊 主動 ETF 操作日報"))
+        self.assertIn("403 統一升級50｜7月22日", messages[0]["text"])
         self.assertIn("cached ETF action juice", messages[0]["text"])
+        self.assertNotIn("2026-07-22", messages[0]["text"])
         self.assertEqual(["image"] * 4, [row["type"] for row in messages[1:]])
         self.assertTrue(all("?t=123" in row["originalContentUrl"] for row in messages[1:]))
 
@@ -50,18 +53,24 @@ class LineActionPayloadTests(unittest.TestCase):
         event = {
             "name": "台達電",
             "category": "電源供應器",
+            "event_type": "sell_to_buy",
             "event_label": "賣後轉買",
             "reason": "06/22–07/03 曾明顯減碼後，3 檔 ETF 轉買",
             "confirmation_label": "3/3 ETF 同步",
+            "breadth": 3,
+            "etfs": ["00403A", "00981A", "00991A"],
         }
         text = render_line_text(
             "2026-07-22",
             {"buying": [event], "holding": [], "selling": []},
         )
 
-        self.assertIn("台達電（電源供應器）｜賣後轉買", text)
-        self.assertIn("3/3 ETF 同步", text)
+        self.assertIn("🔥 主動 ETF 動作｜截至 7月22日", text)
+        self.assertIn("1. 台達電｜賣後轉買｜3/3同步", text)
+        self.assertIn("電源供應器・先賣後買", text)
+        self.assertNotIn("06/22", text)
         self.assertNotIn("類股洞察", text)
+        self.assertLessEqual(max(map(len, text.splitlines())), 24)
 
 
 if __name__ == "__main__":

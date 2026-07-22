@@ -13,6 +13,13 @@ WEBHOOK_HOST = "https://linechatbot.duckdns.org"
 LINE_MAX_OBJECTS = 5
 MAX_ACTIVE_IMAGES = LINE_MAX_OBJECTS - 1
 
+ETF_SHORT = {
+    "00403A": "403",
+    "00981A": "981",
+    "00988A": "988",
+    "00991A": "991",
+}
+
 ACTIVE_NAMES = {
     "00403A": "主動統一升級50",
     "00981A": "主動統一台股增長",
@@ -20,12 +27,26 @@ ACTIVE_NAMES = {
     "00991A": "主動復華未來50",
 }
 ACTIVE_TICKERS = list(ACTIVE_NAMES)
+ACTIVE_SHORT_NAMES = {
+    "00403A": "統一升級50",
+    "00981A": "統一台股增長",
+    "00988A": "統一全球創新",
+    "00991A": "復華未來50",
+}
 
 
 def _latest_history_date(ticker: str, data_dir: Path) -> str:
     path = data_dir / f"etf_{ticker}_history.json"
     with path.open(encoding="utf-8") as fh:
         return max(json.load(fh).keys())
+
+
+def _mobile_date(value: str) -> str:
+    try:
+        _, month, day = value.split("-")
+        return f"{int(month)}月{int(day)}日"
+    except (ValueError, TypeError):
+        return value
 
 
 def _action_text(cache_path: Path) -> str:
@@ -52,11 +73,12 @@ def build_active_report_messages(
             f"got {len(tickers)}"
         )
     stamp = int(time.time()) if cache_buster is None else cache_buster
-    header_lines = [
-        f"{_latest_history_date(ticker, data_dir)} "
-        f"{ACTIVE_NAMES.get(ticker, ticker)} ({ticker}) 操作日報"
+    header_lines = ["📊 主動 ETF 操作日報"]
+    header_lines.extend(
+        f"{ETF_SHORT.get(ticker, ticker)} {ACTIVE_SHORT_NAMES.get(ticker, ACTIVE_NAMES.get(ticker, ticker))}"
+        f"｜{_mobile_date(_latest_history_date(ticker, data_dir))}"
         for ticker in tickers
-    ]
+    )
     text = "\n".join(header_lines) + "\n\n" + _action_text(action_cache)
     messages = [{"type": "text", "text": text}]
     for ticker in tickers:
