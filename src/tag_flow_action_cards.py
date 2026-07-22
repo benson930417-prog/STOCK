@@ -1,10 +1,28 @@
-"""Shared HTML cards for the website and cached LINE ETF-action image."""
+"""Shared HTML cards for the website and cached LINE ETF-action lane images."""
 from __future__ import annotations
 
 from html import escape
 
 
 ACTION_ETFS = ["00403A", "00981A", "00991A"]
+
+ACTION_LANES = {
+    "buying": (
+        "🔴 買進觀察",
+        "剛建倉、重新建倉、賣後轉買",
+        "buy",
+    ),
+    "holding": (
+        "🟠 續抱參考",
+        "不是新買點；代表加碼認同仍持續",
+        "hold",
+    ),
+    "selling": (
+        "🟢 賣出警示",
+        "剛出清、買後轉賣、沉寂後重新賣",
+        "sell",
+    ),
+}
 
 ACTION_BOARD_CSS = r"""
 .tfv2-grid {display:grid; grid-template-columns:repeat(3,minmax(250px,1fr));
@@ -91,25 +109,14 @@ def lane(title: str, note: str, events: list[dict], group: str) -> str:
 
 def render_action_grid(snapshot: dict) -> str:
     """Render every already-qualified event in the shared engine snapshot."""
-    return (
-        '<div class="tfv2-grid">'
-        + lane(
-            "🔴 買進觀察",
-            "剛建倉、重新建倉、賣後轉買",
-            list(snapshot.get("buying") or []),
-            "buy",
-        )
-        + lane(
-            "🟠 續抱參考",
-            "不是新買點；代表加碼認同仍持續",
-            list(snapshot.get("holding") or []),
-            "hold",
-        )
-        + lane(
-            "🟢 賣出警示",
-            "剛出清、買後轉賣、沉寂後重新賣",
-            list(snapshot.get("selling") or []),
-            "sell",
-        )
-        + "</div>"
-    )
+    lanes = "".join(render_action_lane(snapshot, key) for key in ACTION_LANES)
+    return f'<div class="tfv2-grid">{lanes}</div>'
+
+
+def render_action_lane(snapshot: dict, key: str) -> str:
+    """Render one complete lane with the exact website card component."""
+    try:
+        title, note, group = ACTION_LANES[key]
+    except KeyError as exc:
+        raise ValueError(f"Unknown ETF action lane: {key}") from exc
+    return lane(title, note, list(snapshot.get(key) or []), group)

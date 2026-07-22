@@ -148,11 +148,17 @@ def load_etf_action_text():
         raise RuntimeError("etf_action_insight.json has no line_text")
     return text
 
-def load_etf_action_image_path():
-    path = os.path.join(parent_dir, "data", "summaries", "etf_action_latest.jpg")
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Missing cached ETF action image: {path}")
-    return path
+def load_etf_action_image_paths():
+    filenames = [
+        "etf_action_buy_latest.jpg",
+        "etf_action_hold_latest.jpg",
+        "etf_action_sell_latest.jpg",
+    ]
+    paths = [os.path.join(parent_dir, "data", "summaries", name) for name in filenames]
+    missing = [path for path in paths if not os.path.exists(path)]
+    if missing:
+        raise FileNotFoundError(f"Missing cached ETF action images: {missing}")
+    return paths
 
 def is_daily_update_command(text):
     # Admin command: exact match only (no aliases/fuzzy matching).
@@ -852,19 +858,23 @@ def handle_message(event):
 
     elif is_etf_action:
         try:
-            image_path = load_etf_action_image_path()
-            filename = os.path.basename(image_path)
-            img_url = (
-                "https://linechatbot.duckdns.org/api/webhook/summaries/"
-                f"{filename}?t={int(os.path.getmtime(image_path))}"
-            )
-            reply_line(
-                event.reply_token,
-                ImageSendMessage(
+            image_paths = load_etf_action_image_paths()
+            messages = [TextSendMessage(text=load_etf_action_text())]
+            for image_path in image_paths:
+                filename = os.path.basename(image_path)
+                img_url = (
+                    "https://linechatbot.duckdns.org/api/webhook/summaries/"
+                    f"{filename}?t={int(os.path.getmtime(image_path))}"
+                )
+                messages.append(ImageSendMessage(
                     original_content_url=img_url,
                     preview_image_url=img_url,
-                ),
-            )
+                ))
+            if len(messages) != 4:
+                raise AssertionError(
+                    f"ETF action reply must be 1 text + 3 images, got {len(messages)} objects"
+                )
+            reply_line(event.reply_token, messages)
         except Exception as e:
             print("ETF action image reply failed:", e)
             reply_line(

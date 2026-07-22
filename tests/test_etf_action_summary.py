@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 
 from scripts.generate_etf_action_insight import _selected
-from scripts.generate_etf_action_summary import render_html
+from scripts.generate_etf_action_summary import render_lane_html
 
 
 def _event(index: int, *, age: int = 0) -> dict:
@@ -34,21 +34,30 @@ class EtfActionSummaryTests(unittest.TestCase):
         self.assertEqual(4, len(selected["holding"]))
         self.assertEqual(4, len(selected["selling"]))
 
-    def test_image_html_contains_the_complete_three_lane_board(self) -> None:
+    def test_each_image_html_contains_one_complete_lane_only(self) -> None:
         signals = {
             "buying": [_event(index) for index in range(6)],
             "holding": [_event(index + 10) for index in range(4)],
             "selling": [_event(index + 20, age=1) for index in range(4)],
         }
 
-        output = render_html({"as_of": "2026-07-22", "signals": signals})
+        payload = {"as_of": "2026-07-22", "signals": signals}
+        buy = render_lane_html(payload, "buying")
+        hold = render_lane_html(payload, "holding")
+        sell = render_lane_html(payload, "selling")
 
-        self.assertEqual(14, output.count('class="tfv2-card tfv2-'))
-        self.assertIn("本次完整看板：</b>買進 6 檔・續抱 4 檔・賣出 4 檔", output)
-        self.assertIn("測試股票0", output)
-        self.assertIn("測試股票23", output)
-        self.assertNotIn("max-height", output)
-        self.assertNotIn("overflow:hidden", output)
+        self.assertEqual(6, buy.count('class="tfv2-card tfv2-buy"'))
+        self.assertEqual(4, hold.count('class="tfv2-card tfv2-hold"'))
+        self.assertEqual(4, sell.count('class="tfv2-card tfv2-sell"'))
+        self.assertIn("測試股票0", buy)
+        self.assertNotIn("測試股票10", buy)
+        self.assertIn("測試股票13", hold)
+        self.assertIn("測試股票23", sell)
+        for output in (buy, hold, sell):
+            self.assertNotIn("MASTER WU", output)
+            self.assertNotIn("判定規則", output)
+            self.assertNotIn("max-height", output)
+            self.assertNotIn("overflow:hidden", output)
 
 
 if __name__ == "__main__":

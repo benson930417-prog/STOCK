@@ -38,7 +38,9 @@ data/etf_*_summary_*.jpg
 data/summaries/*
 !data/summaries/market_pulse_latest.jpg
 !data/summaries/margin_maintenance_latest.jpg
-!data/summaries/etf_action_latest.jpg
+!data/summaries/etf_action_buy_latest.jpg
+!data/summaries/etf_action_hold_latest.jpg
+!data/summaries/etf_action_sell_latest.jpg
 
 # Local design previews for the score chart (throwaway)
 data/_preview_*
