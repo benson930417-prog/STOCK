@@ -1,41 +1,47 @@
 {
-  "generated": "2026-07-21 23:08:02",
+  "generated": "2026-07-22 10:33:05",
   "source": "cmoney.tw/forum/stock",
-  "count": 100,
+  "count": 103,
+  "coverage": {
+    "covered": 103,
+    "universe": 103,
+    "missing": 0
+  },
   "tags": {
     "2308": {
       "category": "電源供應器",
       "group": "電子中游",
       "concepts": [
         {
-          "id": "C50080",
-          "name": "物聯網",
-          "avg_pct": 7.69
-        },
-        {
-          "id": "C50856",
-          "name": "電感",
-          "avg_pct": 7.56
-        },
-        {
-          "id": "C50918",
-          "name": "BBU",
-          "avg_pct": 7.39
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 3.89
         },
         {
           "id": "C50878",
           "name": "MIH概念股",
-          "avg_pct": 7.37
+          "avg_pct": 3.86
         },
         {
-          "id": "C50490",
-          "name": "氫燃料電池",
-          "avg_pct": 7.34
+          "id": "C50908",
+          "name": "太陽能",
+          "avg_pct": 3.83
+        },
+        {
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 3.65
+        },
+        {
+          "id": "C50903",
+          "name": "鴻海MIH電動車平台",
+          "avg_pct": 3.61
         }
       ],
       "category_id": "C23170",
       "category_full": "電子中游-電源供應器",
-      "name": "台達電子"
+      "name": "台達電子",
+      "checked_at_utc": "2026-07-22T10:33:05.159216Z"
     },
     "6274": {
       "category": "PCB-材料設備",
@@ -2742,6 +2748,81 @@
       "category_id": "C15010",
       "category_full": "傳產-電機",
       "name": "高力熱處"
+    },
+    "2880": {
+      "category": "金控",
+      "group": "金融",
+      "concepts": [
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 4.88
+        },
+        {
+          "id": "C50240",
+          "name": "福建自貿區",
+          "avg_pct": 1.82
+        }
+      ],
+      "category_id": "C28010",
+      "category_full": "金融-金控",
+      "name": "華南金融",
+      "checked_at_utc": "2026-07-21T14:29:35.249642Z"
+    },
+    "2886": {
+      "category": "金控",
+      "group": "金融",
+      "concepts": [
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 4.88
+        },
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 4.16
+        }
+      ],
+      "category_id": "C28010",
+      "category_full": "金融-金控",
+      "name": "兆豐金融",
+      "checked_at_utc": "2026-07-21T14:29:38.306233Z"
+    },
+    "6285": {
+      "category": "網通",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50879",
+          "name": "Wifi 7",
+          "avg_pct": 9.41
+        },
+        {
+          "id": "C50710",
+          "name": "軌道衛星",
+          "avg_pct": 8.89
+        },
+        {
+          "id": "C50928",
+          "name": "低軌衛星",
+          "avg_pct": 8.39
+        },
+        {
+          "id": "C50080",
+          "name": "物聯網",
+          "avg_pct": 7.69
+        },
+        {
+          "id": "C50350",
+          "name": "5G",
+          "avg_pct": 6.55
+        }
+      ],
+      "category_id": "C23260",
+      "category_full": "電子中游-網通",
+      "name": "啟碁",
+      "checked_at_utc": "2026-07-21T14:29:41.225486Z"
     }
   }
 }
