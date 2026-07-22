@@ -148,6 +148,10 @@ def load_etf_action_text():
         raise RuntimeError("etf_action_insight.json has no line_text")
     return text
 
+# Temporarily keep the cached text available without including it in the
+# on-demand LINE reply. Flip this to True when the text summary is wanted again.
+ETF_ACTION_INCLUDE_TEXT = False
+
 def load_etf_action_image_paths():
     filenames = [
         "etf_action_buy_latest.jpg",
@@ -859,7 +863,9 @@ def handle_message(event):
     elif is_etf_action:
         try:
             image_paths = load_etf_action_image_paths()
-            messages = [TextSendMessage(text=load_etf_action_text())]
+            messages = []
+            if ETF_ACTION_INCLUDE_TEXT:
+                messages.append(TextSendMessage(text=load_etf_action_text()))
             for image_path in image_paths:
                 filename = os.path.basename(image_path)
                 img_url = (
@@ -870,9 +876,11 @@ def handle_message(event):
                     original_content_url=img_url,
                     preview_image_url=img_url,
                 ))
-            if len(messages) != 4:
+            expected_count = 4 if ETF_ACTION_INCLUDE_TEXT else 3
+            if len(messages) != expected_count:
                 raise AssertionError(
-                    f"ETF action reply must be 1 text + 3 images, got {len(messages)} objects"
+                    "ETF action reply must contain the configured text plus "
+                    f"3 images, got {len(messages)} objects"
                 )
             reply_line(event.reply_token, messages)
         except Exception as e:
