@@ -3,7 +3,7 @@
 Three-page LINE Bot Rich Menu setup.
 
 Page 1 top:    油價  | 黃金   | 匯率   | 債券
-Page 1 bottom: 市場脈動 | 吳大師 | 類股洞察 | 24小時那斯達克 | ▶更多
+Page 1 bottom: 市場脈動 | 吳大師 | ETF動作 | 24小時那斯達克 | ▶更多
 Page 2 top:    00878 | 00981A | 00988A | 00403A
 Page 2 bottom: ◀上一頁 | 00891 | 00830 | ▶更多
 Page 3 top:    009805 | 009820 | 0056 | 00918
@@ -63,10 +63,10 @@ PAGE1 = [
     (625,  0,   625, 843, "金", "黃金",   "黃金現貨",         (202, 138,   4), "message",        "黃金",   False),
     (1250, 0,   625, 843, "匯", "匯率",   "美元／日圓／瑞郎", ( 13, 148, 136), "message",        "匯率",   False),
     (1875, 0,   625, 843, "債", "債券",   "美10年期公債",     ( 21, 128,  61), "message",        "債券",   False),
-    # Row 2 — five direct actions; 類股洞察 is a real visible menu tile.
+    # Row 2 — five direct actions; ETF 動作 returns the cached buy/hold/sell text.
     (0,    843, 500, 843, "脈", "市場脈動", "加權狀態",       ( 99, 102, 241), "message",        "市場脈動", False),
     (500,  843, 500, 843, "師", "吳大師",   "持股總覽",       (180,  83,   9), "message",        "吳大師", False),
-    (1000, 843, 500, 843, "洞", "類股洞察", "ETF買賣主線",    (239,  68,  68), "message",        "題材洞察", False),
+    (1000, 843, 500, 843, "動", "ETF 動作", "買進／續抱／賣出", (239,  68,  68), "message",        "ETF動作", False),
     (1500, 843, 500, 843, "納", "24小時那斯達克", "美科技24h", (  8, 145, 178), "message",        "那斯達克", False),
     (2000, 843, 500, 843, ">", "更多",     "ETF第二頁",      ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
 ]

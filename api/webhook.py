@@ -120,15 +120,15 @@ def is_master_holding_command(text):
     normalized = unicodedata.normalize("NFKC", text).strip()
     return "吳大師" in normalized
 
-def is_tag_flow_insight_command(text):
+def is_etf_action_command(text):
     normalized = unicodedata.normalize("NFKC", text).strip()
-    return normalized in {"題材洞察", "類股洞察", "ETF題材洞察"}
+    return normalized in {"ETF動作", "ETF 動作", "買抱賣", "主動ETF動作"}
 
 def master_insight_quick_reply():
     return QuickReply(
         items=[
             QuickReplyButton(
-                action=MessageAction(label="🔥 今日類股洞察", text="題材洞察")
+                action=MessageAction(label="🔥 ETF 動作", text="ETF動作")
             ),
             QuickReplyButton(
                 action=MessageAction(label="⚠️ 融資風險", text="融資維持率")
@@ -136,16 +136,16 @@ def master_insight_quick_reply():
         ]
     )
 
-def load_tag_flow_insight_payload():
-    path = os.path.join(parent_dir, "data", "tag_flow_insight.json")
+def load_etf_action_payload():
+    path = os.path.join(parent_dir, "data", "etf_action_insight.json")
     with open(path, encoding="utf-8") as fh:
         return json.load(fh)
 
-def load_tag_flow_insight_text():
-    payload = load_tag_flow_insight_payload()
+def load_etf_action_text():
+    payload = load_etf_action_payload()
     text = str(payload.get("line_text") or "").strip()
     if not text:
-        raise RuntimeError("tag_flow_insight.json has no line_text")
+        raise RuntimeError("etf_action_insight.json has no line_text")
     return text
 
 def is_daily_update_command(text):
@@ -804,7 +804,7 @@ def webhook():
 def handle_message(event):
     user_msg = event.message.text.strip()
     is_master_holding = is_master_holding_command(user_msg)
-    is_tag_flow_insight = is_tag_flow_insight_command(user_msg)
+    is_etf_action = is_etf_action_command(user_msg)
     is_daily_update = is_daily_update_command(user_msg)
     is_gold = is_gold_command(user_msg)
     is_market_pulse = is_market_pulse_command(user_msg)
@@ -814,7 +814,7 @@ def handle_message(event):
         None
         if is_daily_update
         or is_master_holding
-        or is_tag_flow_insight
+        or is_etf_action
         or is_gold
         or is_market_pulse
         or is_margin_risk
@@ -844,27 +844,17 @@ def handle_message(event):
                 TextSendMessage(text="吳大師持股暫時無法產生，請稍後再試。")
             )
 
-    elif is_tag_flow_insight:
+    elif is_etf_action:
         try:
-            payload = load_tag_flow_insight_payload()
-            filename = os.path.basename(
-                str(payload.get("image") or "tag_flow_insight_latest.jpg")
-            )
-            if not filename.lower().endswith((".jpg", ".jpeg", ".png")):
-                raise RuntimeError(f"Unsupported insight image: {filename}")
-            image_path = os.path.join(parent_dir, "data", "summaries", filename)
-            if not os.path.exists(image_path):
-                raise FileNotFoundError(f"Missing cached insight image: {image_path}")
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/summaries/{filename}?t={int(os.path.getmtime(image_path))}"
             reply_line(
                 event.reply_token,
-                ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
+                TextSendMessage(text=load_etf_action_text()),
             )
         except Exception as e:
-            print("Theme insight image reply failed:", e)
+            print("ETF action text reply failed:", e)
             reply_line(
                 event.reply_token,
-                TextSendMessage(text="今日類股洞察尚未更新完成，請稍後再試。"),
+                TextSendMessage(text="今日 ETF 動作尚未更新完成，請稍後再試。"),
             )
 
     elif is_market_pulse:
@@ -1032,7 +1022,7 @@ def handle_message(event):
             "• 9805 — 009805 持股即時表\n"
             "• 9820 — 009820 持股即時表\n"
             "• 吳大師 — 投資組合與展開持股\n"
-            "• 題材洞察 — 強勢加速類股與三檔 ETF 共買池\n"
+            "• ETF動作 — 主動 ETF 買進／續抱／賣出訊號\n"
             "• id — 取得使用者或群組 ID"
         ))
         )

@@ -120,8 +120,8 @@ record_step_ok() {
             "build stock tags (incremental)")
                 metrics=$(grep -E "^\[cmoney-tags\]" "$logfile" | sed 's/^/          /')
                 ;;
-            "generate theme insight")
-                metrics=$(grep -E "^(\[theme-insight\]|Saved data/summaries/tag_flow_insight_latest\.jpg)" "$logfile" | sed 's/^/          /')
+            "generate ETF action insight")
+                metrics=$(grep -E "^(\[etf-action\]|Saved data/etf_action_insight\.json)" "$logfile" | sed 's/^/          /')
                 ;;
             "LINE broadcast active reports")
                 metrics=$(tail -n 5 "$logfile" | sed 's/^/          /')
@@ -267,17 +267,17 @@ run_step "generate margin risk summary"   python scripts/generate_margin_mainten
 # pure-local; if the tag scrape hiccups it still runs off the cached tags.
 run_step "build stock tags (incremental)" python scripts/build_stock_tags.py --probe 2308
 run_step "build tag flow"                 python scripts/build_tag_flow.py
-if run_step "generate theme insight"      python scripts/generate_tag_flow_insight.py; then
+if run_step "generate ETF action insight" python scripts/generate_etf_action_insight.py; then
     {
         echo
-        echo "ETF 類股洞察"
+        echo "主動 ETF 買／抱／賣"
         echo "──────────"
-        python scripts/generate_tag_flow_insight.py --print email
+        python scripts/generate_etf_action_insight.py --print
     } >> "$SUMMARY_FILE"
 else
     {
         echo
-        echo "ETF 類股洞察"
+        echo "主動 ETF 買／抱／賣"
         echo "──────────"
         echo "本次洞察產生失敗，請查看 failure details。"
     } >> "$SUMMARY_FILE"
@@ -376,7 +376,6 @@ if [ "${#CHANGED_ETFS[@]}" -gt 0 ]; then
     run_step "git push origin main" git push origin main
 
     if [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ] && [ -n "${LINE_TOKEN:-}" ]; then
-        export LINE_ETFS="${ACTIVE_NEW_ETFS[*]}"
         export LINE_TOKEN
         # Daily broadcast — images served directly by the webhook via duckdns.org,
         # NOT GitHub raw URL. This avoids the git commit+push+CDN-wait dance and
@@ -384,44 +383,14 @@ if [ "${#CHANGED_ETFS[@]}" -gt 0 ]; then
         run_step "LINE broadcast active reports" python - <<'PY'
 import json
 import os
-import time
 from urllib import request
 
+from scripts.line_active_report_payload import ACTIVE_TICKERS, build_active_report_messages
+
 token = os.environ["LINE_TOKEN"]
-tickers = os.environ["LINE_ETFS"].split()
-names = {
-    "00403A": "主動統一升級50",
-    "00981A": "主動統一台股增長",
-    "00988A": "主動統一全球創新",
-    "00991A": "主動復華未來50",
-}
-
-# Free LINE quota is counted as messages x recipients, so keep the object
-# count low: one combined text header listing every report, then the images.
-# LINE caps a broadcast at 5 message objects. With 4 active ETFs this is
-# 1 text + 4 images = 5 (exactly the cap → one push). If a 5th active ETF is
-# ever added it would be 6, so we chunk into batches of 5 to stay valid
-# (only then does it become >1 push).
-LINE_MAX_OBJECTS = 5
-header_lines = []
-image_messages = []
-cache_buster = int(time.time())
-for ticker in tickers:
-    history_path = f"data/etf_{ticker}_history.json"
-    with open(history_path, encoding="utf-8") as fh:
-        date_str = max(json.load(fh).keys())
-    img_url = (
-        f"https://linechatbot.duckdns.org/api/webhook/summaries/"
-        f"etf_{ticker}_summary_latest.jpg?t={cache_buster}"
-    )
-    header_lines.append(f"{date_str} {names.get(ticker, ticker)} ({ticker}) 操作日報")
-    image_messages.append({
-        "type": "image",
-        "originalContentUrl": img_url,
-        "previewImageUrl": img_url,
-    })
-
-messages = [{"type": "text", "text": "\n".join(header_lines)}] + image_messages
+messages = build_active_report_messages(ACTIVE_TICKERS)
+if len(messages) > 5:
+    raise RuntimeError(f"refusing LINE batch with {len(messages)} objects")
 
 def _broadcast(objs):
     payload = json.dumps({"messages": objs}, ensure_ascii=False).encode("utf-8")
@@ -437,26 +406,8 @@ def _broadcast(objs):
     with request.urlopen(req, timeout=20) as resp:
         print(resp.status, resp.read().decode("utf-8", errors="replace"))
 
-for i in range(0, len(messages), LINE_MAX_OBJECTS):
-    _broadcast(messages[i:i + LINE_MAX_OBJECTS])
-
-# The decision card is intentionally a separate daily image: active-ETF
-# reports already fill LINE's five-object limit (one header + four images).
-# Keep this push here, inside the sanctioned 18:30 broadcast path only.
-insight_path = "data/summaries/tag_flow_insight_latest.jpg"
-if os.path.exists(insight_path):
-    insight_url = (
-        "https://linechatbot.duckdns.org/api/webhook/summaries/"
-        f"tag_flow_insight_latest.jpg?t={cache_buster}"
-    )
-    _broadcast([{
-        "type": "image",
-        "originalContentUrl": insight_url,
-        "previewImageUrl": insight_url,
-    }])
-    print("Daily category insight image broadcast: OK")
-else:
-    print(f"Daily category insight image missing; skipped: {insight_path}")
+_broadcast(messages)
+print(f"Daily LINE object count: {len(messages)} (1 text + {len(messages) - 1} images)")
 PY
     elif [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ]; then
         printf "  [SKIP] LINE broadcast: LINE_TOKEN not set\n" >> "$SUMMARY_FILE"

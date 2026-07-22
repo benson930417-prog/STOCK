@@ -1,4 +1,4 @@
-"""Insight-first V2 active-ETF action radar."""
+"""Insight-first active-ETF buy/hold/sell action radar."""
 from __future__ import annotations
 
 from html import escape
@@ -9,7 +9,7 @@ import streamlit as st
 from src.tag_flow_events import build_event_snapshot
 
 
-V2_ETFS = ["00403A", "00981A", "00991A"]
+ACTION_ETFS = ["00403A", "00981A", "00991A"]
 
 
 def _load(data_dir):
@@ -101,7 +101,7 @@ def render_tag_flow_v2_tab(*, DATA_DIR=None, **kwargs):
         """,
         unsafe_allow_html=True,
     )
-    st.subheader("主動 ETF 買／抱／賣雷達 V2")
+    st.subheader("主動 ETF 買／抱／賣雷達")
     st.caption(
         "買＝剛出現的建倉／反手；抱＝不是新買點，但持續加碼仍獲確認；"
         "賣＝剛出現的轉賣／出清。只留下能改變決策的訊號。"
@@ -111,9 +111,9 @@ def render_tag_flow_v2_tab(*, DATA_DIR=None, **kwargs):
     if not data:
         st.warning("尚無題材流向資料。")
         return
-    selected_etfs = [etf for etf in V2_ETFS if etf in data.get("etfs", [])]
+    selected_etfs = [etf for etf in ACTION_ETFS if etf in data.get("etfs", [])]
     if not selected_etfs:
-        st.warning("找不到 V2 所需的主動 ETF 資料。")
+        st.warning("找不到動作雷達所需的主動 ETF 資料。")
         return
     has_position_events = any(
         move.get("position_event")
@@ -121,7 +121,7 @@ def render_tag_flow_v2_tab(*, DATA_DIR=None, **kwargs):
         for move in observation.get("stocks", [])
     )
     if not has_position_events:
-        st.info("V2 動作資料尚未建立，請先重新執行 build_tag_flow.py。")
+        st.info("ETF 動作資料尚未建立，請先重新執行 build_tag_flow.py。")
         return
 
     snapshot = build_event_snapshot(data, selected_etfs)
@@ -152,7 +152,7 @@ def render_tag_flow_v2_tab(*, DATA_DIR=None, **kwargs):
         "普通小額調整仍會隱藏；只有近 10 日反覆加碼且最新仍確認買進，才進入續抱參考。"
         "類股只作背景標籤，不參與事件判斷。"
     )
-    with st.expander("V2 何時才算『剛確認』？"):
+    with st.expander("ETF 動作何時才算『剛確認』？"):
         st.markdown(
             """
 - **新建倉**：股票新出現在 ETF 持股，當日直接成立；極小部位標成「試單建倉」。
@@ -163,6 +163,6 @@ def render_tag_flow_v2_tab(*, DATA_DIR=None, **kwargs):
 - **續抱參考**：近 10 個共同交易日至少 4 日明顯加碼、買日明顯多於賣日、累積強度足夠，而且最新仍在買。
 - **不顯示**：小額雜訊、單日未確認換股、沒有持續證據的普通加減碼。
 
-V2 只核對 ETF 的持股動作；「股價高／低」不會由持股變化自行推論。
+動作雷達只核對 ETF 的持股動作；「股價高／低」不會由持股變化自行推論。
             """
         )

@@ -18,19 +18,18 @@ import json
 import os
 import subprocess
 import sys
-import time
 from pathlib import Path
 from urllib import request
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-ACTIVE_NAMES = {
-    "00403A": "主動統一升級50",
-    "00981A": "主動統一台股增長",
-    "00988A": "主動統一全球創新",
-    "00991A": "主動復華未來50",
-}
+from scripts.line_active_report_payload import (  # noqa: E402
+    ACTIVE_NAMES,
+    build_active_report_messages,
+)
 
 SECRETS_FILE = "/home/ubuntu/.stock_secrets"
 WEBHOOK_HOST = "https://linechatbot.duckdns.org"
@@ -63,41 +62,13 @@ def _get_line_token() -> str | None:
     return None
 
 
-def _latest_history_date(ticker: str) -> str:
-    path = DATA_DIR / f"etf_{ticker}_history.json"
-    if not path.exists():
-        raise FileNotFoundError(f"missing {path}")
-    with path.open(encoding="utf-8") as fh:
-        return max(json.load(fh).keys())
-
-
 def _summary_path(ticker: str) -> Path:
     return DATA_DIR / "summaries" / f"etf_{ticker}_summary_latest.jpg"
 
 
 def _broadcast(tickers: list[str], token: str) -> None:
-    """Build the LINE broadcast payload using webhook duckdns URLs.
-    No GitHub commit needed — the webhook's /api/webhook/summaries/<file>
-    endpoint serves the local file directly to LINE."""
-    messages: list[dict] = []
-    cache_buster = int(time.time())
-    for ticker in tickers:
-        date_str = _latest_history_date(ticker)
-        img_url = (
-            f"{WEBHOOK_HOST}/api/webhook/summaries/"
-            f"etf_{ticker}_summary_latest.jpg?t={cache_buster}"
-        )
-        name = ACTIVE_NAMES.get(ticker, ticker)
-        messages.append({
-            "type": "text",
-            "text": f"{date_str} {name} ({ticker}) 操作日報",
-        })
-        messages.append({
-            "type": "image",
-            "originalContentUrl": img_url,
-            "previewImageUrl":    img_url,
-        })
-
+    """Broadcast one action text plus at most four ETF images."""
+    messages = build_active_report_messages(tickers, webhook_host=WEBHOOK_HOST)
     payload = json.dumps({"messages": messages}, ensure_ascii=False).encode("utf-8")
     req = request.Request(
         "https://api.line.me/v2/bot/message/broadcast",
@@ -155,7 +126,7 @@ def main() -> int:
         print("       Run with --regen to create them.", file=sys.stderr)
         return 1
 
-    print(f"[broadcast] sending LINE messages for: {args.tickers}")
+    print(f"[broadcast] sending one text + {len(args.tickers)} images for: {args.tickers}")
     print(f"[broadcast] images served from: {WEBHOOK_HOST}/api/webhook/summaries/")
     _broadcast(args.tickers, token)
     print("[broadcast] done.")

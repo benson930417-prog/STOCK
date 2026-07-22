@@ -1,7 +1,7 @@
-"""Stock-level active-ETF action events for the V2 copy radar.
+"""Stock-level active-ETF action events for the buy/hold/sell radar.
 
-V1 answers which category currently has pressure.  V2 answers a narrower and
-more actionable question: which disclosed stock action has *just changed*?
+The rotation view answers which category currently has pressure.  This engine
+answers a narrower question: which disclosed stock action has *just changed*?
 It separates fresh buy/sell actions from unusually persistent buying that can
 support a hold decision.  It still excludes chart windows, cash ranking, and
 category-level magnitude.  Category is context only; concepts are ignored.
@@ -117,8 +117,8 @@ def _candidate(
         if float(move.get("flow") or 0.0) < 0
     ]
     if positive_etfs and negative_etfs:
-        # Conflicting ETF actions are useful evidence for V1, but there is no
-        # clean action to copy, so V2 deliberately stays silent.
+        # Conflicting ETF actions can inform category context, but there is no
+        # clean stock action to copy, so the action radar deliberately stays silent.
         return None
 
     score = sum(float(move.get("flow") or 0.0) for move in qualified.values()) / max(
@@ -419,7 +419,7 @@ def build_event_snapshot(
                 and previous_confirmed["direction"] == confirmed["direction"]
                 and not confirmed["structural"]
             ):
-                # This is continuation after the entry moment, which V2 is
+                # This is continuation after the entry moment, which fresh lanes are
                 # explicitly designed not to surface.
                 continue
             prior_net, buy_days, sell_days, idle = _prior_context(

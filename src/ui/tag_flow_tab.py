@@ -171,18 +171,6 @@ def _rotation_board(rows: list[dict]) -> None:
             else:
                 phase = f"綜合判斷：{row['phase_label']} · 信心 {row['confidence']}"
                 pending = ""
-            stock_key = "top_selling_stocks" if group == "alert" else "top_buying_stocks"
-            stock_names = [
-                escape(str(stock.get("name") or stock.get("id") or ""))
-                for stock in row.get(stock_key, [])[:3]
-                if stock.get("name") or stock.get("id")
-            ]
-            attention = (
-                "<div class='tf-rotation-stocks'><span>留意個股</span>｜"
-                + "、".join(stock_names)
-                + "</div>"
-                if stock_names else ""
-            )
             items.append(
                 dedent(
                     f"""
@@ -190,7 +178,6 @@ def _rotation_board(rows: list[dict]) -> None:
                       <div class="tf-rotation-name">{escape(row['category'])}</div>
                       <div class="tf-rotation-phase">{escape(phase)}</div>
                       <div class="tf-rotation-meta">{meta}</div>
-                      {attention}
                       {pending}
                     </div>
                     """
@@ -649,58 +636,6 @@ def _etf_breakdown(theme: dict, dates: list[str], selected_etfs: list[str]) -> p
     return pd.DataFrame(rows)
 
 
-def _stock_table(
-    rows: list[dict],
-    n_dates: int,
-    n_etfs: int,
-    stock_ids: set[str] | None = None,
-    limit: int = 30,
-):
-    if stock_ids is not None:
-        rows = [row for row in rows if row["id"] in stock_ids]
-    if not rows:
-        st.info("此條件下沒有個股交易。")
-        return
-
-    display_rows = []
-    for row in rows[:limit]:
-        aligned_days = row["buy_days"] if row["flow"] >= 0 else row["sell_days"]
-        consensus = f"{row['buyers']}買 / {row['sellers']}賣"
-        if row["max_percentile"] is None:
-            single_day_size = "樣本不足"
-        elif row["max_percentile"] >= 95:
-            single_day_size = "極大"
-        elif row["max_percentile"] >= 80:
-            single_day_size = "偏大"
-        else:
-            single_day_size = "一般"
-        display_rows.append(
-            {
-                "個股": f"{row['name']} · {row['id']}",
-                "概念（附註）": "、".join(row["concepts"][:3]) or "—",
-                "產業": row["category"],
-                "方向": _direction_label(row["flow"]),
-                "區間約買賣": _fmt_money(row["money"]),
-                "相對力道": _fmt_ratio(row["flow"]),
-                "最新一日": _fmt_money(row["latest_money"]),
-                "同向日": f"{aligned_days}/{n_dates}",
-                "ETF 共識": consensus if n_etfs > 1 else "—",
-                "最大單日異常": single_day_size,
-                "_direction": row["flow"],
-            }
-        )
-    display_frame = pd.DataFrame(display_rows)
-    st.dataframe(
-        _direction_style(display_frame, "_direction"),
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "個股": st.column_config.TextColumn(width="medium"),
-            "概念（附註）": st.column_config.TextColumn(width="large"),
-        },
-    )
-
-
 def render_tag_flow_tab(
     *,
     lang=None,
@@ -747,9 +682,6 @@ def render_tag_flow_tab(
         .tf-rotation-phase {font-size:.83rem; margin-top:.12rem}
         .tf-rotation-meta,.tf-pending,.tf-alert-note,.tf-rotation-empty {
           font-size:.73rem; opacity:.72; margin-top:.2rem}
-        .tf-rotation-stocks {font-size:.70rem; color:#CBD5E1; opacity:.86;
-          margin-top:.32rem; line-height:1.35}
-        .tf-rotation-stocks span {font-weight:700; color:#E2E8F0}
         .tf-pending {color:#F59E0B; opacity:1}
         .tf-alert-note {color:#2ECC71; opacity:1}
         @media (max-width:1100px){.tf-rotation-grid{grid-template-columns:repeat(2,minmax(220px,1fr))}}
@@ -758,7 +690,7 @@ def render_tag_flow_tab(
         """,
         unsafe_allow_html=True,
     )
-    st.subheader("主動 ETF 題材流向")
+    st.subheader("主動 ETF 類股輪動")
     st.caption(
         "先看紅色加碼、綠色減碼；億元看實際金額感，相對力道用來公平比較不同大小的 ETF。"
         "所有題材統計只使用單一類股分類。"
@@ -873,7 +805,7 @@ def render_tag_flow_tab(
             }
             selected_dates = available_dates[-counts[window] :]
 
-        interval_theme_rows, stock_rows = _aggregate(
+        interval_theme_rows, _stock_rows = _aggregate(
             data, selected_etfs, selected_dates
         )
         n_dates = len(selected_dates)
@@ -939,48 +871,17 @@ def render_tag_flow_tab(
             hide_index=True,
         )
 
-        st.markdown("#### ④ 所選類股的個股來源")
-        contributing_ids = {stock["id"] for stock in selected_theme["top_stocks"]}
-        _stock_table(stock_rows, n_dates, n_etfs, contributing_ids, limit=12)
-
-    st.divider()
-    st.markdown("#### ⑤ 所選圖表期間的全部個股明細")
-    st.caption("這一區是區間查證資料，會隨圖表期間改變，不代表上方輪動判斷。")
-    stock_filter = st.radio(
-        "個股篩選",
-        ["全部", "淨加碼", "淨減碼", "ETF 共識", "異常單日"],
-        horizontal=True,
-        key="tag_flow_stock_filter",
-    )
-    filtered_stocks = stock_rows
-    if stock_filter == "淨加碼":
-        filtered_stocks = [row for row in stock_rows if row["flow"] > EPSILON]
-    elif stock_filter == "淨減碼":
-        filtered_stocks = [row for row in stock_rows if row["flow"] < -EPSILON]
-    elif stock_filter == "ETF 共識":
-        filtered_stocks = [
-            row
-            for row in stock_rows
-            if max(row["buyers"], row["sellers"]) >= min(2, n_etfs)
-        ]
-    elif stock_filter == "異常單日":
-        filtered_stocks = [row for row in stock_rows if row["outlier_days"] > 0]
-    _stock_table(filtered_stocks, n_dates, n_etfs)
-
-    with st.expander("怎麼讀這些數字"):
+    with st.expander("怎麼讀類股輪動"):
         st.markdown(
             """
 - **輪動故事**：只使用 3／10／20 日 EWMA 下結論：3 日＝目前壓力、10 日＝主方向、20 日＝背景。舊交易會逐漸淡出，不會在窗口邊界整筆消失。
 - **自身力道強／中／一般**：原本的 P80、P64 已改成白話。「強」代表目前平滑力道大於這個類股自身過去至少 80% 的觀察；「中」代表約 50%～80%；其餘顯示「一般」。這不是報酬率，也不是跨類股硬比。
 - **目前減碼警示**：3 日 EWMA 明顯轉負就列出，並直接顯示幾檔 ETF 的目前壓力偏賣；因此不必等 10／20 日 EWMA 完全翻空才看到警訊。
 - **輪動階段確認**：方向至少需要兩檔 ETF 同向；階段轉換需要連續兩個共同交易日。單一 ETF 的一次換股只會顯示證據不足或轉向待確認。
-- **圖表顯示期間**：放在趨勢圖正上方，只改變趨勢圖、區間億元與個股查證表。資料不足的 60／120／240 日按鈕會先隱藏，避免按了卻看起來沒有變化。
+- **圖表顯示期間**：放在趨勢圖正上方，只改變類股排行、趨勢圖與 ETF 類股查證。資料不足的 60／120／240 日按鈕會先隱藏，避免按了卻看起來沒有變化。
 - **約買賣（億元）**：依張數變化、持股權重與當日基金規模反推的台幣金額，三檔 ETF 直接加總。因揭露權重與基金規模有四捨五入，所以是估計值，適合建立金額感、不適合單獨比較誰更積極。
 - **相對力道（% 規模）**：先把每檔 ETF 的買賣金額除以自己的基金規模，再對所選 ETF 取平均。這是圖表排序依據，因此 981 規模較大不會自動取得較高排名。它不是報酬率，也不會把持股上漲造成的權重增加算成買進。
-- **同向日**：題材每日淨流向與區間總方向相同的交易日數；大數字但只有一天同向，通常是單次換股，不是持續布局。
-- **ETF 共識**：每檔 ETF 在整個區間的淨方向。`3買 / 0賣` 比單一 ETF 買進更有廣度，但仍不是投資建議。
-- **最大單日異常**：用白話顯示單筆交易相對同一 ETF 過去出手大小；大於過去 95% 顯示「極大」，80%～95% 顯示「偏大」，其餘顯示「一般」。每一天只使用當時已知的歷史，不偷看未來。
-- **類股是唯一解讀層**：所有排名、圖表、趨勢與共識只按每檔股票的單一類股加總。
+- **類股是唯一解讀層**：所有排名、圖表、趨勢與 ETF 廣度只按每檔股票的單一類股加總；個股動作全部留給「ETF 動作」頁。
 - 日期只使用所選 ETF **共同有資料**的交易日，避免把缺資料誤當成零交易。
             """
         )
