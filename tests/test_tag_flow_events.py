@@ -107,6 +107,8 @@ class TagFlowEventTests(unittest.TestCase):
         snapshot = build_event_snapshot(data, ETFS)
         self.assertEqual(["試單股票"], [row["name"] for row in snapshot["buying"]])
         self.assertEqual("trial_position", snapshot["buying"][0]["event_type"])
+        self.assertEqual("exception", snapshot["buying"][0]["qualification_kind"])
+        self.assertEqual("1/3 建倉例外", snapshot["buying"][0]["qualification_label"])
         self.assertFalse(snapshot["selling"])
 
     def test_buy_to_sell_reversal_needs_prior_behaviour_and_confirmation(self) -> None:
@@ -137,6 +139,54 @@ class TagFlowEventTests(unittest.TestCase):
         self.assertEqual("buy_to_sell", event["event_type"])
         self.assertEqual("breadth", event["confirmation"])
         self.assertEqual(2, event["breadth"])
+        self.assertEqual("共識（2/3）", event["qualification_label"])
+
+    def test_single_etf_routine_restart_is_hidden(self) -> None:
+        data, dates = _empty_fixture()
+        for session in dates[-2:]:
+            _add_move(
+                data,
+                etf="00403A",
+                session=session,
+                stock_id="ONE_RESTART",
+                name="單檔普通重啟",
+                flow=0.30,
+            )
+
+        snapshot = build_event_snapshot(data, ETFS)
+
+        self.assertFalse(snapshot["buying"])
+        self.assertFalse(snapshot["holding"])
+
+    def test_single_etf_reversal_is_the_two_day_exception(self) -> None:
+        data, dates = _empty_fixture()
+        for index in (4, 9, 14):
+            _add_move(
+                data,
+                etf="00403A",
+                session=dates[index],
+                stock_id="ONE_REV",
+                name="單檔反轉",
+                flow=0.30,
+            )
+        for session in dates[-2:]:
+            _add_move(
+                data,
+                etf="00403A",
+                session=session,
+                stock_id="ONE_REV",
+                name="單檔反轉",
+                flow=-0.30,
+                position_event="decrease",
+            )
+
+        snapshot = build_event_snapshot(data, ETFS)
+
+        self.assertEqual(["單檔反轉"], [row["name"] for row in snapshot["selling"]])
+        event = snapshot["selling"][0]
+        self.assertEqual("buy_to_sell", event["event_type"])
+        self.assertEqual("persistence", event["confirmation"])
+        self.assertEqual("1/3 反轉2日", event["qualification_label"])
 
     def test_strong_continuing_buy_is_hold_evidence_not_a_fresh_event(self) -> None:
         data, dates = _empty_fixture()
@@ -156,6 +206,24 @@ class TagFlowEventTests(unittest.TestCase):
         self.assertFalse(snapshot["selling"])
         self.assertEqual(["延續買進"], [row["name"] for row in snapshot["holding"]])
         self.assertEqual("conviction_buy", snapshot["holding"][0]["event_type"])
+        self.assertEqual("持續（2檔）", snapshot["holding"][0]["qualification_label"])
+
+    def test_single_etf_continuation_is_not_hold_evidence(self) -> None:
+        data, dates = _empty_fixture()
+        for session in dates[-4:]:
+            _add_move(
+                data,
+                etf="00403A",
+                session=session,
+                stock_id="ONE_HOLD",
+                name="單檔延續",
+                flow=0.30,
+            )
+
+        snapshot = build_event_snapshot(data, ETFS)
+
+        self.assertFalse(snapshot["buying"])
+        self.assertFalse(snapshot["holding"])
 
     def test_reentry_after_full_exit_is_not_called_a_first_position(self) -> None:
         data, dates = _empty_fixture()

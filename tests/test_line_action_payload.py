@@ -83,7 +83,11 @@ class LineActionPayloadTests(unittest.TestCase):
         self.assertIn("01. 台達電｜2308", text)
         self.assertIn("類股：電源供應器", text)
         self.assertIn("動作：賣後轉買", text)
-        self.assertIn("同步：3/3 ETF", text)
+        self.assertIn("ETF：403・981・991", text)
+        self.assertIn("判定：共識（3/3）", text)
+        self.assertIn("依據：\n    先前明顯減碼\n    現在轉為買進", text)
+        self.assertIn("一般：至少 2/3 同向", text)
+        self.assertIn("1/3：只留建倉・出清", text)
         self.assertNotIn("06/22", text)
         self.assertNotIn("類股洞察", text)
         content_lines = [line for line in text.splitlines() if line and "━" not in line]
@@ -108,10 +112,11 @@ class LineActionPayloadTests(unittest.TestCase):
             {"buying": [], "holding": [event], "selling": []},
         )
 
-        self.assertIn("　　類股：\n　　　PCB-材料設備", text)
-        self.assertIn("　　動作：持續加碼", text)
-        self.assertIn("　　10日：5買・0賣", text)
-        self.assertIn("　　參與：3 檔 ETF", text)
+        self.assertIn("  類股：PCB-材料設備", text)
+        self.assertIn("  動作：持續加碼", text)
+        self.assertIn("  ETF：403・981・991", text)
+        self.assertIn("  判定：持續（3檔）", text)
+        self.assertIn("  依據：\n    10日5買・0賣\n    最新仍買", text)
         content_lines = [line for line in text.splitlines() if line and "━" not in line]
         self.assertLessEqual(
             max(map(_display_width, content_lines)), PHONE_CONTENT_WIDTH

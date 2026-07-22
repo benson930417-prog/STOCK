@@ -61,7 +61,7 @@ def _selected(snapshot: dict) -> dict[str, list[dict]]:
 
 
 def _etf_text(etfs: list[str]) -> str:
-    return "、".join(ETF_SHORT.get(etf, etf) for etf in etfs)
+    return "・".join(ETF_SHORT.get(etf, etf) for etf in etfs)
 
 
 def _display_width(text: str) -> int:
@@ -71,48 +71,86 @@ def _display_width(text: str) -> int:
     )
 
 
-def _mobile_evidence_lines(event: dict) -> list[str]:
-    """Return deliberately short semantic rows; LINE must never split a sentence."""
+def _fallback_evidence_parts(event: dict) -> list[str]:
+    """Support older cached fixtures while the engine owns new display metadata."""
     event_type = str(event.get("event_type") or "")
     etfs = list(event.get("etfs") or [])
-    labels = _etf_text(etfs)
-    breadth = int(event.get("breadth") or len(etfs))
-
     if event_type == "sell_to_buy":
-        return ["動作：賣後轉買", f"同步：{breadth}/3 ETF"]
+        return ["先前明顯減碼", "現在轉為買進"]
     if event_type == "buy_to_sell":
-        return ["動作：買後轉賣", f"同步：{breadth}/3 ETF"]
+        return ["先前明顯加碼", "現在轉為賣出"]
     if event_type == "reentry_position":
         new_etfs = list(event.get("new_etfs") or [])
         continuing = [etf for etf in etfs if etf not in new_etfs]
-        rows = ["動作：重新建倉"]
-        rows.extend(f"ETF：{ETF_SHORT.get(etf, etf)} 重納" for etf in new_etfs)
-        rows.extend(f"ETF：{ETF_SHORT.get(etf, etf)} 續買" for etf in continuing)
-        return rows if len(rows) > 1 else [*rows, "確認：重新納入持股"]
+        parts = [f"{ETF_SHORT.get(etf, etf)} 重納" for etf in new_etfs]
+        parts.extend(f"{ETF_SHORT.get(etf, etf)} 續買" for etf in continuing)
+        return parts or ["曾出清後重納"]
     if event_type in {"new_position", "trial_position"}:
         new_etfs = list(event.get("new_etfs") or etfs)
-        label = "試單建倉" if event_type == "trial_position" else "新建倉"
-        rows = [f"動作：{label}"]
-        rows.extend(f"ETF：{ETF_SHORT.get(etf, etf)} 新納入" for etf in new_etfs)
-        return rows
+        label = "小額新納入" if event_type == "trial_position" else "新納入"
+        return [f"{ETF_SHORT.get(etf, etf)} {label}" for etf in new_etfs]
     if event_type == "full_exit":
         exit_etfs = list(event.get("exit_etfs") or etfs)
-        rows = ["動作：完全出清"]
-        for etf in exit_etfs:
-            rows.extend([f"ETF：{ETF_SHORT.get(etf, etf)}", "狀態：移除持股"])
-        return rows
+        return [f"{ETF_SHORT.get(etf, etf)} 移除持股" for etf in exit_etfs]
     if event_type == "conviction_buy":
         buy_days = int(event.get("buy_days") or 0)
         sell_days = int(event.get("sell_days") or 0)
-        return [
-            "動作：持續加碼",
-            f"10日：{buy_days}買・{sell_days}賣",
-            f"參與：{breadth} 檔 ETF",
-        ]
+        return [f"10日{buy_days}買・{sell_days}賣", "最新仍買"]
     if event_type in {"restart_buy", "restart_sell"}:
         action = "重新買進" if event_type == "restart_buy" else "重新賣出"
-        return [f"動作：{action}", f"ETF：{labels}", "確認：沉寂後重啟"]
-    return [f"動作：{event.get('event_label') or '持股異動'}", "確認：訊號已成立"]
+        return ["沉寂至少5日", f"現在{action}"]
+    return ["訊號已成立"]
+
+
+def _fallback_qualification(event: dict) -> str:
+    event_type = str(event.get("event_type") or "")
+    breadth = int(event.get("breadth") or len(event.get("etfs") or []))
+    if event_type == "conviction_buy":
+        return f"持續（{breadth}檔）"
+    if breadth >= 2:
+        return f"共識（{breadth}/3）"
+    exception = "出清" if event_type == "full_exit" else "建倉"
+    if event_type in {"sell_to_buy", "buy_to_sell"}:
+        exception = "反轉2日"
+    if exception == "反轉2日":
+        return "1/3 反轉2日"
+    return f"1/3 {exception}例外"
+
+
+def _mobile_fields(event: dict) -> list[tuple[str, list[str]]]:
+    """Return the same five fields for every lane and every event type."""
+    etfs = list(event.get("etfs") or [])
+    evidence = list(event.get("evidence_parts") or _fallback_evidence_parts(event))
+    return [
+        ("類股", [str(event.get("category") or "未分類")]),
+        ("動作", [str(event.get("event_label") or "持股異動")]),
+        ("ETF", [str(event.get("etf_label") or _etf_text(etfs) or "未提供")]),
+        (
+            "判定",
+            [str(event.get("qualification_label") or _fallback_qualification(event))],
+        ),
+        ("依據", evidence or ["訊號已成立"]),
+    ]
+
+
+def _append_field(lines: list[str], label: str, values: list[str]) -> None:
+    """Place complete semantic values on deliberate rows; never word-wrap them."""
+    values = [str(value).strip() for value in values if str(value).strip()]
+    if not values:
+        values = ["未提供"]
+    joined = "・".join(values)
+    inline = f"  {label}：{joined}"
+    if _display_width(inline) <= PHONE_CONTENT_WIDTH:
+        lines.append(inline)
+        return
+    lines.append(f"  {label}：")
+    for value in values:
+        row = f"    {value}"
+        if _display_width(row) > PHONE_CONTENT_WIDTH:
+            raise RuntimeError(
+                f"ETF action semantic value exceeds phone width: {label}={value}"
+            )
+        lines.append(row)
 
 
 def _lane(lines: list[str], title: str, events: list[dict], empty: str) -> None:
@@ -121,7 +159,6 @@ def _lane(lines: list[str], title: str, events: list[dict], empty: str) -> None:
         lines.append(empty)
         return
     for index, event in enumerate(events, 1):
-        category = str(event.get("category") or "未分類")
         stock_id = str(event.get("stock_id") or "").strip()
         identity = f"{event['name']}｜{stock_id}" if stock_id else str(event["name"])
         identity_line = f"{index:02d}. {identity}"
@@ -130,13 +167,9 @@ def _lane(lines: list[str], title: str, events: list[dict], empty: str) -> None:
         else:
             lines.append(f"{index:02d}. {event['name']}")
             if stock_id:
-                lines.append(f"　　代號：{stock_id}")
-        category_line = f"　　類股：{category}"
-        if _display_width(category_line) <= PHONE_CONTENT_WIDTH:
-            lines.append(category_line)
-        else:
-            lines.extend(["　　類股：", f"　　　{category}"])
-        lines.extend(f"　　{row}" for row in _mobile_evidence_lines(event))
+                lines.append(f"  代號：{stock_id}")
+        for label, values in _mobile_fields(event):
+            _append_field(lines, label, values)
 
 
 def _display_date(as_of: str) -> str:
@@ -148,7 +181,17 @@ def _display_date(as_of: str) -> str:
 
 
 def render_line_text(as_of: str, selected: dict[str, list[dict]]) -> str:
-    lines = ["主動 ETF 動作", "━━━━━━━━━━━━━━", f"截至：{_display_date(as_of)}", ""]
+    lines = [
+        "主動 ETF 動作",
+        "━━━━━━━━━━━━━━",
+        f"截至：{_display_date(as_of)}",
+        "判定規則",
+        "一般：至少 2/3 同向",
+        "1/3：只留建倉・出清",
+        "1/3：或反轉連續 2 日",
+        "續抱：至少 2 檔參與",
+        "",
+    ]
     _lane(lines, "🔴 買進觀察", selected["buying"], "本日無新買進訊號")
     lines.extend(["", "━━━━━━━━━━━━━━"])
     _lane(lines, "🟠 續抱參考", selected["holding"], "本日無續抱確認")
@@ -172,7 +215,7 @@ def build_payload(data: dict) -> dict:
     snapshot = build_event_snapshot(data, ETFS)
     selected = _selected(snapshot)
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated": datetime.now().astimezone().isoformat(timespec="seconds"),
         "source_generated": data.get("generated"),
         "as_of": snapshot["as_of"],

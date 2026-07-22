@@ -50,6 +50,14 @@ SELL_EVENT_LABELS = {
     "restart_sell": "沉寂後開賣",
 }
 
+STRUCTURAL_EVENT_TYPES = {
+    "new_position",
+    "trial_position",
+    "reentry_position",
+    "full_exit",
+}
+REVERSAL_EVENT_TYPES = {"sell_to_buy", "buy_to_sell"}
+
 
 def _display_name(stock_id: str, source_name: str) -> str:
     return STOCK_DISPLAY_NAMES.get(stock_id, source_name)
@@ -244,6 +252,102 @@ def _confirmation_label(event: dict, etf_count: int) -> str:
     if method == "breadth":
         return f"{event['breadth']}/{etf_count} ETF 同步"
     return "同方向連續 2 個交易日"
+
+
+def _qualification(event: dict, etf_count: int) -> dict | None:
+    """Explain why an event is strong enough to show, or reject it.
+
+    Ordinary stock actions need at least two ETFs moving in the same direction.
+    A single ETF is allowed only when the disclosed holding list changed, or
+    when an actual reversal persisted for two consecutive common sessions.
+    Continuing-conviction evidence is a separate lane and still needs at least
+    two ETFs to have participated during its ten-session window.
+    """
+    event_type = str(event.get("event_type") or "")
+    breadth = int(event.get("breadth") or 0)
+    if event_type == "conviction_buy":
+        if breadth < 2:
+            return None
+        return {
+            "qualification_kind": "continuation",
+            "qualification_label": f"持續（{breadth}檔）",
+        }
+    if breadth >= 2:
+        return {
+            "qualification_kind": "consensus",
+            "qualification_label": f"共識（{breadth}/{etf_count}）",
+        }
+    if breadth != 1:
+        return None
+    if event_type in STRUCTURAL_EVENT_TYPES:
+        exception = "建倉" if event.get("direction", 0) > 0 else "出清"
+        return {
+            "qualification_kind": "exception",
+            "qualification_label": f"1/{etf_count} {exception}例外",
+        }
+    if (
+        event_type in REVERSAL_EVENT_TYPES
+        and event.get("confirmation") == "persistence"
+    ):
+        return {
+            "qualification_kind": "exception",
+            "qualification_label": f"1/{etf_count} 反轉2日",
+        }
+    return None
+
+
+def _evidence_parts(event: dict) -> list[str]:
+    """Return compact, reusable evidence facts for both web and LINE."""
+    event_type = str(event.get("event_type") or "")
+    if event_type == "reentry_position":
+        parts = [
+            f"{ETF_LABEL.get(etf, etf)} 重納"
+            for etf in event.get("new_etfs", [])
+        ]
+        parts.extend(
+            f"{ETF_LABEL.get(etf, etf)} 續買"
+            for etf in event.get("etfs", [])
+            if etf not in event.get("new_etfs", [])
+        )
+        return parts or ["曾出清後重納"]
+    if event_type in {"new_position", "trial_position"}:
+        suffix = "小額新納入" if event_type == "trial_position" else "新納入"
+        return [
+            f"{ETF_LABEL.get(etf, etf)} {suffix}"
+            for etf in event.get("new_etfs", []) or event.get("etfs", [])
+        ]
+    if event_type == "full_exit":
+        return [
+            f"{ETF_LABEL.get(etf, etf)} 移除持股"
+            for etf in event.get("exit_etfs", []) or event.get("etfs", [])
+        ]
+    if event_type == "sell_to_buy":
+        return ["先前明顯減碼", "現在轉為買進"]
+    if event_type == "buy_to_sell":
+        return ["先前明顯加碼", "現在轉為賣出"]
+    if event_type == "restart_buy":
+        return ["沉寂至少5日", "現在重新買進"]
+    if event_type == "restart_sell":
+        return ["沉寂至少5日", "現在重新賣出"]
+    if event_type == "conviction_buy":
+        return [
+            f"10日{int(event.get('buy_days') or 0)}買・"
+            f"{int(event.get('sell_days') or 0)}賣",
+            "最新仍買",
+        ]
+    return [str(event.get("event_label") or "訊號已成立")]
+
+
+def _display_metadata(event: dict, etf_count: int) -> dict | None:
+    qualification = _qualification(event, etf_count)
+    if not qualification:
+        return None
+    etf_labels = [ETF_LABEL.get(etf, etf) for etf in event.get("etfs", [])]
+    return {
+        **qualification,
+        "etf_label": "・".join(etf_labels) or "未提供",
+        "evidence_parts": _evidence_parts(event),
+    }
 
 
 def _reason(event: dict) -> str:
@@ -460,6 +564,10 @@ def build_event_snapshot(
                 event, len(selected_etfs)
             )
             event["reason"] = _reason(event)
+            metadata = _display_metadata(event, len(selected_etfs))
+            if not metadata:
+                continue
+            event.update(metadata)
             events.append(event)
 
     priority = {
@@ -502,7 +610,8 @@ def build_event_snapshot(
         event = _conviction_event(
             stock_id, candidates, confirmations, dates, selected_etfs
         )
-        if event:
+        if event and (metadata := _display_metadata(event, len(selected_etfs))):
+            event.update(metadata)
             holding.append(event)
     holding.sort(
         key=lambda event: (
@@ -527,7 +636,12 @@ def build_event_snapshot(
             "conviction_min_net": MIN_CONVICTION_NET,
             "min_normalized_flow": MIN_NORMALIZED_FLOW,
             "median_fraction": MEDIAN_FRACTION,
-            "confirmation": "position-list change OR 2 ETFs same day OR 2 consecutive sessions",
+            "ordinary_qualification": "at least 2 ETFs aligned",
+            "single_etf_exceptions": (
+                "position-list change OR reversal confirmed for 2 sessions"
+            ),
+            "single_etf_ordinary_actions_hidden": True,
+            "hold_min_participating_etfs": 2,
             "continuations_excluded_from_fresh_signals": True,
             "strong_continuations_shown_as_hold_evidence": True,
             "concepts_interpreted": False,

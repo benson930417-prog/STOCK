@@ -1,9 +1,9 @@
 {
-  "schema_version": 1,
-  "generated": "2026-07-22T23:53:03+10:00",
+  "schema_version": 2,
+  "generated": "2026-07-23T00:11:17+10:00",
   "source_generated": "2026-07-22 22:31:45",
   "as_of": "2026-07-22",
-  "line_text": "主動 ETF 動作\n━━━━━━━━━━━━━━\n截至：7月22日\n\n🔴 買進觀察｜4 檔\n01. 台達電｜2308\n　　類股：電源供應器\n　　動作：賣後轉買\n　　同步：3/3 ETF\n02. 貿聯-KY｜3665\n　　類股：連接元件\n　　動作：賣後轉買\n　　同步：2/3 ETF\n03. 南亞科｜2408\n　　類股：記憶體製造\n　　動作：重新建倉\n　　ETF：981 重納\n　　ETF：991 續買\n04. 環球晶｜6488\n　　類股：晶圓材料\n　　動作：新建倉\n　　ETF：991 新納入\n\n━━━━━━━━━━━━━━\n🟠 續抱參考｜3 檔\n01. 台光電｜2383\n　　類股：\n　　　PCB-材料設備\n　　動作：持續加碼\n　　10日：5買・0賣\n　　參與：3 檔 ETF\n02. 日月光投控｜3711\n　　類股：IC-封測\n　　動作：持續加碼\n　　10日：7買・0賣\n　　參與：3 檔 ETF\n03. 智邦｜2345\n　　類股：網通\n　　動作：持續加碼\n　　10日：7買・0賣\n　　參與：2 檔 ETF\n\n━━━━━━━━━━━━━━\n🟢 賣出警示｜3 檔\n01. 台積電｜2330\n　　類股：IC-代工\n　　動作：買後轉賣\n　　同步：3/3 ETF\n02. 穎崴｜6515\n　　類股：IC-封測\n　　動作：買後轉賣\n　　同步：2/3 ETF\n03. 華新科｜2492\n　　類股：被動元件\n　　動作：完全出清\n　　ETF：991\n　　狀態：移除持股",
+  "line_text": "主動 ETF 動作\n━━━━━━━━━━━━━━\n截至：7月22日\n判定規則\n一般：至少 2/3 同向\n1/3：只留建倉・出清\n1/3：或反轉連續 2 日\n續抱：至少 2 檔參與\n\n🔴 買進觀察｜4 檔\n01. 台達電｜2308\n  類股：電源供應器\n  動作：賣後轉買\n  ETF：403・981・991\n  判定：共識（3/3）\n  依據：\n    先前明顯減碼\n    現在轉為買進\n02. 貿聯-KY｜3665\n  類股：連接元件\n  動作：賣後轉買\n  ETF：403・991\n  判定：共識（2/3）\n  依據：\n    先前明顯減碼\n    現在轉為買進\n03. 南亞科｜2408\n  類股：記憶體製造\n  動作：重新建倉\n  ETF：981・991\n  判定：共識（2/3）\n  依據：\n    981 重納\n    991 續買\n04. 環球晶｜6488\n  類股：晶圓材料\n  動作：新建倉\n  ETF：991\n  判定：1/3 建倉例外\n  依據：991 新納入\n\n━━━━━━━━━━━━━━\n🟠 續抱參考｜3 檔\n01. 台光電｜2383\n  類股：PCB-材料設備\n  動作：持續加碼\n  ETF：403・981・991\n  判定：持續（3檔）\n  依據：\n    10日5買・0賣\n    最新仍買\n02. 日月光投控｜3711\n  類股：IC-封測\n  動作：持續加碼\n  ETF：403・981・991\n  判定：持續（3檔）\n  依據：\n    10日7買・0賣\n    最新仍買\n03. 智邦｜2345\n  類股：網通\n  動作：持續加碼\n  ETF：403・991\n  判定：持續（2檔）\n  依據：\n    10日7買・0賣\n    最新仍買\n\n━━━━━━━━━━━━━━\n🟢 賣出警示｜3 檔\n01. 台積電｜2330\n  類股：IC-代工\n  動作：買後轉賣\n  ETF：403・981・991\n  判定：共識（3/3）\n  依據：\n    先前明顯加碼\n    現在轉為賣出\n02. 穎崴｜6515\n  類股：IC-封測\n  動作：買後轉賣\n  ETF：403・991\n  判定：共識（2/3）\n  依據：\n    先前明顯加碼\n    現在轉為賣出\n03. 華新科｜2492\n  類股：被動元件\n  動作：完全出清\n  ETF：991\n  判定：1/3 出清例外\n  依據：991 移除持股",
   "signals": {
     "buying": [
       {
@@ -37,7 +37,14 @@
         "prior_buy_days": 4,
         "prior_sell_days": 5,
         "confirmation_label": "3/3 ETF 同步",
-        "reason": "403、981、991 剛轉為買進；06/22–07/03 曾明顯減碼"
+        "reason": "403、981、991 剛轉為買進；06/22–07/03 曾明顯減碼",
+        "qualification_kind": "consensus",
+        "qualification_label": "共識（3/3）",
+        "etf_label": "403・981・991",
+        "evidence_parts": [
+          "先前明顯減碼",
+          "現在轉為買進"
+        ]
       },
       {
         "direction": 1,
@@ -69,7 +76,14 @@
         "prior_buy_days": 3,
         "prior_sell_days": 4,
         "confirmation_label": "2/3 ETF 同步",
-        "reason": "403、991 剛轉為買進；06/25–07/02 曾明顯減碼"
+        "reason": "403、991 剛轉為買進；06/25–07/02 曾明顯減碼",
+        "qualification_kind": "consensus",
+        "qualification_label": "共識（2/3）",
+        "etf_label": "403・991",
+        "evidence_parts": [
+          "先前明顯減碼",
+          "現在轉為買進"
+        ]
       },
       {
         "direction": 1,
@@ -102,7 +116,14 @@
         "prior_buy_days": 5,
         "prior_sell_days": 0,
         "confirmation_label": "持股名單已改變",
-        "reason": "981 重新納入（03/31 曾出清）；991 同日續買"
+        "reason": "981 重新納入（03/31 曾出清）；991 同日續買",
+        "qualification_kind": "consensus",
+        "qualification_label": "共識（2/3）",
+        "etf_label": "981・991",
+        "evidence_parts": [
+          "981 重納",
+          "991 續買"
+        ]
       },
       {
         "direction": 1,
@@ -135,7 +156,13 @@
         "prior_buy_days": 4,
         "prior_sell_days": 1,
         "confirmation_label": "持股名單已改變",
-        "reason": "991 新納入持股"
+        "reason": "991 新納入持股",
+        "qualification_kind": "exception",
+        "qualification_label": "1/3 建倉例外",
+        "etf_label": "991",
+        "evidence_parts": [
+          "991 新納入"
+        ]
       }
     ],
     "holding": [
@@ -164,7 +191,14 @@
         "buy_days": 5,
         "sell_days": 0,
         "reason": "近 10 日有 5 日明顯加碼、0 日明顯減碼；最近仍在買",
-        "confirmation_label": "403、981、991 都曾參與"
+        "confirmation_label": "403、981、991 都曾參與",
+        "qualification_kind": "continuation",
+        "qualification_label": "持續（3檔）",
+        "etf_label": "403・981・991",
+        "evidence_parts": [
+          "10日5買・0賣",
+          "最新仍買"
+        ]
       },
       {
         "direction": 1,
@@ -191,7 +225,14 @@
         "buy_days": 7,
         "sell_days": 0,
         "reason": "近 10 日有 7 日明顯加碼、0 日明顯減碼；最近仍在買",
-        "confirmation_label": "403、981、991 都曾參與"
+        "confirmation_label": "403、981、991 都曾參與",
+        "qualification_kind": "continuation",
+        "qualification_label": "持續（3檔）",
+        "etf_label": "403・981・991",
+        "evidence_parts": [
+          "10日7買・0賣",
+          "最新仍買"
+        ]
       },
       {
         "direction": 1,
@@ -217,7 +258,14 @@
         "buy_days": 7,
         "sell_days": 0,
         "reason": "近 10 日有 7 日明顯加碼、0 日明顯減碼；最近仍在買",
-        "confirmation_label": "403、991 都曾參與"
+        "confirmation_label": "403、991 都曾參與",
+        "qualification_kind": "continuation",
+        "qualification_label": "持續（2檔）",
+        "etf_label": "403・991",
+        "evidence_parts": [
+          "10日7買・0賣",
+          "最新仍買"
+        ]
       }
     ],
     "selling": [
@@ -252,7 +300,14 @@
         "prior_buy_days": 4,
         "prior_sell_days": 1,
         "confirmation_label": "3/3 ETF 同步",
-        "reason": "403、981、991 剛轉為賣出；07/03–07/13 曾明顯加碼"
+        "reason": "403、981、991 剛轉為賣出；07/03–07/13 曾明顯加碼",
+        "qualification_kind": "consensus",
+        "qualification_label": "共識（3/3）",
+        "etf_label": "403・981・991",
+        "evidence_parts": [
+          "先前明顯加碼",
+          "現在轉為賣出"
+        ]
       },
       {
         "direction": -1,
@@ -284,7 +339,14 @@
         "prior_buy_days": 4,
         "prior_sell_days": 5,
         "confirmation_label": "2/3 ETF 同步",
-        "reason": "403、991 剛轉為賣出；06/23–07/02 曾明顯加碼"
+        "reason": "403、991 剛轉為賣出；06/23–07/02 曾明顯加碼",
+        "qualification_kind": "consensus",
+        "qualification_label": "共識（2/3）",
+        "etf_label": "403・991",
+        "evidence_parts": [
+          "先前明顯加碼",
+          "現在轉為賣出"
+        ]
       },
       {
         "direction": -1,
@@ -317,7 +379,13 @@
         "prior_buy_days": 2,
         "prior_sell_days": 0,
         "confirmation_label": "持股名單已改變",
-        "reason": "991 已從持股名單移除"
+        "reason": "991 已從持股名單移除",
+        "qualification_kind": "exception",
+        "qualification_label": "1/3 出清例外",
+        "etf_label": "991",
+        "evidence_parts": [
+          "991 移除持股"
+        ]
       }
     ]
   },
