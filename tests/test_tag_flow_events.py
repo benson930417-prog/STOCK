@@ -5,6 +5,7 @@ import unittest
 
 from scripts.build_tag_flow import flow_between
 from src.tag_flow_events import build_event_snapshot
+from src.ui.tag_flow_v2_tab import _event_card, _lane
 
 
 ETFS = ["00403A", "00981A", "00991A"]
@@ -65,6 +66,23 @@ def _add_move(
 
 
 class TagFlowEventTests(unittest.TestCase):
+    def test_v2_cards_are_html_not_indented_markdown_code(self) -> None:
+        event = {
+            "age_sessions": 0,
+            "event_label": "新建倉",
+            "name": "測試股票",
+            "category": "測試類股",
+            "reason": "首次納入持股",
+            "confirmation_label": "持股名單已改變",
+        }
+
+        card = _event_card(event, "buy")
+        lane = _lane("剛開始買", "新建倉", [event], "buy")
+
+        self.assertTrue(card.startswith('<div class="tfv2-card'))
+        self.assertTrue(lane.startswith('<section class="tfv2-lane">'))
+        self.assertNotIn("\n    <", card + lane)
+
     def test_tiny_routine_noise_is_hidden_but_tiny_new_position_surfaces(self) -> None:
         data, dates = _empty_fixture()
         for session in dates[-2:]:

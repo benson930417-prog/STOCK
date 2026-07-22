@@ -24,20 +24,20 @@ def _load(data_dir):
 
 def _event_card(event: dict, group: str) -> str:
     age = "今日確認" if event["age_sessions"] == 0 else "昨日確認"
-    return f"""
-    <div class="tfv2-card tfv2-{group}">
-      <div class="tfv2-card-top">
-        <span class="tfv2-event-label">{escape(event['event_label'])}</span>
-        <span class="tfv2-age">{age}</span>
-      </div>
-      <div class="tfv2-stock">
-        {escape(event['name'])}
-        <span class="tfv2-category">{escape(event['category'])}</span>
-      </div>
-      <div class="tfv2-reason">{escape(event['reason'])}</div>
-      <div class="tfv2-confirm">✓ {escape(event['confirmation_label'])}</div>
-    </div>
-    """
+    # Keep generated HTML flush-left. Four-space indentation is a Markdown code
+    # block, which makes Streamlit print the card markup instead of rendering it.
+    return (
+        f'<div class="tfv2-card tfv2-{group}">'
+        '<div class="tfv2-card-top">'
+        f'<span class="tfv2-event-label">{escape(event["event_label"])}</span>'
+        f'<span class="tfv2-age">{age}</span>'
+        '</div>'
+        f'<div class="tfv2-stock">{escape(event["name"])}'
+        f'<span class="tfv2-category">{escape(event["category"])}</span></div>'
+        f'<div class="tfv2-reason">{escape(event["reason"])}</div>'
+        f'<div class="tfv2-confirm">✓ {escape(event["confirmation_label"])}</div>'
+        '</div>'
+    )
 
 
 def _lane(title: str, note: str, events: list[dict], group: str) -> str:
@@ -47,16 +47,15 @@ def _lane(title: str, note: str, events: list[dict], group: str) -> str:
             '<div class="tfv2-empty">今天沒有新的已確認訊號。'
             "延續性動作不會拿來填版面。</div>"
         )
-    return f"""
-    <section class="tfv2-lane">
-      <div class="tfv2-lane-head">
-        <div class="tfv2-lane-title">{title}</div>
-        <div class="tfv2-count">{len(events)}</div>
-      </div>
-      <div class="tfv2-lane-note">{note}</div>
-      {cards}
-    </section>
-    """
+    return (
+        '<section class="tfv2-lane">'
+        '<div class="tfv2-lane-head">'
+        f'<div class="tfv2-lane-title">{title}</div>'
+        f'<div class="tfv2-count">{len(events)}</div>'
+        '</div>'
+        f'<div class="tfv2-lane-note">{note}</div>'
+        f'{cards}</section>'
+    )
 
 
 def render_tag_flow_v2_tab(*, DATA_DIR=None, **kwargs):
