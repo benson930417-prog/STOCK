@@ -160,6 +160,9 @@ class TagFlowEventTests(unittest.TestCase):
         self.assertEqual("breadth", event["confirmation"])
         self.assertEqual(2, event["breadth"])
         self.assertEqual("共識（2/3）", event["qualification_label"])
+        self.assertEqual(20, len(event["flow_trend_20d"]))
+        self.assertAlmostEqual(-0.40, event["flow_trend_20d"][-1]["flow"])
+        self.assertEqual(2, event["flow_trend_20d"][-1]["breadth"])
 
     def test_single_etf_routine_restart_is_hidden(self) -> None:
         data, dates = _empty_fixture()

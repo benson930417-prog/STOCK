@@ -56,9 +56,66 @@ ACTION_BOARD_CSS = r"""
 .tfv2-field {display:grid; grid-template-columns:2.9rem minmax(0,1fr);
   gap:.35rem; font-size:.76rem; line-height:1.42}
 .tfv2-field span {opacity:.55}.tfv2-field b {font-weight:650}
+.tfv2-flow {margin-top:.52rem; padding-top:.38rem;
+  border-top:1px solid rgba(148,163,184,.11)}
+.tfv2-flow-head {display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:.08rem; color:rgba(203,213,225,.58); font-size:.62rem;
+  font-weight:650; line-height:1.2}
+.tfv2-flow-chart {display:block; width:100%; height:2.35rem; overflow:visible}
+.tfv2-flow-axis {stroke:rgba(148,163,184,.2); stroke-width:1}
+.tfv2-flow-frame {fill:none; stroke:rgba(226,232,240,.2); stroke-width:.8}
+.tfv2-flow-buy {fill:#E76A5C; opacity:.76}
+.tfv2-flow-sell {fill:#45C879; opacity:.76}
 .tfv2-empty {font-size:.82rem; opacity:.66; padding:1.1rem .4rem}
 @media (max-width:760px){.tfv2-grid{grid-template-columns:1fr}}
 """
+
+
+def _flow_sparkline(event: dict) -> str:
+    trend = list(event.get("flow_trend_20d") or [])[-20:]
+    if not trend:
+        return ""
+    width = 320.0
+    height = 42.0
+    center = height / 2
+    max_bar = 17.0
+    slot = width / max(1, len(trend))
+    bar_width = max(2.0, slot * 0.56)
+    values = [float(row.get("flow") or 0.0) for row in trend]
+    scale = max((abs(value) for value in values), default=0.0) or 1.0
+    elements = [
+        f'<line class="tfv2-flow-axis" x1="0" y1="{center:g}" '
+        f'x2="{width:g}" y2="{center:g}"/>'
+    ]
+    for index in range(max(0, len(trend) - 2), len(trend)):
+        x = index * slot + 0.5
+        elements.append(
+            f'<rect class="tfv2-flow-frame" x="{x:.2f}" y="1" '
+            f'width="{max(1.0, slot - 1):.2f}" height="{height - 2:g}" rx="2"/>'
+        )
+    for index, (row, value) in enumerate(zip(trend, values)):
+        if abs(value) <= 1e-9:
+            continue
+        bar_height = max(1.5, abs(value) / scale * max_bar)
+        x = index * slot + (slot - bar_width) / 2
+        y = center - bar_height if value > 0 else center
+        css_class = "tfv2-flow-buy" if value > 0 else "tfv2-flow-sell"
+        date = escape(str(row.get("date") or "")[-5:].replace("-", "/"))
+        signed = f"{value:+.4f}%"
+        elements.append(
+            f'<rect class="tfv2-flow-bar {css_class}" x="{x:.2f}" y="{y:.2f}" '
+            f'width="{bar_width:.2f}" height="{bar_height:.2f}" rx="1">'
+            f'<title>{date} {signed} 規模比合計</title></rect>'
+        )
+    chart = "".join(elements)
+    return (
+        '<div class="tfv2-flow">'
+        '<div class="tfv2-flow-head"><span>20日規模比淨動作</span>'
+        '<span>早 ←　→ 近</span></div>'
+        f'<svg class="tfv2-flow-chart" viewBox="0 0 {width:g} {height:g}" '
+        f'role="img" aria-label="{escape(str(event.get("name") or ""))}最近20日規模比淨動作">'
+        f'{chart}</svg></div>'
+    )
 
 
 def event_card(event: dict, group: str) -> str:
@@ -87,6 +144,7 @@ def event_card(event: dict, group: str) -> str:
         "</div>"
         for label, value in fields
     )
+    flow_html = _flow_sparkline(event)
     # Keep generated HTML flush-left. Four-space indentation is a Markdown code
     # block, which makes Streamlit print the card markup instead of rendering it.
     return (
@@ -96,6 +154,7 @@ def event_card(event: dict, group: str) -> str:
         f'<span class="tfv2-age tfv2-age-{age_class}">{age}</span>'
         "</div>"
         f'<div class="tfv2-fields">{field_html}</div>'
+        f"{flow_html}"
         "</div>"
     )
 

@@ -198,6 +198,33 @@ def _prior_context(
     return round(prior_net, 4), buy_days, sell_days, idle
 
 
+def _flow_trend(
+    stock_dates: dict[str, dict[str, dict]], dates: list[str]
+) -> list[dict]:
+    """Return a fixed 20-session, fund-size-normalized stock-flow shape.
+
+    Each bar sums the three ETFs' ActiveWeight-style flows for that common
+    session.  Absolute cash is deliberately excluded so a larger ETF cannot
+    dominate merely because its fund size is larger.
+    """
+    rows = []
+    for date in dates[-CONTEXT_SESSIONS:]:
+        moves = stock_dates.get(date, {})
+        flow = sum(float(move.get("flow") or 0.0) for move in moves.values())
+        breadth = sum(
+            abs(float(move.get("flow") or 0.0)) > 1e-9
+            for move in moves.values()
+        )
+        rows.append(
+            {
+                "date": date,
+                "flow": round(flow, 4),
+                "breadth": breadth,
+            }
+        )
+    return rows
+
+
 def _prior_opposite_range(
     candidates: list[dict | None],
     dates: list[str],
@@ -620,6 +647,10 @@ def build_event_snapshot(
             -int(event["breadth"]),
         )
     )
+    for event in [*buying, *holding[:4], *selling]:
+        event["flow_trend_20d"] = _flow_trend(
+            records.get(str(event.get("stock_id") or ""), {}), dates
+        )
     return {
         "as_of": dates[-1],
         "dates": dates,

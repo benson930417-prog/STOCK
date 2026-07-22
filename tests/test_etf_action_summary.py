@@ -17,6 +17,14 @@ def _event(index: int, *, age: int = 0) -> dict:
         "etf_label": "403・981",
         "qualification_label": "共識（2/3）",
         "evidence_parts": ["測試依據"],
+        "flow_trend_20d": [
+            {
+                "date": f"2026-07-{day:02d}",
+                "flow": (0.01 * day) if day % 3 else (-0.008 * day),
+                "breadth": 2,
+            }
+            for day in range(1, 21)
+        ],
     }
 
 
@@ -55,6 +63,9 @@ class EtfActionSummaryTests(unittest.TestCase):
         self.assertIn('class="tfv2-age tfv2-age-current">本交易日確認', buy)
         self.assertIn('class="tfv2-age tfv2-age-prior">前一交易日確認', buy)
         self.assertIn('class="tfv2-age tfv2-age-latest">最新資料仍確認', hold)
+        self.assertIn("20日規模比淨動作", buy)
+        self.assertIn('class="tfv2-flow-chart"', buy)
+        self.assertIn("規模比合計</title>", buy)
         self.assertIn("測試股票0", buy)
         self.assertNotIn("測試股票10", buy)
         self.assertIn("測試股票13", hold)
