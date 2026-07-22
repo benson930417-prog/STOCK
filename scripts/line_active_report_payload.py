@@ -73,12 +73,15 @@ def build_active_report_messages(
             f"got {len(tickers)}"
         )
     stamp = int(time.time()) if cache_buster is None else cache_buster
-    header_lines = ["📊 主動 ETF 操作日報"]
-    header_lines.extend(
-        f"{ETF_SHORT.get(ticker, ticker)} {ACTIVE_SHORT_NAMES.get(ticker, ACTIVE_NAMES.get(ticker, ticker))}"
-        f"｜{_mobile_date(_latest_history_date(ticker, data_dir))}"
-        for ticker in tickers
-    )
+    header_lines = ["📊 主動 ETF 操作日報", "━━━━━━━━━━━━━━"]
+    for ticker in tickers:
+        header_lines.extend(
+            [
+                f"{ETF_SHORT.get(ticker, ticker)}｜"
+                f"{ACTIVE_SHORT_NAMES.get(ticker, ACTIVE_NAMES.get(ticker, ticker))}",
+                f"　　日期：{_mobile_date(_latest_history_date(ticker, data_dir))}",
+            ]
+        )
     text = "\n".join(header_lines) + "\n\n" + _action_text(action_cache)
     messages = [{"type": "text", "text": text}]
     for ticker in tickers:

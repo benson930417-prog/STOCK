@@ -39,9 +39,16 @@ class LineActionPayloadTests(unittest.TestCase):
         self.assertEqual(5, len(messages))
         self.assertEqual("text", messages[0]["type"])
         self.assertTrue(messages[0]["text"].startswith("📊 主動 ETF 操作日報"))
-        self.assertIn("403 升級50｜7月22日", messages[0]["text"])
+        self.assertIn("403｜升級50\n　　日期：7月22日", messages[0]["text"])
         self.assertIn("cached ETF action juice", messages[0]["text"])
         self.assertNotIn("2026-07-22", messages[0]["text"])
+        header = messages[0]["text"].split("\n\n", 1)[0]
+        header_lines = [
+            line for line in header.splitlines() if line and "━" not in line
+        ]
+        self.assertLessEqual(
+            max(map(_display_width, header_lines)), PHONE_CONTENT_WIDTH
+        )
         self.assertEqual(["image"] * 4, [row["type"] for row in messages[1:]])
         self.assertTrue(all("?t=123" in row["originalContentUrl"] for row in messages[1:]))
 
