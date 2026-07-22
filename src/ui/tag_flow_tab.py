@@ -8,7 +8,7 @@ story is window-independent and deliberately keeps four questions separate:
 * relative magnitude: the category versus its own prior pressure history;
 * consensus: how many selected ETFs confirm the current direction.
 
-The 1/5/10/20/... selector changes charts and audit totals only.  It never
+The 1/10/20/... selector changes charts and audit totals only.  It never
 changes the phase label, ranking, or headline conclusion.
 """
 from __future__ import annotations
@@ -102,7 +102,7 @@ def _rotation_board(rows: list[dict]) -> None:
         ),
         key=lambda row: (
             confidence_order.get(row["confidence"], 9),
-            -float(row.get("recent_3_total", 0.0)),
+            -float(row.get("fast", 0.0)),
         ),
     )[:4]
     turn_rows = sorted(
@@ -110,22 +110,22 @@ def _rotation_board(rows: list[dict]) -> None:
             row for row in rows
             if row.get("pending_phase")
             in {"buy_entering", "buy_accelerating", "buy_continuing"}
-            and float(row.get("recent_3_total", 0.0)) > 0
+            and float(row.get("fast", 0.0)) > 0
         ),
-        key=lambda row: -float(row.get("recent_3_total", 0.0)),
+        key=lambda row: -float(row.get("fast", 0.0)),
     )[:3]
     sell_rows = sorted(
         (
             row for row in rows
-            if row.get("recent_sell_alert") or row["phase_group"] == "sell"
+            if row.get("current_sell_alert") or row["phase_group"] == "sell"
         ),
-        key=lambda row: float(row.get("recent_3_total", 0.0)),
+        key=lambda row: float(row.get("fast", 0.0)),
     )[:4]
     lanes = [
         (
             "buy",
             "🔴 綜合判斷：買盤已確認",
-            "3／10／20 日綜合訊號已確認；卡片統一列近 3 日實際動作",
+            "3／10／20 日 EWMA 綜合訊號已確認",
             buy_rows,
         ),
         (
@@ -136,8 +136,8 @@ def _rotation_board(rows: list[dict]) -> None:
         ),
         (
             "alert",
-            "🟢 近 3 日：減碼警示",
-            "只看最近 3 個交易日的急賣，可能早於 10／20 日背景轉弱",
+            "🟢 3 日 EWMA：目前減碼警示",
+            "目前壓力已轉負，可能早於 10／20 日 EWMA 方向與背景轉弱",
             sell_rows,
         ),
     ]
@@ -145,28 +145,24 @@ def _rotation_board(rows: list[dict]) -> None:
     for group, title, note, lane_rows in lanes:
         items: list[str] = []
         for row in lane_rows:
-            recent = float(row.get("recent_3_total", 0.0))
-            if recent > EPSILON:
-                recent_breadth = (
-                    f"{row.get('recent_3_buyers', 0)}/{row['etf_count']} ETF 買"
-                )
-            elif recent < -EPSILON:
-                recent_breadth = (
-                    f"{row.get('recent_3_sellers', 0)}/{row['etf_count']} ETF 賣"
-                )
+            current = float(row.get("fast", 0.0))
+            if current > EPSILON:
+                current_breadth = f"{row['buyers']}/{row['etf_count']} ETF 偏買"
+            elif current < -EPSILON:
+                current_breadth = f"{row['sellers']}/{row['etf_count']} ETF 偏賣"
             else:
-                recent_breadth = "ETF 合計接近持平"
-            meta = f"近 3 日 {recent:+.2f}% 規模 · {recent_breadth}"
+                current_breadth = "ETF 合計接近持平"
+            meta = f"3 日 EWMA {current:+.2f}% 規模 · {current_breadth}"
 
             if group == "alert":
                 if row["phase_group"] == "sell" and row["confidence"] in {"高", "中"}:
                     phase = "綜合判斷：已確認減碼"
-                elif row.get("recent_3_sellers", 0) >= min(2, row["etf_count"]):
-                    phase = "近 3 日警示：急減碼"
+                elif row.get("sellers", 0) >= min(2, row["etf_count"]):
+                    phase = "目前壓力：多數 ETF 偏賣"
                 else:
-                    phase = "近 3 日警示：單一 ETF 減碼"
+                    phase = "目前壓力：轉負待確認"
                 pending = (
-                    "<div class='tf-alert-note'>綜合背景仍偏買：先警示，尚未確認長期翻空</div>"
+                    "<div class='tf-alert-note'>10／20 日 EWMA 仍偏買：先警示，尚未確認長期翻空</div>"
                     if float(row.get("background", 0.0)) > 0 else ""
                 )
             elif group == "watch":
@@ -216,7 +212,6 @@ def _rotation_table(rows: list[dict]) -> pd.DataFrame:
             breadth = f"{row['sellers']}/{row['etf_count']} 偏賣"
         else:
             breadth = "中性"
-        totals = row["window_totals"]
         display.append(
             {
                 "類股": row["category"],
@@ -225,18 +220,14 @@ def _rotation_table(rows: list[dict]) -> pd.DataFrame:
                 "主方向": f"{row['trend']:+.3f}%",
                 "背景": f"{row['background']:+.3f}%",
                 "力道相對自身": row.get("strength_label", "歷史樣本累積中"),
-                "近3日警示": (
-                    f"🟢 {row.get('recent_3_total', 0.0):+.2f}% · "
-                    f"{row.get('recent_3_sellers', 0)}/{row['etf_count']} ETF 賣"
-                    if row.get("recent_sell_alert") else "—"
+                "目前壓力警示": (
+                    f"🟢 3日 EWMA {row.get('fast', 0.0):+.2f}% · "
+                    f"{row.get('sellers', 0)}/{row['etf_count']} ETF 偏賣"
+                    if row.get("current_sell_alert") else "—"
                 ),
                 "全類股排名": f"{row['cross_section_rank']}/{row['cross_section_total']}",
                 "ETF 確認": breadth,
                 "方向信心": row["confidence"],
-                "3 / 5 / 10 / 20日證據": (
-                    f"{totals['3']:+.2f} / {totals['5']:+.2f} / "
-                    f"{totals['10']:+.2f} / {totals['20']:+.2f}%"
-                ),
             }
         )
     return pd.DataFrame(display)
@@ -802,17 +793,18 @@ def render_tag_flow_tab(
         """
 **怎麼判斷（不是只看今天）**
 
-- **每張卡的「近 3 日 ±X%」**：最近 3 個共同交易日的實際合計。
-- **紅／橘欄怎麼分**：3 日半衰期看現在壓力、10 日看主方向、20 日看背景，再合併判斷。這是舊資料淡出的速度，不是固定窗口。
+- **每張卡的「3 日 EWMA」**：目前壓力；越新的交易權重越高，不是最近 3 日直接加總。
+- **紅／橘欄怎麼分**：10 日 EWMA 看主方向、20 日 EWMA 看背景，再與目前壓力合併判斷。
 - **什麼時候確認**：至少 2 檔 ETF 同向，而且新階段需連續 2 日。
-- **綠欄為何較快**：它只抓近 3 日急賣，所以 10／20 日背景仍偏買時，也能先提醒轉弱。
+- **綠欄為何較快**：3 日 EWMA 已轉負就先警示，所以 10／20 日 EWMA 仍偏買時，也能先提醒轉弱。
         """
     )
     _rotation_board(rotation_rows)
-    with st.expander("查看完整輪動判斷與 3／5／10／20 日證據"):
+    with st.expander("查看完整 3／10／20 日 EWMA 判斷"):
         st.dataframe(_rotation_table(rotation_rows), use_container_width=True, hide_index=True)
         st.caption(
-            "3／5／10／20 日加總只是查證數字，不參與階段命名；全類股排名按最新平滑後的近期壓力比較。"
+            "3 日 EWMA＝目前壓力；10 日 EWMA＝主方向；20 日 EWMA＝背景。"
+            "三者都使用全部共同歷史並逐日淡化舊資料。"
         )
 
     if not rotation_rows:
@@ -822,7 +814,7 @@ def render_tag_flow_tab(
         st.divider()
         st.markdown("#### ② 先選查證期間")
         supported_counts = [
-            days for days in (1, 5, 10, 20, 60, 120, 240)
+            days for days in (1, 10, 20, 60, 120, 240)
             if days <= len(available_dates)
         ]
         window_options = [f"{days}日" for days in supported_counts] + ["全部", "自訂"]
@@ -908,10 +900,10 @@ def render_tag_flow_tab(
             f"**{selected_rotation['phase_label']}**　｜　"
             f"{phase_explanation(selected_rotation)}"
         )
-        if selected_rotation.get("recent_sell_alert"):
+        if selected_rotation.get("current_sell_alert"):
             st.success(
-                f"🟢 近期減碼警示：近 3 日 {selected_rotation['recent_3_total']:+.2f}% 規模，"
-                f"{selected_rotation['recent_3_sellers']}/{selected_rotation['etf_count']} ETF 減碼。"
+                f"🟢 目前減碼警示：3 日 EWMA {selected_rotation['fast']:+.2f}% 規模，"
+                f"{selected_rotation['sellers']}/{selected_rotation['etf_count']} ETF 偏賣。"
             )
         _timeline_chart(
             selected_theme,
@@ -962,9 +954,9 @@ def render_tag_flow_tab(
     with st.expander("怎麼讀這些數字"):
         st.markdown(
             """
-- **輪動故事**：不使用 5／10／20 日區間加總下結論。近期壓力、主方向、背景分別使用半衰期 3／10／20 個交易日的 EWMA；舊交易會逐漸淡出，不會在窗口邊界整筆消失。
+- **輪動故事**：只使用 3／10／20 日 EWMA 下結論：3 日＝目前壓力、10 日＝主方向、20 日＝背景。舊交易會逐漸淡出，不會在窗口邊界整筆消失。
 - **自身力道強／中／一般**：原本的 P80、P64 已改成白話。「強」代表目前平滑力道大於這個類股自身過去至少 80% 的觀察；「中」代表約 50%～80%；其餘顯示「一般」。這不是報酬率，也不是跨類股硬比。
-- **近期減碼警示**：獨立檢查最近 3 個共同交易日。只要減碼幅度明顯就列出，並直接顯示幾檔 ETF 在賣；因此不必等慢速輪動階段完全翻空才看到警訊。
+- **目前減碼警示**：3 日 EWMA 明顯轉負就列出，並直接顯示幾檔 ETF 的目前壓力偏賣；因此不必等 10／20 日 EWMA 完全翻空才看到警訊。
 - **輪動階段確認**：方向至少需要兩檔 ETF 同向；階段轉換需要連續兩個共同交易日。單一 ETF 的一次換股只會顯示證據不足或轉向待確認。
 - **圖表顯示期間**：放在趨勢圖正上方，只改變趨勢圖、區間億元與個股查證表。資料不足的 60／120／240 日按鈕會先隱藏，避免按了卻看起來沒有變化。
 - **約買賣（億元）**：依張數變化、持股權重與當日基金規模反推的台幣金額，三檔 ETF 直接加總。因揭露權重與基金規模有四捨五入，所以是估計值，適合建立金額感、不適合單獨比較誰更積極。

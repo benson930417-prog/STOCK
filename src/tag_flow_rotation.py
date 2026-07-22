@@ -1,6 +1,6 @@
 """Window-independent rotation states for active-ETF category flow.
 
-The dashboard may display 1/5/10/20/... sessions, but that viewport must never
+The dashboard may display 1/10/20/... sessions, but that viewport must never
 decide the headline.  This module uses all common history and three smooth
 memories instead:
 
@@ -26,8 +26,7 @@ CONFIRM_SESSIONS = 2
 MIN_PERCENTILE_HISTORY = 10
 ABSOLUTE_NOISE_FLOOR = 0.004
 DEFAULT_CHART_DAYS = 10
-RECENT_ALERT_DAYS = 3
-RECENT_ALERT_FLOOR = 0.05
+CURRENT_PRESSURE_ALERT_RATIO = 0.5
 
 PHASES = {
     "buy_entering": {
@@ -136,16 +135,6 @@ def strength_band(percentile: float | None) -> str:
     return "自身力道一般"
 
 
-def _rolling_total_percentile(values: list[float], window: int) -> float | None:
-    if len(values) <= window:
-        return None
-    totals = [
-        sum(values[max(0, index - window + 1) : index + 1])
-        for index in range(len(values))
-    ]
-    return _empirical_percentile(totals[-1], totals[:-1])
-
-
 def _candidate_phase(
     fast: float,
     trend: float,
@@ -235,7 +224,7 @@ def _stock_consensus_pools(
 def _window_totals(values: list[float]) -> dict[str, float]:
     return {
         str(days): round(sum(values[-min(days, len(values)) :]), 4)
-        for days in (3, 5, 10, 20)
+        for days in (10, 20)
     }
 
 
@@ -339,24 +328,6 @@ def build_rotation_snapshot(
         percentile = _empirical_percentile(fast_series[-1], history_for_percentile)
         threshold = threshold_history[-1]
         pressure_score = fast_series[-1] / threshold if threshold else 0.0
-        recent_count = min(RECENT_ALERT_DAYS, len(dates))
-        recent_total = sum(daily[-recent_count:])
-        recent_by_etf = {
-            etf: sum(values[-recent_count:])
-            for etf, values in daily_by_etf.items()
-        }
-        recent_direction_floor = ABSOLUTE_NOISE_FLOOR * recent_count
-        recent_buyers = sum(
-            value > recent_direction_floor for value in recent_by_etf.values()
-        )
-        recent_sellers = sum(
-            value < -recent_direction_floor for value in recent_by_etf.values()
-        )
-        recent_alert_threshold = max(
-            RECENT_ALERT_FLOOR,
-            threshold * recent_count,
-        )
-        recent_percentile = _rolling_total_percentile(daily, recent_count)
         state_age = 0
         for phase in reversed(stable_history):
             if phase != stable_phase:
@@ -395,15 +366,8 @@ def build_rotation_snapshot(
             "buyers": buyers,
             "sellers": sellers,
             "etf_count": len(selected_etfs),
-            "recent_3_total": round(recent_total, 4),
-            "recent_3_by_etf": {
-                etf: round(value, 4) for etf, value in recent_by_etf.items()
-            },
-            "recent_3_buyers": recent_buyers,
-            "recent_3_sellers": recent_sellers,
-            "recent_3_percentile": recent_percentile,
-            "recent_sell_alert": recent_total < -recent_alert_threshold,
-            "recent_buy_alert": recent_total > recent_alert_threshold,
+            "current_sell_alert": pressure_score <= -CURRENT_PRESSURE_ALERT_RATIO,
+            "current_buy_alert": pressure_score >= CURRENT_PRESSURE_ALERT_RATIO,
             "window_totals": _window_totals(daily),
             "chart_dates": dates[-chart_count:],
             "daily": [round(value, 4) for value in daily[-chart_count:]],
@@ -434,6 +398,7 @@ def build_rotation_snapshot(
             "confirmation_sessions": CONFIRM_SESSIONS,
             "strength_reference": "own prior fast-pressure history",
             "breadth_required": required_breadth,
+            "current_pressure_alert_ratio": CURRENT_PRESSURE_ALERT_RATIO,
             "window_independent": True,
         },
         "rows": rows,

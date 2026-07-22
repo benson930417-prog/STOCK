@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated": "2026-07-22T10:33:06+00:00",
+  "generated": "2026-07-22T21:34:31+10:00",
   "source_generated": "2026-07-22 10:33:05",
   "as_of": "2026-07-22",
   "window": {
@@ -30,6 +30,7 @@
     "confirmation_sessions": 2,
     "strength_reference": "own prior fast-pressure history",
     "breadth_required": 2,
+    "current_pressure_alert_ratio": 0.5,
     "window_independent": true
   },
   "methodology": "category-only and window-independent; current pressure / underlying direction / background use EWMA half-lives 3 / 10 / 20 over every common session; magnitude is relative to the category's own prior pressure history; direction requires at least 2 ETFs and a phase change needs 2 consecutive sessions; the ten dated bars are display-only; stock pools require all 3 ETFs",
@@ -55,20 +56,9 @@
       "buyers": 2,
       "sellers": 0,
       "etf_count": 3,
-      "recent_3_total": 0.4512,
-      "recent_3_by_etf": {
-        "00403A": 0.0987,
-        "00981A": 0.0,
-        "00991A": 1.255
-      },
-      "recent_3_buyers": 2,
-      "recent_3_sellers": 0,
-      "recent_3_percentile": 100.0,
-      "recent_sell_alert": false,
-      "recent_buy_alert": true,
+      "current_sell_alert": false,
+      "current_buy_alert": true,
       "window_totals": {
-        "3": 0.4512,
-        "5": 0.4512,
         "10": 0.5501,
         "20": 0.5501
       },
@@ -146,20 +136,9 @@
       "buyers": 3,
       "sellers": 0,
       "etf_count": 3,
-      "recent_3_total": 0.6599,
-      "recent_3_by_etf": {
-        "00403A": 0.2453,
-        "00981A": 0.2633,
-        "00991A": 1.4712
-      },
-      "recent_3_buyers": 3,
-      "recent_3_sellers": 0,
-      "recent_3_percentile": 92.3,
-      "recent_sell_alert": false,
-      "recent_buy_alert": true,
+      "current_sell_alert": false,
+      "current_buy_alert": true,
       "window_totals": {
-        "3": 0.6599,
-        "5": 0.7248,
         "10": 0.7933,
         "20": 0.083
       },
@@ -248,20 +227,9 @@
       "buyers": 2,
       "sellers": 0,
       "etf_count": 3,
-      "recent_3_total": 0.1202,
-      "recent_3_by_etf": {
-        "00403A": 0.13,
-        "00981A": 0.0,
-        "00991A": 0.2306
-      },
-      "recent_3_buyers": 2,
-      "recent_3_sellers": 0,
-      "recent_3_percentile": 73.1,
-      "recent_sell_alert": false,
-      "recent_buy_alert": true,
+      "current_sell_alert": false,
+      "current_buy_alert": true,
       "window_totals": {
-        "3": 0.1202,
-        "5": 0.1969,
         "10": 0.1854,
         "20": 0.6254
       },
@@ -341,20 +309,9 @@
     "buyers": 0,
     "sellers": 3,
     "etf_count": 3,
-    "recent_3_total": -0.6339,
-    "recent_3_by_etf": {
-      "00403A": -0.7706,
-      "00981A": -0.1035,
-      "00991A": -1.0276
-    },
-    "recent_3_buyers": 0,
-    "recent_3_sellers": 3,
-    "recent_3_percentile": 92.3,
-    "recent_sell_alert": true,
-    "recent_buy_alert": false,
+    "current_sell_alert": true,
+    "current_buy_alert": false,
     "window_totals": {
-      "3": -0.6339,
-      "5": -0.6717,
       "10": -0.2322,
       "20": 0.4952
     },
@@ -411,7 +368,7 @@
     "cross_section_rank": 28,
     "cross_section_total": 29
   },
-  "line_text": "🔥 吳大師｜ETF 類股洞察\n截至 2026-07-22｜輪動故事不採固定窗口\n\n🔴 已確認買盤階段\n買盤 1｜塑膠：買盤加速\n自身力道強｜2/3 ETF 近期偏買｜方向信心 中\n三檔共買池：目前沒有 3/3 ETF 同股買盤共識\n\n買盤 2｜電源供應器：買盤加速\n自身力道強｜3/3 ETF 近期偏買｜方向信心 高\n三檔共買池：台達電子\n\n買盤 3｜儀器設備工程：買盤加速\n自身力道中｜2/3 ETF 近期偏買｜方向信心 中\n三檔共買池：目前沒有 3/3 ETF 同股買盤共識\n\n🟢 近期減碼警示（近 3 日）\nIC-代工：-0.63% 規模｜3/3 ETF 減碼\n這是即時警訊，不必等慢速背景完全翻空。\n\n\n🟢 已確認減碼階段\n目前沒有已確認的減碼類股。\n\n一句話｜紅：台達電子｜綠：IC-代工",
-  "email_text": "🔥 吳大師｜ETF 類股洞察\n截至 2026-07-22｜輪動故事不採固定窗口\n\n🔴 已確認買盤階段\n買盤 1｜塑膠：買盤加速\n自身力道強｜2/3 ETF 近期偏買｜方向信心 中\n三檔共買池：目前沒有 3/3 ETF 同股買盤共識\n\n買盤 2｜電源供應器：買盤加速\n自身力道強｜3/3 ETF 近期偏買｜方向信心 高\n三檔共買池：台達電子\n\n買盤 3｜儀器設備工程：買盤加速\n自身力道中｜2/3 ETF 近期偏買｜方向信心 中\n三檔共買池：目前沒有 3/3 ETF 同股買盤共識\n\n🟢 近期減碼警示（近 3 日）\nIC-代工：-0.63% 規模｜3/3 ETF 減碼\n這是即時警訊，不必等慢速背景完全翻空。\n\n\n🟢 已確認減碼階段\n目前沒有已確認的減碼類股。\n\n一句話｜紅：台達電子｜綠：IC-代工",
+  "line_text": "🔥 吳大師｜ETF 類股洞察\n截至 2026-07-22｜輪動故事不採固定窗口\n\n🔴 已確認買盤階段\n買盤 1｜塑膠：買盤加速\n自身力道強｜2/3 ETF 近期偏買｜方向信心 中\n三檔共買池：目前沒有 3/3 ETF 同股買盤共識\n\n買盤 2｜電源供應器：買盤加速\n自身力道強｜3/3 ETF 近期偏買｜方向信心 高\n三檔共買池：台達電子\n\n買盤 3｜儀器設備工程：買盤加速\n自身力道中｜2/3 ETF 近期偏買｜方向信心 中\n三檔共買池：目前沒有 3/3 ETF 同股買盤共識\n\n🟢 目前減碼警示（3 日 EWMA）\nIC-代工：-0.10% 規模｜3/3 ETF 偏賣\n目前壓力已轉負，不必等 10／20 日 EWMA 完全翻空。\n\n\n🟢 已確認減碼階段\n目前沒有已確認的減碼類股。\n\n一句話｜紅：台達電子｜綠：IC-代工",
+  "email_text": "🔥 吳大師｜ETF 類股洞察\n截至 2026-07-22｜輪動故事不採固定窗口\n\n🔴 已確認買盤階段\n買盤 1｜塑膠：買盤加速\n自身力道強｜2/3 ETF 近期偏買｜方向信心 中\n三檔共買池：目前沒有 3/3 ETF 同股買盤共識\n\n買盤 2｜電源供應器：買盤加速\n自身力道強｜3/3 ETF 近期偏買｜方向信心 高\n三檔共買池：台達電子\n\n買盤 3｜儀器設備工程：買盤加速\n自身力道中｜2/3 ETF 近期偏買｜方向信心 中\n三檔共買池：目前沒有 3/3 ETF 同股買盤共識\n\n🟢 目前減碼警示（3 日 EWMA）\nIC-代工：-0.10% 規模｜3/3 ETF 偏賣\n目前壓力已轉負，不必等 10／20 日 EWMA 完全翻空。\n\n\n🟢 已確認減碼階段\n目前沒有已確認的減碼類股。\n\n一句話｜紅：台達電子｜綠：IC-代工",
   "image": "tag_flow_insight_latest.jpg"
 }

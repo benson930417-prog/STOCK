@@ -469,22 +469,22 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
         draw.rounded_rectangle((54, y, 63, y + 112), radius=5, fill=CARD_GREEN)
         draw.text(
             (84, y + 24),
-            "近期減碼警示",
+            "3日 EWMA 警示",
             font=CARD_FONTS["badge"],
             fill=CARD_GREEN,
         )
         draw.text(
-            (270, y + 19),
+            (310, y + 19),
             warning["category"],
             font=CARD_FONTS["cooling"],
             fill=CARD_TEXT,
         )
         alert_reason = (
-            f"近3日 {warning.get('recent_3_total', 0.0):+.2f}%規模 · "
-            f"{warning.get('recent_3_sellers', 0)}/{warning.get('etf_count', 3)} ETF減碼"
+            f"目前壓力 {warning.get('fast', 0.0):+.2f}%規模 · "
+            f"{warning.get('sellers', 0)}/{warning.get('etf_count', 3)} ETF偏賣"
         )
         draw.text(
-            (270, y + 61),
+            (310, y + 61),
             alert_reason,
             font=CARD_FONTS["body"],
             fill=CARD_MUTED,
@@ -521,7 +521,7 @@ def _render_card(payload: dict) -> tuple[Path, Path]:
     draw.line((84, conclusion_y + 73, CARD_WIDTH - 84, conclusion_y + 73), fill=CARD_LINE, width=1)
     draw.text(
         (84, conclusion_y + 94),
-        "綠｜已確認賣壓",
+        "綠｜目前賣壓警示",
         font=CARD_FONTS["badge"],
         fill=CARD_GREEN,
     )
@@ -597,12 +597,12 @@ def _render_line(
     if warning:
         lines.extend(
             [
-                "🟢 近期減碼警示（近 3 日）",
+                "🟢 目前減碼警示（3 日 EWMA）",
                 (
-                    f"{warning['category']}：{warning['recent_3_total']:+.2f}% 規模｜"
-                    f"{warning['recent_3_sellers']}/{warning['etf_count']} ETF 減碼"
+                    f"{warning['category']}：{warning['fast']:+.2f}% 規模｜"
+                    f"{warning['sellers']}/{warning['etf_count']} ETF 偏賣"
                 ),
-                "這是即時警訊，不必等慢速背景完全翻空。",
+                "目前壓力已轉負，不必等 10／20 日 EWMA 完全翻空。",
                 "",
             ]
         )
@@ -650,10 +650,10 @@ def generate() -> dict:
         row for row in rows
         if row["phase_group"] == "sell" and row["confidence"] in {"高", "中"}
     ][:MAX_SELL_SECTORS]
-    warning_rows = [row for row in rows if row.get("recent_sell_alert")]
+    warning_rows = [row for row in rows if row.get("current_sell_alert")]
     warning = min(
         warning_rows,
-        key=lambda row: float(row.get("recent_3_total", 0.0)),
+        key=lambda row: float(row.get("fast", 0.0)),
         default=None,
     )
     line_text = _render_line(rotation["as_of"], selected, selling, warning)
@@ -692,7 +692,7 @@ def generate() -> dict:
         f"confirmed_buy={len(selected)} "
         f"leaders={','.join(row['category'] for row in selected) or 'none'} "
         f"confirmed_sell={','.join(row['category'] for row in selling) or 'none'} "
-        f"recent_sell_warning={warning['category'] if warning else 'none'}"
+        f"current_pressure_warning={warning['category'] if warning else 'none'}"
     )
     print(f"Saved {latest_image.relative_to(ROOT)}")
     print(f"Saved {dated_image.relative_to(ROOT)}")
