@@ -5,7 +5,11 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from scripts.generate_etf_action_insight import render_line_text
+from scripts.generate_etf_action_insight import (
+    PHONE_CONTENT_WIDTH,
+    _display_width,
+    render_line_text,
+)
 from scripts.line_active_report_payload import ACTIVE_TICKERS, build_active_report_messages
 
 
@@ -35,7 +39,7 @@ class LineActionPayloadTests(unittest.TestCase):
         self.assertEqual(5, len(messages))
         self.assertEqual("text", messages[0]["type"])
         self.assertTrue(messages[0]["text"].startswith("📊 主動 ETF 操作日報"))
-        self.assertIn("403 統一升級50｜7月22日", messages[0]["text"])
+        self.assertIn("403 升級50｜7月22日", messages[0]["text"])
         self.assertIn("cached ETF action juice", messages[0]["text"])
         self.assertNotIn("2026-07-22", messages[0]["text"])
         self.assertEqual(["image"] * 4, [row["type"] for row in messages[1:]])
@@ -69,11 +73,42 @@ class LineActionPayloadTests(unittest.TestCase):
         self.assertTrue(text.startswith("主動 ETF 動作\n━━━━━━━━━━━━━━"))
         self.assertIn("截至：7月22日", text)
         self.assertIn("🔴 買進觀察｜1 檔", text)
-        self.assertIn("01. 台達電（2308｜電源供應器）", text)
-        self.assertIn("賣後轉買｜3/3 ETF 同步", text)
+        self.assertIn("01. 台達電｜2308", text)
+        self.assertIn("類股：電源供應器", text)
+        self.assertIn("動作：賣後轉買", text)
+        self.assertIn("同步：3/3 ETF", text)
         self.assertNotIn("06/22", text)
         self.assertNotIn("類股洞察", text)
-        self.assertLessEqual(max(map(len, text.splitlines())), 28)
+        content_lines = [line for line in text.splitlines() if line and "━" not in line]
+        self.assertLessEqual(
+            max(map(_display_width, content_lines)), PHONE_CONTENT_WIDTH
+        )
+
+    def test_long_category_and_evidence_are_split_on_field_boundaries(self) -> None:
+        event = {
+            "stock_id": "2383",
+            "name": "台光電",
+            "category": "PCB-材料設備",
+            "event_type": "conviction_buy",
+            "event_label": "持續加碼",
+            "breadth": 3,
+            "etfs": ["00403A", "00981A", "00991A"],
+            "buy_days": 5,
+            "sell_days": 0,
+        }
+        text = render_line_text(
+            "2026-07-22",
+            {"buying": [], "holding": [event], "selling": []},
+        )
+
+        self.assertIn("　　類股：\n　　　PCB-材料設備", text)
+        self.assertIn("　　動作：持續加碼", text)
+        self.assertIn("　　10日：5買・0賣", text)
+        self.assertIn("　　參與：3 檔 ETF", text)
+        content_lines = [line for line in text.splitlines() if line and "━" not in line]
+        self.assertLessEqual(
+            max(map(_display_width, content_lines)), PHONE_CONTENT_WIDTH
+        )
 
 
 if __name__ == "__main__":

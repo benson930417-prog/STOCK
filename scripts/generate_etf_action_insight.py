@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 from pathlib import Path
 import sys
+import unicodedata
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -22,6 +23,7 @@ ETFS = ["00403A", "00981A", "00991A"]
 BUY_LIMIT = 4
 HOLD_LIMIT = 3
 SELL_LIMIT = 3
+PHONE_CONTENT_WIDTH = 20
 
 EVENT_PRIORITY = {
     "reentry_position": 0,
@@ -62,53 +64,55 @@ def _etf_text(etfs: list[str]) -> str:
     return "、".join(ETF_SHORT.get(etf, etf) for etf in etfs)
 
 
-def _mobile_evidence(event: dict) -> str:
-    """Return one concise action/evidence row beneath a numbered stock."""
+def _display_width(text: str) -> int:
+    return sum(
+        2 if unicodedata.east_asian_width(char) in {"W", "F", "A"} else 1
+        for char in text
+    )
+
+
+def _mobile_evidence_lines(event: dict) -> list[str]:
+    """Return deliberately short semantic rows; LINE must never split a sentence."""
     event_type = str(event.get("event_type") or "")
     etfs = list(event.get("etfs") or [])
     labels = _etf_text(etfs)
-    badge = _signal_badge(event)
+    breadth = int(event.get("breadth") or len(etfs))
 
     if event_type == "sell_to_buy":
-        return f"賣後轉買｜{badge}"
+        return ["動作：賣後轉買", f"同步：{breadth}/3 ETF"]
     if event_type == "buy_to_sell":
-        return f"買後轉賣｜{badge}"
+        return ["動作：買後轉賣", f"同步：{breadth}/3 ETF"]
     if event_type == "reentry_position":
         new_etfs = list(event.get("new_etfs") or [])
         continuing = [etf for etf in etfs if etf not in new_etfs]
-        pieces = []
-        if new_etfs:
-            pieces.append(f"{_etf_text(new_etfs)}重納")
-        if continuing:
-            pieces.append(f"{_etf_text(continuing)}續買")
-        return f"重新建倉｜{'・'.join(pieces) or '重新納入持股'}"
+        rows = ["動作：重新建倉"]
+        rows.extend(f"ETF：{ETF_SHORT.get(etf, etf)} 重納" for etf in new_etfs)
+        rows.extend(f"ETF：{ETF_SHORT.get(etf, etf)} 續買" for etf in continuing)
+        return rows if len(rows) > 1 else [*rows, "確認：重新納入持股"]
     if event_type in {"new_position", "trial_position"}:
         new_etfs = list(event.get("new_etfs") or etfs)
-        action = "小部位新納入" if event_type == "trial_position" else "新納入"
         label = "試單建倉" if event_type == "trial_position" else "新建倉"
-        return f"{label}｜{_etf_text(new_etfs)} {action}"
+        rows = [f"動作：{label}"]
+        rows.extend(f"ETF：{ETF_SHORT.get(etf, etf)} 新納入" for etf in new_etfs)
+        return rows
     if event_type == "full_exit":
         exit_etfs = list(event.get("exit_etfs") or etfs)
-        return f"完全出清｜{_etf_text(exit_etfs)} 移除持股"
+        rows = ["動作：完全出清"]
+        for etf in exit_etfs:
+            rows.extend([f"ETF：{ETF_SHORT.get(etf, etf)}", "狀態：移除持股"])
+        return rows
     if event_type == "conviction_buy":
         buy_days = int(event.get("buy_days") or 0)
         sell_days = int(event.get("sell_days") or 0)
-        return f"持續加碼｜10 日 {buy_days}買{sell_days}賣｜{badge}"
+        return [
+            "動作：持續加碼",
+            f"10日：{buy_days}買・{sell_days}賣",
+            f"參與：{breadth} 檔 ETF",
+        ]
     if event_type in {"restart_buy", "restart_sell"}:
         action = "重新買進" if event_type == "restart_buy" else "重新賣出"
-        return f"{action}｜{labels} 沉寂後重啟"
-    evidence = str(event.get("reason") or "持股動作已確認")
-    return f"{event.get('event_label') or '動作確認'}｜{evidence}"
-
-
-def _signal_badge(event: dict) -> str:
-    event_type = str(event.get("event_type") or "")
-    breadth = int(event.get("breadth") or len(event.get("etfs") or []))
-    if event_type == "conviction_buy":
-        return f"{breadth} 檔參與" if breadth else "仍在買"
-    if event_type in {"reentry_position", "new_position", "trial_position", "full_exit"}:
-        return ""
-    return f"{breadth}/3 ETF 同步" if breadth else ""
+        return [f"動作：{action}", f"ETF：{labels}", "確認：沉寂後重啟"]
+    return [f"動作：{event.get('event_label') or '持股異動'}", "確認：訊號已成立"]
 
 
 def _lane(lines: list[str], title: str, events: list[dict], empty: str) -> None:
@@ -119,9 +123,20 @@ def _lane(lines: list[str], title: str, events: list[dict], empty: str) -> None:
     for index, event in enumerate(events, 1):
         category = str(event.get("category") or "未分類")
         stock_id = str(event.get("stock_id") or "").strip()
-        metadata = f"{stock_id}｜{category}" if stock_id else category
-        lines.append(f"{index:02d}. {event['name']}（{metadata}）")
-        lines.append(f"　　{_mobile_evidence(event)}")
+        identity = f"{event['name']}｜{stock_id}" if stock_id else str(event["name"])
+        identity_line = f"{index:02d}. {identity}"
+        if _display_width(identity_line) <= PHONE_CONTENT_WIDTH:
+            lines.append(identity_line)
+        else:
+            lines.append(f"{index:02d}. {event['name']}")
+            if stock_id:
+                lines.append(f"　　代號：{stock_id}")
+        category_line = f"　　類股：{category}"
+        if _display_width(category_line) <= PHONE_CONTENT_WIDTH:
+            lines.append(category_line)
+        else:
+            lines.extend(["　　類股：", f"　　　{category}"])
+        lines.extend(f"　　{row}" for row in _mobile_evidence_lines(event))
 
 
 def _display_date(as_of: str) -> str:
@@ -140,6 +155,14 @@ def render_line_text(as_of: str, selected: dict[str, list[dict]]) -> str:
     lines.extend(["", "━━━━━━━━━━━━━━"])
     _lane(lines, "🟢 賣出警示", selected["selling"], "本日無新賣出訊號")
     text = "\n".join(lines).strip()
+    for line in text.splitlines():
+        if not line or set(line) == {"━"}:
+            continue
+        width = _display_width(line)
+        if width > PHONE_CONTENT_WIDTH:
+            raise RuntimeError(
+                f"ETF action line exceeds phone width ({width}>{PHONE_CONTENT_WIDTH}): {line}"
+            )
     if len(text) > 4500:
         raise RuntimeError(f"ETF action LINE text is unexpectedly long: {len(text)}")
     return text
