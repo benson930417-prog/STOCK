@@ -828,7 +828,6 @@ def render_tag_flow_tab(
             window = st.radio(
                 "這張圖要看幾個交易日",
                 window_options,
-                index=window_options.index(default_window),
                 horizontal=True,
                 key="tag_flow_window",
             )
