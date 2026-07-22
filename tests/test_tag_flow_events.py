@@ -138,7 +138,7 @@ class TagFlowEventTests(unittest.TestCase):
         self.assertEqual("breadth", event["confirmation"])
         self.assertEqual(2, event["breadth"])
 
-    def test_continuing_buy_is_not_repeated_as_a_fresh_event(self) -> None:
+    def test_strong_continuing_buy_is_hold_evidence_not_a_fresh_event(self) -> None:
         data, dates = _empty_fixture()
         for session in dates[-4:]:
             for etf in ("00403A", "00981A"):
@@ -154,6 +154,48 @@ class TagFlowEventTests(unittest.TestCase):
         snapshot = build_event_snapshot(data, ETFS)
         self.assertFalse(snapshot["buying"])
         self.assertFalse(snapshot["selling"])
+        self.assertEqual(["延續買進"], [row["name"] for row in snapshot["holding"]])
+        self.assertEqual("conviction_buy", snapshot["holding"][0]["event_type"])
+
+    def test_reentry_after_full_exit_is_not_called_a_first_position(self) -> None:
+        data, dates = _empty_fixture()
+        _add_move(
+            data,
+            etf="00981A",
+            session=dates[-10],
+            stock_id="REENTRY",
+            name="重新建倉股票",
+            flow=-0.20,
+            position_event="full_exit",
+        )
+        # The exit predates the ETFs' shared comparison window, matching the
+        # real 981 南亞科 exit that occurred before 403 history began.
+        data["dates"]["by_etf"]["00403A"].remove(dates[-10])
+        _add_move(
+            data,
+            etf="00981A",
+            session=dates[-1],
+            stock_id="REENTRY",
+            name="重新建倉股票",
+            flow=0.10,
+            position_event="new_position",
+        )
+        _add_move(
+            data,
+            etf="00991A",
+            session=dates[-1],
+            stock_id="REENTRY",
+            name="重新建倉股票",
+            flow=0.20,
+        )
+
+        snapshot = build_event_snapshot(data, ETFS)
+        self.assertEqual(1, len(snapshot["buying"]))
+        event = snapshot["buying"][0]
+        self.assertEqual("reentry_position", event["event_type"])
+        self.assertEqual("重新建倉", event["event_label"])
+        self.assertIn("981 重新納入", event["reason"])
+        self.assertIn("991 同日續買", event["reason"])
 
     def test_tiny_exit_is_cleanup_but_meaningful_exit_surfaces(self) -> None:
         data, dates = _empty_fixture()
