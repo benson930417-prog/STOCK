@@ -108,7 +108,7 @@ record_step_ok() {
             step5*)
                 metrics=$(grep -E "^\[step5\] (recorded|backfilled)" "$logfile" | sed 's/^/          /')
                 ;;
-            generate_etf_summary|generate_market_pulse_summary|"generate margin risk summary")
+            generate_etf_summary|generate_market_pulse_summary|"generate margin risk summary"|"generate ETF action summary")
                 metrics=$(grep -E "^Saved " "$logfile" | sed 's/^/          /')
                 ;;
             "market pulse volume cache")
@@ -268,6 +268,7 @@ run_step "generate margin risk summary"   python scripts/generate_margin_mainten
 run_step "build stock tags (incremental)" python scripts/build_stock_tags.py --probe 2308
 run_step "build tag flow"                 python scripts/build_tag_flow.py
 if run_step "generate ETF action insight" python scripts/generate_etf_action_insight.py; then
+    run_step "generate ETF action summary" python scripts/generate_etf_action_summary.py
     {
         echo
         echo "主動 ETF 買／抱／賣"

@@ -63,7 +63,7 @@ PAGE1 = [
     (625,  0,   625, 843, "金", "黃金",   "黃金現貨",         (202, 138,   4), "message",        "黃金",   False),
     (1250, 0,   625, 843, "匯", "匯率",   "美元／日圓／瑞郎", ( 13, 148, 136), "message",        "匯率",   False),
     (1875, 0,   625, 843, "債", "債券",   "美10年期公債",     ( 21, 128,  61), "message",        "債券",   False),
-    # Row 2 — five direct actions; ETF 動作 returns the cached buy/hold/sell text.
+    # Row 2 — five direct actions; ETF 動作 returns the cached full-board image.
     (0,    843, 500, 843, "脈", "市場脈動", "加權狀態",       ( 99, 102, 241), "message",        "市場脈動", False),
     (500,  843, 500, 843, "師", "吳大師",   "持股總覽",       (180,  83,   9), "message",        "吳大師", False),
     (1000, 843, 500, 843, "動", "ETF 動作", "買・抱・賣",      (239,  68,  68), "message",        "ETF動作", False),

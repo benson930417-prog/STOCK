@@ -1,51 +1,11 @@
 {
   "schema_version": 2,
-  "generated": "2026-07-23T00:11:17+10:00",
+  "generated": "2026-07-23T00:33:16+10:00",
   "source_generated": "2026-07-22 22:31:45",
   "as_of": "2026-07-22",
-  "line_text": "主動 ETF 動作\n━━━━━━━━━━━━━━\n截至：7月22日\n判定規則\n一般：至少 2/3 同向\n1/3：只留建倉・出清\n1/3：或反轉連續 2 日\n續抱：至少 2 檔參與\n\n🔴 買進觀察｜4 檔\n01. 台達電｜2308\n  類股：電源供應器\n  動作：賣後轉買\n  ETF：403・981・991\n  判定：共識（3/3）\n  依據：\n    先前明顯減碼\n    現在轉為買進\n02. 貿聯-KY｜3665\n  類股：連接元件\n  動作：賣後轉買\n  ETF：403・991\n  判定：共識（2/3）\n  依據：\n    先前明顯減碼\n    現在轉為買進\n03. 南亞科｜2408\n  類股：記憶體製造\n  動作：重新建倉\n  ETF：981・991\n  判定：共識（2/3）\n  依據：\n    981 重納\n    991 續買\n04. 環球晶｜6488\n  類股：晶圓材料\n  動作：新建倉\n  ETF：991\n  判定：1/3 建倉例外\n  依據：991 新納入\n\n━━━━━━━━━━━━━━\n🟠 續抱參考｜3 檔\n01. 台光電｜2383\n  類股：PCB-材料設備\n  動作：持續加碼\n  ETF：403・981・991\n  判定：持續（3檔）\n  依據：\n    10日5買・0賣\n    最新仍買\n02. 日月光投控｜3711\n  類股：IC-封測\n  動作：持續加碼\n  ETF：403・981・991\n  判定：持續（3檔）\n  依據：\n    10日7買・0賣\n    最新仍買\n03. 智邦｜2345\n  類股：網通\n  動作：持續加碼\n  ETF：403・991\n  判定：持續（2檔）\n  依據：\n    10日7買・0賣\n    最新仍買\n\n━━━━━━━━━━━━━━\n🟢 賣出警示｜3 檔\n01. 台積電｜2330\n  類股：IC-代工\n  動作：買後轉賣\n  ETF：403・981・991\n  判定：共識（3/3）\n  依據：\n    先前明顯加碼\n    現在轉為賣出\n02. 穎崴｜6515\n  類股：IC-封測\n  動作：買後轉賣\n  ETF：403・991\n  判定：共識（2/3）\n  依據：\n    先前明顯加碼\n    現在轉為賣出\n03. 華新科｜2492\n  類股：被動元件\n  動作：完全出清\n  ETF：991\n  判定：1/3 出清例外\n  依據：991 移除持股",
+  "line_text": "主動 ETF 動作\n━━━━━━━━━━━━━━\n截至：7月22日\n判定規則\n一般：至少 2/3 同向\n1/3：只留建倉・出清\n1/3：或反轉連續 2 日\n續抱：至少 2 檔參與\n\n🔴 買進觀察｜6 檔\n01. 貿聯-KY｜3665\n  類股：連接元件\n  動作：賣後轉買\n  ETF：403・991\n  判定：共識（2/3）\n  依據：\n    先前明顯減碼\n    現在轉為買進\n02. 南亞科｜2408\n  類股：記憶體製造\n  動作：重新建倉\n  ETF：981・991\n  判定：共識（2/3）\n  依據：\n    981 重納\n    991 續買\n03. 環球晶｜6488\n  類股：晶圓材料\n  動作：新建倉\n  ETF：991\n  判定：1/3 建倉例外\n  依據：991 新納入\n04. 台達電｜2308\n  類股：電源供應器\n  動作：賣後轉買\n  ETF：403・981・991\n  判定：共識（3/3）\n  依據：\n    先前明顯減碼\n    現在轉為買進\n05. 南亞塑膠｜1303\n  類股：塑膠\n  動作：新建倉\n  ETF：991\n  判定：1/3 建倉例外\n  依據：991 新納入\n06. 啟碁｜6285\n  類股：網通\n  動作：試單建倉\n  ETF：403\n  判定：1/3 建倉例外\n  依據：\n    403 小額新納入\n\n━━━━━━━━━━━━━━\n🟠 續抱參考｜4 檔\n01. 台光電｜2383\n  類股：PCB-材料設備\n  動作：持續加碼\n  ETF：403・981・991\n  判定：持續（3檔）\n  依據：\n    10日5買・0賣\n    最新仍買\n02. 日月光投控｜3711\n  類股：IC-封測\n  動作：持續加碼\n  ETF：403・981・991\n  判定：持續（3檔）\n  依據：\n    10日7買・0賣\n    最新仍買\n03. 智邦｜2345\n  類股：網通\n  動作：持續加碼\n  ETF：403・991\n  判定：持續（2檔）\n  依據：\n    10日7買・0賣\n    最新仍買\n04. 欣興｜3037\n  類股：ABF\n  動作：持續加碼\n  ETF：403・981・991\n  判定：持續（3檔）\n  依據：\n    10日6買・0賣\n    最新仍買\n\n━━━━━━━━━━━━━━\n🟢 賣出警示｜4 檔\n01. 台積電｜2330\n  類股：IC-代工\n  動作：買後轉賣\n  ETF：403・981・991\n  判定：共識（3/3）\n  依據：\n    先前明顯加碼\n    現在轉為賣出\n02. 穎崴｜6515\n  類股：IC-封測\n  動作：買後轉賣\n  ETF：403・991\n  判定：共識（2/3）\n  依據：\n    先前明顯加碼\n    現在轉為賣出\n03. 華新科｜2492\n  類股：被動元件\n  動作：完全出清\n  ETF：991\n  判定：1/3 出清例外\n  依據：991 移除持股\n04. 華邦電｜2344\n  類股：記憶體製造\n  動作：完全出清\n  ETF：991\n  判定：1/3 出清例外\n  依據：991 移除持股",
   "signals": {
     "buying": [
-      {
-        "direction": 1,
-        "score": 0.5274,
-        "breadth": 3,
-        "etfs": [
-          "00403A",
-          "00981A",
-          "00991A"
-        ],
-        "new_etfs": [],
-        "exit_etfs": [],
-        "structural": false,
-        "trial_position": false,
-        "name": "台達電",
-        "stock_id": "2308",
-        "category": "電源供應器",
-        "confirmation": "breadth",
-        "start_index": 25,
-        "reentry_exit_dates": {},
-        "prior_opposite_range": [
-          "2026-06-22",
-          "2026-07-03"
-        ],
-        "event_type": "sell_to_buy",
-        "event_label": "賣後轉買",
-        "event_date": "2026-07-21",
-        "age_sessions": 1,
-        "prior_net": -1.0284,
-        "prior_buy_days": 4,
-        "prior_sell_days": 5,
-        "confirmation_label": "3/3 ETF 同步",
-        "reason": "403、981、991 剛轉為買進；06/22–07/03 曾明顯減碼",
-        "qualification_kind": "consensus",
-        "qualification_label": "共識（3/3）",
-        "etf_label": "403・981・991",
-        "evidence_parts": [
-          "先前明顯減碼",
-          "現在轉為買進"
-        ]
-      },
       {
         "direction": 1,
         "score": 0.1378,
@@ -163,6 +123,118 @@
         "evidence_parts": [
           "991 新納入"
         ]
+      },
+      {
+        "direction": 1,
+        "score": 0.5274,
+        "breadth": 3,
+        "etfs": [
+          "00403A",
+          "00981A",
+          "00991A"
+        ],
+        "new_etfs": [],
+        "exit_etfs": [],
+        "structural": false,
+        "trial_position": false,
+        "name": "台達電",
+        "stock_id": "2308",
+        "category": "電源供應器",
+        "confirmation": "breadth",
+        "start_index": 25,
+        "reentry_exit_dates": {},
+        "prior_opposite_range": [
+          "2026-06-22",
+          "2026-07-03"
+        ],
+        "event_type": "sell_to_buy",
+        "event_label": "賣後轉買",
+        "event_date": "2026-07-21",
+        "age_sessions": 1,
+        "prior_net": -1.0284,
+        "prior_buy_days": 4,
+        "prior_sell_days": 5,
+        "confirmation_label": "3/3 ETF 同步",
+        "reason": "403、981、991 剛轉為買進；06/22–07/03 曾明顯減碼",
+        "qualification_kind": "consensus",
+        "qualification_label": "共識（3/3）",
+        "etf_label": "403・981・991",
+        "evidence_parts": [
+          "先前明顯減碼",
+          "現在轉為買進"
+        ]
+      },
+      {
+        "direction": 1,
+        "score": 0.4183,
+        "breadth": 1,
+        "etfs": [
+          "00991A"
+        ],
+        "new_etfs": [
+          "00991A"
+        ],
+        "exit_etfs": [],
+        "structural": true,
+        "trial_position": false,
+        "name": "南亞塑膠",
+        "stock_id": "1303",
+        "category": "塑膠",
+        "confirmation": "structural",
+        "start_index": 25,
+        "reentry_exit_dates": {},
+        "prior_opposite_range": null,
+        "event_type": "new_position",
+        "event_label": "新建倉",
+        "event_date": "2026-07-21",
+        "age_sessions": 1,
+        "prior_net": 0.0989,
+        "prior_buy_days": 4,
+        "prior_sell_days": 0,
+        "confirmation_label": "持股名單已改變",
+        "reason": "991 新納入持股",
+        "qualification_kind": "exception",
+        "qualification_label": "1/3 建倉例外",
+        "etf_label": "991",
+        "evidence_parts": [
+          "991 新納入"
+        ]
+      },
+      {
+        "direction": 1,
+        "score": 0.0033,
+        "breadth": 1,
+        "etfs": [
+          "00403A"
+        ],
+        "new_etfs": [
+          "00403A"
+        ],
+        "exit_etfs": [],
+        "structural": true,
+        "trial_position": true,
+        "name": "啟碁",
+        "stock_id": "6285",
+        "category": "網通",
+        "confirmation": "structural",
+        "start_index": 25,
+        "reentry_exit_dates": {},
+        "prior_opposite_range": null,
+        "event_type": "trial_position",
+        "event_label": "試單建倉",
+        "event_date": "2026-07-21",
+        "age_sessions": 1,
+        "prior_net": 0,
+        "prior_buy_days": 0,
+        "prior_sell_days": 0,
+        "confirmation_label": "持股名單已改變",
+        "reason": "403 新納入持股，先視為試單",
+        "qualification_kind": "exception",
+        "qualification_label": "1/3 建倉例外",
+        "etf_label": "403",
+        "evidence_parts": [
+          "403 小額新納入"
+        ]
       }
     ],
     "holding": [
@@ -264,6 +336,40 @@
         "etf_label": "403・991",
         "evidence_parts": [
           "10日7買・0賣",
+          "最新仍買"
+        ]
+      },
+      {
+        "direction": 1,
+        "score": 0.4111,
+        "breadth": 3,
+        "etfs": [
+          "00403A",
+          "00981A",
+          "00991A"
+        ],
+        "new_etfs": [],
+        "exit_etfs": [],
+        "structural": false,
+        "trial_position": false,
+        "name": "欣興",
+        "stock_id": "3037",
+        "category": "ABF",
+        "confirmation": "persistence",
+        "start_index": 25,
+        "event_type": "conviction_buy",
+        "event_label": "持續加碼",
+        "event_date": "2026-07-22",
+        "age_sessions": 0,
+        "buy_days": 6,
+        "sell_days": 0,
+        "reason": "近 10 日有 6 日明顯加碼、0 日明顯減碼；最近仍在買",
+        "confirmation_label": "403、981、991 都曾參與",
+        "qualification_kind": "continuation",
+        "qualification_label": "持續（3檔）",
+        "etf_label": "403・981・991",
+        "evidence_parts": [
+          "10日6買・0賣",
           "最新仍買"
         ]
       }
@@ -378,6 +484,45 @@
         "prior_net": 0.3689,
         "prior_buy_days": 2,
         "prior_sell_days": 0,
+        "confirmation_label": "持股名單已改變",
+        "reason": "991 已從持股名單移除",
+        "qualification_kind": "exception",
+        "qualification_label": "1/3 出清例外",
+        "etf_label": "991",
+        "evidence_parts": [
+          "991 移除持股"
+        ]
+      },
+      {
+        "direction": -1,
+        "score": -0.3313,
+        "breadth": 1,
+        "etfs": [
+          "00991A"
+        ],
+        "new_etfs": [],
+        "exit_etfs": [
+          "00991A"
+        ],
+        "structural": true,
+        "trial_position": false,
+        "name": "華邦電",
+        "stock_id": "2344",
+        "category": "記憶體製造",
+        "confirmation": "structural",
+        "start_index": 25,
+        "reentry_exit_dates": {},
+        "prior_opposite_range": [
+          "2026-06-22",
+          "2026-07-13"
+        ],
+        "event_type": "full_exit",
+        "event_label": "完全出清",
+        "event_date": "2026-07-21",
+        "age_sessions": 1,
+        "prior_net": 0.6327,
+        "prior_buy_days": 6,
+        "prior_sell_days": 1,
         "confirmation_label": "持股名單已改變",
         "reason": "991 已從持股名單移除",
         "qualification_kind": "exception",

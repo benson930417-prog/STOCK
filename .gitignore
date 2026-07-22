@@ -33,11 +33,12 @@ data/debug_00997A/
 data/test_*.html
 data/test_*.js
 data/etf_*_summary_*.jpg
-# Keep the daily market-pulse image tracked so it syncs to local checkouts,
-# but still ignore the dated copies and everything else under summaries/.
+# Keep the latest daily/on-demand LINE cards tracked so they sync to production,
+# but still ignore dated copies and everything else under summaries/.
 data/summaries/*
 !data/summaries/market_pulse_latest.jpg
 !data/summaries/margin_maintenance_latest.jpg
+!data/summaries/etf_action_latest.jpg
 
 # Local design previews for the score chart (throwaway)
 data/_preview_*

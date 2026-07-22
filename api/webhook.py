@@ -148,6 +148,12 @@ def load_etf_action_text():
         raise RuntimeError("etf_action_insight.json has no line_text")
     return text
 
+def load_etf_action_image_path():
+    path = os.path.join(parent_dir, "data", "summaries", "etf_action_latest.jpg")
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Missing cached ETF action image: {path}")
+    return path
+
 def is_daily_update_command(text):
     # Admin command: exact match only (no aliases/fuzzy matching).
     return unicodedata.normalize("NFKC", text).strip() == "每日更新"
@@ -846,15 +852,24 @@ def handle_message(event):
 
     elif is_etf_action:
         try:
+            image_path = load_etf_action_image_path()
+            filename = os.path.basename(image_path)
+            img_url = (
+                "https://linechatbot.duckdns.org/api/webhook/summaries/"
+                f"{filename}?t={int(os.path.getmtime(image_path))}"
+            )
             reply_line(
                 event.reply_token,
-                TextSendMessage(text=load_etf_action_text()),
+                ImageSendMessage(
+                    original_content_url=img_url,
+                    preview_image_url=img_url,
+                ),
             )
         except Exception as e:
-            print("ETF action text reply failed:", e)
+            print("ETF action image reply failed:", e)
             reply_line(
                 event.reply_token,
-                TextSendMessage(text="今日 ETF 動作尚未更新完成，請稍後再試。"),
+                TextSendMessage(text="ETF 買／抱／賣圖卡尚未更新完成，請稍後再試。"),
             )
 
     elif is_market_pulse:

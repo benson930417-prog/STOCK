@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cache the actionable active-ETF buy/hold/sell text used by LINE."""
+"""Cache the actionable active-ETF buy/hold/sell evidence used by LINE."""
 from __future__ import annotations
 
 import argparse
@@ -20,21 +20,7 @@ SOURCE = ROOT / "data" / "tag_flow.json"
 OUT = ROOT / "data" / "etf_action_insight.json"
 ETFS = ["00403A", "00981A", "00991A"]
 
-BUY_LIMIT = 4
-HOLD_LIMIT = 3
-SELL_LIMIT = 3
 PHONE_CONTENT_WIDTH = 20
-
-EVENT_PRIORITY = {
-    "reentry_position": 0,
-    "sell_to_buy": 0,
-    "buy_to_sell": 0,
-    "full_exit": 0,
-    "new_position": 1,
-    "trial_position": 2,
-    "restart_buy": 2,
-    "restart_sell": 2,
-}
 
 ETF_SHORT = {
     "00403A": "403",
@@ -43,20 +29,12 @@ ETF_SHORT = {
 }
 
 
-def _fresh_priority(event: dict) -> tuple:
-    return (
-        EVENT_PRIORITY.get(str(event.get("event_type")), 9),
-        -int(event.get("breadth") or 0),
-        int(event.get("age_sessions") or 0),
-        -abs(float(event.get("score") or 0.0)),
-    )
-
-
 def _selected(snapshot: dict) -> dict[str, list[dict]]:
+    """Keep the complete qualified board; the engine already owns its limits."""
     return {
-        "buying": sorted(snapshot["buying"], key=_fresh_priority)[:BUY_LIMIT],
-        "holding": list(snapshot["holding"][:HOLD_LIMIT]),
-        "selling": sorted(snapshot["selling"], key=_fresh_priority)[:SELL_LIMIT],
+        "buying": list(snapshot["buying"]),
+        "holding": list(snapshot["holding"]),
+        "selling": list(snapshot["selling"]),
     }
 
 

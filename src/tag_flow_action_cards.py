@@ -1,0 +1,115 @@
+"""Shared HTML cards for the website and cached LINE ETF-action image."""
+from __future__ import annotations
+
+from html import escape
+
+
+ACTION_ETFS = ["00403A", "00981A", "00991A"]
+
+ACTION_BOARD_CSS = r"""
+.tfv2-grid {display:grid; grid-template-columns:repeat(3,minmax(250px,1fr));
+  gap:1rem; margin:.6rem 0 1rem}
+.tfv2-lane {border:1px solid rgba(148,163,184,.22); border-radius:.9rem;
+  padding:.9rem; background:rgba(15,23,42,.24)}
+.tfv2-lane-head {display:flex; justify-content:space-between; align-items:center}
+.tfv2-lane-title {font-size:1rem; font-weight:800}
+.tfv2-count {min-width:1.75rem; height:1.75rem; border-radius:999px;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(148,163,184,.14); font-weight:800}
+.tfv2-lane-note {font-size:.76rem; opacity:.68; margin:.12rem 0 .7rem}
+.tfv2-card {border-left:4px solid; border-radius:.7rem; padding:.78rem .82rem;
+  margin:.55rem 0; background:rgba(15,23,42,.48)}
+.tfv2-buy {border-color:#E74C3C}.tfv2-hold {border-color:#F5A623}
+.tfv2-sell {border-color:#2ECC71}
+.tfv2-stock-row {display:flex; justify-content:space-between; gap:.65rem;
+  align-items:baseline}
+.tfv2-age {font-size:.68rem; opacity:.58; white-space:nowrap; flex:none}
+.tfv2-stock {font-size:1.08rem; font-weight:850; min-width:0}
+.tfv2-code {font-size:.72rem; font-weight:700; opacity:.58; margin-left:.42rem}
+.tfv2-fields {display:grid; gap:.18rem; margin-top:.42rem}
+.tfv2-field {display:grid; grid-template-columns:2.9rem minmax(0,1fr);
+  gap:.35rem; font-size:.76rem; line-height:1.42}
+.tfv2-field span {opacity:.55}.tfv2-field b {font-weight:650}
+.tfv2-empty {font-size:.82rem; opacity:.66; padding:1.1rem .4rem}
+@media (max-width:760px){.tfv2-grid{grid-template-columns:1fr}}
+"""
+
+
+def event_card(event: dict, group: str) -> str:
+    if group == "hold":
+        age = "最新資料仍確認"
+    else:
+        age = "本交易日確認" if event["age_sessions"] == 0 else "前一交易日確認"
+    evidence = "・".join(event.get("evidence_parts") or [event.get("reason", "")])
+    stock_id = str(event.get("stock_id") or "")
+    identity = escape(str(event["name"]))
+    if stock_id:
+        identity += f'<span class="tfv2-code">{escape(stock_id)}</span>'
+    fields = (
+        ("類股", str(event.get("category") or "未分類")),
+        ("動作", str(event.get("event_label") or "持股異動")),
+        ("ETF", str(event.get("etf_label") or "未提供")),
+        ("判定", str(event.get("qualification_label") or "訊號成立")),
+        ("依據", evidence),
+    )
+    field_html = "".join(
+        '<div class="tfv2-field">'
+        f'<span>{label}</span><b>{escape(value)}</b>'
+        "</div>"
+        for label, value in fields
+    )
+    # Keep generated HTML flush-left. Four-space indentation is a Markdown code
+    # block, which makes Streamlit print the card markup instead of rendering it.
+    return (
+        f'<div class="tfv2-card tfv2-{group}">'
+        '<div class="tfv2-stock-row">'
+        f'<div class="tfv2-stock">{identity}</div>'
+        f'<span class="tfv2-age">{age}</span>'
+        "</div>"
+        f'<div class="tfv2-fields">{field_html}</div>'
+        "</div>"
+    )
+
+
+def lane(title: str, note: str, events: list[dict], group: str) -> str:
+    cards = "".join(event_card(event, group) for event in events)
+    if not cards:
+        cards = (
+            '<div class="tfv2-empty">今天沒有新的已確認訊號。'
+            "延續性動作不會拿來填版面。</div>"
+        )
+    return (
+        '<section class="tfv2-lane">'
+        '<div class="tfv2-lane-head">'
+        f'<div class="tfv2-lane-title">{title}</div>'
+        f'<div class="tfv2-count">{len(events)}</div>'
+        "</div>"
+        f'<div class="tfv2-lane-note">{note}</div>'
+        f"{cards}</section>"
+    )
+
+
+def render_action_grid(snapshot: dict) -> str:
+    """Render every already-qualified event in the shared engine snapshot."""
+    return (
+        '<div class="tfv2-grid">'
+        + lane(
+            "🔴 買進觀察",
+            "剛建倉、重新建倉、賣後轉買",
+            list(snapshot.get("buying") or []),
+            "buy",
+        )
+        + lane(
+            "🟠 續抱參考",
+            "不是新買點；代表加碼認同仍持續",
+            list(snapshot.get("holding") or []),
+            "hold",
+        )
+        + lane(
+            "🟢 賣出警示",
+            "剛出清、買後轉賣、沉寂後重新賣",
+            list(snapshot.get("selling") or []),
+            "sell",
+        )
+        + "</div>"
+    )
