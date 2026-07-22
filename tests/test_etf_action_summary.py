@@ -14,6 +14,8 @@ def _event(index: int, *, age: int = 0) -> dict:
         "event_type": "new_position",
         "event_label": "新建倉",
         "age_sessions": age,
+        "event_date": f"2026-07-{20 - age:02d}",
+        "confirmation": "structural",
         "etf_label": "403・981",
         "qualification_label": "共識（2/3）",
         "evidence_parts": ["測試依據"],
@@ -32,7 +34,14 @@ class EtfActionSummaryTests(unittest.TestCase):
     def test_line_cache_keeps_every_event_already_selected_by_engine(self) -> None:
         snapshot = {
             "buying": [_event(index) for index in range(6)],
-            "holding": [_event(index + 10) for index in range(4)],
+            "holding": [
+                {
+                    **_event(index + 10),
+                    "event_type": "conviction_buy",
+                    "event_label": "持續加碼",
+                }
+                for index in range(4)
+            ],
             "selling": [_event(index + 20, age=1) for index in range(4)],
         }
 
@@ -48,7 +57,14 @@ class EtfActionSummaryTests(unittest.TestCase):
                 *[_event(index) for index in range(5)],
                 _event(5, age=1),
             ],
-            "holding": [_event(index + 10) for index in range(4)],
+            "holding": [
+                {
+                    **_event(index + 10),
+                    "event_type": "conviction_buy",
+                    "event_label": "持續加碼",
+                }
+                for index in range(4)
+            ],
             "selling": [_event(index + 20, age=1) for index in range(4)],
         }
 
@@ -67,8 +83,12 @@ class EtfActionSummaryTests(unittest.TestCase):
         self.assertIn('class="tfv2-flow-chart"', buy)
         self.assertIn("規模比合計</title>", buy)
         self.assertIn('<span>20日前</span><span>最新</span>', buy)
-        self.assertIn("tfv2-flow-frame-prior", buy)
-        self.assertIn("tfv2-flow-frame-current", buy)
+        self.assertIn("tfv2-flow-structural-dot", buy)
+        self.assertIn("持股名單改變 07/20", buy)
+        self.assertIn("持股名單改變 07/19", buy)
+        self.assertIn('<path class="tfv2-flow-hold-window"', hold)
+        self.assertNotIn("tfv2-flow-frame-prior", buy)
+        self.assertNotIn("tfv2-flow-frame-current", buy)
         self.assertNotIn("早 ←", buy)
         self.assertIn("測試股票0", buy)
         self.assertNotIn("測試股票10", buy)
@@ -79,6 +99,28 @@ class EtfActionSummaryTests(unittest.TestCase):
             self.assertNotIn("判定規則", output)
             self.assertNotIn("max-height", output)
             self.assertNotIn("overflow:hidden", output)
+
+    def test_strategy_specific_flow_markers(self) -> None:
+        reversal = _event(40)
+        reversal.update(
+            event_type="buy_to_sell",
+            confirmation="persistence",
+            event_label="買後轉賣",
+        )
+        restart = _event(41)
+        restart.update(event_type="restart_buy", event_label="沉寂後開買")
+
+        reversal_html = render_lane_html(
+            {"signals": {"selling": [reversal]}}, "selling"
+        )
+        restart_html = render_lane_html(
+            {"signals": {"buying": [restart]}}, "buying"
+        )
+
+        self.assertIn("tfv2-flow-frame-reversal", reversal_html)
+        self.assertIn("連續兩日反轉確認", reversal_html)
+        self.assertIn("tfv2-flow-frame-restart", restart_html)
+        self.assertIn("沉寂後重啟確認", restart_html)
 
 
 if __name__ == "__main__":

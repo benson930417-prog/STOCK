@@ -66,11 +66,13 @@ ACTION_BOARD_CSS = r"""
   color:rgba(203,213,225,.52); font-size:.58rem; font-weight:650;
   line-height:1.1}
 .tfv2-flow-axis {stroke:rgba(148,163,184,.2); stroke-width:1}
-.tfv2-flow-frame {stroke-width:1.1}
-.tfv2-flow-frame-prior {fill:rgba(226,232,240,.025);
-  stroke:rgba(226,232,240,.42)}
-.tfv2-flow-frame-current {fill:rgba(226,232,240,.055);
-  stroke:rgba(248,250,252,.68)}
+.tfv2-flow-frame {fill:rgba(226,232,240,.045); stroke:rgba(248,250,252,.7);
+  stroke-width:1.15}
+.tfv2-flow-frame-reversal {fill:rgba(226,232,240,.025); stroke-width:1.3}
+.tfv2-flow-frame-restart {fill:rgba(226,232,240,.025); stroke-dasharray:3 2}
+.tfv2-flow-structural-dot {fill:rgba(248,250,252,.9)}
+.tfv2-flow-hold-window {fill:none; stroke:rgba(226,232,240,.42);
+  stroke-width:1}
 .tfv2-flow-buy {fill:#E76A5C; opacity:.76}
 .tfv2-flow-sell {fill:#45C879; opacity:.76}
 .tfv2-empty {font-size:.82rem; opacity:.66; padding:1.1rem .4rem}
@@ -94,16 +96,69 @@ def _flow_sparkline(event: dict) -> str:
         f'<line class="tfv2-flow-axis" x1="0" y1="{center:g}" '
         f'x2="{width:g}" y2="{center:g}"/>'
     ]
-    for index in range(max(0, len(trend) - 2), len(trend)):
-        x = index * slot + 0.5
-        frame_class = (
-            "tfv2-flow-frame-current"
-            if index == len(trend) - 1
-            else "tfv2-flow-frame-prior"
-        )
+    event_date = str(event.get("event_date") or "")
+    signal_index = next(
+        (
+            index
+            for index, row in enumerate(trend)
+            if str(row.get("date") or "") == event_date
+        ),
+        None,
+    )
+    if signal_index is None:
+        age = max(0, int(event.get("age_sessions") or 0))
+        signal_index = max(0, len(trend) - 1 - age)
+
+    event_type = str(event.get("event_type") or "")
+    confirmation = str(event.get("confirmation") or "")
+    structural_types = {
+        "new_position",
+        "trial_position",
+        "reentry_position",
+        "full_exit",
+    }
+    reversal_types = {"sell_to_buy", "buy_to_sell"}
+    restart_types = {"restart_buy", "restart_sell"}
+    marker_start = signal_index
+    marker_span = 1
+    marker_class = ""
+    marker_label = "訊號確認"
+    if event_type in reversal_types and confirmation == "persistence":
+        marker_start = max(0, signal_index - 1)
+        marker_span = signal_index - marker_start + 1
+        marker_class = " tfv2-flow-frame-reversal"
+        marker_label = "連續兩日反轉確認"
+    elif event_type in restart_types:
+        marker_class = " tfv2-flow-frame-restart"
+        marker_label = "沉寂後重啟確認"
+    elif event_type == "conviction_buy":
+        marker_label = "最新續抱確認"
+        window_start = max(0, len(trend) - 10)
+        x1 = window_start * slot + 1
+        x2 = len(trend) * slot - 1
+        y = height - 2
         elements.append(
-            f'<rect class="tfv2-flow-frame {frame_class}" x="{x:.2f}" y="1" '
-            f'width="{max(1.0, slot - 1):.2f}" height="{height - 2:g}" rx="2"/>'
+            f'<path class="tfv2-flow-hold-window" '
+            f'd="M {x1:.2f} {y - 3:g} V {y:g} H {x2:.2f} V {y - 3:g}">'
+            '<title>最近10日續抱觀察區</title></path>'
+        )
+    elif event_type in structural_types:
+        marker_label = "持股名單改變"
+
+    marker_x = marker_start * slot + 0.5
+    marker_width = max(1.0, marker_span * slot - 1)
+    signal_date = escape(event_date[-5:].replace("-", "/"))
+    elements.append(
+        f'<rect class="tfv2-flow-frame{marker_class}" x="{marker_x:.2f}" y="1" '
+        f'width="{marker_width:.2f}" height="{height - 2:g}" rx="2">'
+        f'<title>{marker_label} {signal_date}</title></rect>'
+    )
+    structural_dot = ""
+    if event_type in structural_types:
+        dot_x = (signal_index + 0.5) * slot
+        structural_dot = (
+            f'<circle class="tfv2-flow-structural-dot" cx="{dot_x:.2f}" cy="4" r="2.1">'
+            '<title>持股名單改變</title></circle>'
         )
     for index, (row, value) in enumerate(zip(trend, values)):
         if abs(value) <= 1e-9:
@@ -119,6 +174,8 @@ def _flow_sparkline(event: dict) -> str:
             f'width="{bar_width:.2f}" height="{bar_height:.2f}" rx="1">'
             f'<title>{date} {signed} 規模比合計</title></rect>'
         )
+    if structural_dot:
+        elements.append(structural_dot)
     chart = "".join(elements)
     return (
         '<div class="tfv2-flow">'
