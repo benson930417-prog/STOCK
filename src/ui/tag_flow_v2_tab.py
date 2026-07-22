@@ -24,9 +24,9 @@ def _load(data_dir):
 
 def _event_card(event: dict, group: str) -> str:
     if group == "hold":
-        age = "最新仍確認"
+        age = "最新資料仍確認"
     else:
-        age = "今日確認" if event["age_sessions"] == 0 else "昨日確認"
+        age = "本交易日確認" if event["age_sessions"] == 0 else "前一交易日確認"
     evidence = "・".join(event.get("evidence_parts") or [event.get("reason", "")])
     stock_id = str(event.get("stock_id") or "")
     identity = escape(event["name"])
@@ -105,7 +105,7 @@ def render_tag_flow_v2_tab(*, DATA_DIR=None, **kwargs):
         .tfv2-sell {border-color:#2ECC71}
         .tfv2-stock-row {display:flex; justify-content:space-between; gap:.65rem;
           align-items:baseline}
-        .tfv2-age {font-size:.68rem; opacity:.58}
+        .tfv2-age {font-size:.68rem; opacity:.58; white-space:nowrap; flex:none}
         .tfv2-stock {font-size:1.08rem; font-weight:850; min-width:0}
         .tfv2-code {font-size:.72rem; font-weight:700; opacity:.58; margin-left:.42rem}
         .tfv2-fields {display:grid; gap:.18rem; margin-top:.42rem}
@@ -176,6 +176,8 @@ def render_tag_flow_v2_tab(*, DATA_DIR=None, **kwargs):
         unsafe_allow_html=True,
     )
     st.caption(
+        "買進／賣出只保留本交易日與前一個共同交易日；第三個共同交易日起自動消失，"
+        "不會出現『3 日前確認』。續抱則依最新資料每天重新計算，不是舊訊號留在版上。"
         "每張卡固定使用：類股／動作／ETF／判定／依據。普通小額調整仍會隱藏。"
         "類股只作背景標籤，不參與事件判斷。"
     )
@@ -186,9 +188,10 @@ def render_tag_flow_v2_tab(*, DATA_DIR=None, **kwargs):
 - **重新建倉**：同一檔 ETF 先前曾完整出清，現在又把股票納回持股。
 - **完全出清**：股票從持股名單消失，而且原部位不是可忽略的小尾巴。
 - **一般門檻**：普通加減碼與沉寂後重啟，都必須至少 2/3 ETF 同向。
+- **顯示期限**：新買進／賣出訊號只保留最近 2 個共同交易日；本交易日之後只再顯示為「前一交易日確認」，下一個共同交易日起消失。
 - **1/3 例外**：只保留持股名單改變（建倉／重新建倉／完整出清），或單一 ETF 的反手連續 2 個共同交易日。
 - **反手背景**：過去 20 個共同交易日明顯偏向一邊，現在方向相反；2/3 可當日成立，1/3 必須連續 2 日。
-- **續抱參考**：至少 2 檔 ETF 曾參與；近 10 個共同交易日至少 4 日明顯加碼、買日明顯多於賣日、累積強度足夠，而且最新仍在買。
+- **續抱參考**：不是保留舊訊號，而是每天重算；至少 2 檔 ETF 曾參與、近 10 個共同交易日至少 4 日明顯加碼、買日明顯多於賣日、累積強度足夠，而且最新仍在買。
 - **不顯示**：小額雜訊、普通 1/3 動作、單日未確認反手、沒有持續證據的普通加減碼。
 
 動作雷達只核對 ETF 的持股動作；「股價高／低」不會由持股變化自行推論。

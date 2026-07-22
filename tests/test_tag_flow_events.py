@@ -82,8 +82,26 @@ class TagFlowEventTests(unittest.TestCase):
         self.assertTrue(card.startswith('<div class="tfv2-card'))
         self.assertTrue(lane.startswith('<section class="tfv2-lane">'))
         self.assertIn('<div class="tfv2-stock-row"><div class="tfv2-stock">', card)
+        self.assertIn("本交易日確認", card)
         self.assertNotIn("tfv2-card-top", card)
         self.assertNotIn("\n    <", card + lane)
+
+    def test_fresh_event_expires_after_the_previous_common_session(self) -> None:
+        data, dates = _empty_fixture()
+        _add_move(
+            data,
+            etf="00991A",
+            session=dates[-3],
+            stock_id="EXPIRED",
+            name="已過期建倉",
+            flow=0.20,
+            position_event="new_position",
+        )
+
+        snapshot = build_event_snapshot(data, ETFS)
+
+        self.assertFalse(snapshot["buying"])
+        self.assertFalse(snapshot["selling"])
 
     def test_tiny_routine_noise_is_hidden_but_tiny_new_position_surfaces(self) -> None:
         data, dates = _empty_fixture()
