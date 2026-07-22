@@ -62,17 +62,17 @@ def _etf_text(etfs: list[str]) -> str:
     return "、".join(ETF_SHORT.get(etf, etf) for etf in etfs)
 
 
-def _mobile_detail(event: dict) -> str:
-    """Return one short evidence line that stays readable on a phone."""
-    category = str(event.get("category") or "未分類")
+def _mobile_evidence(event: dict) -> str:
+    """Return one concise action/evidence row beneath a numbered stock."""
     event_type = str(event.get("event_type") or "")
     etfs = list(event.get("etfs") or [])
     labels = _etf_text(etfs)
+    badge = _signal_badge(event)
 
     if event_type == "sell_to_buy":
-        return f"{category}・先賣後買"
+        return f"賣後轉買｜{badge}"
     if event_type == "buy_to_sell":
-        return f"{category}・先買後賣"
+        return f"買後轉賣｜{badge}"
     if event_type == "reentry_position":
         new_etfs = list(event.get("new_etfs") or [])
         continuing = [etf for etf in etfs if etf not in new_etfs]
@@ -81,46 +81,45 @@ def _mobile_detail(event: dict) -> str:
             pieces.append(f"{_etf_text(new_etfs)}重納")
         if continuing:
             pieces.append(f"{_etf_text(continuing)}續買")
-        return f"{category}・{'；'.join(pieces) or '重新納入持股'}"
+        return f"重新建倉｜{'・'.join(pieces) or '重新納入持股'}"
     if event_type in {"new_position", "trial_position"}:
         new_etfs = list(event.get("new_etfs") or etfs)
         action = "小部位新納入" if event_type == "trial_position" else "新納入"
-        return f"{category}・{_etf_text(new_etfs)}{action}"
+        label = "試單建倉" if event_type == "trial_position" else "新建倉"
+        return f"{label}｜{_etf_text(new_etfs)} {action}"
     if event_type == "full_exit":
         exit_etfs = list(event.get("exit_etfs") or etfs)
-        return f"{category}・{_etf_text(exit_etfs)}移除持股"
+        return f"完全出清｜{_etf_text(exit_etfs)} 移除持股"
     if event_type == "conviction_buy":
         buy_days = int(event.get("buy_days") or 0)
         sell_days = int(event.get("sell_days") or 0)
-        return f"{category}・10日{buy_days}買{sell_days}賣・仍買"
+        return f"持續加碼｜10 日 {buy_days}買{sell_days}賣｜{badge}"
     if event_type in {"restart_buy", "restart_sell"}:
-        action = "買" if event_type == "restart_buy" else "賣"
-        return f"{category}・{labels}沉寂後重新{action}"
-    return f"{category}・{str(event.get('reason') or '持股動作已確認')}"
+        action = "重新買進" if event_type == "restart_buy" else "重新賣出"
+        return f"{action}｜{labels} 沉寂後重啟"
+    evidence = str(event.get("reason") or "持股動作已確認")
+    return f"{event.get('event_label') or '動作確認'}｜{evidence}"
 
 
 def _signal_badge(event: dict) -> str:
     event_type = str(event.get("event_type") or "")
     breadth = int(event.get("breadth") or len(event.get("etfs") or []))
     if event_type == "conviction_buy":
-        return f"{breadth}檔參與" if breadth else "仍在買"
+        return f"{breadth} 檔參與" if breadth else "仍在買"
     if event_type in {"reentry_position", "new_position", "trial_position", "full_exit"}:
         return ""
-    return f"{breadth}/3同步" if breadth else ""
+    return f"{breadth}/3 ETF 同步" if breadth else ""
 
 
 def _lane(lines: list[str], title: str, events: list[dict], empty: str) -> None:
-    lines.append(title)
+    lines.append(f"{title}｜{len(events)} 檔")
     if not events:
         lines.append(empty)
         return
     for index, event in enumerate(events, 1):
-        badge = _signal_badge(event)
-        headline = f"{index}. {event['name']}｜{event['event_label']}"
-        if badge:
-            headline += f"｜{badge}"
-        lines.append(headline)
-        lines.append(f"   {_mobile_detail(event)}")
+        category = str(event.get("category") or "未分類")
+        lines.append(f"{index:02d}. {event['name']}（{category}）")
+        lines.append(f"　　{_mobile_evidence(event)}")
 
 
 def _display_date(as_of: str) -> str:
@@ -132,12 +131,12 @@ def _display_date(as_of: str) -> str:
 
 
 def render_line_text(as_of: str, selected: dict[str, list[dict]]) -> str:
-    lines = [f"🔥 主動 ETF 動作｜截至 {_display_date(as_of)}", ""]
-    _lane(lines, "🔴 買進", selected["buying"], "本日無新買進訊號")
-    lines.append("")
-    _lane(lines, "🟠 續抱", selected["holding"], "本日無續抱確認")
-    lines.append("")
-    _lane(lines, "🟢 賣出", selected["selling"], "本日無新賣出訊號")
+    lines = ["主動 ETF 動作", "━━━━━━━━━━━━━━", f"截至：{_display_date(as_of)}", ""]
+    _lane(lines, "🔴 買進觀察", selected["buying"], "本日無新買進訊號")
+    lines.extend(["", "━━━━━━━━━━━━━━"])
+    _lane(lines, "🟠 續抱參考", selected["holding"], "本日無續抱確認")
+    lines.extend(["", "━━━━━━━━━━━━━━"])
+    _lane(lines, "🟢 賣出警示", selected["selling"], "本日無新賣出訊號")
     text = "\n".join(lines).strip()
     if len(text) > 4500:
         raise RuntimeError(f"ETF action LINE text is unexpectedly long: {len(text)}")

@@ -65,9 +65,11 @@ class LineActionPayloadTests(unittest.TestCase):
             {"buying": [event], "holding": [], "selling": []},
         )
 
-        self.assertIn("🔥 主動 ETF 動作｜截至 7月22日", text)
-        self.assertIn("1. 台達電｜賣後轉買｜3/3同步", text)
-        self.assertIn("電源供應器・先賣後買", text)
+        self.assertTrue(text.startswith("主動 ETF 動作\n━━━━━━━━━━━━━━"))
+        self.assertIn("截至：7月22日", text)
+        self.assertIn("🔴 買進觀察｜1 檔", text)
+        self.assertIn("01. 台達電（電源供應器）", text)
+        self.assertIn("賣後轉買｜3/3 ETF 同步", text)
         self.assertNotIn("06/22", text)
         self.assertNotIn("類股洞察", text)
         self.assertLessEqual(max(map(len, text.splitlines())), 24)
