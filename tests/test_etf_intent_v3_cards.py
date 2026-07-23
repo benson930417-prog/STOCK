@@ -14,10 +14,11 @@ class EtfIntentV3CardTests(unittest.TestCase):
             "event_label": "賣後轉買",
             "reason": "403・981 從顯著賣方轉為顯著買方",
             "etf_label": "403・981",
-            "evidence_score": 88,
+            "consensus_etfs": 2,
             "estimated_money_yi": 2.5,
             "data_quality_label": "精確單位數",
-            "timing_label": "本交易日觸發",
+            "timing_label": "本交易日新形成",
+            "signal_phase": "new",
             "age_sessions": 0,
             "signal_date": "2026-07-23",
             "evidence": [
@@ -37,11 +38,14 @@ class EtfIntentV3CardTests(unittest.TestCase):
             {"signals": {"buying": [event], "selling": []}}
         )
         self.assertEqual(2, html.count('class="tfv3-lane"'))
-        self.assertIn("新買方意圖", html)
-        self.assertIn("新賣方意圖", html)
+        self.assertIn("買方共識", html)
+        self.assertIn("賣方共識", html)
         self.assertIn("賣後轉買", html)
+        self.assertIn("共識 2/3", html)
+        self.assertIn("本交易日新形成", html)
         self.assertIn("2308", html)
         self.assertIn("白框＝本次轉折依據", html)
+        self.assertNotIn("證據 88/100", html)
         self.assertNotIn("續抱參考", html)
 
 

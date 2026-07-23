@@ -145,8 +145,8 @@ body {{ margin:0; padding:24px; background:#0b0e16; color:#f8fafc;
   font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",Arial,sans-serif; }}
 {INTENT_CSS}
 </style></head><body>
-<h1>主動 ETF 意圖轉折</h1>
-<p>截至 {payload.get("as_of", "")}｜只顯示新的買方／賣方意圖</p>
+<h1>主動 ETF 共識轉折</h1>
+<p>截至 {payload.get("as_of", "")}｜至少 2/3 ETF 同日同方向才上榜</p>
 {render_intent_grid(payload)}
 </body></html>"""
     path.parent.mkdir(parents=True, exist_ok=True)

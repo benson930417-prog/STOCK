@@ -141,6 +141,64 @@ class EtfIntentV3Tests(unittest.TestCase):
         rendered = str(payload["signals"])
         self.assertNotIn("不得使用", rendered)
 
+    def test_single_etf_never_surfaces_even_for_extreme_new_position(self) -> None:
+        sessions = [
+            (date(2026, 1, 1) + timedelta(days=index)).isoformat()
+            for index in range(24)
+        ]
+        histories = {}
+        for etf_index, etf in enumerate(ETFS):
+            history = {}
+            for index, session in enumerate(sessions):
+                shares = {}
+                if etf_index == 0 and index == len(sessions) - 1:
+                    shares = {"6805": 100_000}
+                history[session] = _day(
+                    session,
+                    units=100_000,
+                    fund_size=1_000_000,
+                    nav=10.0,
+                    shares=shares,
+                )
+            histories[etf] = history
+        payload = build_intent_payload(histories, {})
+        self.assertFalse(payload["signals"]["buying"])
+        self.assertFalse(payload["signals"]["selling"])
+        self.assertFalse(payload["methodology"]["single_etf_exceptions"])
+        self.assertEqual(
+            2,
+            payload["methodology"]["minimum_same_direction_etfs"],
+        )
+
+    def test_previous_consensus_without_current_confirmation_is_hidden(self) -> None:
+        sessions = [
+            (date(2026, 1, 1) + timedelta(days=index)).isoformat()
+            for index in range(24)
+        ]
+        histories = {}
+        for etf_index, etf in enumerate(ETFS):
+            history = {}
+            shares = 1_000
+            for index, session in enumerate(sessions):
+                if index == len(sessions) - 2 and etf_index < 2:
+                    shares += 200
+                history[session] = _day(
+                    session,
+                    units=100_000,
+                    fund_size=1_000_000,
+                    nav=10.0,
+                    shares={"2330": shares},
+                )
+            histories[etf] = history
+        payload = build_intent_payload(histories, {})
+        self.assertFalse(payload["signals"]["buying"])
+        self.assertTrue(
+            any(
+                event["signal_date"] == sessions[-2]
+                for event in payload["events"]
+            )
+        )
+
     def test_continuing_buy_without_new_acceleration_is_not_a_hold_lane(self) -> None:
         sessions = [
             (date(2026, 2, 1) + timedelta(days=index)).isoformat()

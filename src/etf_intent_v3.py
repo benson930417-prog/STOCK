@@ -7,10 +7,12 @@ The engine therefore:
 
 1. removes mechanical holding scale caused by ETF creations/redemptions;
 2. keeps only copyable share actions whose actual trade direction agrees with
-   the flow-adjusted allocation direction (plus structural entry/exit);
+   the flow-adjusted allocation direction;
 3. judges each ETF/stock action against only preceding observations;
-4. maintains a hidden buy/neutral/sell regime, but emits only new buy or sell
-   transitions, reversals, restarts, accelerations, and breadth expansion.
+4. requires at least two independent ETFs to act significantly in the same
+   direction on the same common session;
+5. maintains a hidden buy/neutral/sell regime, but emits only new buy or sell
+   consensus transitions and a separately labelled next-session confirmation.
 
 Category is display context only.  Concept tags are never read.
 """
@@ -26,9 +28,10 @@ from typing import Iterable
 ETF_LABEL = {"00403A": "403", "00981A": "981", "00991A": "991"}
 BASELINE_SESSIONS = 20
 CONTEXT_SESSIONS = 20
-FRESH_SESSIONS = 2
+FRESH_SESSIONS = 1
 QUIET_RESTART_SESSIONS = 5
 MIN_ACTIVE_FLOW = 0.02
+MIN_CONSENSUS_ETFS = 2
 REGULAR_EVIDENCE_GATE = 2.40
 REVERSAL_EVIDENCE_GATE = 1.20
 REGIME_DECAY = 0.84
@@ -36,23 +39,23 @@ REGIME_INPUT_SCALE = 2.40
 REGIME_THRESHOLD = 0.35
 
 BUY_LABELS = {
-    "new_position": "新建倉",
-    "reentry_position": "重新建倉",
+    "new_position": "形成建倉共識",
+    "reentry_position": "形成重新建倉共識",
     "sell_to_buy": "賣後轉買",
-    "buy_onset": "開始顯著買進",
+    "buy_onset": "形成買方共識",
     "buy_restart": "沉寂後重新買進",
     "buy_acceleration": "買進重新加速",
     "buy_breadth_expansion": "買方共識擴散",
-    "buy_followthrough": "觸發後繼續買進",
+    "buy_followthrough": "買方共識延續",
 }
 SELL_LABELS = {
-    "full_exit": "完全出清",
+    "full_exit": "形成出清共識",
     "buy_to_sell": "買後轉賣",
-    "sell_onset": "開始顯著賣出",
+    "sell_onset": "形成賣方共識",
     "sell_restart": "沉寂後重新賣出",
     "sell_acceleration": "賣出重新加速",
     "sell_breadth_expansion": "賣方共識擴散",
-    "sell_followthrough": "觸發後繼續賣出",
+    "sell_followthrough": "賣方共識延續",
 }
 STRUCTURAL_TYPES = {"new_position", "reentry_position", "full_exit"}
 STOCK_DISPLAY_NAMES = {
@@ -343,6 +346,18 @@ def _choose_direction(moves: list[dict]) -> dict | None:
     ]
     positive_strength, positive_breadth = _direction_strength(positive)
     negative_strength, negative_breadth = _direction_strength(negative)
+    # V3 is a copy-the-consensus surface, not a single-manager alert feed.
+    # A one-ETF action remains available in the backend records for audit, but
+    # it may not influence the visible regime or create an event.  There are
+    # deliberately no entry, exit, reversal, or extreme-size exceptions.
+    if positive_breadth < MIN_CONSENSUS_ETFS:
+        positive = []
+        positive_strength = 0.0
+        positive_breadth = 0
+    if negative_breadth < MIN_CONSENSUS_ETFS:
+        negative = []
+        negative_strength = 0.0
+        negative_breadth = 0
     if not positive and not negative:
         return None
     if positive and negative:
@@ -461,20 +476,48 @@ def _event_gate(event_type: str | None, strength: float) -> bool:
 
 
 def _event_reason(event_type: str, moves: list[dict]) -> str:
-    labels = "、".join(ETF_LABEL.get(str(move["etf"]), str(move["etf"])) for move in moves)
+    def labels_for(rows: list[dict]) -> str:
+        return "、".join(
+            ETF_LABEL.get(str(move["etf"]), str(move["etf"]))
+            for move in rows
+        )
+
+    labels = labels_for(moves)
     if event_type == "new_position":
-        return f"{labels} 首次把股票納入持股"
+        entrants = [
+            move
+            for move in moves
+            if move.get("position_event") == "new_position"
+        ]
+        continuing = [move for move in moves if move not in entrants]
+        if continuing:
+            return (
+                f"{labels_for(entrants)} 首次納入，"
+                f"{labels_for(continuing)} 同步顯著買進"
+            )
+        return f"{labels} 同步首次把股票納入持股"
     if event_type == "reentry_position":
-        return f"{labels} 曾出清後重新納入"
+        return f"{labels} 形成重新買回共識"
     if event_type == "full_exit":
-        return f"{labels} 將股票移出持股名單"
+        exits = [
+            move
+            for move in moves
+            if move.get("position_event") == "full_exit"
+        ]
+        continuing = [move for move in moves if move not in exits]
+        if continuing:
+            return (
+                f"{labels_for(exits)} 完整出清，"
+                f"{labels_for(continuing)} 同步顯著賣出"
+            )
+        return f"{labels} 同步將股票移出持股名單"
     if event_type == "sell_to_buy":
         return f"{labels} 從顯著賣方轉為顯著買方"
     if event_type == "buy_to_sell":
         return f"{labels} 從顯著買方轉為顯著賣方"
     if event_type.endswith("followthrough"):
         action = "買進" if event_type.startswith("buy") else "賣出"
-        return f"前一交易日觸發，{labels} 本交易日仍顯著{action}"
+        return f"前一交易日已形成共識，{labels} 本交易日仍顯著{action}"
     if event_type.endswith("breadth_expansion"):
         action = "買方" if event_type.startswith("buy") else "賣方"
         return f"新增 ETF 加入{action}，共識正在擴散"
@@ -485,7 +528,7 @@ def _event_reason(event_type: str, moves: list[dict]) -> str:
         action = "買進" if event_type.startswith("buy") else "賣出"
         return f"沉寂至少 {QUIET_RESTART_SESSIONS} 個交易日後，{labels} 重新顯著{action}"
     action = "買進" if event_type.startswith("buy") else "賣出"
-    return f"{labels} 剛開始形成可複製的顯著{action}"
+    return f"{labels} 本交易日同步形成顯著{action}共識"
 
 
 def _trend(
@@ -646,7 +689,16 @@ def build_intent_payload(
                             ETF_LABEL.get(etf, etf) for etf in etf_ids
                         ),
                         "breadth": int(chosen["breadth"]),
-                        "evidence_score": min(100, round(strength * 25)),
+                        "consensus_etfs": int(chosen["breadth"]),
+                        "weakest_significance_ratio": round(
+                            min(
+                                float(
+                                    move.get("significance_ratio") or 0.0
+                                )
+                                for move in moves
+                            ),
+                            2,
+                        ),
                         "strength": round(strength, 3),
                         "data_quality": quality,
                         "data_quality_label": quality_label,
@@ -732,11 +784,11 @@ def build_intent_payload(
             date_to_index[event["signal_date"]],
         )
         if event["event_type"] in {"buy_followthrough", "sell_followthrough"}:
-            timing = "昨日觸發・本交易日延續"
-        elif age == 0:
-            timing = "本交易日觸發"
+            timing = "昨日形成・本交易日仍確認"
+            enriched["signal_phase"] = "confirmed"
         else:
-            timing = "前交易日觸發・本交易日未再確認"
+            timing = "本交易日新形成"
+            enriched["signal_phase"] = "new"
         enriched["timing_label"] = timing
         key = (str(event["stock_id"]), int(event["direction"]))
         previous = latest_by_stock.get(key)
@@ -747,18 +799,20 @@ def build_intent_payload(
     buying = sorted(
         (event for event in fresh if event["direction"] > 0),
         key=lambda event: (
-            -int(event["age_sessions"] == 0),
+            -int(event.get("signal_phase") == "new"),
             -int(event["event_type"] in STRUCTURAL_TYPES),
-            -int(event["evidence_score"]),
+            -int(event["breadth"]),
+            -float(event["weakest_significance_ratio"]),
             event["stock_id"],
         ),
     )
     selling = sorted(
         (event for event in fresh if event["direction"] < 0),
         key=lambda event: (
-            -int(event["age_sessions"] == 0),
+            -int(event.get("signal_phase") == "new"),
             -int(event["event_type"] in STRUCTURAL_TYPES),
-            -int(event["evidence_score"]),
+            -int(event["breadth"]),
+            -float(event["weakest_significance_ratio"]),
             event["stock_id"],
         ),
     )
@@ -773,7 +827,7 @@ def build_intent_payload(
                     estimated_pairs += 1
 
     return {
-        "schema_version": 3,
+        "schema_version": 4,
         "generated": datetime.now().astimezone().isoformat(timespec="seconds"),
         "as_of": common_dates[-1],
         "etfs": etfs,
@@ -788,9 +842,10 @@ def build_intent_payload(
                 "outstanding ETF units"
             ),
             "copyable_gate": (
-                "actual share direction must agree with flow-adjusted direction; "
-                "entry/exit are structural exceptions"
+                "actual share direction must agree with flow-adjusted direction"
             ),
+            "minimum_same_direction_etfs": MIN_CONSENSUS_ETFS,
+            "single_etf_exceptions": False,
             "baseline_sessions": BASELINE_SESSIONS,
             "minimum_active_flow_pct": MIN_ACTIVE_FLOW,
             "regular_evidence_gate": REGULAR_EVIDENCE_GATE,

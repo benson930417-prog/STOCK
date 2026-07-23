@@ -6,13 +6,13 @@ from html import escape
 
 INTENT_LANES = {
     "buying": (
-        "🔴 新買方意圖",
-        "只顯示剛開始、反手、重啟、加速或共識擴散",
+        "🔴 買方共識",
+        "至少 2/3 ETF 同日顯著買進；單一 ETF 不上榜",
         "buy",
     ),
     "selling": (
-        "🟢 新賣方意圖",
-        "只顯示剛開始、反手、重啟、加速或完整出清",
+        "🟢 賣方共識",
+        "至少 2/3 ETF 同日顯著賣出；單一 ETF 不上榜",
         "sell",
     ),
 }
@@ -27,8 +27,18 @@ INTENT_CSS = """
 .tfv3-lane-title {font-weight:850; font-size:1.02rem}
 .tfv3-count {display:inline-flex; justify-content:center; align-items:center;
   min-width:2rem; height:2rem; padding:0 .55rem; border-radius:999px;
-  background:rgba(148,163,184,.13); font-weight:800}
+  background:rgba(148,163,184,.13); font-size:.72rem; font-weight:800;
+  white-space:nowrap}
 .tfv3-lane-note {font-size:.72rem; opacity:.64; margin:.12rem 0 .72rem}
+.tfv3-section-head {display:flex; align-items:center; gap:.45rem;
+  margin:.82rem 0 .25rem; padding-top:.62rem;
+  border-top:1px solid rgba(148,163,184,.16);
+  font-size:.72rem; font-weight:820; color:rgba(241,245,249,.82)}
+.tfv3-section-head:first-of-type {margin-top:.32rem; padding-top:.12rem;
+  border-top:0}
+.tfv3-section-count {display:inline-flex; align-items:center; justify-content:center;
+  min-width:1.4rem; height:1.4rem; padding:0 .34rem; border-radius:999px;
+  background:rgba(148,163,184,.12); font-size:.64rem}
 .tfv3-card {position:relative; border-radius:.82rem; padding:.9rem .92rem;
   margin:.62rem 0; background:#111827; border-left:4px solid transparent;
   box-shadow:0 5px 18px rgba(0,0,0,.12)}
@@ -46,7 +56,7 @@ INTENT_CSS = """
 .tfv3-time-prior {opacity:.64}
 .tfv3-signal {display:flex; justify-content:space-between; align-items:center;
   gap:.55rem; font-size:.82rem; font-weight:850; margin:.55rem 0 .18rem}
-.tfv3-score {font-size:.61rem; color:rgba(226,232,240,.66); white-space:nowrap;
+.tfv3-consensus {font-size:.61rem; color:rgba(226,232,240,.74); white-space:nowrap;
   font-weight:700}
 .tfv3-reason {font-size:.72rem; line-height:1.5; color:rgba(226,232,240,.78)}
 .tfv3-meta {display:grid; grid-template-columns:4.15rem minmax(0,1fr);
@@ -159,9 +169,9 @@ def render_intent_card(event: dict, group: str) -> str:
     identity = escape(str(event.get("name") or stock_id))
     if stock_id:
         identity += f'<span class="tfv3-code">{escape(stock_id)}</span>'
-    current = int(event.get("age_sessions") or 0) == 0
-    time_class = "tfv3-time-current" if current else "tfv3-time-prior"
-    score = int(event.get("evidence_score") or 0)
+    confirmed = str(event.get("signal_phase") or "new") == "confirmed"
+    time_class = "tfv3-time-prior" if confirmed else "tfv3-time-current"
+    breadth = int(event.get("consensus_etfs") or event.get("breadth") or 0)
     money = float(event.get("estimated_money_yi") or 0.0)
     money_label = f"約 {money:+.2f} 億（僅供金額感）"
     meta = [
@@ -182,7 +192,7 @@ def render_intent_card(event: dict, group: str) -> str:
         "</div>"
         '<div class="tfv3-signal">'
         f'<span>{escape(str(event.get("event_label") or ""))}</span>'
-        f'<span class="tfv3-score">證據 {score}/100</span></div>'
+        f'<span class="tfv3-consensus">共識 {breadth}/3</span></div>'
         f'<div class="tfv3-reason">{escape(str(event.get("reason") or ""))}</div>'
         f'<div class="tfv3-meta">{meta_html}</div>'
         f'{_evidence_rows(event)}'
@@ -196,14 +206,40 @@ def render_intent_lane(payload: dict, lane_key: str) -> str:
         raise ValueError(f"Unknown V3 lane: {lane_key}")
     title, note, group = INTENT_LANES[lane_key]
     events = list((payload.get("signals") or {}).get(lane_key) or [])
-    cards = "".join(render_intent_card(event, group) for event in events)
+    new_events = [
+        event
+        for event in events
+        if str(event.get("signal_phase") or "new") == "new"
+    ]
+    confirmed_events = [
+        event
+        for event in events
+        if str(event.get("signal_phase") or "") == "confirmed"
+    ]
+    sections = []
+    if new_events:
+        sections.append(
+            '<div class="tfv3-section-head"><span>本交易日新形成</span>'
+            f'<span class="tfv3-section-count">{len(new_events)}</span></div>'
+            + "".join(render_intent_card(event, group) for event in new_events)
+        )
+    if confirmed_events:
+        sections.append(
+            '<div class="tfv3-section-head"><span>前一交易日形成・今日仍確認</span>'
+            f'<span class="tfv3-section-count">{len(confirmed_events)}</span></div>'
+            + "".join(
+                render_intent_card(event, group)
+                for event in confirmed_events
+            )
+        )
+    cards = "".join(sections)
     if not cards:
-        cards = '<div class="tfv3-empty">本交易日沒有新的意圖轉折。</div>'
+        cards = '<div class="tfv3-empty">本交易日沒有至少 2/3 ETF 的同向共識。</div>'
     return (
         '<section class="tfv3-lane">'
         '<div class="tfv3-lane-head">'
         f'<div class="tfv3-lane-title">{title}</div>'
-        f'<div class="tfv3-count">{len(events)}</div>'
+        f'<div class="tfv3-count">新 {len(new_events)}・續 {len(confirmed_events)}</div>'
         "</div>"
         f'<div class="tfv3-lane-note">{note}</div>'
         f"{cards}</section>"
