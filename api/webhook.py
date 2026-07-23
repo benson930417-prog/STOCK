@@ -124,9 +124,22 @@ def is_etf_action_command(text):
     normalized = unicodedata.normalize("NFKC", text).strip()
     return normalized in {"ETF動作", "ETF 動作", "買抱賣", "主動ETF動作"}
 
+def is_etf_intent_command(text):
+    normalized = unicodedata.normalize("NFKC", text).strip()
+    return normalized in {
+        "ETF意圖",
+        "ETF 意圖",
+        "主動ETF意圖",
+        "意圖轉折",
+        "買賣意圖",
+    }
+
 def master_insight_quick_reply():
     return QuickReply(
         items=[
+            QuickReplyButton(
+                action=MessageAction(label="🎯 ETF 意圖", text="ETF意圖")
+            ),
             QuickReplyButton(
                 action=MessageAction(label="🔥 ETF 動作", text="ETF動作")
             ),
@@ -162,6 +175,17 @@ def load_etf_action_image_paths():
     missing = [path for path in paths if not os.path.exists(path)]
     if missing:
         raise FileNotFoundError(f"Missing cached ETF action images: {missing}")
+    return paths
+
+def load_etf_intent_image_paths():
+    filenames = [
+        "etf_intent_v3_buy_latest.jpg",
+        "etf_intent_v3_sell_latest.jpg",
+    ]
+    paths = [os.path.join(parent_dir, "data", "summaries", name) for name in filenames]
+    missing = [path for path in paths if not os.path.exists(path)]
+    if missing:
+        raise FileNotFoundError(f"Missing cached ETF intent images: {missing}")
     return paths
 
 def is_daily_update_command(text):
@@ -821,6 +845,7 @@ def handle_message(event):
     user_msg = event.message.text.strip()
     is_master_holding = is_master_holding_command(user_msg)
     is_etf_action = is_etf_action_command(user_msg)
+    is_etf_intent = is_etf_intent_command(user_msg)
     is_daily_update = is_daily_update_command(user_msg)
     is_gold = is_gold_command(user_msg)
     is_market_pulse = is_market_pulse_command(user_msg)
@@ -831,6 +856,7 @@ def handle_message(event):
         if is_daily_update
         or is_master_holding
         or is_etf_action
+        or is_etf_intent
         or is_gold
         or is_market_pulse
         or is_margin_risk
@@ -858,6 +884,31 @@ def handle_message(event):
             reply_line(
                 event.reply_token,
                 TextSendMessage(text="吳大師持股暫時無法產生，請稍後再試。")
+            )
+
+    elif is_etf_intent:
+        try:
+            messages = []
+            for image_path in load_etf_intent_image_paths():
+                filename = os.path.basename(image_path)
+                img_url = (
+                    "https://linechatbot.duckdns.org/api/webhook/summaries/"
+                    f"{filename}?t={int(os.path.getmtime(image_path))}"
+                )
+                messages.append(ImageSendMessage(
+                    original_content_url=img_url,
+                    preview_image_url=img_url,
+                ))
+            if len(messages) != 2:
+                raise AssertionError(
+                    f"ETF intent reply must contain 2 images, got {len(messages)}"
+                )
+            reply_line(event.reply_token, messages)
+        except Exception as e:
+            print("ETF intent image reply failed:", e)
+            reply_line(
+                event.reply_token,
+                TextSendMessage(text="ETF 意圖轉折圖卡尚未更新完成，請稍後再試。"),
             )
 
     elif is_etf_action:
@@ -1055,6 +1106,7 @@ def handle_message(event):
             "• 9805 — 009805 持股即時表\n"
             "• 9820 — 009820 持股即時表\n"
             "• 吳大師 — 投資組合與展開持股\n"
+            "• ETF意圖 — 主動 ETF 新買方／新賣方意圖\n"
             "• ETF動作 — 主動 ETF 買進／續抱／賣出訊號\n"
             "• id — 取得使用者或群組 ID"
         ))

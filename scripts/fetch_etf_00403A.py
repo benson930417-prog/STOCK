@@ -98,6 +98,7 @@ def fetch_and_update_holdings():
 
         file_date = datetime.now().strftime("%Y-%m-%d")
         fund_size = None
+        outstanding_units = None
         nav = None
         for i in range(header_row):
             values = df_raw.iloc[i].values
@@ -106,6 +107,15 @@ def fetch_and_update_holdings():
                 file_date = _date_from_text(row_text) or file_date
             elif "淨資產" in row_text:
                 fund_size = next((_num(v) for v in values if _num(v) is not None), fund_size)
+            elif "流通在外單位數" in row_text:
+                outstanding_units = next(
+                    (
+                        int(value)
+                        for value in (_num(v) for v in values)
+                        if value is not None
+                    ),
+                    outstanding_units,
+                )
             elif "每單位淨值" in row_text:
                 nav = next((_num(v) for v in values if _num(v) is not None), nav)
 
@@ -136,6 +146,7 @@ def fetch_and_update_holdings():
             "date": file_date,
             "meta": {
                 "fund_size": fund_size,
+                "outstanding_units": outstanding_units,
                 "nav": nav,
                 "closing_price": float(closing_price) if closing_price is not None else None,
             },

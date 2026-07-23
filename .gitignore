@@ -41,6 +41,8 @@ data/summaries/*
 !data/summaries/etf_action_buy_latest.jpg
 !data/summaries/etf_action_hold_latest.jpg
 !data/summaries/etf_action_sell_latest.jpg
+!data/summaries/etf_intent_v3_buy_latest.jpg
+!data/summaries/etf_intent_v3_sell_latest.jpg
 
 # Local design previews for the score chart (throwaway)
 data/_preview_*

@@ -58,6 +58,7 @@ def fetch_and_update_holdings():
         
         file_date_str = datetime.now().strftime("%Y-%m-%d")
         fund_size = None
+        outstanding_units = None
         nav = None
         
         for i in range(header_row):
@@ -81,6 +82,14 @@ def fetch_and_update_holdings():
                             v_str = str(val).replace("NTD", "").replace(",", "").strip()
                             fund_size = float(v_str)
                         except: pass
+            elif "流通在外單位數" in row_vals:
+                for val in row_list:
+                    if pd.notna(val) and any(c.isdigit() for c in str(val)):
+                        try:
+                            v_str = str(val).replace(",", "").strip()
+                            outstanding_units = int(float(v_str))
+                        except Exception:
+                            pass
                         
             elif "淨值" in row_vals or "NAV" in row_vals:
                 for val in row_list:
@@ -139,6 +148,7 @@ def fetch_and_update_holdings():
              "date": file_date_str,
              "meta": {
                  "fund_size": fund_size,
+                 "outstanding_units": outstanding_units,
                  "nav": nav,
                  "closing_price": float(closing_price)
              },

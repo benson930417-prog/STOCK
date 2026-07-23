@@ -74,6 +74,13 @@ def fetch_and_update_00991A():
                 continue
                 
             fund_size = float(fund_size_str)
+
+            # Row 5 is the label and row 6 is the exact fund units
+            # outstanding.  V3 uses this to remove mechanical portfolio
+            # scaling caused by ETF creations/redemptions before interpreting
+            # a stock-level action.
+            units_str = str(df.iloc[5, 0]).replace(',', '')
+            outstanding_units = int(float(units_str))
             
             # Row 7 is NAV (Column 0)
             nav_str = str(df.iloc[7, 0]).replace(',', '')
@@ -123,6 +130,7 @@ def fetch_and_update_00991A():
                     "date": formatted_date,
                     "meta": {
                         "fund_size": fund_size,
+                        "outstanding_units": outstanding_units,
                         "nav": nav,
                         "closing_price": float(closing_price)
                     },

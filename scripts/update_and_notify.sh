@@ -284,6 +284,20 @@ else
     } >> "$SUMMARY_FILE"
 fi
 
+# V3 is intentionally independent from the existing category and lifecycle
+# pages.  It removes ETF creation/redemption scaling, emits only new buy/sell
+# intent transitions, and pre-renders two free on-demand LINE images.
+if run_step "build ETF intent V3" python scripts/build_etf_intent_v3.py; then
+    run_step "generate ETF intent V3 summary" python scripts/generate_etf_intent_v3_summary.py
+else
+    {
+        echo
+        echo "主動 ETF 意圖轉折 V3"
+        echo "──────────"
+        echo "本次 V3 產生失敗，請查看 failure details。"
+    } >> "$SUMMARY_FILE"
+fi
+
 # ──────────────────────────────────────────────────────────────────────────
 # 3. Detect which ETFs got NEW DATA this run
 # ──────────────────────────────────────────────────────────────────────────
