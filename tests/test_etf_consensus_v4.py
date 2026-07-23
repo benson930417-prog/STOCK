@@ -3,7 +3,12 @@ from __future__ import annotations
 from datetime import date, timedelta
 import unittest
 
-from src.etf_consensus_v4 import _score, build_consensus_payload, hydrate_board
+from src.etf_consensus_v4 import (
+    _score,
+    assign_v4_action_scales,
+    build_consensus_payload,
+    hydrate_board,
+)
 
 
 ETFS = ["00403A", "00981A", "00991A"]
@@ -159,9 +164,71 @@ class EtfConsensusV4Tests(unittest.TestCase):
         score, components = _score(
             features, ["00403A", "00981A"], 1
         )
-        self.assertEqual(6, components["joint_persistence"])
+        self.assertEqual(5, components["joint_persistence"])
         self.assertEqual(4, components["relative_strength"])
-        self.assertLess(score, 50)
+        self.assertLess(score, 55)
+
+    def test_usual_action_multiple_is_not_the_significance_gate_multiple(self) -> None:
+        dates = [
+            (date(2026, 2, 1) + timedelta(days=index)).isoformat()
+            for index in range(11)
+        ]
+        records = {}
+        for index, session in enumerate(dates):
+            flow = 0.4 if index == 10 else 0.2
+            records[session] = {
+                "2330": {
+                    "00403A": {
+                        "active_flow": flow,
+                        "copyable": True,
+                        "money_twd": flow / 100 * 10_000_000_000,
+                    }
+                }
+            }
+        assign_v4_action_scales(records, dates, ["00403A"])
+        move = records[dates[-1]]["2330"]["00403A"]
+        self.assertAlmostEqual(0.2, move["normal_action_flow"], places=5)
+        self.assertAlmostEqual(0.12, move["significance_gate"], places=5)
+        self.assertAlmostEqual(2.0, move["normal_action_multiple"], places=2)
+        self.assertNotAlmostEqual(
+            move["normal_action_multiple"],
+            0.4 / move["significance_gate"],
+            places=2,
+        )
+
+    def test_confirmed_score_declines_each_quiet_session(self) -> None:
+        histories, dates = _histories(
+            {
+                "00403A": {10: 250},
+                "00981A": {10: 250},
+            }
+        )
+        payload = build_consensus_payload(histories, {})
+        trigger = hydrate_board(payload, dates[10])["signals"]["buying"][0]
+        later = hydrate_board(payload, dates[15])["signals"]["buying"][0]
+        self.assertGreater(trigger["score"], later["score"])
+        self.assertGreater(
+            trigger["valid_sessions_remaining"],
+            later["valid_sessions_remaining"],
+        )
+        self.assertIn("freshness", later["score_components"])
+
+    def test_watch_score_and_validity_decline_on_quiet_sessions(self) -> None:
+        histories, dates = _histories({}, stock_id="6488")
+        for index, session in enumerate(dates):
+            histories["00991A"][session] = _day(
+                session, {"6488": 500} if index >= 10 else {}
+            )
+        payload = build_consensus_payload(histories, {})
+        trigger = hydrate_board(payload, dates[10])["signals"]["watching"][0]
+        quiet = hydrate_board(payload, dates[12])["signals"]["watching"][0]
+        self.assertGreater(trigger["score"], quiet["score"])
+        self.assertEqual(
+            trigger["valid_sessions_remaining"] - 2,
+            quiet["valid_sessions_remaining"],
+        )
+        expired = hydrate_board(payload, dates[20])["signals"]["watching"]
+        self.assertFalse(expired)
 
     def test_historical_board_replay_does_not_use_future_action(self) -> None:
         histories, dates = _histories(

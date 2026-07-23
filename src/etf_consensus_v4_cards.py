@@ -58,8 +58,12 @@ V4_CSS = """
   padding:.19rem .36rem;border-radius:.35rem;background:rgba(148,163,184,.07)}
 .tfv4-evidence {margin-top:.55rem;padding:.45rem .52rem;border-radius:.58rem;
   background:rgba(148,163,184,.055);font-size:.63rem;line-height:1.5}
-.tfv4-evidence-row {display:flex;justify-content:space-between;gap:.5rem}
+.tfv4-evidence-row {display:grid;grid-template-columns:auto minmax(0,1fr);
+  gap:.05rem .5rem;padding:.08rem 0}
 .tfv4-evidence-row b {font-weight:780;color:rgba(248,250,252,.91)}
+.tfv4-evidence-row span {text-align:right}
+.tfv4-evidence-row small {grid-column:1/-1;text-align:right;
+  color:rgba(203,213,225,.55);font-size:.55rem}
 .tfv4-charts {border-top:1px solid rgba(148,163,184,.13);
   margin-top:.58rem;padding-top:.42rem}
 .tfv4-chart-note {display:flex;justify-content:space-between;gap:.5rem;
@@ -83,6 +87,7 @@ COMPONENT_LABELS = {
     "independent_etfs": "獨立ETF",
     "joint_persistence": "共同持續",
     "relative_strength": "相對強度",
+    "freshness": "新鮮度",
     "horizon_alignment": "3/10/20一致",
     "event_quality": "事件品質",
     "relative_size": "相對大小",
@@ -140,7 +145,7 @@ def _sparkline(rows: list[dict], etf_label: str, participant: bool) -> str:
         title = (
             f"{_date_short(str(row.get('date') or ''))} "
             f"{float(row.get('active_flow') or 0):+.4f}% ETF規模・"
-            f"{abs(float(row.get('significance_ratio') or 0)):.1f}×自身門檻"
+            f"{abs(float(row.get('normal_action_multiple') or 0)):.1f}×平常單筆"
         )
         elements.append(
             f'<rect class="{css}" x="{x:.2f}" y="{y:.2f}" '
@@ -179,7 +184,7 @@ def _charts(card: dict) -> str:
         return ""
     return (
         '<div class="tfv4-charts">'
-        '<div class="tfv4-chart-note"><span>20日｜柱高＝各自門檻倍數</span>'
+        '<div class="tfv4-chart-note"><span>20日｜柱高＝各 ETF 平常單筆倍數</span>'
         '<span>淡帶／亮框＝3日窗／顯著動作</span></div>'
         f"{rows}</div>"
     )
@@ -190,14 +195,27 @@ def _evidence(card: dict) -> str:
     for item in card.get("evidence") or []:
         direction = int(item.get("direction") or 0)
         action = "買" if direction > 0 else "賣"
-        ratio = abs(float(item.get("significance_ratio") or 0.0))
+        ratio = abs(float(item.get("normal_action_multiple") or 0.0))
         active_flow = float(item.get("active_flow") or 0.0)
         signal_date = _date_short(str(item.get("signal_date") or ""))
+        money_yi = abs(float(item.get("estimated_money_yi") or 0.0))
+        normal_money_yi = abs(
+            float(item.get("normal_action_money_yi") or 0.0)
+        )
+        net_10 = float(item.get("net_active_flow_10") or 0.0)
+        money_label = f"約{money_yi:.2f}億・" if money_yi else ""
         rows.append(
             '<div class="tfv4-evidence-row">'
             f'<b>{escape(str(item.get("etf_label") or ""))} {action}'
             f'・{escape(signal_date)}</b>'
-            f"<span>{active_flow:+.3f}%規模・{ratio:.1f}×門檻</span>"
+            f"<span>{money_label}{ratio:.1f}×平常單筆</span>"
+            f"<small>10日淨動作 {net_10:+.3f}% ETF規模"
+            + (
+                f"・該 ETF 平常單筆約 {normal_money_yi:.2f}億"
+                if normal_money_yi
+                else ""
+            )
+            + "</small>"
             "</div>"
         )
     return (
@@ -230,12 +248,24 @@ def render_v4_card(card: dict, group: str) -> str:
         ("參與 ETF", str(card.get("etf_label") or "未提供")),
     ]
     if state == "watch":
-        meta.append(("觀察起點", _date_short(str(card.get("first_seen_date") or ""))))
+        meta.extend(
+            [
+                ("觀察起點", _date_short(str(card.get("first_seen_date") or ""))),
+                (
+                    "有效倒數",
+                    f"無新顯著動作，最多再 {int(card.get('valid_sessions_remaining') or 0)} 個交易日",
+                ),
+            ]
+        )
     else:
         meta.extend(
             [
                 ("首次確認", _date_short(str(card.get("confirmed_date") or ""))),
                 ("狀態", f"已維持 {int(card.get('state_days') or 0)} 個交易日"),
+                (
+                    "有效倒數",
+                    f"若都無新顯著動作，最多再 {int(card.get('valid_sessions_remaining') or 0)} 個交易日",
+                ),
             ]
         )
     meta_html = "".join(

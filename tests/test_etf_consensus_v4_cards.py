@@ -25,12 +25,16 @@ class EtfConsensusV4CardTests(unittest.TestCase):
             "breadth": 2,
             "confirmed_date": "2026-07-23",
             "state_days": 1,
+            "valid_sessions_remaining": 8,
             "evidence": [
                 {
                     "etf_label": "403",
                     "direction": 1,
                     "active_flow": 0.15,
-                    "significance_ratio": 2.2,
+                    "normal_action_multiple": 2.2,
+                    "estimated_money_yi": 3.7,
+                    "normal_action_money_yi": 1.68,
+                    "net_active_flow_10": 0.31,
                 }
             ],
             "etf_trends": {
@@ -39,7 +43,7 @@ class EtfConsensusV4CardTests(unittest.TestCase):
                         "date": "2026-07-23",
                         "ratio": 2.2,
                         "active_flow": 0.15,
-                        "significance_ratio": 2.2,
+                        "normal_action_multiple": 2.2,
                         "significant": True,
                     }
                 ],
@@ -48,11 +52,15 @@ class EtfConsensusV4CardTests(unittest.TestCase):
             },
         }
 
-    def test_card_explains_score_and_own_threshold(self) -> None:
+    def test_card_explains_score_usual_action_and_expiry(self) -> None:
         html = render_v4_card(self.card, "buy")
         self.assertIn("共識強度 72/100", html)
-        self.assertIn("2.2×門檻", html)
+        self.assertIn("2.2×平常單筆", html)
+        self.assertIn("約3.70億", html)
+        self.assertIn("10日淨動作 +0.310%", html)
+        self.assertIn("最多再 8 個交易日", html)
         self.assertIn("3日窗", html)
+        self.assertNotIn("×門檻", html)
         self.assertNotIn("勝率", html)
 
     def test_empty_lane_has_explicit_empty_state(self) -> None:

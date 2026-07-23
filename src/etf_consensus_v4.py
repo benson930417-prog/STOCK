@@ -8,20 +8,20 @@ V4 separates *state* from *score*:
 
 The colour is a hard gate.  A large one-manager score can never become a
 red/green conclusion.  The score only ranks maturity inside the same lane.
-All thresholds are assigned from preceding observations by the V3 primitives;
-concept tags are never interpreted.
+V4 assigns its own ETF-wide, preceding-10-session usual-action scale without
+look-ahead; concept tags are never interpreted.
 """
 from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime
 import math
+from statistics import median
 
 from src.etf_intent_v3 import (
     ETF_LABEL,
     _common_dates,
     _display_name,
-    assign_no_lookahead_thresholds,
     build_move_store,
 )
 
@@ -30,9 +30,13 @@ HISTORY_SESSIONS = 260
 CHART_SESSIONS = 20
 SIGNAL_OVERLAP_SESSIONS = 3
 SUPPORT_SESSIONS = 10
-WATCH_SESSIONS = 3
+WATCH_SESSIONS = SUPPORT_SESSIONS
 MAINTENANCE_SCORE = 40
-MIN_WATCH_ENTRY_RATIO = 0.50
+ACTION_BASELINE_SESSIONS = 10
+MIN_BASELINE_OBSERVATIONS = 8
+MIN_ACTIVE_FLOW = 0.02
+SIGNIFICANCE_GATE_FRACTION = 0.60
+MIN_WATCH_ENTRY_RATIO = SIGNIFICANCE_GATE_FRACTION
 MIN_WATCH_EXIT_RATIO = 1.00
 EWMA_HALFLIVES = (3, 10, 20)
 STRUCTURAL_EVENTS = {"new_position", "full_exit"}
@@ -50,14 +54,94 @@ def _direction(value: float, epsilon: float = 1e-9) -> int:
     return 0
 
 
+def assign_v4_action_scales(
+    records: dict[str, dict[str, dict[str, dict]]],
+    common_dates: list[str],
+    etfs: list[str],
+) -> None:
+    """Attach a no-look-ahead ETF-wide usual-action scale to each move.
+
+    The previous V4 divided a sparse ETF/stock move by that stock's 0.02%
+    fallback significance gate.  That made an ordinary action look like
+    ``23.9x``.  V4 now gives the two concepts separate fields:
+
+    * ``normal_action_multiple`` compares the move with the ETF's median
+      non-zero same-direction trade during the preceding 10 common sessions;
+    * ``significance_gate`` is only the qualification line (60% of usual,
+      never below 0.02% of ETF size).
+
+    Direction-specific history is preferred; the combined buy/sell sample is
+    used until there are enough same-direction observations.  The current date
+    is never included in its own baseline.
+    """
+    fallback_typical = MIN_ACTIVE_FLOW / SIGNIFICANCE_GATE_FRACTION
+    for date_index, date in enumerate(common_dates):
+        prior_dates = common_dates[
+            max(0, date_index - ACTION_BASELINE_SESSIONS) : date_index
+        ]
+        for etf in etfs:
+            buy_sample: list[float] = []
+            sell_sample: list[float] = []
+            for prior_date in prior_dates:
+                for by_etf in records.get(prior_date, {}).values():
+                    prior_move = by_etf.get(etf)
+                    if not prior_move or not prior_move.get("copyable"):
+                        continue
+                    flow = float(prior_move.get("active_flow") or 0.0)
+                    if flow > 1e-9:
+                        buy_sample.append(flow)
+                    elif flow < -1e-9:
+                        sell_sample.append(abs(flow))
+            combined_sample = buy_sample + sell_sample
+            for by_etf in records.get(date, {}).values():
+                move = by_etf.get(etf)
+                if move is None:
+                    continue
+                flow = float(move.get("active_flow") or 0.0)
+                magnitude = abs(flow) if move.get("copyable") else 0.0
+                directional = buy_sample if flow > 0 else sell_sample
+                if len(directional) >= MIN_BASELINE_OBSERVATIONS:
+                    sample = directional
+                    source = "same_direction"
+                elif len(combined_sample) >= MIN_BASELINE_OBSERVATIONS:
+                    sample = combined_sample
+                    source = "combined"
+                else:
+                    sample = []
+                    source = "fallback"
+                typical = median(sample) if sample else fallback_typical
+                gate = max(MIN_ACTIVE_FLOW, typical * SIGNIFICANCE_GATE_FRACTION)
+                multiple = magnitude / typical if typical else 0.0
+                money_twd = abs(float(move.get("money_twd") or 0.0))
+                typical_money_twd = (
+                    money_twd * typical / magnitude if magnitude > 0 else 0.0
+                )
+                move["v4_baseline_sessions"] = len(prior_dates)
+                move["v4_baseline_observations"] = len(sample)
+                move["v4_baseline_source"] = source
+                move["normal_action_flow"] = round(typical, 6)
+                move["significance_gate"] = round(gate, 6)
+                move["normal_action_multiple"] = round(multiple, 3)
+                # Compatibility alias for older cache readers.  Its V4 meaning
+                # is now "times usual action", never "times gate".
+                move["significance_ratio"] = round(multiple, 3)
+                move["estimated_money_yi"] = round(money_twd / 1e8, 3)
+                move["normal_action_money_yi"] = round(
+                    typical_money_twd / 1e8, 3
+                )
+                move["significant"] = bool(
+                    move.get("copyable") and magnitude >= gate
+                )
+
+
 def _clipped_ratio(move: dict | None) -> float:
     if not move or not move.get("copyable"):
         return 0.0
-    threshold = float(move.get("threshold") or 0.0)
+    typical = float(move.get("normal_action_flow") or 0.0)
     flow = float(move.get("active_flow") or 0.0)
-    if threshold <= 0:
+    if typical <= 0:
         return 0.0
-    return max(-3.0, min(3.0, flow / threshold))
+    return max(-3.0, min(3.0, flow / typical))
 
 
 def _score(
@@ -67,7 +151,7 @@ def _score(
 ) -> tuple[int, dict[str, int]]:
     """Score confirmed consensus; never decides whether consensus exists."""
     breadth = len(participants)
-    breadth_points = 35 if breadth >= 3 else 25 if breadth >= 2 else 0
+    breadth_points = 35 if breadth >= 3 else 30 if breadth >= 2 else 0
     counts = sorted(
         (
             int(features[etf]["buy_days_10" if direction > 0 else "sell_days_10"])
@@ -76,7 +160,7 @@ def _score(
         reverse=True,
     )
     weaker_count = counts[1] if len(counts) >= 2 else 0
-    persistence = round(30 * min(weaker_count, 5) / 5)
+    persistence = round(25 * min(weaker_count, 5) / 5)
     strengths = sorted(
         (
             float(
@@ -89,7 +173,7 @@ def _score(
         reverse=True,
     )
     weaker_strength = strengths[1] if len(strengths) >= 2 else 0.0
-    strength = round(25 * min(weaker_strength / 6.0, 1.0))
+    strength = round(20 * min(weaker_strength / 5.0, 1.0))
     top_two = sorted(
         participants,
         key=lambda etf: float(
@@ -107,13 +191,25 @@ def _score(
         and float(features[etf]["ewma_20"]) * direction >= 0
         for etf in top_two
     )
-    alignment = (5 if short_aligned else 0) + (
-        5 if background_aligned else 0
+    alignment = (2 if short_aligned else 0) + (
+        3 if background_aligned else 0
+    )
+    ages = sorted(
+        int(features[etf].get("last_significant_age") or 0)
+        for etf in participants
+        if features[etf].get("last_significant_age") is not None
+    )
+    consensus_age = ages[1] if len(ages) >= 2 else SUPPORT_SESSIONS
+    freshness = round(
+        15
+        * max(0.0, (SUPPORT_SESSIONS - 1 - consensus_age))
+        / (SUPPORT_SESSIONS - 1)
     )
     components = {
         "independent_etfs": breadth_points,
         "joint_persistence": persistence,
         "relative_strength": strength,
+        "freshness": freshness,
         "horizon_alignment": alignment,
     }
     return min(100, sum(components.values())), components
@@ -133,17 +229,31 @@ def _watch_score(
         "restart": 28,
         "consensus_cooling": 30,
     }.get(watch_kind, 25)
-    magnitude = min(
-        25,
-        round(25 * min(float(feature["signal_significance_ratio"]) / 3, 1)),
+    current_structural = feature["position_event"] in STRUCTURAL_EVENTS
+    magnitude_ratio = (
+        float(feature["normal_action_multiple"])
+        if current_structural
+        else float(feature["signal_significance_ratio"])
     )
-    repeat = min(20, int(feature["same_days_3"]) * 7)
-    latent = min(15, round(15 * min(other_same_direction_ratio, 1)))
+    magnitude = min(20, round(20 * min(magnitude_ratio / 3, 1)))
+    repeat = min(15, int(feature["same_days_3"]) * 6)
+    latent = min(10, round(10 * min(other_same_direction_ratio, 1)))
+    age = (
+        0
+        if current_structural
+        else int(feature.get("last_significant_age") or 0)
+    )
+    freshness = round(
+        15
+        * max(0.0, SUPPORT_SESSIONS - 1 - age)
+        / (SUPPORT_SESSIONS - 1)
+    )
     components = {
         "event_quality": event_points,
         "relative_size": magnitude,
         "repeat_action": repeat,
         "latent_second_etf": latent,
+        "freshness": freshness,
     }
     return min(100, sum(components.values())), components
 
@@ -172,15 +282,35 @@ def _features_for_date(
             "date": date,
             "ratio": round(ratio, 4),
             "active_flow": round(float((move or {}).get("active_flow") or 0.0), 6),
-            "threshold": round(float((move or {}).get("threshold") or 0.0), 6),
+            "normal_action_flow": round(
+                float((move or {}).get("normal_action_flow") or 0.0), 6
+            ),
+            "significance_gate": round(
+                float((move or {}).get("significance_gate") or 0.0), 6
+            ),
+            "normal_action_multiple": round(
+                float((move or {}).get("normal_action_multiple") or 0.0), 3
+            ),
             "significance_ratio": round(
-                float((move or {}).get("significance_ratio") or 0.0), 2
+                float((move or {}).get("normal_action_multiple") or 0.0), 3
             ),
             "significant": bool((move or {}).get("significant")),
             "copyable": bool((move or {}).get("copyable")),
             "position_event": str((move or {}).get("position_event") or ""),
             "raw_delta_shares": int((move or {}).get("raw_delta_shares") or 0),
             "money_twd": float((move or {}).get("money_twd") or 0.0),
+            "estimated_money_yi": round(
+                float((move or {}).get("estimated_money_yi") or 0.0), 3
+            ),
+            "normal_action_money_yi": round(
+                float((move or {}).get("normal_action_money_yi") or 0.0), 3
+            ),
+            "baseline_observations": int(
+                (move or {}).get("v4_baseline_observations") or 0
+            ),
+            "baseline_source": str(
+                (move or {}).get("v4_baseline_source") or ""
+            ),
             "unit_quality": str((move or {}).get("unit_quality") or ""),
         }
         histories[etf].append(row)
@@ -211,6 +341,12 @@ def _features_for_date(
             if last_significant
             else 0
         )
+        net_active_flow_10 = sum(
+            float(item["active_flow"]) for item in trailing_10 if item["copyable"]
+        )
+        net_ratio_10 = sum(
+            float(item["ratio"]) for item in trailing_10 if item["copyable"]
+        )
         result[etf] = {
             **row,
             "ewma_3": round(ewmas[etf][3], 4),
@@ -230,6 +366,9 @@ def _features_for_date(
             "sell_strength_10": round(
                 sum(max(0.0, -float(item["ratio"])) for item in trailing_10), 3
             ),
+            "net_active_flow_10": round(net_active_flow_10, 6),
+            "net_ratio_10": round(net_ratio_10, 3),
+            "net_direction_10": _direction(net_active_flow_10),
             "same_days_3": sum(
                 item["significant"]
                 and _direction(float(item["ratio"])) == last_direction
@@ -243,9 +382,29 @@ def _features_for_date(
             ),
             "signal_significance_ratio": round(
                 float(
-                    (last_significant or {}).get("significance_ratio") or 0.0
+                    (last_significant or {}).get("normal_action_multiple") or 0.0
                 ),
-                2,
+                3,
+            ),
+            "signal_normal_action_multiple": round(
+                float(
+                    (last_significant or {}).get("normal_action_multiple") or 0.0
+                ),
+                3,
+            ),
+            "signal_estimated_money_yi": round(
+                float((last_significant or {}).get("estimated_money_yi") or 0.0),
+                3,
+            ),
+            "signal_normal_action_money_yi": round(
+                float(
+                    (last_significant or {}).get("normal_action_money_yi") or 0.0
+                ),
+                3,
+            ),
+            "signal_significance_gate": round(
+                float((last_significant or {}).get("significance_gate") or 0.0),
+                6,
             ),
             "signal_raw_delta_shares": int(
                 (last_significant or {}).get("raw_delta_shares") or 0
@@ -259,6 +418,11 @@ def _features_for_date(
                 if prior_significant
                 else None
             ),
+            "support_sessions_remaining": (
+                max(0, SUPPORT_SESSIONS - 1 - int(last_age))
+                if last_age is not None
+                else 0
+            ),
         }
     return result
 
@@ -270,6 +434,7 @@ def _active_participants(features: dict[str, dict], direction: int) -> list[str]
         if feature["last_significant_direction"] == direction
         and feature["last_significant_age"] is not None
         and int(feature["last_significant_age"]) < SIGNAL_OVERLAP_SESSIONS
+        and int(feature["net_direction_10"]) == direction
     ]
 
 
@@ -282,7 +447,7 @@ def _supporting_participants(
         if feature["last_significant_direction"] == direction
         and feature["last_significant_age"] is not None
         and int(feature["last_significant_age"]) < SUPPORT_SESSIONS
-        and float(feature["ewma_10"]) * direction > 0
+        and int(feature["net_direction_10"]) == direction
     ]
 
 
@@ -294,13 +459,11 @@ def _high_information_watch(
 ) -> tuple[str, int, str] | None:
     candidates = []
     for etf, feature in features.items():
-        if not feature["significant"]:
-            continue
         direction = _direction(float(feature["ratio"]))
-        if not direction:
+        if not feature["copyable"] or not direction:
             continue
         event = feature["position_event"]
-        significance_ratio = float(feature["significance_ratio"])
+        significance_ratio = float(feature["normal_action_multiple"])
         prior_10 = float((prior_features.get(etf) or {}).get("ewma_10") or 0.0)
         age = feature["prior_significant_age"]
         kind = ""
@@ -312,14 +475,14 @@ def _high_information_watch(
             if significance_ratio < MIN_WATCH_EXIT_RATIO:
                 continue
             kind = "full_exit"
-        elif prior_10 * direction < -0.05:
+        elif feature["significant"] and prior_10 * direction < -0.05:
             kind = "reversal"
-        elif age is not None and int(age) >= 5:
+        elif feature["significant"] and age is not None and int(age) >= 5:
             kind = "restart"
         if kind:
             candidates.append(
                 (
-                    float(feature["significance_ratio"]),
+                    float(feature["normal_action_multiple"]),
                     etf,
                     direction,
                     kind,
@@ -372,21 +535,89 @@ def _compact_card(
     evidence = []
     for etf in participants:
         feature = features[etf]
+        use_current_structural = bool(
+            state == "watch"
+            and watch_kind in {"new_position", "reentry", "full_exit"}
+            and feature["position_event"] in STRUCTURAL_EVENTS
+            and _direction(float(feature["active_flow"])) == direction
+        )
         evidence.append(
             {
                 "etf": etf,
                 "etf_label": ETF_LABEL.get(etf, etf),
                 "direction": direction,
-                "signal_date": feature["signal_date"],
-                "active_flow": feature["signal_active_flow"],
-                "significance_ratio": feature["signal_significance_ratio"],
-                "raw_delta_shares": feature["signal_raw_delta_shares"],
-                "position_event": feature["signal_position_event"],
+                "signal_date": (
+                    feature["date"]
+                    if use_current_structural
+                    else feature["signal_date"]
+                ),
+                "active_flow": (
+                    feature["active_flow"]
+                    if use_current_structural
+                    else feature["signal_active_flow"]
+                ),
+                "normal_action_multiple": (
+                    feature["normal_action_multiple"]
+                    if use_current_structural
+                    else feature["signal_normal_action_multiple"]
+                ),
+                "significance_ratio": (
+                    feature["normal_action_multiple"]
+                    if use_current_structural
+                    else feature["signal_normal_action_multiple"]
+                ),
+                "estimated_money_yi": (
+                    feature["estimated_money_yi"]
+                    if use_current_structural
+                    else feature["signal_estimated_money_yi"]
+                ),
+                "normal_action_money_yi": (
+                    feature["normal_action_money_yi"]
+                    if use_current_structural
+                    else feature["signal_normal_action_money_yi"]
+                ),
+                "raw_delta_shares": (
+                    feature["raw_delta_shares"]
+                    if use_current_structural
+                    else feature["signal_raw_delta_shares"]
+                ),
+                "position_event": (
+                    feature["position_event"]
+                    if use_current_structural
+                    else feature["signal_position_event"]
+                ),
+                "last_action_age": (
+                    0
+                    if use_current_structural
+                    else feature["last_significant_age"]
+                ),
+                "support_sessions_remaining": (
+                    SUPPORT_SESSIONS - 1
+                    if use_current_structural
+                    else feature["support_sessions_remaining"]
+                ),
+                "net_active_flow_10": feature["net_active_flow_10"],
+                "net_direction_10": feature["net_direction_10"],
                 "ewma_3": feature["ewma_3"],
                 "ewma_10": feature["ewma_10"],
                 "ewma_20": feature["ewma_20"],
             }
         )
+    evidence_ages = sorted(
+        int(item["last_action_age"])
+        for item in evidence
+        if item["last_action_age"] is not None
+    )
+    expiry_age = (
+        evidence_ages[1]
+        if state in {"buy", "sell"} and len(evidence_ages) >= 2
+        else evidence_ages[0]
+        if evidence_ages
+        else SUPPORT_SESSIONS
+    )
+    valid_sessions_remaining = max(
+        0, SUPPORT_SESSIONS - 1 - expiry_age
+    )
     return {
         "stock_id": stock_id,
         "name": name,
@@ -405,6 +636,8 @@ def _compact_card(
         "confirmed_date": confirmed_date,
         "last_confirmed_date": last_confirmed,
         "state_days": state_days,
+        "valid_sessions_remaining": valid_sessions_remaining,
+        "freshness_rule": "無新顯著同向動作時每日減分",
         "evidence": evidence,
     }
 
@@ -423,7 +656,7 @@ def build_consensus_payload(
     common_dates = common_dates[-HISTORY_SESSIONS:]
     if not common_dates:
         raise ValueError("V4 requires at least one common ETF disclosure date")
-    assign_no_lookahead_thresholds(records, common_dates, etfs)
+    assign_v4_action_scales(records, common_dates, etfs)
     stock_ids = sorted(
         {
             stock_id
@@ -540,6 +773,13 @@ def build_consensus_payload(
                     and audit[stock_id]
                     and int(audit[stock_id][-1].get("watch_age") or 0)
                     < WATCH_SESSIONS - 1
+                    and any(
+                        int(features.get(etf, {}).get("net_direction_10") or 0)
+                        == previous_direction
+                        for etf in (
+                            audit[stock_id][-1].get("participants") or []
+                        )
+                    )
                 ):
                     current_state = "watch"
                     direction = previous_direction
@@ -638,8 +878,13 @@ def build_consensus_payload(
                     "date": row["date"],
                     "ratio": row["ratio"],
                     "active_flow": row["active_flow"],
+                    "normal_action_flow": row["normal_action_flow"],
+                    "significance_gate": row["significance_gate"],
+                    "normal_action_multiple": row["normal_action_multiple"],
                     "significance_ratio": row["significance_ratio"],
                     "significant": row["significant"],
+                    "estimated_money_yi": row["estimated_money_yi"],
+                    "normal_action_money_yi": row["normal_action_money_yi"],
                 }
                 for row in rows[-HISTORY_SESSIONS:]
             ]
@@ -656,7 +901,7 @@ def build_consensus_payload(
             )
     latest = common_dates[-1]
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated": datetime.now().astimezone().isoformat(timespec="seconds"),
         "as_of": latest,
         "etfs": etfs,
@@ -667,6 +912,12 @@ def build_consensus_payload(
             "minimum_confirming_etfs": 2,
             "signal_overlap_sessions": SIGNAL_OVERLAP_SESSIONS,
             "support_sessions": SUPPORT_SESSIONS,
+            "action_baseline_sessions": ACTION_BASELINE_SESSIONS,
+            "action_baseline": "ETF-wide median non-zero same-direction action",
+            "significance_gate_fraction": SIGNIFICANCE_GATE_FRACTION,
+            "display_multiple_is_gate_multiple": False,
+            "support_requires_positive_10d_derivative": True,
+            "quiet_sessions_reduce_score": True,
             "fixed_ewma_half_lives": list(EWMA_HALFLIVES),
             "single_etf_score_can_confirm": False,
             "ordinary_single_etf_actions_hidden": True,
