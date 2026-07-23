@@ -445,7 +445,11 @@ class TagFlowEventTests(unittest.TestCase):
         self.assertEqual("conviction_buy", event["event_type"])
         self.assertEqual("今日未動・續抱仍有效", event["lifecycle_label"])
         self.assertEqual(3, event["quiet_sessions_to_downgrade"])
-        self.assertIn("3 個交易日後降級", event["progress_label"])
+        self.assertIn("3 個交易日後轉為降溫", event["progress_label"])
+        self.assertEqual(
+            [dates[-8], dates[-6], dates[-4], dates[-2]],
+            event["buy_evidence_dates"],
+        )
 
     def test_hold_downgrade_is_shown_instead_of_silently_disappearing(self) -> None:
         data, dates = _empty_fixture()
@@ -456,7 +460,7 @@ class TagFlowEventTests(unittest.TestCase):
                     etf=etf,
                     session=session,
                     stock_id="DOWNGRADE",
-                    name="剛降級股票",
+                    name="續抱降溫股票",
                     flow=0.20,
                 )
 
@@ -465,7 +469,15 @@ class TagFlowEventTests(unittest.TestCase):
             row for row in snapshot["holding"] if row["stock_id"] == "DOWNGRADE"
         )
         self.assertEqual("conviction_downgrade", event["event_type"])
-        self.assertEqual("今日降級・等待新證據", event["lifecycle_label"])
+        self.assertEqual("續抱降溫", event["event_label"])
+        self.assertEqual(
+            "加碼動能降溫・尚無顯著賣出",
+            event["lifecycle_label"],
+        )
+        self.assertEqual("續抱降溫（2檔仍有證據）", event["qualification_label"])
+        self.assertEqual(["00403A", "00981A"], event["etfs"])
+        self.assertEqual(0, event["sell_days"])
+        self.assertIn("恢復強勢續抱尚缺", event["progress_label"])
 
     def test_previous_hold_that_turns_to_sell_is_an_explicit_transition(self) -> None:
         data, dates = _empty_fixture()

@@ -161,21 +161,18 @@ class LineActionPayloadTests(unittest.TestCase):
             "name": "旺矽科技",
             "category": "IC-封測",
             "event_type": "conviction_downgrade",
-            "event_label": "退出續抱",
-            "breadth": 2,
-            "etfs": ["00981A", "00991A"],
-            "qualification_label": "剛退出續抱（2檔）",
-            "lifecycle_label": "今日降級・等待新證據",
+            "event_label": "續抱降溫",
+            "breadth": 1,
+            "etfs": ["00991A"],
+            "qualification_label": "續抱降溫（1檔仍有證據）",
+            "lifecycle_label": "加碼動能降溫・尚無顯著賣出",
             "progress_label": (
-                "再 1 個顯著買進日；再 1 檔 ETF 參與；"
-                "10日淨買再 +0.03%"
+                "恢復強勢續抱尚缺：再 1 個顯著買進日；"
+                "再 1 檔 ETF 參與；10日淨買再 +0.03%"
             ),
             "evidence_parts": [
                 "10日3買・0賣",
-                (
-                    "再 1 個顯著買進日；再 1 檔 ETF 參與；"
-                    "10日淨買再 +0.03%"
-                ),
+                "尚無顯著賣出",
             ],
         }
         text = render_line_text(
@@ -183,8 +180,8 @@ class LineActionPayloadTests(unittest.TestCase):
             {"buying": [], "holding": [event], "selling": []},
         )
 
-        self.assertIn("判定：\n    退出續抱（2檔）", text)
-        self.assertIn("狀態：\n    今降級・待新證據", text)
+        self.assertIn("判定：\n    降溫（1檔有效）", text)
+        self.assertIn("狀態：\n    加碼降溫\n    尚無賣出", text)
         self.assertIn("    再 1 次顯著買", text)
         content_lines = [
             line for line in text.splitlines() if line and "━" not in line

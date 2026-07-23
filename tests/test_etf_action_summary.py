@@ -39,6 +39,11 @@ class EtfActionSummaryTests(unittest.TestCase):
                     **_event(index + 10),
                     "event_type": "conviction_buy",
                     "event_label": "持續加碼",
+                    "buy_evidence_dates": [
+                        "2026-07-11",
+                        "2026-07-14",
+                        "2026-07-18",
+                    ],
                 }
                 for index in range(4)
             ],
@@ -62,6 +67,11 @@ class EtfActionSummaryTests(unittest.TestCase):
                     **_event(index + 10),
                     "event_type": "conviction_buy",
                     "event_label": "持續加碼",
+                    "buy_evidence_dates": [
+                        "2026-07-11",
+                        "2026-07-14",
+                        "2026-07-18",
+                    ],
                 }
                 for index in range(4)
             ],
@@ -78,7 +88,7 @@ class EtfActionSummaryTests(unittest.TestCase):
         self.assertEqual(4, sell.count('class="tfv2-card tfv2-sell"'))
         self.assertIn('class="tfv2-age tfv2-age-current">今日仍確認', buy)
         self.assertIn('class="tfv2-age tfv2-age-prior">昨日確認', buy)
-        self.assertIn('class="tfv2-age tfv2-age-latest">今日重新計算', hold)
+        self.assertIn('class="tfv2-age tfv2-age-latest">最新狀態', hold)
         self.assertIn("20日規模比淨動作", buy)
         self.assertIn('class="tfv2-flow-chart"', buy)
         self.assertIn("規模比合計</title>", buy)
@@ -86,7 +96,10 @@ class EtfActionSummaryTests(unittest.TestCase):
         self.assertIn("tfv2-flow-structural-dot", buy)
         self.assertIn("持股名單改變 07/20", buy)
         self.assertIn("持股名單改變 07/19", buy)
-        self.assertIn('<path class="tfv2-flow-hold-window"', hold)
+        self.assertIn('class="tfv2-flow-evidence-buy"', hold)
+        self.assertIn('class="tfv2-flow-evidence-latest"', hold)
+        self.assertIn("最近一次納入續抱判斷的顯著加碼 07/18", hold)
+        self.assertNotIn("tfv2-flow-hold-window", hold)
         self.assertNotIn("tfv2-flow-frame-prior", buy)
         self.assertNotIn("tfv2-flow-frame-current", buy)
         self.assertNotIn("早 ←", buy)
@@ -121,6 +134,29 @@ class EtfActionSummaryTests(unittest.TestCase):
         self.assertIn("連續兩日反轉確認", reversal_html)
         self.assertIn("tfv2-flow-frame-restart", restart_html)
         self.assertIn("沉寂後重啟確認", restart_html)
+
+    def test_hold_marks_actual_evidence_not_empty_latest_session(self) -> None:
+        hold = {
+            **_event(50),
+            "event_type": "conviction_downgrade",
+            "event_label": "續抱降溫",
+            "latest_action_label": "尚無顯著賣出",
+            "buy_evidence_dates": [
+                "2026-07-11",
+                "2026-07-14",
+                "2026-07-18",
+            ],
+            "sell_evidence_dates": [],
+        }
+        hold["flow_trend_20d"][-1]["flow"] = 0
+        html = render_lane_html(
+            {"signals": {"holding": [hold]}}, "holding"
+        )
+
+        self.assertIn("最近一次納入續抱判斷的顯著加碼 07/18", html)
+        self.assertNotIn("最近一次納入續抱判斷的顯著加碼 07/20", html)
+        self.assertNotIn("最新續抱狀態", html)
+        self.assertNotIn("最近10日續抱觀察區", html)
 
 
 if __name__ == "__main__":

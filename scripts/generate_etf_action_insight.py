@@ -101,13 +101,16 @@ def _mobile_clauses(value: str) -> list[str]:
     value = (
         str(value)
         .replace(" 個顯著買進日", " 次顯著買")
-        .replace(" 個交易日後降級", " 日後降級")
+        .replace(" 個交易日後轉為降溫", " 日後降溫")
         .replace(" 檔 ETF", " 檔ETF")
         .replace("10日淨買再", "淨買尚差")
     )
     clauses = []
     for semicolon_part in value.split("；"):
         part = semicolon_part.strip()
+        if part.startswith("恢復強勢續抱尚缺："):
+            clauses.append("恢復強勢尚缺")
+            part = part.removeprefix("恢復強勢續抱尚缺：").strip()
         if _display_width(f"    {part}") <= PHONE_CONTENT_WIDTH:
             clauses.append(part)
             continue
@@ -125,7 +128,7 @@ def _mobile_fields(event: dict) -> list[tuple[str, list[str]]]:
         .replace("今日沒有新的顯著動作", "今日無顯著動作")
         .replace("續抱條件仍成立", "續抱仍成立")
         .replace(" 個顯著買進日", " 次顯著買")
-        .replace(" 個交易日後降級", " 日後降級")
+        .replace(" 個交易日後轉為降溫", " 日後降溫")
         .replace("10日淨買再", "淨買尚差")
         for value in evidence
     ]
@@ -134,6 +137,29 @@ def _mobile_fields(event: dict) -> list[tuple[str, list[str]]]:
         for value in evidence
         for clause in _mobile_clauses(value)
     ]
+    lifecycle = (
+        str(event.get("lifecycle_label") or "今日重新判定")
+        .replace("昨日觸發・今日續買", "昨觸發・今續買")
+        .replace("昨日觸發・今日續賣", "昨觸發・今續賣")
+        .replace("昨日升級・今日續買", "昨升級・今續買")
+        .replace("今日未動・續抱仍有效", "今未動・續抱有效")
+        .replace("今日續買・續抱有效", "今續買・續抱有效")
+        .replace("今日減碼・續抱警戒", "今減碼・續抱警戒")
+        .replace(
+            "加碼動能降溫・尚無顯著賣出",
+            "加碼降溫・尚無賣出",
+        )
+        .replace(
+            "加碼動能降溫・出現顯著減碼",
+            "加碼降溫・出現減碼",
+        )
+        .replace("尚未升級・接近門檻", "待升級・近門檻")
+    )
+    lifecycle_values = (
+        [part for part in lifecycle.split("・") if part]
+        if _display_width(f"  狀態：{lifecycle}") > PHONE_CONTENT_WIDTH
+        else [lifecycle]
+    )
     fields = [
         ("類股", [str(event.get("category") or "未分類")]),
         ("動作", [str(event.get("event_label") or "持股異動")]),
@@ -144,23 +170,12 @@ def _mobile_fields(event: dict) -> list[tuple[str, list[str]]]:
                 str(
                     event.get("qualification_label")
                     or _fallback_qualification(event)
-                ).replace("剛退出續抱", "退出續抱")
+                )
+                .replace("續抱降溫（", "降溫（")
+                .replace("檔仍有證據）", "檔有效）")
             ],
         ),
-        (
-            "狀態",
-            [
-                str(event.get("lifecycle_label") or "今日重新判定")
-                .replace("昨日觸發・今日續買", "昨觸發・今續買")
-                .replace("昨日觸發・今日續賣", "昨觸發・今續賣")
-                .replace("昨日升級・今日續買", "昨升級・今續買")
-                .replace("今日未動・續抱仍有效", "今未動・續抱有效")
-                .replace("今日續買・續抱有效", "今續買・續抱有效")
-                .replace("今日減碼・續抱警戒", "今減碼・續抱警戒")
-                .replace("今日降級・等待新證據", "今降級・待新證據")
-                .replace("尚未升級・接近門檻", "待升級・近門檻")
-            ],
-        ),
+        ("狀態", lifecycle_values),
     ]
     event_type = str(event.get("event_type") or "")
     if (
@@ -233,7 +248,7 @@ def render_line_text(as_of: str, selected: dict[str, list[dict]]) -> str:
         "1/3：只留建倉・出清",
         "1/3：或反轉連續 2 日",
         "續抱：10日4買＋2ETF",
-        "顯示升降級距離",
+        "顯示升級／降溫距離",
         "",
     ]
     _lane(lines, "🔴 買進觀察", selected["buying"], "本日無新買進訊號")

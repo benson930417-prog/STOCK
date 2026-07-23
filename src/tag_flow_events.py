@@ -376,8 +376,10 @@ def _qualification(event: dict, etf_count: int) -> dict | None:
     Ordinary stock actions need at least two ETFs moving in the same direction.
     A single ETF is allowed only when the disclosed holding list changed, or
     when an actual reversal persisted for two consecutive common sessions.
-    Continuing-conviction evidence is a separate lane and still needs at least
-    two ETFs to have participated during its ten-session window.
+    Continuing-conviction evidence is a separate lane.  A fresh/active strong
+    hold still needs at least two ETFs during its ten-session window.  A
+    just-cooled hold remains visible even when one ETF's older evidence has
+    rolled out; that transition is context, not a fresh buy or sell signal.
     """
     event_type = str(event.get("event_type") or "")
     breadth = int(event.get("breadth") or 0)
@@ -386,16 +388,21 @@ def _qualification(event: dict, etf_count: int) -> dict | None:
         "conviction_watch",
         "conviction_downgrade",
     }:
-        if breadth < MIN_CONVICTION_ETFS:
+        if event_type != "conviction_downgrade" and breadth < MIN_CONVICTION_ETFS:
             return None
         labels = {
             "conviction_buy": "續抱",
             "conviction_watch": "升級觀察",
-            "conviction_downgrade": "剛退出續抱",
+            "conviction_downgrade": "續抱降溫",
         }
+        suffix = (
+            f"{breadth}檔仍有證據"
+            if event_type == "conviction_downgrade"
+            else f"{breadth}檔"
+        )
         return {
             "qualification_kind": "continuation",
-            "qualification_label": f"{labels[event_type]}（{breadth}檔）",
+            "qualification_label": f"{labels[event_type]}（{suffix}）",
         }
     if breadth >= 2:
         return {
@@ -470,7 +477,10 @@ def _evidence_parts(event: dict) -> list[str]:
         return [
             f"10日{int(event.get('buy_days') or 0)}買・"
             f"{int(event.get('sell_days') or 0)}賣",
-            str(event.get("progress_label") or "續抱條件已失效"),
+            str(
+                event.get("latest_action_label")
+                or "加碼動能降溫・尚無顯著賣出"
+            ),
         ]
     return [str(event.get("event_label") or "訊號已成立")]
 
@@ -597,6 +607,7 @@ def _conviction_metrics(
         and breadth >= MIN_CONVICTION_ETFS
     )
     return {
+        "start_index": start,
         "recent": recent,
         "buy_days": buy_days,
         "sell_days": sell_days,
@@ -647,7 +658,7 @@ def _progress_label(metrics: dict) -> str:
         remaining = _quiet_sessions_to_downgrade(metrics)
         if remaining is None:
             return "續抱條件穩定"
-        return f"若無新買，{remaining} 個交易日後降級"
+        return f"若無新買，{remaining} 個交易日後轉為降溫"
     missing = []
     needed = max(
         int(metrics.get("days_needed") or 0),
@@ -661,7 +672,11 @@ def _progress_label(metrics: dict) -> str:
     net_needed = float(metrics.get("net_needed") or 0.0)
     if net_needed:
         missing.append(f"10日淨買再 +{net_needed:.2f}%")
-    return "；".join(missing) or "等待下一次顯著加碼"
+    return (
+        f"恢復強勢續抱尚缺：{'；'.join(missing)}"
+        if missing
+        else "等待下一次顯著加碼"
+    )
 
 
 def _latest_nonempty(
@@ -732,25 +747,42 @@ def _conviction_event(
             lifecycle_label = "今日未動・續抱仍有效"
     elif downgraded:
         event_type = "conviction_downgrade"
-        event_label = "退出續抱"
-        lifecycle_label = "今日降級・等待新證據"
+        event_label = "續抱降溫"
+        lifecycle_label = (
+            "加碼動能降溫・出現顯著減碼"
+            if latest_direction < 0
+            else "加碼動能降溫・尚無顯著賣出"
+        )
     else:
         event_type = "conviction_watch"
         event_label = "接近續抱"
         lifecycle_label = "尚未升級・接近門檻"
 
     participating = list(current_metrics["participating"])
-    if downgraded and len(participating) < MIN_CONVICTION_ETFS:
-        participating = list(previous_metrics["participating"])
     etf_text = "、".join(ETF_LABEL.get(etf, etf) for etf in participating)
     latest_action_label = (
         "今日仍顯著加碼"
         if latest_direction > 0
         else "今日出現顯著減碼"
         if latest_direction < 0
-        else "今日沒有新的顯著動作"
+        else (
+            "尚無顯著賣出"
+            if downgraded and current_metrics["sell_days"] == 0
+            else "今日沒有新的顯著動作"
+        )
     )
     progress = _progress_label(current_metrics)
+    evidence_start = int(current_metrics["start_index"])
+    buy_evidence_dates = [
+        dates[evidence_start + offset]
+        for offset, item in enumerate(current_metrics["recent"])
+        if item and item["direction"] > 0
+    ]
+    sell_evidence_dates = [
+        dates[evidence_start + offset]
+        for offset, item in enumerate(current_metrics["recent"])
+        if item and item["direction"] < 0
+    ]
     return {
         **base,
         "stock_id": stock_id,
@@ -775,6 +807,11 @@ def _conviction_event(
         "latest_action_label": latest_action_label,
         "progress_label": progress,
         "evidence_expires_in": current_metrics["earliest_buy_expires_in"],
+        "buy_evidence_dates": buy_evidence_dates,
+        "sell_evidence_dates": sell_evidence_dates,
+        "latest_buy_evidence_date": (
+            buy_evidence_dates[-1] if buy_evidence_dates else None
+        ),
         "quiet_sessions_to_downgrade": (
             _quiet_sessions_to_downgrade(current_metrics) if active else 0
         ),

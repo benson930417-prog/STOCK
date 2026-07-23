@@ -14,7 +14,7 @@ ACTION_LANES = {
     ),
     "holding": (
         "🟠 續抱參考",
-        "含升級、有效續抱、臨界與剛降級，不讓狀態無聲消失",
+        "含升級、有效續抱與降溫；降溫不等於賣出",
         "hold",
     ),
     "selling": (
@@ -73,8 +73,11 @@ ACTION_BOARD_CSS = r"""
 .tfv2-flow-frame-continuation {fill:none; stroke:rgba(248,250,252,.52);
   stroke-width:1; stroke-dasharray:1.5 1.5}
 .tfv2-flow-structural-dot {fill:rgba(248,250,252,.9)}
-.tfv2-flow-hold-window {fill:none; stroke:rgba(226,232,240,.42);
-  stroke-width:1}
+.tfv2-flow-evidence-buy {fill:#F5A623; opacity:.72}
+.tfv2-flow-evidence-sell {fill:#45C879; opacity:.76}
+.tfv2-flow-evidence-latest {fill:rgba(245,166,35,.12); stroke:#F5A623;
+  stroke-width:1.05}
+.tfv2-flow-evidence-key {color:rgba(245,166,35,.82); white-space:nowrap}
 .tfv2-flow-buy {fill:#E76A5C; opacity:.76}
 .tfv2-flow-sell {fill:#45C879; opacity:.76}
 .tfv2-empty {font-size:.82rem; opacity:.66; padding:1.1rem .4rem}
@@ -112,6 +115,7 @@ def _flow_sparkline(event: dict) -> str:
         signal_index = max(0, len(trend) - 1 - age)
 
     event_type = str(event.get("event_type") or "")
+    is_conviction = event_type.startswith("conviction_")
     confirmation = str(event.get("confirmation") or "")
     structural_types = {
         "new_position",
@@ -133,28 +137,18 @@ def _flow_sparkline(event: dict) -> str:
     elif event_type in restart_types:
         marker_class = " tfv2-flow-frame-restart"
         marker_label = "沉寂後重啟確認"
-    elif event_type.startswith("conviction_"):
-        marker_label = "最新續抱狀態"
-        window_start = max(0, len(trend) - 10)
-        x1 = window_start * slot + 1
-        x2 = len(trend) * slot - 1
-        y = height - 2
-        elements.append(
-            f'<path class="tfv2-flow-hold-window" '
-            f'd="M {x1:.2f} {y - 3:g} V {y:g} H {x2:.2f} V {y - 3:g}">'
-            '<title>最近10日續抱觀察區</title></path>'
-        )
     elif event_type in structural_types:
         marker_label = "持股名單改變"
 
-    marker_x = marker_start * slot + 0.5
-    marker_width = max(1.0, marker_span * slot - 1)
-    signal_date = escape(event_date[-5:].replace("-", "/"))
-    elements.append(
-        f'<rect class="tfv2-flow-frame{marker_class}" x="{marker_x:.2f}" y="1" '
-        f'width="{marker_width:.2f}" height="{height - 2:g}" rx="2">'
-        f'<title>{marker_label} {signal_date}</title></rect>'
-    )
+    if not is_conviction:
+        marker_x = marker_start * slot + 0.5
+        marker_width = max(1.0, marker_span * slot - 1)
+        signal_date = escape(event_date[-5:].replace("-", "/"))
+        elements.append(
+            f'<rect class="tfv2-flow-frame{marker_class}" x="{marker_x:.2f}" y="1" '
+            f'width="{marker_width:.2f}" height="{height - 2:g}" rx="2">'
+            f'<title>{marker_label} {signal_date}</title></rect>'
+        )
     current_confirmation_date = str(
         event.get("current_confirmation_date") or ""
     )
@@ -196,12 +190,64 @@ def _flow_sparkline(event: dict) -> str:
             f'width="{bar_width:.2f}" height="{bar_height:.2f}" rx="1">'
             f'<title>{date} {signed} 規模比合計</title></rect>'
         )
+    if is_conviction:
+        evidence_by_date = {
+            str(date): 1 for date in event.get("buy_evidence_dates") or []
+        }
+        evidence_by_date.update(
+            {
+                str(date): -1
+                for date in event.get("sell_evidence_dates") or []
+            }
+        )
+        evidence_indexes = [
+            (index, evidence_by_date[str(row.get("date") or "")])
+            for index, row in enumerate(trend)
+            if str(row.get("date") or "") in evidence_by_date
+        ]
+        if evidence_indexes:
+            latest_index, latest_direction = evidence_indexes[-1]
+            latest_x = latest_index * slot + 0.75
+            latest_date = escape(
+                str(trend[latest_index].get("date") or "")[-5:].replace("-", "/")
+            )
+            elements.append(
+                f'<rect class="tfv2-flow-evidence-latest" x="{latest_x:.2f}" '
+                f'y="1.5" width="{max(1.0, slot - 1.5):.2f}" '
+                f'height="{height - 5:g}" rx="2">'
+                f'<title>最近一次納入續抱判斷的'
+                f'{"顯著加碼" if latest_direction > 0 else "顯著減碼"} '
+                f'{latest_date}</title></rect>'
+            )
+            for index, direction in evidence_indexes:
+                dot_x = (index + 0.5) * slot
+                css_class = (
+                    "tfv2-flow-evidence-buy"
+                    if direction > 0
+                    else "tfv2-flow-evidence-sell"
+                )
+                date = escape(
+                    str(trend[index].get("date") or "")[-5:].replace("-", "/")
+                )
+                action = "加碼" if direction > 0 else "減碼"
+                elements.append(
+                    f'<circle class="{css_class}" cx="{dot_x:.2f}" '
+                    f'cy="{height - 2.8:g}" r="1.7">'
+                    f'<title>{date} 顯著{action}，納入目前續抱判斷</title>'
+                    "</circle>"
+                )
     if structural_dot:
         elements.append(structural_dot)
     chart = "".join(elements)
+    evidence_key = (
+        '<span class="tfv2-flow-evidence-key">● 採計證據日</span>'
+        if is_conviction
+        else ""
+    )
     return (
         '<div class="tfv2-flow">'
-        '<div class="tfv2-flow-head"><span>20日規模比淨動作</span></div>'
+        '<div class="tfv2-flow-head"><span>20日規模比淨動作</span>'
+        f"{evidence_key}</div>"
         f'<svg class="tfv2-flow-chart" viewBox="0 0 {width:g} {height:g}" '
         f'role="img" aria-label="{escape(str(event.get("name") or ""))}最近20日規模比淨動作">'
         f'{chart}</svg><div class="tfv2-flow-time"><span>20日前</span>'
@@ -213,10 +259,13 @@ def event_card(event: dict, group: str) -> str:
     lifecycle = str(event.get("lifecycle_label") or "")
     if group == "hold":
         if event.get("event_type") == "conviction_downgrade":
-            age = "今日狀態變更"
+            age = "本交易日轉為降溫"
+            age_class = "current"
+        elif event.get("latest_action_label") == "今日仍顯著加碼":
+            age = "本交易日有證據"
             age_class = "current"
         else:
-            age = "今日重新計算"
+            age = "最新狀態"
             age_class = "latest"
     else:
         is_current = (
