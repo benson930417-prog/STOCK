@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated": "2026-07-22 22:31:45",
+  "generated": "2026-07-23 10:32:53",
   "etfs": [
     "00403A",
     "00981A",
@@ -45,7 +45,8 @@
         "2026-07-17",
         "2026-07-20",
         "2026-07-21",
-        "2026-07-22"
+        "2026-07-22",
+        "2026-07-23"
       ],
       "00981A": [
         "2026-03-23",
@@ -130,7 +131,8 @@
         "2026-07-17",
         "2026-07-20",
         "2026-07-21",
-        "2026-07-22"
+        "2026-07-22",
+        "2026-07-23"
       ],
       "00991A": [
         "2026-03-12",
@@ -201,7 +203,8 @@
         "2026-07-17",
         "2026-07-20",
         "2026-07-21",
-        "2026-07-22"
+        "2026-07-22",
+        "2026-07-23"
       ]
     },
     "common": [
@@ -231,9 +234,10 @@
       "2026-07-17",
       "2026-07-20",
       "2026-07-21",
-      "2026-07-22"
+      "2026-07-22",
+      "2026-07-23"
     ],
-    "latest": "2026-07-22"
+    "latest": "2026-07-23"
   },
   "methodology": {
     "signal": "ActiveWeight = delta shares * current weight / current shares",
@@ -2309,10 +2313,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.0446,
@@ -3205,10 +3209,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.0138,
@@ -3716,10 +3720,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.2607,
@@ -4840,10 +4844,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.1002,
@@ -5542,10 +5546,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.1486,
@@ -6412,10 +6416,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.0655,
@@ -6985,10 +6989,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.1286,
@@ -7648,10 +7652,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.1193,
@@ -7716,10 +7720,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.4701,
@@ -8531,10 +8535,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.2407,
@@ -9087,10 +9091,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.1835,
@@ -9231,10 +9235,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.5521,
@@ -10094,10 +10098,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.0209,
@@ -10603,10 +10607,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.494,
@@ -10821,10 +10825,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.1833,
@@ -13456,10 +13460,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.0781,
@@ -13982,10 +13986,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.4289,
@@ -14233,10 +14237,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.082,
@@ -14842,10 +14846,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.2957,
@@ -15559,10 +15563,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.2064,
@@ -17205,10 +17209,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.3019,
@@ -18624,10 +18628,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.2378,
@@ -19982,10 +19986,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.0748,
@@ -21292,10 +21296,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.4009,
@@ -21591,10 +21595,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.2509,
@@ -21699,10 +21703,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.6387,
@@ -22177,10 +22181,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.4647,
@@ -22582,10 +22586,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.2138,
@@ -22669,10 +22673,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -1.323,
@@ -23167,10 +23171,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.2004,
@@ -25072,10 +25076,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": -0.3938,
@@ -27145,10 +27149,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.0906,
@@ -27381,10 +27385,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.115,
@@ -27900,10 +27904,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.0824,
@@ -28123,10 +28127,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.1122,
@@ -28447,10 +28451,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.0449,
@@ -28692,10 +28696,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.134,
@@ -28934,10 +28938,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.2184,
@@ -29089,10 +29093,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 1.2299,
@@ -29460,10 +29464,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.1113,
@@ -29902,10 +29906,10 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "車用電子",
-            "MIH概念股",
-            "太陽能",
             "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
             "鴻海MIH電動車平台"
           ],
           "flow": 0.2413,
@@ -29950,6 +29954,371 @@
           "dshares": 200000,
           "position_event": "increase",
           "percentile": 34.1,
+          "label": "加碼"
+        }
+      ]
+    },
+    {
+      "etf": "00403A",
+      "date": "2026-07-23",
+      "prev_date": "2026-07-22",
+      "fund_size": 168591234983.0,
+      "baseline": {
+        "n": 136,
+        "median": 0.1,
+        "p80": 0.197,
+        "p95": 0.4753
+      },
+      "stocks": [
+        {
+          "id": "2330",
+          "name": "台灣積體",
+          "category": "IC-代工",
+          "group": "電子上游",
+          "concepts": [
+            "AI PC",
+            "PS5",
+            "Apple",
+            "CES",
+            "TPU"
+          ],
+          "flow": -0.856,
+          "money_twd": -1443199106.0,
+          "dshares": -600000,
+          "position_event": "decrease",
+          "percentile": 100.0,
+          "label": "異常減碼"
+        },
+        {
+          "id": "6669",
+          "name": "緯穎科技",
+          "category": "EMS",
+          "group": "電子中游",
+          "concepts": [
+            "GB300",
+            "美元升值",
+            "Oracle甲骨文",
+            "AWS",
+            "GB200"
+          ],
+          "flow": -0.6175,
+          "money_twd": -1041050876.0,
+          "dshares": -190000,
+          "position_event": "decrease",
+          "percentile": 98.5,
+          "label": "異常減碼"
+        },
+        {
+          "id": "4958",
+          "name": "臻鼎-KY",
+          "category": "PCB-製造",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "MIH概念股",
+            "鴻海MIH電動車平台",
+            "Apple"
+          ],
+          "flow": -0.2345,
+          "money_twd": -395315489.0,
+          "dshares": -780000,
+          "position_event": "decrease",
+          "percentile": 84.6,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "3665",
+          "name": "貿聯-KY",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "MIH概念股",
+            "Tesla",
+            "太陽能",
+            "GB300",
+            "車用電子"
+          ],
+          "flow": 0.1485,
+          "money_twd": 250357984.0,
+          "dshares": 110000,
+          "position_event": "increase",
+          "percentile": 70.6,
+          "label": "加碼"
+        },
+        {
+          "id": "5274",
+          "name": "信驊科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "ChatGPT"
+          ],
+          "flow": 0.1386,
+          "money_twd": 233590265.0,
+          "dshares": 15000,
+          "position_event": "increase",
+          "percentile": 69.1,
+          "label": "加碼"
+        },
+        {
+          "id": "2308",
+          "name": "台達電子",
+          "category": "電源供應器",
+          "group": "電子中游",
+          "concepts": [
+            "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
+            "鴻海MIH電動車平台"
+          ],
+          "flow": 0.1338,
+          "money_twd": 225601692.0,
+          "dshares": 120000,
+          "position_event": "increase",
+          "percentile": 67.6,
+          "label": "加碼"
+        },
+        {
+          "id": "3653",
+          "name": "健策精密",
+          "category": "散熱零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "連接器",
+            "PS5",
+            "AMD",
+            "ChatGPT"
+          ],
+          "flow": 0.1255,
+          "money_twd": 211599203.0,
+          "dshares": 57000,
+          "position_event": "increase",
+          "percentile": 64.0,
+          "label": "加碼"
+        },
+        {
+          "id": "6239",
+          "name": "力成科技",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "HBM",
+            "FOPLP扇出型封裝",
+            "Apple",
+            "穿載式裝置"
+          ],
+          "flow": 0.0785,
+          "money_twd": 132362055.0,
+          "dshares": 450000,
+          "position_event": "increase",
+          "percentile": 33.1,
+          "label": "加碼"
+        },
+        {
+          "id": "6805",
+          "name": "富世達股",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "GB300"
+          ],
+          "flow": 0.0686,
+          "money_twd": 115605418.0,
+          "dshares": 80000,
+          "position_event": "increase",
+          "percentile": 30.1,
+          "label": "加碼"
+        },
+        {
+          "id": "3037",
+          "name": "欣興電子",
+          "category": "ABF",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "小米",
+            "玻璃基板",
+            "太陽能"
+          ],
+          "flow": 0.0372,
+          "money_twd": 62733686.0,
+          "dshares": 70000,
+          "position_event": "increase",
+          "percentile": 8.1,
+          "label": "加碼"
+        }
+      ]
+    },
+    {
+      "etf": "00981A",
+      "date": "2026-07-23",
+      "prev_date": "2026-07-22",
+      "fund_size": 279928368030.0,
+      "baseline": {
+        "n": 80,
+        "median": 0.1095,
+        "p80": 0.2005,
+        "p95": 0.3973
+      },
+      "stocks": [
+        {
+          "id": "2368",
+          "name": "金像電子",
+          "category": "PCB-製造",
+          "group": "電子上游",
+          "concepts": [
+            "PCB",
+            "美元升值",
+            "Apple",
+            "TPU",
+            "AWS"
+          ],
+          "flow": -0.2809,
+          "money_twd": -786431012.0,
+          "dshares": -837000,
+          "position_event": "decrease",
+          "percentile": 90.0,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "6147",
+          "name": "頎邦",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "Apple",
+            "CES",
+            "穿載式裝置",
+            "iPhone",
+            "3D感測"
+          ],
+          "flow": -0.0333,
+          "money_twd": -93329284.0,
+          "dshares": -523000,
+          "position_event": "decrease",
+          "percentile": 8.8,
+          "label": "減碼"
+        },
+        {
+          "id": "6805",
+          "name": "富世達股",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "GB300"
+          ],
+          "flow": 0.0259,
+          "money_twd": 72482747.0,
+          "dshares": 50000,
+          "position_event": "increase",
+          "percentile": 2.5,
+          "label": "加碼"
+        }
+      ]
+    },
+    {
+      "etf": "00991A",
+      "date": "2026-07-23",
+      "prev_date": "2026-07-22",
+      "fund_size": 77863471401.0,
+      "baseline": {
+        "n": 159,
+        "median": 0.2165,
+        "p80": 0.5035,
+        "p95": 1.1796
+      },
+      "stocks": [
+        {
+          "id": "2330",
+          "name": "台灣積體",
+          "category": "IC-代工",
+          "group": "電子上游",
+          "concepts": [
+            "AI PC",
+            "PS5",
+            "Apple",
+            "CES",
+            "TPU"
+          ],
+          "flow": -0.3089,
+          "money_twd": -240500797.0,
+          "dshares": -100000,
+          "position_event": "decrease",
+          "percentile": 67.3,
+          "label": "減碼"
+        },
+        {
+          "id": "1303",
+          "name": "南亞塑膠",
+          "category": "塑膠",
+          "group": "傳產",
+          "concepts": [
+            "醫療器材耗材",
+            "一帶一路"
+          ],
+          "flow": 0.3036,
+          "money_twd": 236393499.0,
+          "dshares": 1200000,
+          "position_event": "increase",
+          "percentile": 66.0,
+          "label": "加碼"
+        },
+        {
+          "id": "2308",
+          "name": "台達電子",
+          "category": "電源供應器",
+          "group": "電子中游",
+          "concepts": [
+            "GB300",
+            "電動車",
+            "物聯網",
+            "Tesla",
+            "鴻海MIH電動車平台"
+          ],
+          "flow": 0.1208,
+          "money_twd": 94026040.0,
+          "dshares": 50000,
+          "position_event": "increase",
+          "percentile": 15.7,
+          "label": "加碼"
+        },
+        {
+          "id": "3665",
+          "name": "貿聯-KY",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "MIH概念股",
+            "Tesla",
+            "太陽能",
+            "GB300",
+            "車用電子"
+          ],
+          "flow": 0.088,
+          "money_twd": 68533052.0,
+          "dshares": 30000,
+          "position_event": "increase",
+          "percentile": 5.0,
+          "label": "加碼"
+        },
+        {
+          "id": "6274",
+          "name": "台燿科技",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "銅箔基板",
+            "GB300"
+          ],
+          "flow": 0.0857,
+          "money_twd": 66745292.0,
+          "dshares": 50000,
+          "position_event": "increase",
+          "percentile": 5.0,
           "label": "加碼"
         }
       ]
