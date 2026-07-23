@@ -25,5 +25,5 @@ def test_page_one_text_stays_inside_each_tile() -> None:
 
 def test_phone_row_uses_short_labels() -> None:
     labels = {(cell[5], cell[6]) for cell in PAGE1 if cell[1] == 843}
-    assert ("ETF 動作", "買・抱・賣") in labels
+    assert ("ETF 共識", "觀察・買・賣") in labels
     assert ("那斯達克", "24 小時") in labels
