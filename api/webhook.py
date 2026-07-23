@@ -129,7 +129,10 @@ def is_etf_intent_command(text):
     return normalized in {
         "ETF意圖",
         "ETF 意圖",
+        "ETF共識",
+        "ETF 共識",
         "主動ETF意圖",
+        "主動ETF共識",
         "意圖轉折",
         "買賣意圖",
     }
@@ -138,7 +141,7 @@ def master_insight_quick_reply():
     return QuickReply(
         items=[
             QuickReplyButton(
-                action=MessageAction(label="🎯 ETF 意圖", text="ETF意圖")
+                action=MessageAction(label="🎯 ETF 共識", text="ETF共識")
             ),
             QuickReplyButton(
                 action=MessageAction(label="🔥 ETF 動作", text="ETF動作")
@@ -179,8 +182,9 @@ def load_etf_action_image_paths():
 
 def load_etf_intent_image_paths():
     filenames = [
-        "etf_intent_v3_buy_latest.jpg",
-        "etf_intent_v3_sell_latest.jpg",
+        "etf_consensus_v4_watch_latest.jpg",
+        "etf_consensus_v4_buy_latest.jpg",
+        "etf_consensus_v4_sell_latest.jpg",
     ]
     paths = [os.path.join(parent_dir, "data", "summaries", name) for name in filenames]
     missing = [path for path in paths if not os.path.exists(path)]
@@ -899,16 +903,16 @@ def handle_message(event):
                     original_content_url=img_url,
                     preview_image_url=img_url,
                 ))
-            if len(messages) != 2:
+            if len(messages) != 3:
                 raise AssertionError(
-                    f"ETF intent reply must contain 2 images, got {len(messages)}"
+                    f"ETF consensus reply must contain 3 images, got {len(messages)}"
                 )
             reply_line(event.reply_token, messages)
         except Exception as e:
             print("ETF intent image reply failed:", e)
             reply_line(
                 event.reply_token,
-                TextSendMessage(text="ETF 意圖轉折圖卡尚未更新完成，請稍後再試。"),
+                TextSendMessage(text="ETF 共識追蹤圖卡尚未更新完成，請稍後再試。"),
             )
 
     elif is_etf_action:
@@ -1106,7 +1110,7 @@ def handle_message(event):
             "• 9805 — 009805 持股即時表\n"
             "• 9820 — 009820 持股即時表\n"
             "• 吳大師 — 投資組合與展開持股\n"
-            "• ETF意圖 — 主動 ETF 新買方／新賣方意圖\n"
+            "• ETF共識 — 單一觀察／買方共識／賣方共識\n"
             "• ETF動作 — 主動 ETF 買進／續抱／賣出訊號\n"
             "• id — 取得使用者或群組 ID"
         ))

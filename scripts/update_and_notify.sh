@@ -298,6 +298,21 @@ else
     } >> "$SUMMARY_FILE"
 fi
 
+# V4 is the final state/history surface.  It keeps V3 available for audit,
+# adds high-information one-manager observation, and requires two independent
+# managers for red/green consensus.  These are cached on-demand LINE assets;
+# this block never sends a push or broadcast.
+if run_step "build ETF consensus V4" python scripts/build_etf_consensus_v4.py; then
+    run_step "generate ETF consensus V4 summary" python scripts/generate_etf_consensus_v4_summary.py
+else
+    {
+        echo
+        echo "主動 ETF 共識追蹤 V4"
+        echo "──────────"
+        echo "本次 V4 產生失敗，請查看 failure details。"
+    } >> "$SUMMARY_FILE"
+fi
+
 # ──────────────────────────────────────────────────────────────────────────
 # 3. Detect which ETFs got NEW DATA this run
 # ──────────────────────────────────────────────────────────────────────────

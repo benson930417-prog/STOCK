@@ -47,6 +47,7 @@ from src.ui.margin_risk_tab import render_margin_risk_tab
 from src.ui.tag_flow_tab import render_tag_flow_tab
 from src.ui.tag_flow_v2_tab import render_tag_flow_v2_tab
 from src.ui.etf_intent_v3_tab import render_etf_intent_v3_tab
+from src.ui.etf_consensus_v4_tab import render_etf_consensus_v4_tab
 from scripts.master_manual_positions import (
     CASH_LABEL as MANUAL_CASH_LABEL,
     MANUAL_PATH as MANUAL_POSITIONS_PATH,
@@ -2465,7 +2466,8 @@ try:
 
     (tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf, tab_passive_etf,
      tab_master_holding, tab_etf_compare, tab_market_pulse, tab_margin_risk,
-     tab_tag_flow, tab_tag_flow_v2, tab_etf_intent_v3) = st.tabs(
+     tab_tag_flow, tab_tag_flow_v2, tab_etf_intent_v3,
+     tab_etf_consensus_v4) = st.tabs(
         [
             T(lang, "Overview", "總覽"),
             T(lang, "Leaderboard", "排行"),
@@ -2480,6 +2482,7 @@ try:
             "類股輪動",
             "ETF 動作",
             "ETF 意圖 V3",
+            "ETF 共識 V4",
         ]
     )
 
@@ -3980,6 +3983,11 @@ try:
 
     with tab_etf_intent_v3:
         render_etf_intent_v3_tab(
+            DATA_DIR=DATA_DIR,
+        )
+
+    with tab_etf_consensus_v4:
+        render_etf_consensus_v4_tab(
             DATA_DIR=DATA_DIR,
         )
 
