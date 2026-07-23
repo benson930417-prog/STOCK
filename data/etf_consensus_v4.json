@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated": "2026-07-24T09:05:08+10:00",
+  "generated": "2026-07-24T09:09:23+10:00",
   "as_of": "2026-07-23",
   "etfs": [
     "00403A",
@@ -50,6 +50,8 @@
     ],
     "single_etf_score_can_confirm": false,
     "ordinary_single_etf_actions_hidden": true,
+    "minimum_watch_entry_ratio": 0.5,
+    "minimum_watch_exit_ratio": 1.0,
     "concepts_interpreted": false
   },
   "signals": {
@@ -980,376 +982,6 @@
         }
       },
       {
-        "stock_id": "3042",
-        "name": "台灣晶技",
-        "category": "被動元件",
-        "state": "watch",
-        "direction": -1,
-        "score": 48,
-        "score_label": "觀察成熟度",
-        "score_components": {
-          "event_quality": 40,
-          "relative_size": 1,
-          "repeat_action": 7,
-          "latent_second_etf": 0
-        },
-        "transition": "高資訊觀察延續",
-        "watch_kind": "full_exit",
-        "participants": [
-          "00991A"
-        ],
-        "etf_label": "991",
-        "breadth": 1,
-        "first_seen_date": "2026-07-21",
-        "confirmed_date": "",
-        "last_confirmed_date": "",
-        "state_days": 3,
-        "evidence": [
-          {
-            "etf": "00991A",
-            "etf_label": "991",
-            "direction": -1,
-            "signal_date": "2026-07-21",
-            "active_flow": -0.002,
-            "significance_ratio": 0.1,
-            "raw_delta_shares": -9000,
-            "position_event": "full_exit",
-            "ewma_3": -0.0161,
-            "ewma_10": -0.0211,
-            "ewma_20": -0.0127
-          }
-        ],
-        "etf_trends": {
-          "00991A": [
-            {
-              "date": "2026-06-25",
-              "ratio": 0.0,
-              "active_flow": -1.4e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-06-26",
-              "ratio": 0.0,
-              "active_flow": -1.8e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-06-29",
-              "ratio": 0.0,
-              "active_flow": -3.7e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-06-30",
-              "ratio": 0.0,
-              "active_flow": -1.6e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-01",
-              "ratio": 0.0,
-              "active_flow": -1.2e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-02",
-              "ratio": 0.0,
-              "active_flow": -5e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-03",
-              "ratio": 0.0,
-              "active_flow": -3.9e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-06",
-              "ratio": 0.0,
-              "active_flow": -0.000113,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-07",
-              "ratio": 0.0,
-              "active_flow": -5.3e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-08",
-              "ratio": 0.0,
-              "active_flow": -8.1e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-09",
-              "ratio": 0.0,
-              "active_flow": -1.1e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-13",
-              "ratio": 0.0,
-              "active_flow": -2.1e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-14",
-              "ratio": 0.0,
-              "active_flow": -8.2e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-15",
-              "ratio": 0.0,
-              "active_flow": -1.2e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-16",
-              "ratio": 0.0,
-              "active_flow": -1.8e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-17",
-              "ratio": 0.0,
-              "active_flow": -7.1e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-20",
-              "ratio": 0.0,
-              "active_flow": -5.7e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-21",
-              "ratio": -0.1,
-              "active_flow": -0.002,
-              "significance_ratio": 0.1,
-              "significant": true
-            },
-            {
-              "date": "2026-07-22",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-23",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            }
-          ]
-        }
-      },
-      {
-        "stock_id": "8210",
-        "name": "勤誠興業",
-        "category": "機殼",
-        "state": "watch",
-        "direction": -1,
-        "score": 47,
-        "score_label": "觀察成熟度",
-        "score_components": {
-          "event_quality": 40,
-          "relative_size": 0,
-          "repeat_action": 7,
-          "latent_second_etf": 0
-        },
-        "transition": "高資訊觀察延續",
-        "watch_kind": "full_exit",
-        "participants": [
-          "00991A"
-        ],
-        "etf_label": "991",
-        "breadth": 1,
-        "first_seen_date": "2026-07-21",
-        "confirmed_date": "",
-        "last_confirmed_date": "",
-        "state_days": 3,
-        "evidence": [
-          {
-            "etf": "00991A",
-            "etf_label": "991",
-            "direction": -1,
-            "signal_date": "2026-07-21",
-            "active_flow": -0.001,
-            "significance_ratio": 0.05,
-            "raw_delta_shares": -1000,
-            "position_event": "full_exit",
-            "ewma_3": -0.0806,
-            "ewma_10": -0.1666,
-            "ewma_20": -0.1212
-          }
-        ],
-        "etf_trends": {
-          "00991A": [
-            {
-              "date": "2026-06-25",
-              "ratio": 0.0,
-              "active_flow": -0.006282,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-06-26",
-              "ratio": 0.0,
-              "active_flow": -0.011572,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-06-29",
-              "ratio": 0.0,
-              "active_flow": -0.015969,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-06-30",
-              "ratio": 0.0,
-              "active_flow": -0.009976,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-01",
-              "ratio": 0.0,
-              "active_flow": -0.007824,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-02",
-              "ratio": -3.0,
-              "active_flow": -0.516733,
-              "significance_ratio": 25.84,
-              "significant": true
-            },
-            {
-              "date": "2026-07-03",
-              "ratio": 0.0,
-              "active_flow": -0.009625,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-06",
-              "ratio": 0.0,
-              "active_flow": -0.027299,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-07",
-              "ratio": -3.0,
-              "active_flow": -0.714284,
-              "significance_ratio": 35.71,
-              "significant": true
-            },
-            {
-              "date": "2026-07-08",
-              "ratio": 0.0,
-              "active_flow": -5.4e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-09",
-              "ratio": 0.0,
-              "active_flow": -7e-06,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-13",
-              "ratio": 0.0,
-              "active_flow": -2.1e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-14",
-              "ratio": 0.0,
-              "active_flow": -8.2e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-15",
-              "ratio": 0.0,
-              "active_flow": -6e-06,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-16",
-              "ratio": 0.0,
-              "active_flow": -9e-06,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-17",
-              "ratio": 0.0,
-              "active_flow": -7.1e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-20",
-              "ratio": 0.0,
-              "active_flow": -5.7e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-21",
-              "ratio": -0.05,
-              "active_flow": -0.001,
-              "significance_ratio": 0.05,
-              "significant": true
-            },
-            {
-              "date": "2026-07-22",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-23",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            }
-          ]
-        }
-      },
-      {
         "stock_id": "6285",
         "name": "啟碁",
         "category": "網通",
@@ -1528,191 +1160,6 @@
               "date": "2026-07-23",
               "ratio": 0.0,
               "active_flow": 3.2e-05,
-              "significance_ratio": 0.0,
-              "significant": false
-            }
-          ]
-        }
-      },
-      {
-        "stock_id": "2886",
-        "name": "兆豐金融",
-        "category": "金控",
-        "state": "watch",
-        "direction": 1,
-        "score": 42,
-        "score_label": "觀察成熟度",
-        "score_components": {
-          "event_quality": 35,
-          "relative_size": 0,
-          "repeat_action": 7,
-          "latent_second_etf": 0
-        },
-        "transition": "高資訊觀察延續",
-        "watch_kind": "new_position",
-        "participants": [
-          "00991A"
-        ],
-        "etf_label": "991",
-        "breadth": 1,
-        "first_seen_date": "2026-07-21",
-        "confirmed_date": "",
-        "last_confirmed_date": "",
-        "state_days": 3,
-        "evidence": [
-          {
-            "etf": "00991A",
-            "etf_label": "991",
-            "direction": 1,
-            "signal_date": "2026-07-21",
-            "active_flow": 0.001,
-            "significance_ratio": 0.05,
-            "raw_delta_shares": 9000,
-            "position_event": "new_position",
-            "ewma_3": 0.0065,
-            "ewma_10": 0.0029,
-            "ewma_20": 0.0016
-          }
-        ],
-        "etf_trends": {
-          "00991A": [
-            {
-              "date": "2026-06-25",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-06-26",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-06-29",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-06-30",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-01",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-02",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-03",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-06",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-07",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-08",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-09",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-13",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-14",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-15",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-16",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-17",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-20",
-              "ratio": 0.0,
-              "active_flow": 0.0,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-21",
-              "ratio": 0.05,
-              "active_flow": 0.001,
-              "significance_ratio": 0.05,
-              "significant": true
-            },
-            {
-              "date": "2026-07-22",
-              "ratio": 0.0,
-              "active_flow": -1e-06,
-              "significance_ratio": 0.0,
-              "significant": false
-            },
-            {
-              "date": "2026-07-23",
-              "ratio": 0.0,
-              "active_flow": -1e-06,
               "significance_ratio": 0.0,
               "significant": false
             }
@@ -10441,88 +9888,6 @@
           ]
         },
         {
-          "stock_id": "3042",
-          "name": "台灣晶技",
-          "category": "被動元件",
-          "state": "watch",
-          "direction": -1,
-          "score": 48,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 1,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "新增高資訊觀察",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-21",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-07-21",
-              "active_flow": -0.002,
-              "significance_ratio": 0.1,
-              "raw_delta_shares": -9000,
-              "position_event": "full_exit",
-              "ewma_3": -0.0256,
-              "ewma_10": -0.0242,
-              "ewma_20": -0.0136
-            }
-          ]
-        },
-        {
-          "stock_id": "8210",
-          "name": "勤誠興業",
-          "category": "機殼",
-          "state": "watch",
-          "direction": -1,
-          "score": 47,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "新增高資訊觀察",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-21",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-07-21",
-              "active_flow": -0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": -1000,
-              "position_event": "full_exit",
-              "ewma_3": -0.1279,
-              "ewma_10": -0.1914,
-              "ewma_20": -0.1299
-            }
-          ]
-        },
-        {
           "stock_id": "6285",
           "name": "啟碁",
           "category": "網通",
@@ -10560,47 +9925,6 @@
               "ewma_3": 0.1031,
               "ewma_10": 0.0335,
               "ewma_20": 0.017
-            }
-          ]
-        },
-        {
-          "stock_id": "2886",
-          "name": "兆豐金融",
-          "category": "金控",
-          "state": "watch",
-          "direction": 1,
-          "score": 42,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 35,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "新增高資訊觀察",
-          "watch_kind": "new_position",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-21",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-07-21",
-              "active_flow": 0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": 9000,
-              "position_event": "new_position",
-              "ewma_3": 0.0103,
-              "ewma_10": 0.0033,
-              "ewma_20": 0.0017
             }
           ]
         }
@@ -11575,88 +10899,6 @@
           ]
         },
         {
-          "stock_id": "3042",
-          "name": "台灣晶技",
-          "category": "被動元件",
-          "state": "watch",
-          "direction": -1,
-          "score": 48,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 1,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-21",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-07-21",
-              "active_flow": -0.002,
-              "significance_ratio": 0.1,
-              "raw_delta_shares": -9000,
-              "position_event": "full_exit",
-              "ewma_3": -0.0203,
-              "ewma_10": -0.0226,
-              "ewma_20": -0.0132
-            }
-          ]
-        },
-        {
-          "stock_id": "8210",
-          "name": "勤誠興業",
-          "category": "機殼",
-          "state": "watch",
-          "direction": -1,
-          "score": 47,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-21",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-07-21",
-              "active_flow": -0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": -1000,
-              "position_event": "full_exit",
-              "ewma_3": -0.1015,
-              "ewma_10": -0.1785,
-              "ewma_20": -0.1254
-            }
-          ]
-        },
-        {
           "stock_id": "6285",
           "name": "啟碁",
           "category": "網通",
@@ -11694,47 +10936,6 @@
               "ewma_3": 0.2368,
               "ewma_10": 0.0815,
               "ewma_20": 0.042
-            }
-          ]
-        },
-        {
-          "stock_id": "2886",
-          "name": "兆豐金融",
-          "category": "金控",
-          "state": "watch",
-          "direction": 1,
-          "score": 42,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 35,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "new_position",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-21",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-07-21",
-              "active_flow": 0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": 9000,
-              "position_event": "new_position",
-              "ewma_3": 0.0082,
-              "ewma_10": 0.0031,
-              "ewma_20": 0.0016
             }
           ]
         }
@@ -13012,88 +12213,6 @@
           ]
         },
         {
-          "stock_id": "3042",
-          "name": "台灣晶技",
-          "category": "被動元件",
-          "state": "watch",
-          "direction": -1,
-          "score": 48,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 1,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-21",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-07-21",
-              "active_flow": -0.002,
-              "significance_ratio": 0.1,
-              "raw_delta_shares": -9000,
-              "position_event": "full_exit",
-              "ewma_3": -0.0161,
-              "ewma_10": -0.0211,
-              "ewma_20": -0.0127
-            }
-          ]
-        },
-        {
-          "stock_id": "8210",
-          "name": "勤誠興業",
-          "category": "機殼",
-          "state": "watch",
-          "direction": -1,
-          "score": 47,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-21",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-07-21",
-              "active_flow": -0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": -1000,
-              "position_event": "full_exit",
-              "ewma_3": -0.0806,
-              "ewma_10": -0.1666,
-              "ewma_20": -0.1212
-            }
-          ]
-        },
-        {
           "stock_id": "6285",
           "name": "啟碁",
           "category": "網通",
@@ -13131,47 +12250,6 @@
               "ewma_3": 0.1879,
               "ewma_10": 0.0761,
               "ewma_20": 0.0406
-            }
-          ]
-        },
-        {
-          "stock_id": "2886",
-          "name": "兆豐金融",
-          "category": "金控",
-          "state": "watch",
-          "direction": 1,
-          "score": 42,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 35,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "new_position",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-21",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-07-21",
-              "active_flow": 0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": 9000,
-              "position_event": "new_position",
-              "ewma_3": 0.0065,
-              "ewma_10": 0.0029,
-              "ewma_20": 0.0016
             }
           ]
         },
@@ -14226,2046 +13304,6 @@
           ]
         }
       ]
-    },
-    "2026-06-15": {
-      "watching": [
-        {
-          "stock_id": "1590",
-          "name": "亞德客-KY",
-          "category": "電機",
-          "state": "watch",
-          "direction": -1,
-          "score": 72,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 25,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-06-12",
-              "active_flow": -1.346,
-              "significance_ratio": 67.3,
-              "raw_delta_shares": -400000,
-              "position_event": "full_exit",
-              "ewma_3": -0.4912,
-              "ewma_10": -0.1874,
-              "ewma_20": -0.0987
-            }
-          ]
-        },
-        {
-          "stock_id": "3042",
-          "name": "台灣晶技",
-          "category": "被動元件",
-          "state": "watch",
-          "direction": 1,
-          "score": 67,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 35,
-            "relative_size": 25,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "new_position",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 1.972,
-              "significance_ratio": 98.6,
-              "raw_delta_shares": 5200000,
-              "position_event": "new_position",
-              "ewma_3": 0.4912,
-              "ewma_10": 0.1874,
-              "ewma_20": 0.0987
-            }
-          ]
-        },
-        {
-          "stock_id": "3211",
-          "name": "順達",
-          "category": "二次電池",
-          "state": "watch",
-          "direction": 1,
-          "score": 67,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 35,
-            "relative_size": 25,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "new_position",
-          "participants": [
-            "00403A"
-          ],
-          "etf_label": "403",
-          "breadth": 1,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.16,
-              "significance_ratio": 8.0,
-              "raw_delta_shares": 700000,
-              "position_event": "new_position",
-              "ewma_3": 0.6159,
-              "ewma_10": 0.2279,
-              "ewma_20": 0.1193
-            }
-          ]
-        },
-        {
-          "stock_id": "1319",
-          "name": "東陽",
-          "category": "汽車零組件",
-          "state": "watch",
-          "direction": -1,
-          "score": 51,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 4,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "新增高資訊觀察",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00981A"
-          ],
-          "etf_label": "981",
-          "breadth": 1,
-          "first_seen_date": "2026-06-15",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": -1,
-              "signal_date": "2026-06-15",
-              "active_flow": -0.01,
-              "significance_ratio": 0.5,
-              "raw_delta_shares": -278000,
-              "position_event": "full_exit",
-              "ewma_3": -0.1031,
-              "ewma_10": -0.0335,
-              "ewma_20": -0.017
-            }
-          ]
-        },
-        {
-          "stock_id": "2890",
-          "name": "永豐金融",
-          "category": "金控",
-          "state": "watch",
-          "direction": -1,
-          "score": 47,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-06-12",
-              "active_flow": -0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": -9000,
-              "position_event": "full_exit",
-              "ewma_3": -0.0082,
-              "ewma_10": -0.0031,
-              "ewma_20": -0.0016
-            }
-          ]
-        }
-      ],
-      "buying": [
-        {
-          "stock_id": "2454",
-          "name": "聯發科技",
-          "category": "IC-設計",
-          "state": "buy",
-          "direction": 1,
-          "score": 66,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 35,
-            "joint_persistence": 6,
-            "relative_strength": 15,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "403・981・991",
-          "breadth": 3,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-15",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-15",
-              "active_flow": 0.24706,
-              "significance_ratio": 2.83,
-              "raw_delta_shares": 80000,
-              "position_event": "increase",
-              "ewma_3": 1.0745,
-              "ewma_10": 0.3768,
-              "ewma_20": 0.195
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-15",
-              "active_flow": 0.263977,
-              "significance_ratio": 13.2,
-              "raw_delta_shares": 212000,
-              "position_event": "increase",
-              "ewma_3": 0.6189,
-              "ewma_10": 0.2009,
-              "ewma_20": 0.1022
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.436183,
-              "significance_ratio": 21.81,
-              "raw_delta_shares": 210000,
-              "position_event": "increase",
-              "ewma_3": 0.591,
-              "ewma_10": 0.2199,
-              "ewma_20": 0.1152
-            }
-          ]
-        },
-        {
-          "stock_id": "4958",
-          "name": "臻鼎-KY",
-          "category": "PCB-製造",
-          "state": "buy",
-          "direction": 1,
-          "score": 63,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 35,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "403・981・991",
-          "breadth": 3,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-15",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.101399,
-              "significance_ratio": 5.07,
-              "raw_delta_shares": 300000,
-              "position_event": "increase",
-              "ewma_3": 0.6435,
-              "ewma_10": 0.2369,
-              "ewma_20": 0.1239
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.28,
-              "significance_ratio": 14.0,
-              "raw_delta_shares": 1428000,
-              "position_event": "new_position",
-              "ewma_3": 0.4912,
-              "ewma_10": 0.1874,
-              "ewma_20": 0.0987
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 1.865,
-              "significance_ratio": 93.25,
-              "raw_delta_shares": 2000000,
-              "position_event": "new_position",
-              "ewma_3": 0.4912,
-              "ewma_10": 0.1874,
-              "ewma_20": 0.0987
-            }
-          ]
-        },
-        {
-          "stock_id": "6223",
-          "name": "旺矽科技",
-          "category": "IC-封測",
-          "state": "buy",
-          "direction": 1,
-          "score": 63,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 35,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "403・981・991",
-          "breadth": 3,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-15",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.123434,
-              "significance_ratio": 6.17,
-              "raw_delta_shares": 30000,
-              "position_event": "increase",
-              "ewma_3": 0.4912,
-              "ewma_10": 0.1874,
-              "ewma_20": 0.0987
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.23492,
-              "significance_ratio": 11.75,
-              "raw_delta_shares": 110000,
-              "position_event": "increase",
-              "ewma_3": 0.4912,
-              "ewma_10": 0.1874,
-              "ewma_20": 0.0987
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.379338,
-              "significance_ratio": 18.97,
-              "raw_delta_shares": 110000,
-              "position_event": "increase",
-              "ewma_3": 0.4912,
-              "ewma_10": 0.1874,
-              "ewma_20": 0.0987
-            }
-          ]
-        },
-        {
-          "stock_id": "2303",
-          "name": "聯華電子",
-          "category": "IC-代工",
-          "state": "buy",
-          "direction": 1,
-          "score": 53,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A"
-          ],
-          "etf_label": "403・981",
-          "breadth": 2,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-15",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.344931,
-              "significance_ratio": 17.25,
-              "raw_delta_shares": 4400000,
-              "position_event": "increase",
-              "ewma_3": 0.4912,
-              "ewma_10": 0.1874,
-              "ewma_20": 0.0987
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.094298,
-              "significance_ratio": 4.71,
-              "raw_delta_shares": 2200000,
-              "position_event": "increase",
-              "ewma_3": 0.5914,
-              "ewma_10": 0.22,
-              "ewma_20": 0.1152
-            }
-          ]
-        },
-        {
-          "stock_id": "6488",
-          "name": "環球晶",
-          "category": "晶圓材料",
-          "state": "buy",
-          "direction": 1,
-          "score": 53,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "新形成買方共識",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A"
-          ],
-          "etf_label": "403・981",
-          "breadth": 2,
-          "first_seen_date": "2026-06-15",
-          "confirmed_date": "2026-06-15",
-          "last_confirmed_date": "2026-06-15",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-15",
-              "active_flow": 0.114655,
-              "significance_ratio": 5.73,
-              "raw_delta_shares": 203000,
-              "position_event": "increase",
-              "ewma_3": 0.6189,
-              "ewma_10": 0.2009,
-              "ewma_20": 0.1022
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-15",
-              "active_flow": 0.11,
-              "significance_ratio": 5.5,
-              "raw_delta_shares": 350000,
-              "position_event": "new_position",
-              "ewma_3": 0.6189,
-              "ewma_10": 0.2009,
-              "ewma_20": 0.1022
-            }
-          ]
-        },
-        {
-          "stock_id": "6805",
-          "name": "富世達",
-          "category": "連接元件",
-          "state": "buy",
-          "direction": 1,
-          "score": 47,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 6,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "981・991",
-          "breadth": 2,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-15",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.029812,
-              "significance_ratio": 1.49,
-              "raw_delta_shares": 50000,
-              "position_event": "increase",
-              "ewma_3": 0.2441,
-              "ewma_10": 0.0931,
-              "ewma_20": 0.049
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 1.665,
-              "significance_ratio": 83.25,
-              "raw_delta_shares": 540000,
-              "position_event": "new_position",
-              "ewma_3": 0.2853,
-              "ewma_10": 0.1206,
-              "ewma_20": 0.0647
-            }
-          ]
-        }
-      ],
-      "selling": []
-    },
-    "2026-06-16": {
-      "watching": [
-        {
-          "stock_id": "1590",
-          "name": "亞德客-KY",
-          "category": "電機",
-          "state": "watch",
-          "direction": -1,
-          "score": 72,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 25,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-06-12",
-              "active_flow": -1.346,
-              "significance_ratio": 67.3,
-              "raw_delta_shares": -400000,
-              "position_event": "full_exit",
-              "ewma_3": -0.3899,
-              "ewma_10": -0.1749,
-              "ewma_20": -0.0953
-            }
-          ]
-        },
-        {
-          "stock_id": "2404",
-          "name": "漢唐集成",
-          "category": "儀器設備工程",
-          "state": "watch",
-          "direction": -1,
-          "score": 72,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 25,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "新增高資訊觀察",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00981A"
-          ],
-          "etf_label": "981",
-          "breadth": 1,
-          "first_seen_date": "2026-06-16",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": -1,
-              "signal_date": "2026-06-16",
-              "active_flow": -0.56,
-              "significance_ratio": 28.0,
-              "raw_delta_shares": -1200000,
-              "position_event": "full_exit",
-              "ewma_3": -0.6189,
-              "ewma_10": -0.2009,
-              "ewma_20": -0.1022
-            }
-          ]
-        },
-        {
-          "stock_id": "3042",
-          "name": "台灣晶技",
-          "category": "被動元件",
-          "state": "watch",
-          "direction": 1,
-          "score": 67,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 35,
-            "relative_size": 25,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "new_position",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 1.972,
-              "significance_ratio": 98.6,
-              "raw_delta_shares": 5200000,
-              "position_event": "new_position",
-              "ewma_3": 0.3899,
-              "ewma_10": 0.1749,
-              "ewma_20": 0.0953
-            }
-          ]
-        },
-        {
-          "stock_id": "3211",
-          "name": "順達",
-          "category": "二次電池",
-          "state": "watch",
-          "direction": 1,
-          "score": 67,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 35,
-            "relative_size": 25,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "new_position",
-          "participants": [
-            "00403A"
-          ],
-          "etf_label": "403",
-          "breadth": 1,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.16,
-              "significance_ratio": 8.0,
-              "raw_delta_shares": 700000,
-              "position_event": "new_position",
-              "ewma_3": 0.6606,
-              "ewma_10": 0.2684,
-              "ewma_20": 0.1436
-            }
-          ]
-        },
-        {
-          "stock_id": "6415",
-          "name": "矽力*-KY",
-          "category": "IC-設計",
-          "state": "watch",
-          "direction": 1,
-          "score": 67,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 35,
-            "relative_size": 25,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "新增高資訊觀察",
-          "watch_kind": "new_position",
-          "participants": [
-            "00403A"
-          ],
-          "etf_label": "403",
-          "breadth": 1,
-          "first_seen_date": "2026-06-16",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-16",
-              "active_flow": 0.17,
-              "significance_ratio": 8.5,
-              "raw_delta_shares": 500000,
-              "position_event": "new_position",
-              "ewma_3": 0.6189,
-              "ewma_10": 0.2009,
-              "ewma_20": 0.1022
-            }
-          ]
-        },
-        {
-          "stock_id": "3017",
-          "name": "奇鋐科技",
-          "category": "NB與手機零組件",
-          "state": "watch",
-          "direction": -1,
-          "score": 56,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 38,
-            "relative_size": 11,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "新增高資訊觀察",
-          "watch_kind": "reversal",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-06-16",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-06-16",
-              "active_flow": -0.590693,
-              "significance_ratio": 1.35,
-              "raw_delta_shares": -150000,
-              "position_event": "decrease",
-              "ewma_3": 0.1124,
-              "ewma_10": 0.0848,
-              "ewma_20": 0.0495
-            }
-          ]
-        },
-        {
-          "stock_id": "1319",
-          "name": "東陽",
-          "category": "汽車零組件",
-          "state": "watch",
-          "direction": -1,
-          "score": 51,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 4,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00981A"
-          ],
-          "etf_label": "981",
-          "breadth": 1,
-          "first_seen_date": "2026-06-15",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": -1,
-              "signal_date": "2026-06-15",
-              "active_flow": -0.01,
-              "significance_ratio": 0.5,
-              "raw_delta_shares": -278000,
-              "position_event": "full_exit",
-              "ewma_3": -0.0819,
-              "ewma_10": -0.0312,
-              "ewma_20": -0.0165
-            }
-          ]
-        },
-        {
-          "stock_id": "2890",
-          "name": "永豐金融",
-          "category": "金控",
-          "state": "watch",
-          "direction": -1,
-          "score": 47,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-06-12",
-              "active_flow": -0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": -9000,
-              "position_event": "full_exit",
-              "ewma_3": -0.0065,
-              "ewma_10": -0.0029,
-              "ewma_20": -0.0016
-            }
-          ]
-        }
-      ],
-      "buying": [
-        {
-          "stock_id": "2454",
-          "name": "聯發科技",
-          "category": "IC-設計",
-          "state": "buy",
-          "direction": 1,
-          "score": 66,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 35,
-            "joint_persistence": 6,
-            "relative_strength": 15,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "403・981・991",
-          "breadth": 3,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-16",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-15",
-              "active_flow": 0.24706,
-              "significance_ratio": 2.83,
-              "raw_delta_shares": 80000,
-              "position_event": "increase",
-              "ewma_3": 0.8528,
-              "ewma_10": 0.3515,
-              "ewma_20": 0.1884
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-15",
-              "active_flow": 0.263977,
-              "significance_ratio": 13.2,
-              "raw_delta_shares": 212000,
-              "position_event": "increase",
-              "ewma_3": 0.4912,
-              "ewma_10": 0.1874,
-              "ewma_20": 0.0987
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.436183,
-              "significance_ratio": 21.81,
-              "raw_delta_shares": 210000,
-              "position_event": "increase",
-              "ewma_3": 0.4691,
-              "ewma_10": 0.2051,
-              "ewma_20": 0.1113
-            }
-          ]
-        },
-        {
-          "stock_id": "4958",
-          "name": "臻鼎-KY",
-          "category": "PCB-製造",
-          "state": "buy",
-          "direction": 1,
-          "score": 63,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 35,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "403・981・991",
-          "breadth": 3,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-16",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-16",
-              "active_flow": 0.213866,
-              "significance_ratio": 2.23,
-              "raw_delta_shares": 420000,
-              "position_event": "increase",
-              "ewma_3": 0.9699,
-              "ewma_10": 0.3701,
-              "ewma_20": 0.1955
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.28,
-              "significance_ratio": 14.0,
-              "raw_delta_shares": 1428000,
-              "position_event": "new_position",
-              "ewma_3": 0.3899,
-              "ewma_10": 0.1749,
-              "ewma_20": 0.0953
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 1.865,
-              "significance_ratio": 93.25,
-              "raw_delta_shares": 2000000,
-              "position_event": "new_position",
-              "ewma_3": 0.3899,
-              "ewma_10": 0.1749,
-              "ewma_20": 0.0953
-            }
-          ]
-        },
-        {
-          "stock_id": "6223",
-          "name": "旺矽科技",
-          "category": "IC-封測",
-          "state": "buy",
-          "direction": 1,
-          "score": 63,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 35,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "403・981・991",
-          "breadth": 3,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-16",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.123434,
-              "significance_ratio": 6.17,
-              "raw_delta_shares": 30000,
-              "position_event": "increase",
-              "ewma_3": 0.3899,
-              "ewma_10": 0.1749,
-              "ewma_20": 0.0953
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.23492,
-              "significance_ratio": 11.75,
-              "raw_delta_shares": 110000,
-              "position_event": "increase",
-              "ewma_3": 0.3899,
-              "ewma_10": 0.1749,
-              "ewma_20": 0.0953
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.379338,
-              "significance_ratio": 18.97,
-              "raw_delta_shares": 110000,
-              "position_event": "increase",
-              "ewma_3": 0.3899,
-              "ewma_10": 0.1749,
-              "ewma_20": 0.0953
-            }
-          ]
-        },
-        {
-          "stock_id": "2303",
-          "name": "聯華電子",
-          "category": "IC-代工",
-          "state": "buy",
-          "direction": 1,
-          "score": 53,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A"
-          ],
-          "etf_label": "403・981",
-          "breadth": 2,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-16",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.344931,
-              "significance_ratio": 17.25,
-              "raw_delta_shares": 4400000,
-              "position_event": "increase",
-              "ewma_3": 0.3899,
-              "ewma_10": 0.1749,
-              "ewma_20": 0.0953
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.094298,
-              "significance_ratio": 4.71,
-              "raw_delta_shares": 2200000,
-              "position_event": "increase",
-              "ewma_3": 0.4694,
-              "ewma_10": 0.2052,
-              "ewma_20": 0.1113
-            }
-          ]
-        },
-        {
-          "stock_id": "2327",
-          "name": "國巨股份",
-          "category": "被動元件",
-          "state": "buy",
-          "direction": 1,
-          "score": 53,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "新形成買方共識",
-          "watch_kind": "",
-          "participants": [
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "981・991",
-          "breadth": 2,
-          "first_seen_date": "2026-06-16",
-          "confirmed_date": "2026-06-16",
-          "last_confirmed_date": "2026-06-16",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-16",
-              "active_flow": 0.491111,
-              "significance_ratio": 24.56,
-              "raw_delta_shares": 1624000,
-              "position_event": "increase",
-              "ewma_3": 0.6189,
-              "ewma_10": 0.2009,
-              "ewma_20": 0.1022
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.101599,
-              "significance_ratio": 5.08,
-              "raw_delta_shares": 1450000,
-              "position_event": "increase",
-              "ewma_3": 0.3899,
-              "ewma_10": 0.1749,
-              "ewma_20": 0.0953
-            }
-          ]
-        },
-        {
-          "stock_id": "6274",
-          "name": "台燿科技",
-          "category": "PCB-材料設備",
-          "state": "buy",
-          "direction": 1,
-          "score": 53,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "新形成買方共識",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00991A"
-          ],
-          "etf_label": "403・991",
-          "breadth": 2,
-          "first_seen_date": "2026-06-16",
-          "confirmed_date": "2026-06-16",
-          "last_confirmed_date": "2026-06-16",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-16",
-              "active_flow": 0.164574,
-              "significance_ratio": 8.23,
-              "raw_delta_shares": 130000,
-              "position_event": "increase",
-              "ewma_3": 0.6189,
-              "ewma_10": 0.2009,
-              "ewma_20": 0.1022
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 2.998039,
-              "significance_ratio": 149.9,
-              "raw_delta_shares": 1279000,
-              "position_event": "increase",
-              "ewma_3": 0.3991,
-              "ewma_10": 0.1784,
-              "ewma_20": 0.0972
-            }
-          ]
-        },
-        {
-          "stock_id": "6488",
-          "name": "環球晶",
-          "category": "晶圓材料",
-          "state": "buy",
-          "direction": 1,
-          "score": 53,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A"
-          ],
-          "etf_label": "403・981",
-          "breadth": 2,
-          "first_seen_date": "2026-06-15",
-          "confirmed_date": "2026-06-15",
-          "last_confirmed_date": "2026-06-16",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-15",
-              "active_flow": 0.114655,
-              "significance_ratio": 5.73,
-              "raw_delta_shares": 203000,
-              "position_event": "increase",
-              "ewma_3": 0.4912,
-              "ewma_10": 0.1874,
-              "ewma_20": 0.0987
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-15",
-              "active_flow": 0.11,
-              "significance_ratio": 5.5,
-              "raw_delta_shares": 350000,
-              "position_event": "new_position",
-              "ewma_3": 0.4912,
-              "ewma_10": 0.1874,
-              "ewma_20": 0.0987
-            }
-          ]
-        },
-        {
-          "stock_id": "6805",
-          "name": "富世達",
-          "category": "連接元件",
-          "state": "buy",
-          "direction": 1,
-          "score": 47,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 6,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "981・991",
-          "breadth": 2,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-16",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.029812,
-              "significance_ratio": 1.49,
-              "raw_delta_shares": 50000,
-              "position_event": "increase",
-              "ewma_3": 0.1937,
-              "ewma_10": 0.0869,
-              "ewma_20": 0.0474
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 1.665,
-              "significance_ratio": 83.25,
-              "raw_delta_shares": 540000,
-              "position_event": "new_position",
-              "ewma_3": 0.2264,
-              "ewma_10": 0.1125,
-              "ewma_20": 0.0625
-            }
-          ]
-        }
-      ],
-      "selling": []
-    },
-    "2026-06-17": {
-      "watching": [
-        {
-          "stock_id": "2404",
-          "name": "漢唐集成",
-          "category": "儀器設備工程",
-          "state": "watch",
-          "direction": -1,
-          "score": 72,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 25,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00981A"
-          ],
-          "etf_label": "981",
-          "breadth": 1,
-          "first_seen_date": "2026-06-16",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": -1,
-              "signal_date": "2026-06-16",
-              "active_flow": -0.56,
-              "significance_ratio": 28.0,
-              "raw_delta_shares": -1200000,
-              "position_event": "full_exit",
-              "ewma_3": -0.4912,
-              "ewma_10": -0.1874,
-              "ewma_20": -0.0987
-            }
-          ]
-        },
-        {
-          "stock_id": "6415",
-          "name": "矽力*-KY",
-          "category": "IC-設計",
-          "state": "watch",
-          "direction": 1,
-          "score": 67,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 35,
-            "relative_size": 25,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "new_position",
-          "participants": [
-            "00403A"
-          ],
-          "etf_label": "403",
-          "breadth": 1,
-          "first_seen_date": "2026-06-16",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-16",
-              "active_flow": 0.17,
-              "significance_ratio": 8.5,
-              "raw_delta_shares": 500000,
-              "position_event": "new_position",
-              "ewma_3": 0.6723,
-              "ewma_10": 0.2462,
-              "ewma_20": 0.1286
-            }
-          ]
-        },
-        {
-          "stock_id": "3017",
-          "name": "奇鋐科技",
-          "category": "NB與手機零組件",
-          "state": "watch",
-          "direction": -1,
-          "score": 56,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 38,
-            "relative_size": 11,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "reversal",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-06-16",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-06-16",
-              "active_flow": -0.590693,
-              "significance_ratio": 1.35,
-              "raw_delta_shares": -150000,
-              "position_event": "decrease",
-              "ewma_3": -0.1163,
-              "ewma_10": 0.0124,
-              "ewma_20": 0.0139
-            }
-          ]
-        },
-        {
-          "stock_id": "1319",
-          "name": "東陽",
-          "category": "汽車零組件",
-          "state": "watch",
-          "direction": -1,
-          "score": 51,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 4,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00981A"
-          ],
-          "etf_label": "981",
-          "breadth": 1,
-          "first_seen_date": "2026-06-15",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": -1,
-              "signal_date": "2026-06-15",
-              "active_flow": -0.01,
-              "significance_ratio": 0.5,
-              "raw_delta_shares": -278000,
-              "position_event": "full_exit",
-              "ewma_3": -0.065,
-              "ewma_10": -0.0291,
-              "ewma_20": -0.0159
-            }
-          ]
-        },
-        {
-          "stock_id": "6805",
-          "name": "富世達",
-          "category": "連接元件",
-          "state": "watch",
-          "direction": 1,
-          "score": 42,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 30,
-            "relative_size": 12,
-            "repeat_action": 0,
-            "latent_second_etf": 0
-          },
-          "transition": "共識降溫，退回觀察",
-          "watch_kind": "consensus_cooling",
-          "participants": [
-            "00981A"
-          ],
-          "etf_label": "981",
-          "breadth": 1,
-          "first_seen_date": "2026-06-17",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-16",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.029812,
-              "significance_ratio": 1.49,
-              "raw_delta_shares": 50000,
-              "position_event": "increase",
-              "ewma_3": 0.1538,
-              "ewma_10": 0.0811,
-              "ewma_20": 0.0458
-            }
-          ]
-        }
-      ],
-      "buying": [
-        {
-          "stock_id": "2303",
-          "name": "聯華電子",
-          "category": "IC-代工",
-          "state": "buy",
-          "direction": 1,
-          "score": 63,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 35,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "403・981・991",
-          "breadth": 3,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-17",
-          "state_days": 4,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.344931,
-              "significance_ratio": 17.25,
-              "raw_delta_shares": 4400000,
-              "position_event": "increase",
-              "ewma_3": 0.3094,
-              "ewma_10": 0.1632,
-              "ewma_20": 0.0921
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.094298,
-              "significance_ratio": 4.71,
-              "raw_delta_shares": 2200000,
-              "position_event": "increase",
-              "ewma_3": 0.3725,
-              "ewma_10": 0.1915,
-              "ewma_20": 0.1075
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-17",
-              "active_flow": 1.902,
-              "significance_ratio": 95.1,
-              "raw_delta_shares": 8500000,
-              "position_event": "new_position",
-              "ewma_3": 0.6189,
-              "ewma_10": 0.2009,
-              "ewma_20": 0.1022
-            }
-          ]
-        },
-        {
-          "stock_id": "4958",
-          "name": "臻鼎-KY",
-          "category": "PCB-製造",
-          "state": "buy",
-          "direction": 1,
-          "score": 63,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 35,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "403・981・991",
-          "breadth": 3,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-17",
-          "state_days": 4,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-16",
-              "active_flow": 0.213866,
-              "significance_ratio": 2.23,
-              "raw_delta_shares": 420000,
-              "position_event": "increase",
-              "ewma_3": 0.7698,
-              "ewma_10": 0.3453,
-              "ewma_20": 0.1888
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.28,
-              "significance_ratio": 14.0,
-              "raw_delta_shares": 1428000,
-              "position_event": "new_position",
-              "ewma_3": 0.3094,
-              "ewma_10": 0.1632,
-              "ewma_20": 0.0921
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 1.865,
-              "significance_ratio": 93.25,
-              "raw_delta_shares": 2000000,
-              "position_event": "new_position",
-              "ewma_3": 0.3094,
-              "ewma_10": 0.1632,
-              "ewma_20": 0.0921
-            }
-          ]
-        },
-        {
-          "stock_id": "6223",
-          "name": "旺矽科技",
-          "category": "IC-封測",
-          "state": "buy",
-          "direction": 1,
-          "score": 63,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 35,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A",
-            "00991A"
-          ],
-          "etf_label": "403・981・991",
-          "breadth": 3,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-17",
-          "state_days": 4,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.123434,
-              "significance_ratio": 6.17,
-              "raw_delta_shares": 30000,
-              "position_event": "increase",
-              "ewma_3": 0.3094,
-              "ewma_10": 0.1632,
-              "ewma_20": 0.0921
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.23492,
-              "significance_ratio": 11.75,
-              "raw_delta_shares": 110000,
-              "position_event": "increase",
-              "ewma_3": 0.3094,
-              "ewma_10": 0.1632,
-              "ewma_20": 0.0921
-            },
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": 1,
-              "signal_date": "2026-06-12",
-              "active_flow": 0.379338,
-              "significance_ratio": 18.97,
-              "raw_delta_shares": 110000,
-              "position_event": "increase",
-              "ewma_3": 0.3094,
-              "ewma_10": 0.1632,
-              "ewma_20": 0.0921
-            }
-          ]
-        },
-        {
-          "stock_id": "2327",
-          "name": "國巨股份",
-          "category": "被動元件",
-          "state": "buy",
-          "direction": 1,
-          "score": 53,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A"
-          ],
-          "etf_label": "403・981",
-          "breadth": 2,
-          "first_seen_date": "2026-06-16",
-          "confirmed_date": "2026-06-16",
-          "last_confirmed_date": "2026-06-17",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-17",
-              "active_flow": 0.175082,
-              "significance_ratio": 8.75,
-              "raw_delta_shares": 150000,
-              "position_event": "increase",
-              "ewma_3": 0.6189,
-              "ewma_10": 0.2009,
-              "ewma_20": 0.1022
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-16",
-              "active_flow": 0.491111,
-              "significance_ratio": 24.56,
-              "raw_delta_shares": 1624000,
-              "position_event": "increase",
-              "ewma_3": 0.6059,
-              "ewma_10": 0.2247,
-              "ewma_20": 0.1176
-            }
-          ]
-        },
-        {
-          "stock_id": "2454",
-          "name": "聯發科技",
-          "category": "IC-設計",
-          "state": "buy",
-          "direction": 1,
-          "score": 53,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A"
-          ],
-          "etf_label": "403・981",
-          "breadth": 2,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "2026-06-12",
-          "last_confirmed_date": "2026-06-17",
-          "state_days": 4,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-15",
-              "active_flow": 0.24706,
-              "significance_ratio": 2.83,
-              "raw_delta_shares": 80000,
-              "position_event": "increase",
-              "ewma_3": 0.6769,
-              "ewma_10": 0.328,
-              "ewma_20": 0.182
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-15",
-              "active_flow": 0.263977,
-              "significance_ratio": 13.2,
-              "raw_delta_shares": 212000,
-              "position_event": "increase",
-              "ewma_3": 0.3899,
-              "ewma_10": 0.1749,
-              "ewma_20": 0.0953
-            }
-          ]
-        },
-        {
-          "stock_id": "6274",
-          "name": "台燿科技",
-          "category": "PCB-材料設備",
-          "state": "buy",
-          "direction": 1,
-          "score": 53,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A"
-          ],
-          "etf_label": "403・981",
-          "breadth": 2,
-          "first_seen_date": "2026-06-16",
-          "confirmed_date": "2026-06-16",
-          "last_confirmed_date": "2026-06-17",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-16",
-              "active_flow": 0.164574,
-              "significance_ratio": 8.23,
-              "raw_delta_shares": 130000,
-              "position_event": "increase",
-              "ewma_3": 0.6424,
-              "ewma_10": 0.2365,
-              "ewma_20": 0.1237
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-17",
-              "active_flow": 0.091021,
-              "significance_ratio": 4.55,
-              "raw_delta_shares": 164000,
-              "position_event": "increase",
-              "ewma_3": 0.6189,
-              "ewma_10": 0.2009,
-              "ewma_20": 0.1022
-            }
-          ]
-        },
-        {
-          "stock_id": "6488",
-          "name": "環球晶",
-          "category": "晶圓材料",
-          "state": "buy",
-          "direction": 1,
-          "score": 53,
-          "score_label": "共識強度",
-          "score_components": {
-            "independent_etfs": 25,
-            "joint_persistence": 6,
-            "relative_strength": 12,
-            "horizon_alignment": 10
-          },
-          "transition": "買方共識延續",
-          "watch_kind": "",
-          "participants": [
-            "00403A",
-            "00981A"
-          ],
-          "etf_label": "403・981",
-          "breadth": 2,
-          "first_seen_date": "2026-06-15",
-          "confirmed_date": "2026-06-15",
-          "last_confirmed_date": "2026-06-17",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00403A",
-              "etf_label": "403",
-              "direction": 1,
-              "signal_date": "2026-06-17",
-              "active_flow": 0.19734,
-              "significance_ratio": 2.87,
-              "raw_delta_shares": 300000,
-              "position_event": "increase",
-              "ewma_3": 0.9817,
-              "ewma_10": 0.367,
-              "ewma_20": 0.1931
-            },
-            {
-              "etf": "00981A",
-              "etf_label": "981",
-              "direction": 1,
-              "signal_date": "2026-06-15",
-              "active_flow": 0.11,
-              "significance_ratio": 5.5,
-              "raw_delta_shares": 350000,
-              "position_event": "new_position",
-              "ewma_3": 0.3899,
-              "ewma_10": 0.1749,
-              "ewma_20": 0.0953
-            }
-          ]
-        }
-      ],
-      "selling": []
     },
     "2026-07-16": {
       "watching": [
@@ -18706,47 +15744,6 @@
               "ewma_20": 0.1022
             }
           ]
-        },
-        {
-          "stock_id": "2890",
-          "name": "永豐金融",
-          "category": "金控",
-          "state": "watch",
-          "direction": -1,
-          "score": 47,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "新增高資訊觀察",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-06-12",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-06-12",
-              "active_flow": -0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": -9000,
-              "position_event": "full_exit",
-              "ewma_3": -0.0103,
-              "ewma_10": -0.0033,
-              "ewma_20": -0.0017
-            }
-          ]
         }
       ],
       "buying": [
@@ -19050,6 +16047,1841 @@
               "ewma_3": 0.6189,
               "ewma_10": 0.2009,
               "ewma_20": 0.1022
+            }
+          ]
+        }
+      ],
+      "selling": []
+    },
+    "2026-06-15": {
+      "watching": [
+        {
+          "stock_id": "1590",
+          "name": "亞德客-KY",
+          "category": "電機",
+          "state": "watch",
+          "direction": -1,
+          "score": 72,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 40,
+            "relative_size": 25,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "高資訊觀察延續",
+          "watch_kind": "full_exit",
+          "participants": [
+            "00991A"
+          ],
+          "etf_label": "991",
+          "breadth": 1,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": -1,
+              "signal_date": "2026-06-12",
+              "active_flow": -1.346,
+              "significance_ratio": 67.3,
+              "raw_delta_shares": -400000,
+              "position_event": "full_exit",
+              "ewma_3": -0.4912,
+              "ewma_10": -0.1874,
+              "ewma_20": -0.0987
+            }
+          ]
+        },
+        {
+          "stock_id": "3042",
+          "name": "台灣晶技",
+          "category": "被動元件",
+          "state": "watch",
+          "direction": 1,
+          "score": 67,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 35,
+            "relative_size": 25,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "高資訊觀察延續",
+          "watch_kind": "new_position",
+          "participants": [
+            "00991A"
+          ],
+          "etf_label": "991",
+          "breadth": 1,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 1.972,
+              "significance_ratio": 98.6,
+              "raw_delta_shares": 5200000,
+              "position_event": "new_position",
+              "ewma_3": 0.4912,
+              "ewma_10": 0.1874,
+              "ewma_20": 0.0987
+            }
+          ]
+        },
+        {
+          "stock_id": "3211",
+          "name": "順達",
+          "category": "二次電池",
+          "state": "watch",
+          "direction": 1,
+          "score": 67,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 35,
+            "relative_size": 25,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "高資訊觀察延續",
+          "watch_kind": "new_position",
+          "participants": [
+            "00403A"
+          ],
+          "etf_label": "403",
+          "breadth": 1,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.16,
+              "significance_ratio": 8.0,
+              "raw_delta_shares": 700000,
+              "position_event": "new_position",
+              "ewma_3": 0.6159,
+              "ewma_10": 0.2279,
+              "ewma_20": 0.1193
+            }
+          ]
+        }
+      ],
+      "buying": [
+        {
+          "stock_id": "2454",
+          "name": "聯發科技",
+          "category": "IC-設計",
+          "state": "buy",
+          "direction": 1,
+          "score": 66,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 35,
+            "joint_persistence": 6,
+            "relative_strength": 15,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "403・981・991",
+          "breadth": 3,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-15",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-15",
+              "active_flow": 0.24706,
+              "significance_ratio": 2.83,
+              "raw_delta_shares": 80000,
+              "position_event": "increase",
+              "ewma_3": 1.0745,
+              "ewma_10": 0.3768,
+              "ewma_20": 0.195
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-15",
+              "active_flow": 0.263977,
+              "significance_ratio": 13.2,
+              "raw_delta_shares": 212000,
+              "position_event": "increase",
+              "ewma_3": 0.6189,
+              "ewma_10": 0.2009,
+              "ewma_20": 0.1022
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.436183,
+              "significance_ratio": 21.81,
+              "raw_delta_shares": 210000,
+              "position_event": "increase",
+              "ewma_3": 0.591,
+              "ewma_10": 0.2199,
+              "ewma_20": 0.1152
+            }
+          ]
+        },
+        {
+          "stock_id": "4958",
+          "name": "臻鼎-KY",
+          "category": "PCB-製造",
+          "state": "buy",
+          "direction": 1,
+          "score": 63,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 35,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "403・981・991",
+          "breadth": 3,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-15",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.101399,
+              "significance_ratio": 5.07,
+              "raw_delta_shares": 300000,
+              "position_event": "increase",
+              "ewma_3": 0.6435,
+              "ewma_10": 0.2369,
+              "ewma_20": 0.1239
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.28,
+              "significance_ratio": 14.0,
+              "raw_delta_shares": 1428000,
+              "position_event": "new_position",
+              "ewma_3": 0.4912,
+              "ewma_10": 0.1874,
+              "ewma_20": 0.0987
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 1.865,
+              "significance_ratio": 93.25,
+              "raw_delta_shares": 2000000,
+              "position_event": "new_position",
+              "ewma_3": 0.4912,
+              "ewma_10": 0.1874,
+              "ewma_20": 0.0987
+            }
+          ]
+        },
+        {
+          "stock_id": "6223",
+          "name": "旺矽科技",
+          "category": "IC-封測",
+          "state": "buy",
+          "direction": 1,
+          "score": 63,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 35,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "403・981・991",
+          "breadth": 3,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-15",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.123434,
+              "significance_ratio": 6.17,
+              "raw_delta_shares": 30000,
+              "position_event": "increase",
+              "ewma_3": 0.4912,
+              "ewma_10": 0.1874,
+              "ewma_20": 0.0987
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.23492,
+              "significance_ratio": 11.75,
+              "raw_delta_shares": 110000,
+              "position_event": "increase",
+              "ewma_3": 0.4912,
+              "ewma_10": 0.1874,
+              "ewma_20": 0.0987
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.379338,
+              "significance_ratio": 18.97,
+              "raw_delta_shares": 110000,
+              "position_event": "increase",
+              "ewma_3": 0.4912,
+              "ewma_10": 0.1874,
+              "ewma_20": 0.0987
+            }
+          ]
+        },
+        {
+          "stock_id": "2303",
+          "name": "聯華電子",
+          "category": "IC-代工",
+          "state": "buy",
+          "direction": 1,
+          "score": 53,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A"
+          ],
+          "etf_label": "403・981",
+          "breadth": 2,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-15",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.344931,
+              "significance_ratio": 17.25,
+              "raw_delta_shares": 4400000,
+              "position_event": "increase",
+              "ewma_3": 0.4912,
+              "ewma_10": 0.1874,
+              "ewma_20": 0.0987
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.094298,
+              "significance_ratio": 4.71,
+              "raw_delta_shares": 2200000,
+              "position_event": "increase",
+              "ewma_3": 0.5914,
+              "ewma_10": 0.22,
+              "ewma_20": 0.1152
+            }
+          ]
+        },
+        {
+          "stock_id": "6488",
+          "name": "環球晶",
+          "category": "晶圓材料",
+          "state": "buy",
+          "direction": 1,
+          "score": 53,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "新形成買方共識",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A"
+          ],
+          "etf_label": "403・981",
+          "breadth": 2,
+          "first_seen_date": "2026-06-15",
+          "confirmed_date": "2026-06-15",
+          "last_confirmed_date": "2026-06-15",
+          "state_days": 1,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-15",
+              "active_flow": 0.114655,
+              "significance_ratio": 5.73,
+              "raw_delta_shares": 203000,
+              "position_event": "increase",
+              "ewma_3": 0.6189,
+              "ewma_10": 0.2009,
+              "ewma_20": 0.1022
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-15",
+              "active_flow": 0.11,
+              "significance_ratio": 5.5,
+              "raw_delta_shares": 350000,
+              "position_event": "new_position",
+              "ewma_3": 0.6189,
+              "ewma_10": 0.2009,
+              "ewma_20": 0.1022
+            }
+          ]
+        },
+        {
+          "stock_id": "6805",
+          "name": "富世達",
+          "category": "連接元件",
+          "state": "buy",
+          "direction": 1,
+          "score": 47,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 6,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "981・991",
+          "breadth": 2,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-15",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.029812,
+              "significance_ratio": 1.49,
+              "raw_delta_shares": 50000,
+              "position_event": "increase",
+              "ewma_3": 0.2441,
+              "ewma_10": 0.0931,
+              "ewma_20": 0.049
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 1.665,
+              "significance_ratio": 83.25,
+              "raw_delta_shares": 540000,
+              "position_event": "new_position",
+              "ewma_3": 0.2853,
+              "ewma_10": 0.1206,
+              "ewma_20": 0.0647
+            }
+          ]
+        }
+      ],
+      "selling": []
+    },
+    "2026-06-16": {
+      "watching": [
+        {
+          "stock_id": "1590",
+          "name": "亞德客-KY",
+          "category": "電機",
+          "state": "watch",
+          "direction": -1,
+          "score": 72,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 40,
+            "relative_size": 25,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "高資訊觀察延續",
+          "watch_kind": "full_exit",
+          "participants": [
+            "00991A"
+          ],
+          "etf_label": "991",
+          "breadth": 1,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 3,
+          "evidence": [
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": -1,
+              "signal_date": "2026-06-12",
+              "active_flow": -1.346,
+              "significance_ratio": 67.3,
+              "raw_delta_shares": -400000,
+              "position_event": "full_exit",
+              "ewma_3": -0.3899,
+              "ewma_10": -0.1749,
+              "ewma_20": -0.0953
+            }
+          ]
+        },
+        {
+          "stock_id": "2404",
+          "name": "漢唐集成",
+          "category": "儀器設備工程",
+          "state": "watch",
+          "direction": -1,
+          "score": 72,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 40,
+            "relative_size": 25,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "新增高資訊觀察",
+          "watch_kind": "full_exit",
+          "participants": [
+            "00981A"
+          ],
+          "etf_label": "981",
+          "breadth": 1,
+          "first_seen_date": "2026-06-16",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 1,
+          "evidence": [
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": -1,
+              "signal_date": "2026-06-16",
+              "active_flow": -0.56,
+              "significance_ratio": 28.0,
+              "raw_delta_shares": -1200000,
+              "position_event": "full_exit",
+              "ewma_3": -0.6189,
+              "ewma_10": -0.2009,
+              "ewma_20": -0.1022
+            }
+          ]
+        },
+        {
+          "stock_id": "3042",
+          "name": "台灣晶技",
+          "category": "被動元件",
+          "state": "watch",
+          "direction": 1,
+          "score": 67,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 35,
+            "relative_size": 25,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "高資訊觀察延續",
+          "watch_kind": "new_position",
+          "participants": [
+            "00991A"
+          ],
+          "etf_label": "991",
+          "breadth": 1,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 3,
+          "evidence": [
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 1.972,
+              "significance_ratio": 98.6,
+              "raw_delta_shares": 5200000,
+              "position_event": "new_position",
+              "ewma_3": 0.3899,
+              "ewma_10": 0.1749,
+              "ewma_20": 0.0953
+            }
+          ]
+        },
+        {
+          "stock_id": "3211",
+          "name": "順達",
+          "category": "二次電池",
+          "state": "watch",
+          "direction": 1,
+          "score": 67,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 35,
+            "relative_size": 25,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "高資訊觀察延續",
+          "watch_kind": "new_position",
+          "participants": [
+            "00403A"
+          ],
+          "etf_label": "403",
+          "breadth": 1,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 3,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.16,
+              "significance_ratio": 8.0,
+              "raw_delta_shares": 700000,
+              "position_event": "new_position",
+              "ewma_3": 0.6606,
+              "ewma_10": 0.2684,
+              "ewma_20": 0.1436
+            }
+          ]
+        },
+        {
+          "stock_id": "6415",
+          "name": "矽力*-KY",
+          "category": "IC-設計",
+          "state": "watch",
+          "direction": 1,
+          "score": 67,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 35,
+            "relative_size": 25,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "新增高資訊觀察",
+          "watch_kind": "new_position",
+          "participants": [
+            "00403A"
+          ],
+          "etf_label": "403",
+          "breadth": 1,
+          "first_seen_date": "2026-06-16",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 1,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-16",
+              "active_flow": 0.17,
+              "significance_ratio": 8.5,
+              "raw_delta_shares": 500000,
+              "position_event": "new_position",
+              "ewma_3": 0.6189,
+              "ewma_10": 0.2009,
+              "ewma_20": 0.1022
+            }
+          ]
+        },
+        {
+          "stock_id": "3017",
+          "name": "奇鋐科技",
+          "category": "NB與手機零組件",
+          "state": "watch",
+          "direction": -1,
+          "score": 56,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 38,
+            "relative_size": 11,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "新增高資訊觀察",
+          "watch_kind": "reversal",
+          "participants": [
+            "00991A"
+          ],
+          "etf_label": "991",
+          "breadth": 1,
+          "first_seen_date": "2026-06-16",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 1,
+          "evidence": [
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": -1,
+              "signal_date": "2026-06-16",
+              "active_flow": -0.590693,
+              "significance_ratio": 1.35,
+              "raw_delta_shares": -150000,
+              "position_event": "decrease",
+              "ewma_3": 0.1124,
+              "ewma_10": 0.0848,
+              "ewma_20": 0.0495
+            }
+          ]
+        }
+      ],
+      "buying": [
+        {
+          "stock_id": "2454",
+          "name": "聯發科技",
+          "category": "IC-設計",
+          "state": "buy",
+          "direction": 1,
+          "score": 66,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 35,
+            "joint_persistence": 6,
+            "relative_strength": 15,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "403・981・991",
+          "breadth": 3,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-16",
+          "state_days": 3,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-15",
+              "active_flow": 0.24706,
+              "significance_ratio": 2.83,
+              "raw_delta_shares": 80000,
+              "position_event": "increase",
+              "ewma_3": 0.8528,
+              "ewma_10": 0.3515,
+              "ewma_20": 0.1884
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-15",
+              "active_flow": 0.263977,
+              "significance_ratio": 13.2,
+              "raw_delta_shares": 212000,
+              "position_event": "increase",
+              "ewma_3": 0.4912,
+              "ewma_10": 0.1874,
+              "ewma_20": 0.0987
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.436183,
+              "significance_ratio": 21.81,
+              "raw_delta_shares": 210000,
+              "position_event": "increase",
+              "ewma_3": 0.4691,
+              "ewma_10": 0.2051,
+              "ewma_20": 0.1113
+            }
+          ]
+        },
+        {
+          "stock_id": "4958",
+          "name": "臻鼎-KY",
+          "category": "PCB-製造",
+          "state": "buy",
+          "direction": 1,
+          "score": 63,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 35,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "403・981・991",
+          "breadth": 3,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-16",
+          "state_days": 3,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-16",
+              "active_flow": 0.213866,
+              "significance_ratio": 2.23,
+              "raw_delta_shares": 420000,
+              "position_event": "increase",
+              "ewma_3": 0.9699,
+              "ewma_10": 0.3701,
+              "ewma_20": 0.1955
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.28,
+              "significance_ratio": 14.0,
+              "raw_delta_shares": 1428000,
+              "position_event": "new_position",
+              "ewma_3": 0.3899,
+              "ewma_10": 0.1749,
+              "ewma_20": 0.0953
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 1.865,
+              "significance_ratio": 93.25,
+              "raw_delta_shares": 2000000,
+              "position_event": "new_position",
+              "ewma_3": 0.3899,
+              "ewma_10": 0.1749,
+              "ewma_20": 0.0953
+            }
+          ]
+        },
+        {
+          "stock_id": "6223",
+          "name": "旺矽科技",
+          "category": "IC-封測",
+          "state": "buy",
+          "direction": 1,
+          "score": 63,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 35,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "403・981・991",
+          "breadth": 3,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-16",
+          "state_days": 3,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.123434,
+              "significance_ratio": 6.17,
+              "raw_delta_shares": 30000,
+              "position_event": "increase",
+              "ewma_3": 0.3899,
+              "ewma_10": 0.1749,
+              "ewma_20": 0.0953
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.23492,
+              "significance_ratio": 11.75,
+              "raw_delta_shares": 110000,
+              "position_event": "increase",
+              "ewma_3": 0.3899,
+              "ewma_10": 0.1749,
+              "ewma_20": 0.0953
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.379338,
+              "significance_ratio": 18.97,
+              "raw_delta_shares": 110000,
+              "position_event": "increase",
+              "ewma_3": 0.3899,
+              "ewma_10": 0.1749,
+              "ewma_20": 0.0953
+            }
+          ]
+        },
+        {
+          "stock_id": "2303",
+          "name": "聯華電子",
+          "category": "IC-代工",
+          "state": "buy",
+          "direction": 1,
+          "score": 53,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A"
+          ],
+          "etf_label": "403・981",
+          "breadth": 2,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-16",
+          "state_days": 3,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.344931,
+              "significance_ratio": 17.25,
+              "raw_delta_shares": 4400000,
+              "position_event": "increase",
+              "ewma_3": 0.3899,
+              "ewma_10": 0.1749,
+              "ewma_20": 0.0953
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.094298,
+              "significance_ratio": 4.71,
+              "raw_delta_shares": 2200000,
+              "position_event": "increase",
+              "ewma_3": 0.4694,
+              "ewma_10": 0.2052,
+              "ewma_20": 0.1113
+            }
+          ]
+        },
+        {
+          "stock_id": "2327",
+          "name": "國巨股份",
+          "category": "被動元件",
+          "state": "buy",
+          "direction": 1,
+          "score": 53,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "新形成買方共識",
+          "watch_kind": "",
+          "participants": [
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "981・991",
+          "breadth": 2,
+          "first_seen_date": "2026-06-16",
+          "confirmed_date": "2026-06-16",
+          "last_confirmed_date": "2026-06-16",
+          "state_days": 1,
+          "evidence": [
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-16",
+              "active_flow": 0.491111,
+              "significance_ratio": 24.56,
+              "raw_delta_shares": 1624000,
+              "position_event": "increase",
+              "ewma_3": 0.6189,
+              "ewma_10": 0.2009,
+              "ewma_20": 0.1022
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.101599,
+              "significance_ratio": 5.08,
+              "raw_delta_shares": 1450000,
+              "position_event": "increase",
+              "ewma_3": 0.3899,
+              "ewma_10": 0.1749,
+              "ewma_20": 0.0953
+            }
+          ]
+        },
+        {
+          "stock_id": "6274",
+          "name": "台燿科技",
+          "category": "PCB-材料設備",
+          "state": "buy",
+          "direction": 1,
+          "score": 53,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "新形成買方共識",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00991A"
+          ],
+          "etf_label": "403・991",
+          "breadth": 2,
+          "first_seen_date": "2026-06-16",
+          "confirmed_date": "2026-06-16",
+          "last_confirmed_date": "2026-06-16",
+          "state_days": 1,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-16",
+              "active_flow": 0.164574,
+              "significance_ratio": 8.23,
+              "raw_delta_shares": 130000,
+              "position_event": "increase",
+              "ewma_3": 0.6189,
+              "ewma_10": 0.2009,
+              "ewma_20": 0.1022
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 2.998039,
+              "significance_ratio": 149.9,
+              "raw_delta_shares": 1279000,
+              "position_event": "increase",
+              "ewma_3": 0.3991,
+              "ewma_10": 0.1784,
+              "ewma_20": 0.0972
+            }
+          ]
+        },
+        {
+          "stock_id": "6488",
+          "name": "環球晶",
+          "category": "晶圓材料",
+          "state": "buy",
+          "direction": 1,
+          "score": 53,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A"
+          ],
+          "etf_label": "403・981",
+          "breadth": 2,
+          "first_seen_date": "2026-06-15",
+          "confirmed_date": "2026-06-15",
+          "last_confirmed_date": "2026-06-16",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-15",
+              "active_flow": 0.114655,
+              "significance_ratio": 5.73,
+              "raw_delta_shares": 203000,
+              "position_event": "increase",
+              "ewma_3": 0.4912,
+              "ewma_10": 0.1874,
+              "ewma_20": 0.0987
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-15",
+              "active_flow": 0.11,
+              "significance_ratio": 5.5,
+              "raw_delta_shares": 350000,
+              "position_event": "new_position",
+              "ewma_3": 0.4912,
+              "ewma_10": 0.1874,
+              "ewma_20": 0.0987
+            }
+          ]
+        },
+        {
+          "stock_id": "6805",
+          "name": "富世達",
+          "category": "連接元件",
+          "state": "buy",
+          "direction": 1,
+          "score": 47,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 6,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "981・991",
+          "breadth": 2,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-16",
+          "state_days": 3,
+          "evidence": [
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.029812,
+              "significance_ratio": 1.49,
+              "raw_delta_shares": 50000,
+              "position_event": "increase",
+              "ewma_3": 0.1937,
+              "ewma_10": 0.0869,
+              "ewma_20": 0.0474
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 1.665,
+              "significance_ratio": 83.25,
+              "raw_delta_shares": 540000,
+              "position_event": "new_position",
+              "ewma_3": 0.2264,
+              "ewma_10": 0.1125,
+              "ewma_20": 0.0625
+            }
+          ]
+        }
+      ],
+      "selling": []
+    },
+    "2026-06-17": {
+      "watching": [
+        {
+          "stock_id": "2404",
+          "name": "漢唐集成",
+          "category": "儀器設備工程",
+          "state": "watch",
+          "direction": -1,
+          "score": 72,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 40,
+            "relative_size": 25,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "高資訊觀察延續",
+          "watch_kind": "full_exit",
+          "participants": [
+            "00981A"
+          ],
+          "etf_label": "981",
+          "breadth": 1,
+          "first_seen_date": "2026-06-16",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": -1,
+              "signal_date": "2026-06-16",
+              "active_flow": -0.56,
+              "significance_ratio": 28.0,
+              "raw_delta_shares": -1200000,
+              "position_event": "full_exit",
+              "ewma_3": -0.4912,
+              "ewma_10": -0.1874,
+              "ewma_20": -0.0987
+            }
+          ]
+        },
+        {
+          "stock_id": "6415",
+          "name": "矽力*-KY",
+          "category": "IC-設計",
+          "state": "watch",
+          "direction": 1,
+          "score": 67,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 35,
+            "relative_size": 25,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "高資訊觀察延續",
+          "watch_kind": "new_position",
+          "participants": [
+            "00403A"
+          ],
+          "etf_label": "403",
+          "breadth": 1,
+          "first_seen_date": "2026-06-16",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-16",
+              "active_flow": 0.17,
+              "significance_ratio": 8.5,
+              "raw_delta_shares": 500000,
+              "position_event": "new_position",
+              "ewma_3": 0.6723,
+              "ewma_10": 0.2462,
+              "ewma_20": 0.1286
+            }
+          ]
+        },
+        {
+          "stock_id": "3017",
+          "name": "奇鋐科技",
+          "category": "NB與手機零組件",
+          "state": "watch",
+          "direction": -1,
+          "score": 56,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 38,
+            "relative_size": 11,
+            "repeat_action": 7,
+            "latent_second_etf": 0
+          },
+          "transition": "高資訊觀察延續",
+          "watch_kind": "reversal",
+          "participants": [
+            "00991A"
+          ],
+          "etf_label": "991",
+          "breadth": 1,
+          "first_seen_date": "2026-06-16",
+          "confirmed_date": "",
+          "last_confirmed_date": "",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": -1,
+              "signal_date": "2026-06-16",
+              "active_flow": -0.590693,
+              "significance_ratio": 1.35,
+              "raw_delta_shares": -150000,
+              "position_event": "decrease",
+              "ewma_3": -0.1163,
+              "ewma_10": 0.0124,
+              "ewma_20": 0.0139
+            }
+          ]
+        },
+        {
+          "stock_id": "6805",
+          "name": "富世達",
+          "category": "連接元件",
+          "state": "watch",
+          "direction": 1,
+          "score": 42,
+          "score_label": "觀察成熟度",
+          "score_components": {
+            "event_quality": 30,
+            "relative_size": 12,
+            "repeat_action": 0,
+            "latent_second_etf": 0
+          },
+          "transition": "共識降溫，退回觀察",
+          "watch_kind": "consensus_cooling",
+          "participants": [
+            "00981A"
+          ],
+          "etf_label": "981",
+          "breadth": 1,
+          "first_seen_date": "2026-06-17",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-16",
+          "state_days": 1,
+          "evidence": [
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.029812,
+              "significance_ratio": 1.49,
+              "raw_delta_shares": 50000,
+              "position_event": "increase",
+              "ewma_3": 0.1538,
+              "ewma_10": 0.0811,
+              "ewma_20": 0.0458
+            }
+          ]
+        }
+      ],
+      "buying": [
+        {
+          "stock_id": "2303",
+          "name": "聯華電子",
+          "category": "IC-代工",
+          "state": "buy",
+          "direction": 1,
+          "score": 63,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 35,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "403・981・991",
+          "breadth": 3,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-17",
+          "state_days": 4,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.344931,
+              "significance_ratio": 17.25,
+              "raw_delta_shares": 4400000,
+              "position_event": "increase",
+              "ewma_3": 0.3094,
+              "ewma_10": 0.1632,
+              "ewma_20": 0.0921
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.094298,
+              "significance_ratio": 4.71,
+              "raw_delta_shares": 2200000,
+              "position_event": "increase",
+              "ewma_3": 0.3725,
+              "ewma_10": 0.1915,
+              "ewma_20": 0.1075
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-17",
+              "active_flow": 1.902,
+              "significance_ratio": 95.1,
+              "raw_delta_shares": 8500000,
+              "position_event": "new_position",
+              "ewma_3": 0.6189,
+              "ewma_10": 0.2009,
+              "ewma_20": 0.1022
+            }
+          ]
+        },
+        {
+          "stock_id": "4958",
+          "name": "臻鼎-KY",
+          "category": "PCB-製造",
+          "state": "buy",
+          "direction": 1,
+          "score": 63,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 35,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "403・981・991",
+          "breadth": 3,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-17",
+          "state_days": 4,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-16",
+              "active_flow": 0.213866,
+              "significance_ratio": 2.23,
+              "raw_delta_shares": 420000,
+              "position_event": "increase",
+              "ewma_3": 0.7698,
+              "ewma_10": 0.3453,
+              "ewma_20": 0.1888
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.28,
+              "significance_ratio": 14.0,
+              "raw_delta_shares": 1428000,
+              "position_event": "new_position",
+              "ewma_3": 0.3094,
+              "ewma_10": 0.1632,
+              "ewma_20": 0.0921
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 1.865,
+              "significance_ratio": 93.25,
+              "raw_delta_shares": 2000000,
+              "position_event": "new_position",
+              "ewma_3": 0.3094,
+              "ewma_10": 0.1632,
+              "ewma_20": 0.0921
+            }
+          ]
+        },
+        {
+          "stock_id": "6223",
+          "name": "旺矽科技",
+          "category": "IC-封測",
+          "state": "buy",
+          "direction": 1,
+          "score": 63,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 35,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A",
+            "00991A"
+          ],
+          "etf_label": "403・981・991",
+          "breadth": 3,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-17",
+          "state_days": 4,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.123434,
+              "significance_ratio": 6.17,
+              "raw_delta_shares": 30000,
+              "position_event": "increase",
+              "ewma_3": 0.3094,
+              "ewma_10": 0.1632,
+              "ewma_20": 0.0921
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.23492,
+              "significance_ratio": 11.75,
+              "raw_delta_shares": 110000,
+              "position_event": "increase",
+              "ewma_3": 0.3094,
+              "ewma_10": 0.1632,
+              "ewma_20": 0.0921
+            },
+            {
+              "etf": "00991A",
+              "etf_label": "991",
+              "direction": 1,
+              "signal_date": "2026-06-12",
+              "active_flow": 0.379338,
+              "significance_ratio": 18.97,
+              "raw_delta_shares": 110000,
+              "position_event": "increase",
+              "ewma_3": 0.3094,
+              "ewma_10": 0.1632,
+              "ewma_20": 0.0921
+            }
+          ]
+        },
+        {
+          "stock_id": "2327",
+          "name": "國巨股份",
+          "category": "被動元件",
+          "state": "buy",
+          "direction": 1,
+          "score": 53,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A"
+          ],
+          "etf_label": "403・981",
+          "breadth": 2,
+          "first_seen_date": "2026-06-16",
+          "confirmed_date": "2026-06-16",
+          "last_confirmed_date": "2026-06-17",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-17",
+              "active_flow": 0.175082,
+              "significance_ratio": 8.75,
+              "raw_delta_shares": 150000,
+              "position_event": "increase",
+              "ewma_3": 0.6189,
+              "ewma_10": 0.2009,
+              "ewma_20": 0.1022
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-16",
+              "active_flow": 0.491111,
+              "significance_ratio": 24.56,
+              "raw_delta_shares": 1624000,
+              "position_event": "increase",
+              "ewma_3": 0.6059,
+              "ewma_10": 0.2247,
+              "ewma_20": 0.1176
+            }
+          ]
+        },
+        {
+          "stock_id": "2454",
+          "name": "聯發科技",
+          "category": "IC-設計",
+          "state": "buy",
+          "direction": 1,
+          "score": 53,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A"
+          ],
+          "etf_label": "403・981",
+          "breadth": 2,
+          "first_seen_date": "2026-06-12",
+          "confirmed_date": "2026-06-12",
+          "last_confirmed_date": "2026-06-17",
+          "state_days": 4,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-15",
+              "active_flow": 0.24706,
+              "significance_ratio": 2.83,
+              "raw_delta_shares": 80000,
+              "position_event": "increase",
+              "ewma_3": 0.6769,
+              "ewma_10": 0.328,
+              "ewma_20": 0.182
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-15",
+              "active_flow": 0.263977,
+              "significance_ratio": 13.2,
+              "raw_delta_shares": 212000,
+              "position_event": "increase",
+              "ewma_3": 0.3899,
+              "ewma_10": 0.1749,
+              "ewma_20": 0.0953
+            }
+          ]
+        },
+        {
+          "stock_id": "6274",
+          "name": "台燿科技",
+          "category": "PCB-材料設備",
+          "state": "buy",
+          "direction": 1,
+          "score": 53,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A"
+          ],
+          "etf_label": "403・981",
+          "breadth": 2,
+          "first_seen_date": "2026-06-16",
+          "confirmed_date": "2026-06-16",
+          "last_confirmed_date": "2026-06-17",
+          "state_days": 2,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-16",
+              "active_flow": 0.164574,
+              "significance_ratio": 8.23,
+              "raw_delta_shares": 130000,
+              "position_event": "increase",
+              "ewma_3": 0.6424,
+              "ewma_10": 0.2365,
+              "ewma_20": 0.1237
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-17",
+              "active_flow": 0.091021,
+              "significance_ratio": 4.55,
+              "raw_delta_shares": 164000,
+              "position_event": "increase",
+              "ewma_3": 0.6189,
+              "ewma_10": 0.2009,
+              "ewma_20": 0.1022
+            }
+          ]
+        },
+        {
+          "stock_id": "6488",
+          "name": "環球晶",
+          "category": "晶圓材料",
+          "state": "buy",
+          "direction": 1,
+          "score": 53,
+          "score_label": "共識強度",
+          "score_components": {
+            "independent_etfs": 25,
+            "joint_persistence": 6,
+            "relative_strength": 12,
+            "horizon_alignment": 10
+          },
+          "transition": "買方共識延續",
+          "watch_kind": "",
+          "participants": [
+            "00403A",
+            "00981A"
+          ],
+          "etf_label": "403・981",
+          "breadth": 2,
+          "first_seen_date": "2026-06-15",
+          "confirmed_date": "2026-06-15",
+          "last_confirmed_date": "2026-06-17",
+          "state_days": 3,
+          "evidence": [
+            {
+              "etf": "00403A",
+              "etf_label": "403",
+              "direction": 1,
+              "signal_date": "2026-06-17",
+              "active_flow": 0.19734,
+              "significance_ratio": 2.87,
+              "raw_delta_shares": 300000,
+              "position_event": "increase",
+              "ewma_3": 0.9817,
+              "ewma_10": 0.367,
+              "ewma_20": 0.1931
+            },
+            {
+              "etf": "00981A",
+              "etf_label": "981",
+              "direction": 1,
+              "signal_date": "2026-06-15",
+              "active_flow": 0.11,
+              "significance_ratio": 5.5,
+              "raw_delta_shares": 350000,
+              "position_event": "new_position",
+              "ewma_3": 0.3899,
+              "ewma_10": 0.1749,
+              "ewma_20": 0.0953
             }
           ]
         }
@@ -34050,47 +32882,6 @@
               "ewma_20": 0.3196
             }
           ]
-        },
-        {
-          "stock_id": "3324",
-          "name": "雙鴻科技",
-          "category": "散熱零組件",
-          "state": "watch",
-          "direction": -1,
-          "score": 47,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "新增高資訊觀察",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-09",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 1,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-07-09",
-              "active_flow": -0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": -1000,
-              "position_event": "full_exit",
-              "ewma_3": -0.0103,
-              "ewma_10": -0.0033,
-              "ewma_20": -0.0017
-            }
-          ]
         }
       ],
       "buying": [
@@ -35183,47 +33974,6 @@
               "ewma_20": 0.3087
             }
           ]
-        },
-        {
-          "stock_id": "3324",
-          "name": "雙鴻科技",
-          "category": "散熱零組件",
-          "state": "watch",
-          "direction": -1,
-          "score": 47,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-09",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 2,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-07-09",
-              "active_flow": -0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": -1000,
-              "position_event": "full_exit",
-              "ewma_3": -0.0082,
-              "ewma_10": -0.0031,
-              "ewma_20": -0.0016
-            }
-          ]
         }
       ],
       "buying": [
@@ -36066,47 +34816,6 @@
               "ewma_3": 0.5207,
               "ewma_10": 0.3464,
               "ewma_20": 0.2313
-            }
-          ]
-        },
-        {
-          "stock_id": "3324",
-          "name": "雙鴻科技",
-          "category": "散熱零組件",
-          "state": "watch",
-          "direction": -1,
-          "score": 47,
-          "score_label": "觀察成熟度",
-          "score_components": {
-            "event_quality": 40,
-            "relative_size": 0,
-            "repeat_action": 7,
-            "latent_second_etf": 0
-          },
-          "transition": "高資訊觀察延續",
-          "watch_kind": "full_exit",
-          "participants": [
-            "00991A"
-          ],
-          "etf_label": "991",
-          "breadth": 1,
-          "first_seen_date": "2026-07-09",
-          "confirmed_date": "",
-          "last_confirmed_date": "",
-          "state_days": 3,
-          "evidence": [
-            {
-              "etf": "00991A",
-              "etf_label": "991",
-              "direction": -1,
-              "signal_date": "2026-07-09",
-              "active_flow": -0.001,
-              "significance_ratio": 0.05,
-              "raw_delta_shares": -1000,
-              "position_event": "full_exit",
-              "ewma_3": -0.0065,
-              "ewma_10": -0.0029,
-              "ewma_20": -0.0016
             }
           ]
         },
@@ -93639,28 +92348,6 @@
         "watch_kind": "",
         "watch_age": 0,
         "transition": "離開有效狀態"
-      },
-      {
-        "date": "2026-06-15",
-        "state": "watch",
-        "direction": -1,
-        "score": 51,
-        "participants": [
-          "00981A"
-        ],
-        "watch_kind": "full_exit",
-        "watch_age": 0,
-        "transition": "新增高資訊觀察"
-      },
-      {
-        "date": "2026-06-18",
-        "state": "none",
-        "direction": 0,
-        "score": 0,
-        "participants": [],
-        "watch_kind": "",
-        "watch_age": 0,
-        "transition": "離開有效狀態"
       }
     ],
     "1519": [
@@ -94712,35 +93399,11 @@
         "watch_kind": "",
         "watch_age": 0,
         "transition": "離開有效狀態"
-      },
-      {
-        "date": "2026-07-21",
-        "state": "watch",
-        "direction": 1,
-        "score": 42,
-        "participants": [
-          "00991A"
-        ],
-        "watch_kind": "new_position",
-        "watch_age": 0,
-        "transition": "新增高資訊觀察"
       }
     ],
     "2890": [
       {
         "date": "2026-06-12",
-        "state": "watch",
-        "direction": -1,
-        "score": 47,
-        "participants": [
-          "00991A"
-        ],
-        "watch_kind": "full_exit",
-        "watch_age": 0,
-        "transition": "新增高資訊觀察"
-      },
-      {
-        "date": "2026-06-17",
         "state": "none",
         "direction": 0,
         "score": 0,
@@ -94980,18 +93643,6 @@
         "watch_kind": "",
         "watch_age": 0,
         "transition": "離開有效狀態"
-      },
-      {
-        "date": "2026-07-21",
-        "state": "watch",
-        "direction": -1,
-        "score": 48,
-        "participants": [
-          "00991A"
-        ],
-        "watch_kind": "full_exit",
-        "watch_age": 0,
-        "transition": "新增高資訊觀察"
       }
     ],
     "3044": [
@@ -95162,28 +93813,6 @@
     "3324": [
       {
         "date": "2026-06-12",
-        "state": "none",
-        "direction": 0,
-        "score": 0,
-        "participants": [],
-        "watch_kind": "",
-        "watch_age": 0,
-        "transition": "離開有效狀態"
-      },
-      {
-        "date": "2026-07-09",
-        "state": "watch",
-        "direction": -1,
-        "score": 47,
-        "participants": [
-          "00991A"
-        ],
-        "watch_kind": "full_exit",
-        "watch_age": 0,
-        "transition": "新增高資訊觀察"
-      },
-      {
-        "date": "2026-07-15",
         "state": "none",
         "direction": 0,
         "score": 0,
@@ -96354,18 +94983,6 @@
         "watch_kind": "",
         "watch_age": 0,
         "transition": "離開有效狀態"
-      },
-      {
-        "date": "2026-07-21",
-        "state": "watch",
-        "direction": -1,
-        "score": 47,
-        "participants": [
-          "00991A"
-        ],
-        "watch_kind": "full_exit",
-        "watch_age": 0,
-        "transition": "新增高資訊觀察"
       }
     ],
     "8299": [

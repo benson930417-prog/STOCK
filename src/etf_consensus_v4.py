@@ -32,6 +32,8 @@ SIGNAL_OVERLAP_SESSIONS = 3
 SUPPORT_SESSIONS = 10
 WATCH_SESSIONS = 3
 MAINTENANCE_SCORE = 40
+MIN_WATCH_ENTRY_RATIO = 0.50
+MIN_WATCH_EXIT_RATIO = 1.00
 EWMA_HALFLIVES = (3, 10, 20)
 STRUCTURAL_EVENTS = {"new_position", "full_exit"}
 
@@ -298,12 +300,17 @@ def _high_information_watch(
         if not direction:
             continue
         event = feature["position_event"]
+        significance_ratio = float(feature["significance_ratio"])
         prior_10 = float((prior_features.get(etf) or {}).get("ewma_10") or 0.0)
         age = feature["prior_significant_age"]
         kind = ""
         if event == "new_position":
+            if significance_ratio < MIN_WATCH_ENTRY_RATIO:
+                continue
             kind = "reentry" if etf in exited_etfs else "new_position"
         elif event == "full_exit":
+            if significance_ratio < MIN_WATCH_EXIT_RATIO:
+                continue
             kind = "full_exit"
         elif prior_10 * direction < -0.05:
             kind = "reversal"
@@ -663,6 +670,8 @@ def build_consensus_payload(
             "fixed_ewma_half_lives": list(EWMA_HALFLIVES),
             "single_etf_score_can_confirm": False,
             "ordinary_single_etf_actions_hidden": True,
+            "minimum_watch_entry_ratio": MIN_WATCH_ENTRY_RATIO,
+            "minimum_watch_exit_ratio": MIN_WATCH_EXIT_RATIO,
             "concepts_interpreted": False,
         },
         "signals": boards[latest],

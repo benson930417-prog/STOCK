@@ -9,7 +9,12 @@ from src.etf_consensus_v4 import _score, build_consensus_payload, hydrate_board
 ETFS = ["00403A", "00981A", "00991A"]
 
 
-def _day(session: str, shares: dict[str, int]) -> dict:
+def _day(
+    session: str,
+    shares: dict[str, int],
+    *,
+    weight_pct: float = 5.0,
+) -> dict:
     return {
         "date": session,
         "meta": {
@@ -22,7 +27,7 @@ def _day(session: str, shares: dict[str, int]) -> dict:
                 "id": stock_id,
                 "name": stock_id,
                 "shares": amount,
-                "weight_pct": 5.0,
+                "weight_pct": weight_pct,
             }
             for stock_id, amount in shares.items()
         ],
@@ -77,6 +82,16 @@ class EtfConsensusV4Tests(unittest.TestCase):
         self.assertEqual(
             "new_position", payload["signals"]["watching"][0]["watch_kind"]
         )
+
+    def test_tiny_structural_cleanup_does_not_fill_yellow_lane(self) -> None:
+        histories, dates = _histories({}, stock_id="3042")
+        for index, session in enumerate(dates):
+            shares = {"3042": 1} if index < len(dates) - 1 else {}
+            histories["00991A"][session] = _day(
+                session, shares, weight_pct=0.001
+            )
+        payload = build_consensus_payload(histories, {})
+        self.assertFalse(payload["signals"]["watching"])
 
     def test_staggered_two_etf_actions_upgrade_to_red(self) -> None:
         histories, dates = _histories(
