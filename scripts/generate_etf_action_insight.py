@@ -18,6 +18,7 @@ from src.tag_flow_events import build_event_snapshot  # noqa: E402
 
 SOURCE = ROOT / "data" / "tag_flow.json"
 OUT = ROOT / "data" / "etf_action_insight.json"
+HISTORY = ROOT / "data" / "etf_action_history.json"
 ETFS = ["00403A", "00981A", "00991A"]
 
 PHONE_CONTENT_WIDTH = 20
@@ -95,20 +96,83 @@ def _fallback_qualification(event: dict) -> str:
     return f"1/3 {exception}例外"
 
 
+def _mobile_clauses(value: str) -> list[str]:
+    """Split only at deliberate clause boundaries, never inside a phrase."""
+    value = (
+        str(value)
+        .replace(" 個顯著買進日", " 次顯著買")
+        .replace(" 個交易日後降級", " 日後降級")
+        .replace(" 檔 ETF", " 檔ETF")
+        .replace("10日淨買再", "淨買尚差")
+    )
+    clauses = []
+    for semicolon_part in value.split("；"):
+        part = semicolon_part.strip()
+        if _display_width(f"    {part}") <= PHONE_CONTENT_WIDTH:
+            clauses.append(part)
+            continue
+        comma_parts = [item.strip() for item in part.split("，") if item.strip()]
+        clauses.extend(comma_parts or [part])
+    return clauses
+
+
 def _mobile_fields(event: dict) -> list[tuple[str, list[str]]]:
-    """Return the same five fields for every lane and every event type."""
+    """Return one standardized lifecycle grammar for every lane."""
     etfs = list(event.get("etfs") or [])
     evidence = list(event.get("evidence_parts") or _fallback_evidence_parts(event))
-    return [
+    evidence = [
+        str(value)
+        .replace("今日沒有新的顯著動作", "今日無顯著動作")
+        .replace("續抱條件仍成立", "續抱仍成立")
+        .replace(" 個顯著買進日", " 次顯著買")
+        .replace(" 個交易日後降級", " 日後降級")
+        .replace("10日淨買再", "淨買尚差")
+        for value in evidence
+    ]
+    evidence = [
+        clause
+        for value in evidence
+        for clause in _mobile_clauses(value)
+    ]
+    fields = [
         ("類股", [str(event.get("category") or "未分類")]),
         ("動作", [str(event.get("event_label") or "持股異動")]),
         ("ETF", [str(event.get("etf_label") or _etf_text(etfs) or "未提供")]),
         (
             "判定",
-            [str(event.get("qualification_label") or _fallback_qualification(event))],
+            [
+                str(
+                    event.get("qualification_label")
+                    or _fallback_qualification(event)
+                ).replace("剛退出續抱", "退出續抱")
+            ],
         ),
-        ("依據", evidence or ["訊號已成立"]),
+        (
+            "狀態",
+            [
+                str(event.get("lifecycle_label") or "今日重新判定")
+                .replace("昨日觸發・今日續買", "昨觸發・今續買")
+                .replace("昨日觸發・今日續賣", "昨觸發・今續賣")
+                .replace("昨日升級・今日續買", "昨升級・今續買")
+                .replace("今日未動・續抱仍有效", "今未動・續抱有效")
+                .replace("今日續買・續抱有效", "今續買・續抱有效")
+                .replace("今日減碼・續抱警戒", "今減碼・續抱警戒")
+                .replace("今日降級・等待新證據", "今降級・待新證據")
+                .replace("尚未升級・接近門檻", "待升級・近門檻")
+            ],
+        ),
     ]
+    event_type = str(event.get("event_type") or "")
+    if (
+        event.get("progress_label")
+        and (
+            event.get("direction", 0) > 0
+            or event_type.startswith("conviction_")
+        )
+    ):
+        fields.append(("進度", _mobile_clauses(str(event["progress_label"]))))
+    fields.append(("依據", evidence or ["訊號已成立"]))
+    return fields
 
 
 def _append_field(lines: list[str], label: str, values: list[str]) -> None:
@@ -164,10 +228,12 @@ def render_line_text(as_of: str, selected: dict[str, list[dict]]) -> str:
         "━━━━━━━━━━━━━━",
         f"截至：{_display_date(as_of)}",
         "判定規則",
-        "一般：至少 2/3 同向",
+        "逐股10日門檻",
+        "一般：顯著＋2/3同向",
         "1/3：只留建倉・出清",
         "1/3：或反轉連續 2 日",
-        "續抱：至少 2 檔參與",
+        "續抱：10日4買＋2ETF",
+        "顯示升降級距離",
         "",
     ]
     _lane(lines, "🔴 買進觀察", selected["buying"], "本日無新買進訊號")
@@ -189,8 +255,8 @@ def render_line_text(as_of: str, selected: dict[str, list[dict]]) -> str:
     return text
 
 
-def build_payload(data: dict) -> dict:
-    snapshot = build_event_snapshot(data, ETFS)
+def build_payload(data: dict, *, as_of: str | None = None) -> dict:
+    snapshot = build_event_snapshot(data, ETFS, as_of=as_of)
     selected = _selected(snapshot)
     return {
         "schema_version": 2,
@@ -203,7 +269,65 @@ def build_payload(data: dict) -> dict:
     }
 
 
-def generate(source: Path = SOURCE, out: Path = OUT) -> dict:
+def _update_history(history_path: Path, payload: dict) -> None:
+    history = {
+        "schema_version": 1,
+        "snapshots": {},
+    }
+    if history_path.exists():
+        try:
+            loaded = json.loads(history_path.read_text(encoding="utf-8"))
+            if (
+                loaded.get("schema_version") == 1
+                and isinstance(loaded.get("snapshots"), dict)
+            ):
+                history = loaded
+        except (OSError, ValueError):
+            pass
+    keep_fields = {
+        "stock_id",
+        "name",
+        "category",
+        "event_type",
+        "event_label",
+        "event_date",
+        "current_confirmation_date",
+        "lifecycle_label",
+        "etfs",
+        "etf_label",
+        "qualification_label",
+        "buy_days",
+        "sell_days",
+        "score",
+        "progress_label",
+        "evidence_expires_in",
+        "quiet_sessions_to_downgrade",
+    }
+    compact_signals = {
+        lane: [
+            {key: value for key, value in event.items() if key in keep_fields}
+            for event in events
+        ]
+        for lane, events in payload["signals"].items()
+    }
+    history["snapshots"][payload["as_of"]] = {
+        "as_of": payload["as_of"],
+        "generated": payload["generated"],
+        "signals": compact_signals,
+    }
+    ordered = sorted(history["snapshots"].items())[-260:]
+    history["snapshots"] = dict(ordered)
+    history_path.write_text(
+        json.dumps(history, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def generate(
+    source: Path = SOURCE,
+    out: Path = OUT,
+    history: Path | None = HISTORY,
+) -> dict:
     data = json.loads(source.read_text(encoding="utf-8"))
     if data.get("schema_version") != 2:
         raise RuntimeError("tag_flow.json schema_version must be 2")
@@ -212,6 +336,18 @@ def generate(source: Path = SOURCE, out: Path = OUT) -> dict:
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    if history is not None:
+        by_etf = data.get("dates", {}).get("by_etf", {})
+        shared = sorted(
+            set.intersection(
+                *(set(by_etf.get(etf, [])) for etf in ETFS)
+            )
+        )
+        for day in shared[-2:]:
+            historical_payload = (
+                payload if day == payload["as_of"] else build_payload(data, as_of=day)
+            )
+            _update_history(history, historical_payload)
     return payload
 
 

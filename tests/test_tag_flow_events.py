@@ -4,7 +4,7 @@ from datetime import date, timedelta
 import unittest
 
 from scripts.build_tag_flow import flow_between
-from src.tag_flow_events import build_event_snapshot
+from src.tag_flow_events import _assign_stock_thresholds, build_event_snapshot
 from src.ui.tag_flow_v2_tab import _event_card, _lane
 
 
@@ -82,7 +82,7 @@ class TagFlowEventTests(unittest.TestCase):
         self.assertTrue(card.startswith('<div class="tfv2-card'))
         self.assertTrue(lane.startswith('<section class="tfv2-lane">'))
         self.assertIn('<div class="tfv2-stock-row"><div class="tfv2-stock">', card)
-        self.assertIn("本交易日確認", card)
+        self.assertIn("今日仍確認", card)
         self.assertNotIn("tfv2-card-top", card)
         self.assertNotIn("\n    <", card + lane)
 
@@ -229,7 +229,7 @@ class TagFlowEventTests(unittest.TestCase):
         self.assertFalse(snapshot["selling"])
         self.assertEqual(["延續買進"], [row["name"] for row in snapshot["holding"]])
         self.assertEqual("conviction_buy", snapshot["holding"][0]["event_type"])
-        self.assertEqual("持續（2檔）", snapshot["holding"][0]["qualification_label"])
+        self.assertEqual("續抱（2檔）", snapshot["holding"][0]["qualification_label"])
 
     def test_single_etf_continuation_is_not_hold_evidence(self) -> None:
         data, dates = _empty_fixture()
@@ -337,6 +337,165 @@ class TagFlowEventTests(unittest.TestCase):
         snapshot = build_event_snapshot(data, ETFS)
         self.assertFalse(snapshot["buying"])
         self.assertFalse(snapshot["selling"])
+
+    def test_significance_is_etf_stock_specific_and_never_looks_ahead(self) -> None:
+        dates = [
+            (date(2026, 1, 1) + timedelta(days=index)).isoformat()
+            for index in range(12)
+        ]
+        records = {
+            "ROUTINE": {
+                session: {
+                    "00403A": {
+                        "flow": 0.30 if index < 10 else 0.15,
+                        "fallback_threshold": 0.04,
+                    }
+                }
+                for index, session in enumerate(dates)
+            },
+            "SMALL": {
+                session: {
+                    "00403A": {
+                        "flow": 0.03 if index < 10 else 0.025,
+                        "fallback_threshold": 0.04,
+                    }
+                }
+                for index, session in enumerate(dates)
+            },
+        }
+
+        _assign_stock_thresholds(records, dates)
+
+        routine = records["ROUTINE"][dates[10]]["00403A"]
+        small = records["SMALL"][dates[10]]["00403A"]
+        self.assertAlmostEqual(0.18, routine["threshold"])
+        self.assertFalse(routine["significant"])
+        self.assertAlmostEqual(0.02, small["threshold"])
+        self.assertTrue(small["significant"])
+        # The much larger date[11] move is processed later and cannot alter
+        # the already-computed date[10] threshold.
+        self.assertAlmostEqual(0.18, routine["threshold"])
+
+    def test_yesterday_trigger_with_today_buy_is_labelled_as_continuation(self) -> None:
+        data, dates = _empty_fixture()
+        for index in (4, 9, 14):
+            for etf in ("00403A", "00981A"):
+                _add_move(
+                    data,
+                    etf=etf,
+                    session=dates[index],
+                    stock_id="CONTINUE",
+                    name="續買股票",
+                    flow=-0.25,
+                    position_event="decrease",
+                )
+        for session in dates[-2:]:
+            for etf in ("00403A", "00981A"):
+                _add_move(
+                    data,
+                    etf=etf,
+                    session=session,
+                    stock_id="CONTINUE",
+                    name="續買股票",
+                    flow=0.25,
+                )
+
+        snapshot = build_event_snapshot(data, ETFS)
+        event = next(row for row in snapshot["buying"] if row["stock_id"] == "CONTINUE")
+        self.assertEqual("sell_to_buy", event["event_type"])
+        self.assertEqual("昨日觸發・今日續買", event["lifecycle_label"])
+        self.assertEqual(dates[-1], event["current_confirmation_date"])
+
+    def test_one_buy_away_hold_watch_shows_gap_and_evidence_expiry(self) -> None:
+        data, dates = _empty_fixture()
+        for session in (dates[-8], dates[-5], dates[-3]):
+            for etf in ("00403A", "00981A"):
+                _add_move(
+                    data,
+                    etf=etf,
+                    session=session,
+                    stock_id="WATCH",
+                    name="接近續抱",
+                    flow=0.20,
+                )
+
+        snapshot = build_event_snapshot(data, ETFS)
+        event = next(row for row in snapshot["holding"] if row["stock_id"] == "WATCH")
+        self.assertEqual("conviction_watch", event["event_type"])
+        self.assertIn("再 1 個顯著買進日", event["progress_label"])
+        self.assertEqual(3, event["evidence_expires_in"])
+
+    def test_hold_survives_quiet_day_and_reports_when_it_will_downgrade(self) -> None:
+        data, dates = _empty_fixture()
+        for session in (dates[-8], dates[-6], dates[-4], dates[-2]):
+            for etf in ("00403A", "00981A"):
+                _add_move(
+                    data,
+                    etf=etf,
+                    session=session,
+                    stock_id="QUIET_HOLD",
+                    name="安靜續抱",
+                    flow=0.20,
+                )
+
+        snapshot = build_event_snapshot(data, ETFS)
+        event = next(
+            row for row in snapshot["holding"] if row["stock_id"] == "QUIET_HOLD"
+        )
+        self.assertEqual("conviction_buy", event["event_type"])
+        self.assertEqual("今日未動・續抱仍有效", event["lifecycle_label"])
+        self.assertEqual(3, event["quiet_sessions_to_downgrade"])
+        self.assertIn("3 個交易日後降級", event["progress_label"])
+
+    def test_hold_downgrade_is_shown_instead_of_silently_disappearing(self) -> None:
+        data, dates = _empty_fixture()
+        for session in (dates[-11], dates[-9], dates[-7], dates[-5]):
+            for etf in ("00403A", "00981A"):
+                _add_move(
+                    data,
+                    etf=etf,
+                    session=session,
+                    stock_id="DOWNGRADE",
+                    name="剛降級股票",
+                    flow=0.20,
+                )
+
+        snapshot = build_event_snapshot(data, ETFS)
+        event = next(
+            row for row in snapshot["holding"] if row["stock_id"] == "DOWNGRADE"
+        )
+        self.assertEqual("conviction_downgrade", event["event_type"])
+        self.assertEqual("今日降級・等待新證據", event["lifecycle_label"])
+
+    def test_previous_hold_that_turns_to_sell_is_an_explicit_transition(self) -> None:
+        data, dates = _empty_fixture()
+        for session in (dates[-11], dates[-9], dates[-7], dates[-5]):
+            for etf in ("00403A", "00981A"):
+                _add_move(
+                    data,
+                    etf=etf,
+                    session=session,
+                    stock_id="HOLD_SELL",
+                    name="續抱轉賣",
+                    flow=0.20,
+                )
+        for etf in ("00403A", "00981A"):
+            _add_move(
+                data,
+                etf=etf,
+                session=dates[-1],
+                stock_id="HOLD_SELL",
+                name="續抱轉賣",
+                flow=-0.25,
+                position_event="decrease",
+            )
+
+        snapshot = build_event_snapshot(data, ETFS)
+        event = next(
+            row for row in snapshot["selling"] if row["stock_id"] == "HOLD_SELL"
+        )
+        self.assertEqual("buy_to_sell", event["event_type"])
+        self.assertEqual("續抱→賣出警示", event["lifecycle_label"])
 
     def test_flow_builder_marks_position_structure(self) -> None:
         base = {

@@ -8,12 +8,45 @@ import unittest
 from scripts.generate_etf_action_insight import (
     PHONE_CONTENT_WIDTH,
     _display_width,
+    _update_history,
     render_line_text,
 )
 from scripts.line_active_report_payload import ACTIVE_TICKERS, build_active_report_messages
 
 
 class LineActionPayloadTests(unittest.TestCase):
+    def test_action_history_keeps_daily_snapshots_and_replaces_same_day(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            history = Path(tmp) / "etf_action_history.json"
+            first = {
+                "as_of": "2026-07-22",
+                "generated": "first",
+                "signals": {"buying": [{"stock_id": "A"}]},
+            }
+            revised = {
+                **first,
+                "generated": "revised",
+                "signals": {"buying": [{"stock_id": "B"}]},
+            }
+            second = {
+                "as_of": "2026-07-23",
+                "generated": "second",
+                "signals": {"buying": []},
+            }
+            _update_history(history, first)
+            _update_history(history, revised)
+            _update_history(history, second)
+            cached = json.loads(history.read_text(encoding="utf-8"))
+
+        self.assertEqual(
+            ["2026-07-22", "2026-07-23"],
+            list(cached["snapshots"]),
+        )
+        self.assertEqual(
+            "B",
+            cached["snapshots"]["2026-07-22"]["signals"]["buying"][0]["stock_id"],
+        )
+
     def test_four_active_reports_are_one_text_plus_four_images(self) -> None:
         tickers = ACTIVE_TICKERS
         with tempfile.TemporaryDirectory() as tmp:
@@ -86,7 +119,7 @@ class LineActionPayloadTests(unittest.TestCase):
         self.assertIn("ETF：403・981・991", text)
         self.assertIn("判定：共識（3/3）", text)
         self.assertIn("依據：\n    先前明顯減碼\n    現在轉為買進", text)
-        self.assertIn("一般：至少 2/3 同向", text)
+        self.assertIn("一般：顯著＋2/3同向", text)
         self.assertIn("1/3：只留建倉・出清", text)
         self.assertNotIn("06/22", text)
         self.assertNotIn("類股洞察", text)
@@ -118,6 +151,44 @@ class LineActionPayloadTests(unittest.TestCase):
         self.assertIn("  判定：持續（3檔）", text)
         self.assertIn("  依據：\n    10日5買・0賣\n    最新仍買", text)
         content_lines = [line for line in text.splitlines() if line and "━" not in line]
+        self.assertLessEqual(
+            max(map(_display_width, content_lines)), PHONE_CONTENT_WIDTH
+        )
+
+    def test_lifecycle_progress_clauses_stay_phone_safe(self) -> None:
+        event = {
+            "stock_id": "6223",
+            "name": "旺矽科技",
+            "category": "IC-封測",
+            "event_type": "conviction_downgrade",
+            "event_label": "退出續抱",
+            "breadth": 2,
+            "etfs": ["00981A", "00991A"],
+            "qualification_label": "剛退出續抱（2檔）",
+            "lifecycle_label": "今日降級・等待新證據",
+            "progress_label": (
+                "再 1 個顯著買進日；再 1 檔 ETF 參與；"
+                "10日淨買再 +0.03%"
+            ),
+            "evidence_parts": [
+                "10日3買・0賣",
+                (
+                    "再 1 個顯著買進日；再 1 檔 ETF 參與；"
+                    "10日淨買再 +0.03%"
+                ),
+            ],
+        }
+        text = render_line_text(
+            "2026-07-23",
+            {"buying": [], "holding": [event], "selling": []},
+        )
+
+        self.assertIn("判定：\n    退出續抱（2檔）", text)
+        self.assertIn("狀態：\n    今降級・待新證據", text)
+        self.assertIn("    再 1 次顯著買", text)
+        content_lines = [
+            line for line in text.splitlines() if line and "━" not in line
+        ]
         self.assertLessEqual(
             max(map(_display_width, content_lines)), PHONE_CONTENT_WIDTH
         )

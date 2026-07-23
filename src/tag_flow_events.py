@@ -1,14 +1,16 @@
 """Stock-level active-ETF action events for the buy/hold/sell radar.
 
 The rotation view answers which category currently has pressure.  This engine
-answers a narrower question: which disclosed stock action has *just changed*?
-It separates fresh buy/sell actions from unusually persistent buying that can
-support a hold decision.  It still excludes chart windows, cash ranking, and
-category-level magnitude.  Category is context only; concepts are ignored.
+answers a narrower question: which disclosed stock action has just changed,
+continued, approached a hold upgrade, or lost its hold evidence?  Every move
+first clears a no-lookahead ETF+stock rolling significance gate.  It still
+excludes chart windows, cash ranking, and category-level magnitude.  Category
+is context only; concepts are ignored.
 """
 from __future__ import annotations
 
 from collections import defaultdict
+from statistics import median
 
 
 ETF_LABEL = {"00403A": "403", "00981A": "981", "00991A": "991"}
@@ -17,11 +19,14 @@ IDLE_SESSIONS = 5
 FRESH_SESSIONS = 2
 MIN_NORMALIZED_FLOW = 0.02
 MEDIAN_FRACTION = 0.35
+STOCK_MEDIAN_FRACTION = 0.60
 MIN_CONTEXT_NET = 0.05
 MIN_CONTEXT_ACTION_DAYS = 2
 CONVICTION_SESSIONS = 10
 MIN_CONVICTION_BUY_DAYS = 4
 MIN_CONVICTION_NET = 0.20
+MIN_CONVICTION_ETFS = 2
+MIN_STOCK_BASELINE_SAMPLES = 2
 
 STOCK_DISPLAY_NAMES = {
     "2308": "台達電",
@@ -80,6 +85,67 @@ def _move_threshold(observation: dict) -> float:
     return max(MIN_NORMALIZED_FLOW, median * MEDIAN_FRACTION)
 
 
+def _assign_stock_thresholds(
+    records: dict[str, dict[str, dict[str, dict]]],
+    dates: list[str],
+) -> None:
+    """Attach a no-lookahead, ETF+stock significance gate to every move.
+
+    A 981 trade must not be judged against 403's size, and a routine large
+    rebalance in one stock must not look exceptional merely because another
+    stock usually moves less.  For each ETF+stock+direction we therefore use
+    the preceding ten common sessions.  When that exact history is too sparse,
+    we fall back to the same stock's opposite-direction history, then to the
+    existing ETF-wide daily baseline.
+    """
+    for stock_dates in records.values():
+        history: dict[str, list[tuple[int, int, float]]] = defaultdict(list)
+        for date_index, date in enumerate(dates):
+            for etf, move in stock_dates.get(date, {}).items():
+                flow = float(move.get("flow") or 0.0)
+                direction = 1 if flow > 0 else -1 if flow < 0 else 0
+                recent = [
+                    (prior_direction, amount)
+                    for prior_index, prior_direction, amount in history[etf]
+                    if date_index - prior_index <= CONVICTION_SESSIONS
+                ]
+                same_direction = [
+                    amount
+                    for prior_direction, amount in recent
+                    if prior_direction == direction
+                ]
+                any_direction = [amount for _, amount in recent]
+                fallback = float(
+                    move.get("fallback_threshold") or MIN_NORMALIZED_FLOW
+                )
+                if len(same_direction) >= MIN_STOCK_BASELINE_SAMPLES:
+                    typical = float(median(same_direction))
+                    source = "same_direction"
+                elif len(any_direction) >= MIN_STOCK_BASELINE_SAMPLES:
+                    typical = float(median(any_direction))
+                    source = "stock_all_directions"
+                else:
+                    typical = fallback / MEDIAN_FRACTION
+                    source = "etf_fallback"
+                fraction = (
+                    STOCK_MEDIAN_FRACTION
+                    if source != "etf_fallback"
+                    else MEDIAN_FRACTION
+                )
+                threshold = max(MIN_NORMALIZED_FLOW, typical * fraction)
+                move["typical_flow_10d"] = round(typical, 4)
+                move["threshold"] = round(threshold, 4)
+                move["threshold_source"] = source
+                move["significant"] = abs(flow) >= threshold
+                move["significance_ratio"] = round(
+                    abs(flow) / threshold if threshold else 0.0, 2
+                )
+                if direction:
+                    history[etf].append(
+                        (date_index, direction, abs(flow))
+                    )
+
+
 def _candidate(
     stock_dates: dict[str, dict[str, dict]],
     dates: list[str],
@@ -92,9 +158,7 @@ def _candidate(
     qualified: dict[str, dict] = {}
     for etf, move in moves.items():
         event = move.get("position_event")
-        significant = abs(float(move.get("flow") or 0.0)) >= float(
-            move.get("threshold") or MIN_NORMALIZED_FLOW
-        )
+        significant = bool(move.get("significant"))
         # A newly disclosed position is informative even when it begins as a
         # tiny test allocation.  Tiny full exits are usually residue cleanup,
         # so exits still have to clear the ordinary significance gate.
@@ -164,6 +228,31 @@ def _candidate(
         ),
         "stock_id": str(strongest.get("id") or ""),
         "category": str(strongest.get("category") or "未分類"),
+        "threshold_details": [
+            {
+                "etf": etf,
+                "flow": round(float(qualified[etf].get("flow") or 0.0), 4),
+                "threshold": round(
+                    float(
+                        qualified[etf].get("threshold")
+                        or MIN_NORMALIZED_FLOW
+                    ),
+                    4,
+                ),
+                "typical_flow_10d": round(
+                    float(qualified[etf].get("typical_flow_10d") or 0.0),
+                    4,
+                ),
+                "source": str(
+                    qualified[etf].get("threshold_source") or "etf_fallback"
+                ),
+                "structural_exception": bool(
+                    qualified[etf].get("position_event") == "new_position"
+                    and not qualified[etf].get("significant")
+                ),
+            }
+            for etf in aligned
+        ],
     }
 
 
@@ -292,12 +381,21 @@ def _qualification(event: dict, etf_count: int) -> dict | None:
     """
     event_type = str(event.get("event_type") or "")
     breadth = int(event.get("breadth") or 0)
-    if event_type == "conviction_buy":
-        if breadth < 2:
+    if event_type in {
+        "conviction_buy",
+        "conviction_watch",
+        "conviction_downgrade",
+    }:
+        if breadth < MIN_CONVICTION_ETFS:
             return None
+        labels = {
+            "conviction_buy": "續抱",
+            "conviction_watch": "升級觀察",
+            "conviction_downgrade": "剛退出續抱",
+        }
         return {
             "qualification_kind": "continuation",
-            "qualification_label": f"持續（{breadth}檔）",
+            "qualification_label": f"{labels[event_type]}（{breadth}檔）",
         }
     if breadth >= 2:
         return {
@@ -360,7 +458,19 @@ def _evidence_parts(event: dict) -> list[str]:
         return [
             f"10日{int(event.get('buy_days') or 0)}買・"
             f"{int(event.get('sell_days') or 0)}賣",
-            "最新仍買",
+            str(event.get("latest_action_label") or "續抱條件仍成立"),
+        ]
+    if event_type == "conviction_watch":
+        return [
+            f"10日{int(event.get('buy_days') or 0)}買・"
+            f"{int(event.get('sell_days') or 0)}賣",
+            str(event.get("progress_label") or "接近續抱門檻"),
+        ]
+    if event_type == "conviction_downgrade":
+        return [
+            f"10日{int(event.get('buy_days') or 0)}買・"
+            f"{int(event.get('sell_days') or 0)}賣",
+            str(event.get("progress_label") or "續抱條件已失效"),
         ]
     return [str(event.get("event_label") or "訊號已成立")]
 
@@ -374,7 +484,24 @@ def _display_metadata(event: dict, etf_count: int) -> dict | None:
         **qualification,
         "etf_label": "・".join(etf_labels) or "未提供",
         "evidence_parts": _evidence_parts(event),
+        "significance_label": _significance_label(event),
     }
+
+
+def _significance_label(event: dict) -> str:
+    details = list(event.get("threshold_details") or [])
+    if any(row.get("structural_exception") for row in details):
+        return "持股名單改變；允許小額建倉例外"
+    if details:
+        stock_specific = sum(
+            row.get("source") != "etf_fallback" for row in details
+        )
+        if stock_specific == len(details):
+            return "各 ETF 均高於此股近10日慣常動作門檻"
+        return "均通過逐 ETF 門檻；歷史不足者採 ETF 基準"
+    if str(event.get("event_type") or "").startswith("conviction_"):
+        return "只計入已通過逐 ETF 近10日門檻的動作"
+    return "已通過逐 ETF 顯著性門檻"
 
 
 def _reason(event: dict) -> str:
@@ -437,65 +564,293 @@ def _prior_exit_dates(
     return exits
 
 
+def _conviction_metrics(
+    candidates: list[dict | None],
+    end_index: int,
+) -> dict:
+    """Describe the rolling ten-session hold state at one point in time."""
+    start = max(0, end_index + 1 - CONVICTION_SESSIONS)
+    recent = candidates[start : end_index + 1]
+    buy_positions = [
+        index
+        for index, item in enumerate(recent)
+        if item and item["direction"] > 0
+    ]
+    buy_days = len(buy_positions)
+    sell_days = sum(
+        bool(item and item["direction"] < 0) for item in recent
+    )
+    net = round(sum(float(item["score"]) for item in recent if item), 4)
+    participating = sorted(
+        {
+            etf
+            for item in recent
+            if item and item["direction"] > 0
+            for etf in item["etfs"]
+        }
+    )
+    breadth = len(participating)
+    qualified = bool(
+        buy_days >= MIN_CONVICTION_BUY_DAYS
+        and buy_days >= sell_days + 2
+        and net >= MIN_CONVICTION_NET
+        and breadth >= MIN_CONVICTION_ETFS
+    )
+    return {
+        "recent": recent,
+        "buy_days": buy_days,
+        "sell_days": sell_days,
+        "net": net,
+        "participating": participating,
+        "breadth": breadth,
+        "qualified": qualified,
+        "earliest_buy_expires_in": (
+            buy_positions[0] + 1 if buy_positions else None
+        ),
+        "days_needed": max(0, MIN_CONVICTION_BUY_DAYS - buy_days),
+        "balance_needed": max(0, sell_days + 2 - buy_days),
+        "breadth_needed": max(0, MIN_CONVICTION_ETFS - breadth),
+        "net_needed": round(max(0.0, MIN_CONVICTION_NET - net), 4),
+    }
+
+
+def _quiet_sessions_to_downgrade(metrics: dict) -> int | None:
+    """How many new no-action sessions the current hold evidence can survive."""
+    recent = list(metrics.get("recent") or [])
+    if not metrics.get("qualified"):
+        return 0
+    for steps in range(1, CONVICTION_SESSIONS + 1):
+        simulated = (recent + [None] * steps)[-CONVICTION_SESSIONS:]
+        buy_days = sum(bool(item and item["direction"] > 0) for item in simulated)
+        sell_days = sum(bool(item and item["direction"] < 0) for item in simulated)
+        net = sum(float(item["score"]) for item in simulated if item)
+        breadth = len(
+            {
+                etf
+                for item in simulated
+                if item and item["direction"] > 0
+                for etf in item["etfs"]
+            }
+        )
+        if not (
+            buy_days >= MIN_CONVICTION_BUY_DAYS
+            and buy_days >= sell_days + 2
+            and net >= MIN_CONVICTION_NET
+            and breadth >= MIN_CONVICTION_ETFS
+        ):
+            return steps
+    return None
+
+
+def _progress_label(metrics: dict) -> str:
+    if metrics.get("qualified"):
+        remaining = _quiet_sessions_to_downgrade(metrics)
+        if remaining is None:
+            return "續抱條件穩定"
+        return f"若無新買，{remaining} 個交易日後降級"
+    missing = []
+    needed = max(
+        int(metrics.get("days_needed") or 0),
+        int(metrics.get("balance_needed") or 0),
+    )
+    if needed:
+        missing.append(f"再 {needed} 個顯著買進日")
+    breadth_needed = int(metrics.get("breadth_needed") or 0)
+    if breadth_needed:
+        missing.append(f"再 {breadth_needed} 檔 ETF 參與")
+    net_needed = float(metrics.get("net_needed") or 0.0)
+    if net_needed:
+        missing.append(f"10日淨買再 +{net_needed:.2f}%")
+    return "；".join(missing) or "等待下一次顯著加碼"
+
+
+def _latest_nonempty(
+    candidates: list[dict | None],
+    end_index: int,
+    *,
+    positive_only: bool = False,
+) -> dict | None:
+    for item in reversed(candidates[: end_index + 1]):
+        if item and (not positive_only or item["direction"] > 0):
+            return item
+    return None
+
+
 def _conviction_event(
     stock_id: str,
     candidates: list[dict | None],
-    confirmations: list[dict | None],
     dates: list[str],
     selected_etfs: list[str],
 ) -> dict | None:
-    """Return strong continuing buying as hold evidence, never as a new entry."""
-    current = confirmations[-1] if confirmations else None
-    if not current or current["direction"] <= 0:
+    """Return active, near-upgrade, or just-downgraded hold lifecycle state."""
+    index = len(dates) - 1
+    current_metrics = _conviction_metrics(candidates, index)
+    previous_metrics = _conviction_metrics(candidates, index - 1)
+    before_previous_metrics = _conviction_metrics(candidates, index - 2)
+    current = candidates[index]
+    latest_buy = _latest_nonempty(candidates, index, positive_only=True)
+    base = current or latest_buy
+    if not base:
         return None
-    recent = candidates[-CONVICTION_SESSIONS:]
-    buy_days = sum(bool(item and item["direction"] > 0) for item in recent)
-    sell_days = sum(bool(item and item["direction"] < 0) for item in recent)
-    net = round(sum(float(item["score"]) for item in recent if item), 4)
-    if (
-        buy_days < MIN_CONVICTION_BUY_DAYS
-        or buy_days < sell_days + 2
-        or net < MIN_CONVICTION_NET
-    ):
+
+    active = bool(current_metrics["qualified"])
+    downgraded = bool(previous_metrics["qualified"] and not active)
+    near_upgrade = bool(
+        not active
+        and not downgraded
+        and current_metrics["breadth"] >= MIN_CONVICTION_ETFS
+        and current_metrics["net"] >= MIN_CONVICTION_NET
+        and max(
+            current_metrics["days_needed"],
+            current_metrics["balance_needed"],
+        ) == 1
+        and not (current and current["direction"] < 0)
+    )
+    if not (active or downgraded or near_upgrade):
         return None
-    participating = [
-        etf
-        for etf in selected_etfs
-        if any(
-            item and item["direction"] > 0 and etf in item["etfs"]
-            for item in recent
-        )
-    ]
+
+    latest_direction = int(current["direction"]) if current else 0
+    if active:
+        event_type = "conviction_buy"
+        if not previous_metrics["qualified"]:
+            event_label = "升級續抱"
+            lifecycle_label = "今日升級為續抱"
+        elif (
+            not before_previous_metrics["qualified"]
+            and latest_direction > 0
+        ):
+            event_label = "持續加碼"
+            lifecycle_label = "昨日升級・今日續買"
+        elif latest_direction > 0:
+            event_label = "持續加碼"
+            lifecycle_label = "今日續買・續抱有效"
+        elif latest_direction < 0:
+            event_label = "續抱轉弱"
+            lifecycle_label = "今日減碼・續抱警戒"
+        else:
+            event_label = "續抱有效"
+            lifecycle_label = "今日未動・續抱仍有效"
+    elif downgraded:
+        event_type = "conviction_downgrade"
+        event_label = "退出續抱"
+        lifecycle_label = "今日降級・等待新證據"
+    else:
+        event_type = "conviction_watch"
+        event_label = "接近續抱"
+        lifecycle_label = "尚未升級・接近門檻"
+
+    participating = list(current_metrics["participating"])
+    if downgraded and len(participating) < MIN_CONVICTION_ETFS:
+        participating = list(previous_metrics["participating"])
     etf_text = "、".join(ETF_LABEL.get(etf, etf) for etf in participating)
+    latest_action_label = (
+        "今日仍顯著加碼"
+        if latest_direction > 0
+        else "今日出現顯著減碼"
+        if latest_direction < 0
+        else "今日沒有新的顯著動作"
+    )
+    progress = _progress_label(current_metrics)
     return {
-        **current,
+        **base,
         "stock_id": stock_id,
-        "event_type": "conviction_buy",
-        "event_label": "持續加碼",
+        "event_type": event_type,
+        "event_label": event_label,
         "event_date": dates[-1],
+        "current_confirmation_date": dates[-1],
         "age_sessions": 0,
-        "score": net,
-        "buy_days": buy_days,
-        "sell_days": sell_days,
+        "score": current_metrics["net"],
+        "buy_days": current_metrics["buy_days"],
+        "sell_days": current_metrics["sell_days"],
         "etfs": participating,
         "breadth": len(participating),
         "reason": (
-            f"近 {CONVICTION_SESSIONS} 日有 {buy_days} 日明顯加碼、"
-            f"{sell_days} 日明顯減碼；最近仍在買"
+            f"近 {CONVICTION_SESSIONS} 日有 "
+            f"{current_metrics['buy_days']} 日顯著買、"
+            f"{current_metrics['sell_days']} 日顯著賣"
         ),
         "confirmation_label": f"{etf_text} 都曾參與",
+        "confirmation": "conviction",
+        "lifecycle_label": lifecycle_label,
+        "latest_action_label": latest_action_label,
+        "progress_label": progress,
+        "evidence_expires_in": current_metrics["earliest_buy_expires_in"],
+        "quiet_sessions_to_downgrade": (
+            _quiet_sessions_to_downgrade(current_metrics) if active else 0
+        ),
+        "conviction_qualified": active,
+        "previous_conviction_qualified": bool(
+            previous_metrics["qualified"]
+        ),
     }
+
+
+def _enrich_fresh_lifecycle(
+    event: dict,
+    candidates: list[dict | None],
+    dates: list[str],
+) -> None:
+    """Add trigger/continuation and rolling-hold progress to a fresh event."""
+    latest = candidates[-1] if candidates else None
+    same_direction_today = bool(
+        latest
+        and latest["direction"] == event["direction"]
+        and event["event_date"] != dates[-1]
+    )
+    action = "續買" if event["direction"] > 0 else "續賣"
+    if same_direction_today:
+        event["lifecycle_label"] = f"昨日觸發・今日{action}"
+        event["current_confirmation_date"] = dates[-1]
+        event["continuation_etfs"] = list(latest.get("etfs") or [])
+        event["current_threshold_details"] = list(
+            latest.get("threshold_details") or []
+        )
+        event["age_display"] = "current"
+    elif event["event_date"] == dates[-1]:
+        event["lifecycle_label"] = "今日觸發"
+        event["current_confirmation_date"] = dates[-1]
+        event["age_display"] = "current"
+    else:
+        event["lifecycle_label"] = "昨日觸發"
+        event["age_display"] = "prior"
+
+    current_metrics = _conviction_metrics(candidates, len(dates) - 1)
+    previous_metrics = _conviction_metrics(candidates, len(dates) - 2)
+    event["buy_days"] = current_metrics["buy_days"]
+    event["sell_days"] = current_metrics["sell_days"]
+    event["conviction_qualified"] = bool(current_metrics["qualified"])
+    event["previous_conviction_qualified"] = bool(
+        previous_metrics["qualified"]
+    )
+    event["progress_label"] = (
+        "已達續抱條件；觸發退場後轉續抱"
+        if current_metrics["qualified"] and event["direction"] > 0
+        else _progress_label(current_metrics)
+    )
+    event["evidence_expires_in"] = current_metrics[
+        "earliest_buy_expires_in"
+    ]
+    if (
+        event["direction"] < 0
+        and previous_metrics["qualified"]
+    ):
+        event["lifecycle_label"] = "續抱→賣出警示"
+    elif event["direction"] < 0 and event["event_date"] == dates[-1]:
+        event["lifecycle_label"] = "無訊號→賣出警示"
 
 
 def build_event_snapshot(
     data: dict,
     etfs: list[str] | None = None,
     *,
-    max_per_side: int = 6,
+    max_per_side: int | None = None,
+    as_of: str | None = None,
 ) -> dict:
-    """Return only fresh, confirmed, non-continuation stock action events."""
+    """Return the stock action lifecycle board at the requested common session."""
     selected_etfs = list(etfs or data.get("etfs", []))
     dates = _shared_dates(data, selected_etfs)
+    if as_of:
+        dates = [date for date in dates if date <= as_of]
     if len(dates) < 5:
         raise ValueError("need at least 5 common ETF sessions for action events")
     date_set = set(dates)
@@ -511,7 +866,7 @@ def build_event_snapshot(
         date = str(observation.get("date") or "")
         if etf not in selected_etfs:
             continue
-        threshold = _move_threshold(observation)
+        fallback_threshold = _move_threshold(observation)
         for move in observation.get("stocks", []):
             category = str(move.get("category") or "未分類")
             if category == "未分類":
@@ -525,8 +880,10 @@ def build_event_snapshot(
                 **move,
                 "id": stock_id,
                 "category": category,
-                "threshold": threshold,
+                "fallback_threshold": fallback_threshold,
             }
+
+    _assign_stock_thresholds(records, dates)
 
     events: list[dict] = []
     series: dict[str, tuple[list[dict | None], list[dict | None]]] = {}
@@ -591,6 +948,7 @@ def build_event_snapshot(
                 event, len(selected_etfs)
             )
             event["reason"] = _reason(event)
+            _enrich_fresh_lifecycle(event, candidates, dates)
             metadata = _display_metadata(event, len(selected_etfs))
             if not metadata:
                 continue
@@ -624,30 +982,49 @@ def build_event_snapshot(
         seen.add(event["stock_id"])
         deduped.append(event)
 
-    buying = [event for event in deduped if event["direction"] > 0][
-        :max_per_side
-    ]
-    selling = [event for event in deduped if event["direction"] < 0][
-        :max_per_side
-    ]
+    buying = [event for event in deduped if event["direction"] > 0]
+    selling = [event for event in deduped if event["direction"] < 0]
+    if max_per_side is not None:
+        buying = buying[:max_per_side]
+        selling = selling[:max_per_side]
+
+    buying_by_stock = {event["stock_id"]: event for event in buying}
+    selling_by_stock = {event["stock_id"]: event for event in selling}
     holding = []
-    for stock_id, (candidates, confirmations) in series.items():
-        if stock_id in seen:
-            continue
+    for stock_id, (candidates, _confirmations) in series.items():
         event = _conviction_event(
-            stock_id, candidates, confirmations, dates, selected_etfs
+            stock_id, candidates, dates, selected_etfs
         )
-        if event and (metadata := _display_metadata(event, len(selected_etfs))):
+        if not event:
+            continue
+        if stock_id in buying_by_stock:
+            # A fresh entry/re-entry/reversal is the more actionable state.
+            # Its card already carries the rolling hold gap or confirms that
+            # the hold threshold has also been reached.
+            continue
+        if (
+            event["event_type"] == "conviction_downgrade"
+            and stock_id in selling_by_stock
+        ):
+            selling_by_stock[stock_id]["lifecycle_label"] = "續抱→賣出警示"
+            continue
+        if metadata := _display_metadata(event, len(selected_etfs)):
             event.update(metadata)
             holding.append(event)
     holding.sort(
         key=lambda event: (
+            {
+                "conviction_buy": 0,
+                "conviction_watch": 1,
+                "conviction_downgrade": 2,
+            }.get(str(event.get("event_type") or ""), 3),
+            int(event.get("quiet_sessions_to_downgrade") or 99),
             -float(event["score"]),
             -int(event["buy_days"]),
             -int(event["breadth"]),
         )
     )
-    for event in [*buying, *holding[:4], *selling]:
+    for event in [*buying, *holding, *selling]:
         event["flow_trend_20d"] = _flow_trend(
             records.get(str(event.get("stock_id") or ""), {}), dates
         )
@@ -656,7 +1033,7 @@ def build_event_snapshot(
         "dates": dates,
         "etfs": selected_etfs,
         "buying": buying,
-        "holding": holding[:4],
+        "holding": holding,
         "selling": selling,
         "methodology": {
             "fresh_sessions": FRESH_SESSIONS,
@@ -665,16 +1042,23 @@ def build_event_snapshot(
             "conviction_sessions": CONVICTION_SESSIONS,
             "conviction_min_buy_days": MIN_CONVICTION_BUY_DAYS,
             "conviction_min_net": MIN_CONVICTION_NET,
+            "conviction_min_participating_etfs": MIN_CONVICTION_ETFS,
             "min_normalized_flow": MIN_NORMALIZED_FLOW,
             "median_fraction": MEDIAN_FRACTION,
+            "stock_median_fraction": STOCK_MEDIAN_FRACTION,
+            "stock_baseline_sessions": CONVICTION_SESSIONS,
+            "stock_baseline_min_samples": MIN_STOCK_BASELINE_SAMPLES,
+            "significance_scope": "same ETF + same stock + same direction",
             "ordinary_qualification": "at least 2 ETFs aligned",
             "single_etf_exceptions": (
                 "position-list change OR reversal confirmed for 2 sessions"
             ),
             "single_etf_ordinary_actions_hidden": True,
             "hold_min_participating_etfs": 2,
-            "continuations_excluded_from_fresh_signals": True,
+            "same_direction_continuations_labelled": True,
             "strong_continuations_shown_as_hold_evidence": True,
+            "hold_survives_quiet_session_while_window_qualifies": True,
+            "hold_downgrade_transition_shown": True,
             "concepts_interpreted": False,
         },
     }

@@ -9,17 +9,17 @@ ACTION_ETFS = ["00403A", "00981A", "00991A"]
 ACTION_LANES = {
     "buying": (
         "🔴 買進觀察",
-        "剛建倉、重新建倉、賣後轉買",
+        "新觸發與今日續買；卡片同時顯示續抱升級距離",
         "buy",
     ),
     "holding": (
         "🟠 續抱參考",
-        "不是新買點；代表加碼認同仍持續",
+        "含升級、有效續抱、臨界與剛降級，不讓狀態無聲消失",
         "hold",
     ),
     "selling": (
         "🟢 賣出警示",
-        "剛出清、買後轉賣、沉寂後重新賣",
+        "新觸發、今日續賣，以及由續抱轉為賣出",
         "sell",
     ),
 }
@@ -70,6 +70,8 @@ ACTION_BOARD_CSS = r"""
   stroke-width:1.15}
 .tfv2-flow-frame-reversal {fill:rgba(226,232,240,.025); stroke-width:1.3}
 .tfv2-flow-frame-restart {fill:rgba(226,232,240,.025); stroke-dasharray:3 2}
+.tfv2-flow-frame-continuation {fill:none; stroke:rgba(248,250,252,.52);
+  stroke-width:1; stroke-dasharray:1.5 1.5}
 .tfv2-flow-structural-dot {fill:rgba(248,250,252,.9)}
 .tfv2-flow-hold-window {fill:none; stroke:rgba(226,232,240,.42);
   stroke-width:1}
@@ -131,8 +133,8 @@ def _flow_sparkline(event: dict) -> str:
     elif event_type in restart_types:
         marker_class = " tfv2-flow-frame-restart"
         marker_label = "沉寂後重啟確認"
-    elif event_type == "conviction_buy":
-        marker_label = "最新續抱確認"
+    elif event_type.startswith("conviction_"):
+        marker_label = "最新續抱狀態"
         window_start = max(0, len(trend) - 10)
         x1 = window_start * slot + 1
         x2 = len(trend) * slot - 1
@@ -153,6 +155,26 @@ def _flow_sparkline(event: dict) -> str:
         f'width="{marker_width:.2f}" height="{height - 2:g}" rx="2">'
         f'<title>{marker_label} {signal_date}</title></rect>'
     )
+    current_confirmation_date = str(
+        event.get("current_confirmation_date") or ""
+    )
+    if current_confirmation_date and current_confirmation_date != event_date:
+        continuation_index = next(
+            (
+                index
+                for index, row in enumerate(trend)
+                if str(row.get("date") or "") == current_confirmation_date
+            ),
+            None,
+        )
+        if continuation_index is not None:
+            continuation_x = continuation_index * slot + 1.5
+            elements.append(
+                '<rect class="tfv2-flow-frame-continuation" '
+                f'x="{continuation_x:.2f}" y="3" '
+                f'width="{max(1.0, slot - 3):.2f}" height="{height - 6:g}" rx="2">'
+                '<title>觸發後今日仍有同方向顯著動作</title></rect>'
+            )
     structural_dot = ""
     if event_type in structural_types:
         dot_x = (signal_index + 0.5) * slot
@@ -188,25 +210,51 @@ def _flow_sparkline(event: dict) -> str:
 
 
 def event_card(event: dict, group: str) -> str:
+    lifecycle = str(event.get("lifecycle_label") or "")
     if group == "hold":
-        age = "最新資料仍確認"
-        age_class = "latest"
+        if event.get("event_type") == "conviction_downgrade":
+            age = "今日狀態變更"
+            age_class = "current"
+        else:
+            age = "今日重新計算"
+            age_class = "latest"
     else:
-        is_current = event["age_sessions"] == 0
-        age = "本交易日確認" if is_current else "前一交易日確認"
+        is_current = (
+            event.get("age_display") == "current"
+            or event["age_sessions"] == 0
+        )
+        age = "今日仍確認" if is_current else "昨日確認"
         age_class = "current" if is_current else "prior"
     evidence = "・".join(event.get("evidence_parts") or [event.get("reason", "")])
     stock_id = str(event.get("stock_id") or "")
     identity = escape(str(event["name"]))
     if stock_id:
         identity += f'<span class="tfv2-code">{escape(stock_id)}</span>'
-    fields = (
+    fields = [
         ("類股", str(event.get("category") or "未分類")),
         ("動作", str(event.get("event_label") or "持股異動")),
         ("ETF", str(event.get("etf_label") or "未提供")),
         ("判定", str(event.get("qualification_label") or "訊號成立")),
+        ("狀態", lifecycle or age),
+        (
+            "門檻",
+            str(event.get("significance_label") or "已通過顯著性門檻"),
+        ),
         ("依據", evidence),
-    )
+    ]
+    event_type = str(event.get("event_type") or "")
+    if (
+        event.get("progress_label")
+        and (event.get("direction", 0) > 0 or event_type.startswith("conviction_"))
+    ):
+        progress = str(event["progress_label"])
+        expires_in = event.get("evidence_expires_in")
+        if (
+            event_type in {"conviction_watch"}
+            or (group == "buy" and not event.get("conviction_qualified"))
+        ) and expires_in:
+            progress += f"；最早證據剩 {int(expires_in)} 日"
+        fields.insert(-1, ("進度", progress))
     field_html = "".join(
         '<div class="tfv2-field">'
         f'<span>{label}</span><b>{escape(value)}</b>'
