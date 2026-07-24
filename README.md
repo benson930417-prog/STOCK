@@ -8,97 +8,140 @@ STOCK is a self-hosted ETF and market-monitoring system. It has three user-facin
 
 The production server path used by all service files is `/home/ubuntu/STOCK`.
 
-## Current Handoff — 2026-07-24
+## Document Map
 
-**Future AI/code agents: read this section before changing the ETF insight pages, LINE replies, market-chart service, or daily job.** It is the current product-state map distilled from the design/debugging history. The detailed file map, formulas, invariants, and deployment procedures later in this README remain authoritative. If this summary appears to conflict with them, inspect the current code and tests before editing; do not revive an older screenshot-driven design from Git history.
+| Section | Source of truth for |
+|---|---|
+| `Product and ETF Insight Architecture` | Product objective, V1–V4 ownership, shared signal semantics, LINE payload shape, daily build boundaries, and immutable market charts. |
+| `Agent Delivery Contract` | How an AI agent edits, tests, commits, pushes, deploys, and verifies without losing production-generated data. |
+| `Runtime Map` through `Services` | Entry points, source files, scripts, generated data, processes, ports, and systemd ownership. |
+| `Server Setup` through `Rich Menu` | Installation, deployment, scheduled workflow, LINE menu layout, and operational commands. |
+| `⚠️ Invariants & Gotchas` | Rules that must remain true across refactors. Treat these as regression requirements. |
+| `ETF Maintenance Playbook For Agents` | Complete add/delete checklist for active and passive ETFs. |
+| `Manual Fetch and Cache Checks` through `Troubleshooting` | Safe diagnostics and recovery procedures. |
+| `Tracked File Inventory` and `Cleanup Policy` | Expected repository contents and what may or may not be removed. |
 
-### Product goal and decision hierarchy
+## Product and ETF Insight Architecture
 
-The product is not a holdings browser and not a generic data dashboard. Its decision goal is to help the user **copy meaningful active-ETF manager actions near their onset**: new buying, re-entry, buy/sell reversal, independent-manager confirmation, continued accumulation, cooling, and exits. Static ownership alone is not evidence. The useful primitive is the **change in active allocation** after removing ETF creation/redemption scaling, then judging that action against what the same manager normally does.
+This section is the permanent product contract for the ETF insight system. Read it before changing an ETF engine, dashboard tab, generated card, LINE command, category parser, or daily build step. The file maps and detailed invariants later in this README specify the implementation. Git history and old screenshots are not specifications.
 
-The user wants a short actionable answer first and complete evidence second:
+### Product objective
 
-1. Show the highest-priority independently confirmed buy/sell decisions first.
-2. Keep lower-priority but still valid evidence available on the website for audit.
-3. Treat a single manager as observation only, never as red/green consensus regardless of its score.
-4. Prefer a clean, mobile-readable result over dense tables, arbitrary interval zooms, or raw metrics without interpretation.
-5. Do not imply that a signal guarantees stock performance; it reports disclosed manager behavior and its statistical context.
+The system is not a static holdings browser. Its decision objective is to help the user **copy meaningful active-ETF manager actions near their onset**: new buying, re-entry, buy/sell reversal, independent-manager confirmation, continued accumulation, cooling, and exits.
 
-### Current ETF surfaces — do not merge their jobs
+The signal primitive is the change in active allocation after removing mechanical ETF creation/redemption scaling. Every action is judged relative to what that manager normally does, using only preceding data. Static ownership alone is never evidence that a stock should be held.
 
-| Surface | Current job | LINE role |
-|---|---|---|
-| `類股輪動` (V1) | Dashboard-only **類股 context**. It answers which categories have sustained pressure using the fixed 3/10/20-EWMA model. No stock names, stock actions, concepts, or copy-trade recommendation belong here. | None. There is intentionally no V1 image, command, scheduled message, or email narrative. |
-| `ETF 動作` (V2) | Complete stock-level lifecycle/audit board: `買進觀察／續抱參考／賣出警示`, including trigger continuation, hold upgrade gaps, cooling, expiry, and hold-to-sell transitions. “Hold” means persistent qualified accumulation, not every ETF holding. | The legacy typed command `ETF動作` returns three full-lane cached images. Its optional text is currently disabled. It is not the main rich-menu decision surface. |
-| `ETF 意圖 V3` | Preserved strict same-session 2/3 transition prototype. It is useful for audit/research but intentionally omits single-manager precursors and persistent state. | No longer the main LINE surface. The `ETF意圖` alias now routes to V4 for compatibility. |
-| `ETF 共識 V4` | **Final production copy-the-manager surface.** Yellow = one-manager watch; red = at least two significant independent buyers; green = at least two significant independent sellers. It retains history, freshness, expiry, core/tracking priority, and date replay. | Rich-menu/command `ETF共識` (also `ETF意圖`) returns only the top-five red buy image followed by the top-five green sell image. |
+The presentation hierarchy is:
 
-Do not delete V1–V3 merely because V4 is final. They answer different questions and are useful audit surfaces. Do not make V1 or V2 silently behave like V4.
+1. Put the highest-priority independently confirmed buy/sell decisions first.
+2. Keep lower-priority but valid evidence on the website for audit.
+3. Keep single-manager evidence in an observation state; never call it consensus regardless of score.
+4. Prefer concise interpreted evidence over dense raw tables or a selector that changes the story.
+5. Describe disclosed manager behavior, not a guaranteed stock return or personalized investment instruction.
 
-### Non-negotiable interpretation rules
+### V1 — 類股輪動
 
-- **類股 is the only grouping system.** CMoney `category` is the sole field allowed in aggregation, ranking, scoring, filtering, or narrative interpretation. `概念股` may appear only as secondary stock-level metadata beside a stock; never use it to create a theme, score, conclusion, or signal.
-- **Taiwan colour semantics are fixed:** red = buy/add/good direction, green = sell/trim/bad direction, amber/yellow = observation or pending. This colour describes ETF flow, not a guaranteed future return.
-- **Fund-size normalization is mandatory.** Compare actions with fund-size-normalized ActiveWeight/active flow and with each ETF's own preceding usual-action distribution. A larger fund such as 00981A must not dominate merely because its estimated cash trade is larger.
-- **Estimated 億元 is explanation only.** Show it because percentage points are hard to interpret, but label it approximate and never use it to rank, qualify, or compare managers. Disclosed weights, fund size, and NAV are rounded.
-- **Significance is no-look-ahead.** A current action is judged only against preceding observations. Never let today's move leak into the baseline used to judge itself.
-- **Static holdings are not “hold.”** The first derivative—net active buying/selling—is the evidence. V4 maintenance requires the participating manager's signed latest-10-common-session derivative to remain in the signal direction.
-- **Independent-manager breadth is a hard gate.** V4 red/green requires at least 2/3 ETFs with individually significant same-direction evidence whose lifetimes overlap. A score cannot convert 1/3 into consensus. Yellow is the observation list for high-information single-manager entry/re-entry/exit/reversal/restart evidence.
-- **Score and colour do different jobs.** Colour is the hard evidence state. Score orders evidence inside that state. `core` versus `tracking` reduces choice overload without deleting valid lower-priority red/green evidence.
-- **The chart multiple is not the threshold multiple.** Microchart height and “usual action” multiples use `abs(active_flow) / preceding-10-session normal_action_flow`. The significance gate is separate. Never restore the sparse-floor bug that made ordinary actions appear tens of times normal.
-- **Fixed time model, not story-changing zoom:** 3-session EWMA = current pressure, 10-session EWMA = underlying direction, 20-session EWMA = background. These are decay half-lives, not literal chopped windows. A graph/date control may change audit evidence or replay date, but must never recompute a different headline story just because the user selected another viewport.
-- **Sessions mean common trading sessions, not calendar days.** Freshness, evidence overlap, expiry, and replay dates must use the aligned disclosure calendar.
+**Question:** Which `類股` categories have sustained buying pressure, weakening pressure, or insufficient confirmation?
 
-### Current LINE and image contracts
+**Inputs and engine:** `data/tag_flow.json` plus the single CMoney `category` attached to each stock. `src/tag_flow_rotation.py` aggregates normalized ETF flow by category and uses 3/10/20-session EWMA pressure, magnitude relative to that category's own prior history, majority-ETF breadth, and two-session phase confirmation.
 
-- LINE replies are cache-only. A webhook reply must never scrape CMoney, run the ETF engines, launch Playwright, or screenshot the dashboard on demand.
-- `ETF共識` / `ETF意圖` returns **exactly two** reply objects, no text: a 720px-wide long red buy image and then a 720px-wide long green sell image. Each reads vertically `01 → 05`; only top five per direction are sent. Yellow and ranks below five remain website-only.
-- V4 LINE cards retain stock name/code, 類股, state, participating ETF evidence, score/core-tracking context, and readable 20-session manager microcharts. The images include a proportional pure-black top safe area so iPhone Dynamic Island does not cover the title.
-- `ETF動作` remains **exactly three** cached mobile images in buy/hold/sell order, with every qualified V2 card and no cropped tail. `ETF_ACTION_INCLUDE_TEXT = False` temporarily disables its otherwise cached text.
-- The scheduled active-ETF daily broadcast is a separate contract: **one combined text + four active-ETF images = five LINE objects in one request**. Never add a sixth object, split it into a second paid broadcast, or attach V1/V4 images to it.
-- LINE push/broadcast is paid. Agents must not send a proactive test. User-initiated webhook replies are free; cache generation, dashboard QA, and monitor checks send nothing.
+**Output:** A dashboard-only category board, category ranking, and category trend drill-down. The visible range selector is an evidence/chart viewport; it cannot change the phase or ranking model. Unsupported long ranges remain hidden until enough common sessions exist.
 
-### Daily data path and category health
+**Boundaries:** V1 contains no individual stock actions, stock recommendations, concept-based grouping, LINE image, LINE command, scheduled message, or email narrative. V1 answers category context only.
 
-The 18:30 job fetches the active/passive ETF disclosures, then refreshes market pulse, financing risk, CMoney tags, normalized tag flow, V2, V3, and V4 caches/summaries before the sanctioned daily report step. Important boundaries:
+### V2 — ETF 動作
 
-- `scripts/build_stock_tags.py --probe 2308` must re-fetch the stable CMoney canary instead of merely trusting cache. Coverage/canary status is included in the admin email; failed or missing categories remain retryable and must surface as `PARTIAL_FAIL`.
-- Category refresh is incremental/monthly for known holdings and automatic for new holdings. CMoney concepts remain display-only even though they are cached.
-- V2/V4 website tabs read local JSON only. Their LINE replies read generated image manifests/files only.
-- Historical state is stored in date-keyed caches rather than inferred from screenshots. Use those caches to compare yesterday/today; screenshots are presentation artifacts, not source data.
-- Do not run `scripts/update_and_notify.sh` end-to-end for testing because its final sanctioned broadcast is paid. Run the individual pure-local builders/generators instead.
+**Question:** Which individual stocks have entered a meaningful buy/hold/sell lifecycle, and what evidence is required for their next upgrade, cooling, expiry, or reversal?
 
-### Market-chart incident and current immutable-cache rule
+**Inputs and engine:** `data/tag_flow.json` is interpreted by `src/tag_flow_events.py`. Before event logic, each move passes a no-look-ahead significance gate for that ETF, stock, and direction against the preceding 10 common sessions. Ordinary events require 2/3 aligned ETFs. The only 1/3 exceptions are disclosed holding-list changes (`新建倉／重新建倉／完整出清`) and a genuine reversal that persists for two common sessions.
 
-On 2026-07-24, a LINE NASDAQ reply first appeared with an older/incorrect range and then visually changed after the monitor refreshed the same public filename. The root causes were (1) mutable image URLs reused by old LINE messages and (2) treating `?timeframe=1D` as proof even when TradingView still had `1 year` selected.
+**State model:** The three lanes are `買進觀察／續抱參考／賣出警示`. “Hold” means rolling qualified accumulation, not every stock that an ETF owns. Cards retain trigger date, current continuation, exact upgrade gaps, evidence expiry, quiet-session cooling, `續抱降溫`, and `續抱→賣出警示`; a hold must not disappear merely because the newest session is quiet.
 
-The fix in commit `4d4204c` is now part of the contract:
+**Outputs:** `data/etf_action_insight.json`, `data/etf_action_history.json`, the dashboard `ETF 動作` tab, admin/daily-report text, and three full-lane mobile images generated through the same shared card renderer.
 
-- Each market cache stores the exact image SHA-256.
-- At reply time the verified bytes are copied to a content-versioned immutable `line_market_<key>_...png` URL, so later minute refreshes cannot change an already-sent new message.
-- NASDAQ must click the visible `1 day` control and verify its selected class before accepting the screenshot. A failed selection preserves the last valid cache.
+**LINE role:** The legacy typed command `ETF動作` returns exactly three cached images in buy/hold/sell order. `ETF_ACTION_INCLUDE_TEXT = False` disables its optional cached text. V2 is an audit/lifecycle surface, not the primary rich-menu decision surface.
+
+### V3 — ETF 意圖 V3
+
+**Question:** Did at least two managers independently form the same new buy or sell transition on the same common session?
+
+**Inputs and engine:** `src/etf_intent_v3.py` first removes mechanical ETF scale changes using disclosed outstanding units, then applies a separate no-look-ahead 20-common-session gate to every ETF/stock action. A visible signal requires strict same-day 2/3 agreement. There are no 1/3 exceptions for size, entry, re-entry, reversal, or exit.
+
+**Output:** Two dashboard lanes, `買方共識／賣方共識`, containing newly formed same-session consensus plus at most one explicitly labelled next-session confirmation. Unconfirmed prior signals disappear instead of becoming a persistent hold basket.
+
+**Role:** V3 is preserved as a strict transition prototype and audit surface. It is not the final state/history model and is not the main LINE destination. The `ETF意圖` command alias routes to V4 for compatibility.
+
+### V4 — ETF 共識 V4
+
+**Question:** Which stocks have a persistent, independently confirmed manager-buying or manager-selling state worth prioritizing, and which single-manager structural events should be watched for possible upgrade?
+
+**Inputs and engine:** `src/etf_consensus_v4.py` reuses V3's flow-adjusted stock actions, then derives each ETF's usual single-action scale from the preceding 10 common sessions. Every manager must independently pass significance before breadth is considered. Same-direction signal lifetimes may overlap within three common sessions.
+
+**Hard states:**
+
+- Yellow = one-manager high-information observation, including qualifying entry, re-entry, full exit, reversal, restart, or former consensus that lost its second manager.
+- Red = at least 2/3 independently significant buyers.
+- Green = at least 2/3 independently significant sellers.
+- A score can rank a state but can never upgrade 1/3 yellow into red/green.
+
+**Maintenance and priority:** The participating managers' signed latest-10-common-session net active flow must remain in the state direction. Freshness and expiry decay on quiet sessions. One remaining manager downgrades red/green to yellow; zero removes the card. `core` and `tracking` are decision-priority layers inside valid red/green states, not replacement colours.
+
+**Outputs:** `data/etf_consensus_v4.json`, the complete historical-replay dashboard, and a generated LINE manifest. The website keeps the complete valid yellow/red/green board; the replay selector changes the historical date only and never changes the fixed model.
+
+**LINE role:** `ETF共識` and the compatibility alias `ETF意圖` return exactly two cached 720px single-column images with no text: red buy top five, then green sell top five. Cards read top-to-bottom `01 → 05`. Yellow and ranks below five remain website-only. A proportional black safe area protects the title from iPhone Dynamic Island.
+
+V1–V3 remain intentionally available even though V4 is the final copy-the-manager surface. Each version answers a different question; do not merge their behavior or delete an earlier version merely because a later version exists.
+
+### Shared ETF data semantics
+
+- **類股 is the only grouping system.** CMoney `category` is the sole field allowed in aggregation, ranking, scoring, filtering, or narrative interpretation. `概念股` may appear only as secondary stock-level metadata beside a stock. It must never create a theme, score, conclusion, or signal.
+- **Taiwan colours are fixed:** red = buy/add/positive flow, green = sell/trim/negative flow, amber/yellow = observation or pending. Colour reports flow direction, not guaranteed performance.
+- **Fund-size normalization is mandatory.** Compare actions using fund-size-normalized ActiveWeight/active flow and each ETF's own preceding usual-action distribution. A larger fund such as 00981A must not dominate because its estimated cash trade is larger.
+- **Estimated 億元 is explanatory only.** It makes percentages understandable but is approximate because disclosed weights, fund size, and NAV are rounded. Never use it to qualify, rank, or compare managers.
+- **All thresholds are no-look-ahead.** A session may use preceding observations only; the action being judged must not enter its own baseline.
+- **Static holdings are not “hold.”** Net active buying/selling—the first derivative of active allocation—is the evidence.
+- **The significance threshold and chart scale are separate.** Microchart height and “usual action” multiples use `abs(active_flow) / preceding-10-session normal_action_flow`; never display `active_flow / significance_gate` as the usual-action multiple.
+- **The time model is fixed:** 3-session EWMA = current pressure, 10-session EWMA = underlying direction, 20-session EWMA = background. These are decay half-lives rather than literal truncated windows. Controls may change chart evidence or replay date but cannot create a different conclusion.
+- **Sessions are aligned common trading sessions, not calendar days.** Use that calendar for breadth, overlap, freshness, expiry, and replay.
+
+### LINE delivery architecture
+
+- Webhook replies are cache-only. A reply must never scrape CMoney, run an ETF engine, launch Playwright, or screenshot the dashboard on demand.
+- The V4 primary decision reply is exactly two images and no text. The V2 audit reply is exactly three images; its optional text remains disabled.
+- The scheduled active-ETF daily broadcast is a separate payload: exactly one combined text plus four active-ETF images. LINE allows five objects; never add a sixth object, split it into a second paid broadcast, or attach V1/V4 images.
+- LINE push/broadcast is paid. Agents must not send proactive test messages. User-initiated webhook replies are free; builders, generators, dashboard QA, and cache checks send nothing.
+- Generated images must use computed content height and verify their card count. Fixed crops, clipped tails, repeated pages, or mutable source URLs are forbidden.
+
+### ETF daily build architecture
+
+The 18:30 job fetches active/passive ETF disclosures, refreshes market pulse and financing risk, refreshes CMoney categories, builds normalized stock/category flow, and then builds V2, V3, and V4 caches and summaries before the sanctioned daily-report step.
+
+- `scripts/build_stock_tags.py --probe 2308` re-fetches a stable CMoney canary instead of trusting cache. Coverage and canary status enter the admin email; missing categories remain retryable and must produce `PARTIAL_FAIL`.
+- Category refresh is incremental for new holdings and periodically refreshes known holdings. Cached concepts remain display-only.
+- Dashboard tabs read local JSON. LINE replies read generated manifests/images. Acquisition stays outside Streamlit and webhook render paths.
+- Historical state lives in date-keyed JSON caches. Screenshots are presentation artifacts and must never be treated as the source of yesterday/today state.
+- Do not run `scripts/update_and_notify.sh` end-to-end merely to test a builder because the final broadcast is paid. Run individual pure-local steps.
+
+### Market chart cache architecture
+
+All LINE market charts are captured ahead of time by `stock-chart.service` and refreshed by the monitor. The webhook serves only a fresh, checksum-verified cache.
+
+- Each cache records the exact image SHA-256.
+- At reply time, verified bytes are copied to a content-versioned immutable `line_market_<key>_...png`. A later monitor refresh must never change an image already referenced by a LINE message.
+- NASDAQ must click the visible TradingView `1 day` control and verify its selected class; a `?timeframe=1D` URL alone is insufficient. Failed verification preserves the last valid cache.
 - Generic oil/Brent/bond/gold/FX charts use a one-month window while their existing quote text remains unchanged.
-- This prevents mutation for **new replies only**. LINE messages sent before the immutable-URL fix cannot be retroactively repaired.
+- Messages created before content-versioned URLs cannot be repaired retroactively; all newly generated replies must use immutable URLs.
+- `stock-chart.service` preloads eight Playwright tabs before port 5005 becomes ready. After restart, wait for `/docs`, regenerate all eight caches once, and confirm both chart and monitor services are active.
 
-After restarting `stock-chart.service`, expect roughly 60–90 seconds of Playwright warm-up while eight tabs preload. Wait for `/docs`, regenerate the eight market caches once, then confirm both chart and monitor services are active. Do not diagnose the expected warm-up connection refusals as an application regression.
+### Architecture change checklist
 
-### Delivery and verification status
-
-- Production repository: `/home/ubuntu/STOCK`; deployment target and secret locations are documented below. Never commit local keys, tokens, session URLs, or `.codex/`.
-- The application baseline immediately before this handoff was `4d4204c`; the V4 top-five, top-down, 720px mobile image changes are in `9cdee90`, `21c7fef`, and `bbaac46`.
-- The last full local suite at handoff passed **69 tests**. Re-run the relevant tests after any behavioral change; do not treat this historical result as proof for a new edit.
-- Use the connected Chrome extension first for live dashboard QA. If sandbox permissions block host/network/SSH/browser access, move that command through the approved outside-sandbox path rather than rewriting working application code or weakening ACLs.
-- Production often has legitimate dirty generated data from the daily job. Preserve it. Never use `git reset --hard`, `git clean`, or a whole-tree stash/restore to force a deploy.
-
-### Safe starting checklist for the next agent
-
-1. Read this handoff, `Agent Delivery Contract`, `ETF flow surface boundaries`, and `⚠️ Invariants & Gotchas`.
-2. Inspect `git status`, the relevant generated JSON/manifest, and current code before assuming a screenshot is current.
-3. Decide which surface owns the request; do not spread one UI change across V1–V4 or LINE unless the product contract requires it.
-4. Keep data acquisition out of Streamlit/webhook render paths; refresh caches in scripts/jobs.
+1. Identify which version or runtime owns the requested behavior; do not spread a change across V1–V4 or LINE without a product reason.
+2. Inspect code, JSON schema, generated manifest, and tests instead of inferring behavior from a screenshot.
+3. Keep acquisition, computation, presentation, and delivery separated: fetch/build scripts → local cache → dashboard/card renderer → webhook.
+4. Preserve the shared data semantics and LINE object contracts above.
 5. Test without sending paid LINE messages.
-6. Commit, push, deploy with generated-data safety, and visually verify through connected Chrome when UI changed.
-7. Update this handoff whenever a future decision changes one of these contracts.
+6. Follow `Agent Delivery Contract`, production generated-data safety, and connected-Chrome verification rules below.
+7. Update the owning architecture/file/invariant section when a contract changes; do not append a dated session note.
 
 ## Agent Delivery Contract
 
@@ -202,7 +245,7 @@ Notes:
 | `.gitignore` | Keeps generated images, quote caches, logs, SQLite DBs, virtualenvs, and local research sandboxes out of Git. |
 | `app.py` | Main Streamlit app. Loads tracked JSON data, quote caches, secrets, authentication, translations, and renders all tabs. |
 | `requirements.txt` | Dependency source of truth for dashboard, webhook, chart service, fetchers, monitors, and benchmark jobs. |
-| `README.md` | This handoff and operations guide. |
+| `README.md` | Product architecture, implementation map, invariants, and operations guide. |
 
 ## Dashboard
 
@@ -231,14 +274,9 @@ Notes:
 
 The rotation model deliberately has no decision interval. It gives every old session a gradually fading weight instead of dropping an entire buy wave at a boxcar boundary: **3-session EWMA = current pressure, 10-session EWMA = underlying direction, and 20-session EWMA = background**. These are decay speeds, not literal truncated day windows. "Strong/weak" magnitude is relative to that category's own prior smoothed-pressure history; a cross-category rank is secondary context. A coordinated buy/sell claim needs at least two selected ETFs pointing the same way, and a new phase must persist for two common sessions before it replaces the confirmed state. An abrupt reduction is surfaced when the 3-session EWMA current pressure turns materially negative—even while the 10/20-session EWMAs remain positive—without falsely calling that a confirmed long-term downtrend. This model is dashboard-only category context. The selector's interval totals are display/audit evidence only and never alter the model conclusion.
 
-### ETF flow surface boundaries
+### Flow-adjusted share primitive
 
-- **類股輪動 (V1)** answers which `category` has sustained pressure. It never interprets concepts or individual stocks.
-- **ETF 動作 (V2)** is the complete buy/hold/sell lifecycle and audit surface. Its visible hold lane means qualified persistent accumulation—not every currently held stock.
-- **ETF 意圖 V3** remains the strict same-day transition prototype/audit surface.
-- **ETF 共識 V4** is the final copy-the-manager surface. It keeps a historical state rather than a daily lottery: yellow is a high-information one-manager watch, while red/green require at least two independent managers. A stricter core tier reduces choice overload but never hides the remaining valid red/green consensus. Ordinary holdings and ordinary 1/3 activity remain hidden.
-
-V3's primitive is not raw share change and not a raw second derivative. For each ETF disclosure pair it first computes:
+The V3/V4 primitive is not raw share change and not a raw second derivative. For each ETF disclosure pair it first computes:
 
 ```text
 expected shares from ETF scale
@@ -250,7 +288,7 @@ flow-adjusted active shares
 
 All three active-ETF source workbooks disclose exact outstanding units. The fetchers now persist `meta.outstanding_units`; historical records created before this field use the auditable `fund_size / rounded NAV` estimate and carry `unit_quality=estimated`. V3 stores both raw and adjusted directions. A residual that opposes the actual share trade remains audit context but is not shown as a copyable buy/sell.
 
-Each ETF/stock move is judged with no look-ahead against its preceding 20 common sessions. Only after those individual tests does V3 apply the copyability gate: at least two independent ETFs must be significant in the same direction on the same common session. There are no 1/3 exceptions for extreme size, entry, re-entry, reversal, or exit. The second ETF's arrival is the consensus trigger. Conflicting or single-manager actions remain silent. The backend keeps decaying buy/neutral/sell state to distinguish onset, reversal, restart, acceleration, and breadth expansion. The current surface contains only events formed today and previous-session events that again receive 2/3 confirmation today; an unconfirmed prior event is not carried forward.
+Each ETF/stock move is judged with no look-ahead against its preceding 20 common sessions. Only after those individual tests does V3 apply the copyability gate: at least two independent ETFs must be significant in the same direction on the same common session. There are no 1/3 exceptions for extreme size, entry, re-entry, reversal, or exit. The second ETF's arrival is the consensus trigger. Conflicting or single-manager actions remain silent. The backend keeps decaying buy/neutral/sell state to distinguish onset, reversal, restart, acceleration, and breadth expansion. The V3 surface contains only events formed today and previous-session events that again receive 2/3 confirmation today; an unconfirmed prior event is not carried forward.
 
 Dashboard authentication uses `VIEW_PASSWORD` and `ADMIN_PASSWORD` from Streamlit secrets, environment variables, or `/home/ubuntu/.stock_secrets` depending on the runtime.
 
@@ -806,7 +844,7 @@ Use consistent casing:
 | 13 | `services/stock-quote-monitor-<t-lower>.service` | new quote-monitor unit | both |
 | 14 ★ | `scripts/setup_rich_menu.py` | a menu tile (fill the `預留` placeholder or add a slot) | both |
 | 15 | `scripts/etf_benchmark/step1_universe.py` | `required` list (only if it should appear in ETF compare) | both |
-| 16 | `README.md` | Scripts table, Data Directory, Services table, enable/restart one-liners, Manual Fetch, Current File Inventory | both |
+| 16 | `README.md` | Scripts table, Data Directory, Services table, enable/restart one-liners, Manual Fetch, Tracked File Inventory | both |
 
 After editing, re-run the grep from Invariant #2 and confirm the only remaining non-matches are intentional. Verify: `python -m py_compile` the touched `.py`, `bash -n scripts/update_and_notify.sh`.
 
@@ -855,7 +893,7 @@ After editing, re-run the grep from Invariant #2 and confirm the only remaining 
 8. Add a quote monitor service.
    - Create `services/stock-quote-monitor-<ticker-lower>.service`.
    - The service should run `/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py <TICKER> --interval 60`.
-   - Add it to README service tables, enable commands, restart commands, and Current File Inventory.
+   - Add it to README service tables, enable commands, restart commands, and Tracked File Inventory.
    - After deployment, copy services and enable it with systemd.
    - **Passive ETFs — update every passive-ticker set, or the monitor reads the
      wrong path.** A passive ETF's holdings live in `data/passive_<TICKER>_history.json`
@@ -893,7 +931,7 @@ After editing, re-run the grep from Invariant #2 and confirm the only remaining 
     - Rebuild or incrementally refresh benchmark data and run verification.
 
 14. Update README.
-    - Update Scripts table, Data Directory, Services table, enable/restart commands, Daily Job manual command, Manual Fetch commands, Current File Inventory, and any command/help examples.
+    - Update Scripts table, Data Directory, Services table, enable/restart commands, Daily Job manual command, Manual Fetch commands, Tracked File Inventory, and any command/help examples.
     - If the ETF has special source behavior, document it in the Scripts notes.
 
 15. Run verification before committing.
@@ -959,7 +997,7 @@ Work the **Add One ETF touch-point table in reverse** — remove the ticker from
 
 5. Remove quote monitor service.
    - Delete `services/stock-quote-monitor-<ticker-lower>.service`.
-   - Remove it from README service table, enable commands, restart commands, and Current File Inventory.
+   - Remove it from README service table, enable commands, restart commands, and Tracked File Inventory.
    - On the server:
      ```bash
      sudo systemctl disable --now stock-quote-monitor-<ticker-lower>.service && sudo rm -f /etc/systemd/system/stock-quote-monitor-<ticker-lower>.service && sudo systemctl daemon-reload
@@ -981,7 +1019,7 @@ Work the **Add One ETF touch-point table in reverse** — remove the ticker from
    - Rebuild or refresh benchmark outputs on the server. The SQLite DB is ignored and can be regenerated.
 
 9. Update README.
-   - Remove the ticker from Scripts, Data Directory, Services, Daily Job manual command, Manual Fetch commands, Current File Inventory, and any special notes.
+   - Remove the ticker from Scripts, Data Directory, Services, Daily Job manual command, Manual Fetch commands, Tracked File Inventory, and any special notes.
    - If deleting an ETF creates a rich-menu empty slot, document or fill the slot according to current menu policy.
 
 10. Run deletion verification.
@@ -1093,7 +1131,7 @@ python scripts/update_market_pulse_volume.py --backfill-years 5
 
 If GitHub push returns a remote 500, retry after a few minutes. That error is server-side when local `git status` is clean and credentials are unchanged.
 
-## Current File Inventory
+## Tracked File Inventory
 
 This is the complete intended production tree after cleanup:
 
