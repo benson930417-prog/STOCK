@@ -1,5 +1,6 @@
 import os
 import asyncio
+import hashlib
 import urllib.request
 import re
 from io import BytesIO
@@ -103,6 +104,17 @@ pages = {}
 
 GENERIC_SNAPSHOT_VIEWPORT = {"width": 720, "height": 860}
 NASDAQ_SNAPSHOT_VIEWPORT = {"width": 1200, "height": 900}
+
+
+def _snapshot_integrity(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return {
+        "sha256": digest.hexdigest(),
+        "size": os.path.getsize(path),
+    }
 
 HIDE_CSS = """
     header, aside, nav, div[class*="layout__header"], div[class*="pageHead-"],
@@ -692,12 +704,27 @@ async def take_snapshot(req: SnapshotRequest):
                     await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
                 await page.evaluate("window.scrollTo(0, 0)")
                 await asyncio.sleep(1)
-                clicked = await page.evaluate("""() => {
-                    const controls = Array.from(document.querySelectorAll('button, a, [role="button"]'));
-                    const oneDay = controls.find(el => (el.textContent || '').trim() === '1 day');
-                    if (oneDay) { oneDay.click(); return true; }
-                    return false;
+                selection = await page.evaluate("""() => {
+                    const controls = Array.from(document.querySelectorAll(
+                        'button[class*="rangeButton-"], button, a, [role="button"]'
+                    ));
+                    const oneDay = controls.find(
+                        el => (el.textContent || '').trim().toLowerCase() === '1 day'
+                    );
+                    if (!oneDay) {
+                        return {clicked: false, reason: '1 day control not found'};
+                    }
+                    oneDay.click();
+                    return {
+                        clicked: true,
+                        text: (oneDay.textContent || '').trim(),
+                        className: String(oneDay.className || ''),
+                    };
                 }""")
+                if not selection.get("clicked"):
+                    raise ValueError(
+                        selection.get("reason") or "1 day click failed"
+                    )
                 # Clicking "1 day" re-fetches the intraday series and repaints
                 # the chart canvas; wait for the fetch to go idle, then give the
                 # canvas a moment to finish painting.
@@ -706,7 +733,30 @@ async def take_snapshot(req: SnapshotRequest):
                 except Exception as wait_exc:
                     print(f"  ⚠ NASDAQ networkidle wait after 1-day click skipped: "
                           f"{type(wait_exc).__name__}: {wait_exc}")
-                await asyncio.sleep(2 if clicked else 1)
+                await asyncio.sleep(2)
+                selected = await page.evaluate("""() => {
+                    const controls = Array.from(document.querySelectorAll(
+                        'button[class*="rangeButton-"], button'
+                    ));
+                    const oneDay = controls.find(
+                        el => (el.textContent || '').trim().toLowerCase() === '1 day'
+                    );
+                    if (!oneDay) {
+                        return {found: false, selected: false, className: ''};
+                    }
+                    const className = String(oneDay.className || '');
+                    return {
+                        found: true,
+                        selected: /(^|\\s)selected-[^\\s]+/.test(className),
+                        className,
+                    };
+                }""")
+                if not selected.get("found") or not selected.get("selected"):
+                    raise ValueError(
+                        "IG 1 day control did not become selected: "
+                        + str(selected.get("className") or "missing")
+                    )
+                return selected
 
             # The IG-NASDAQ page sometimes loads in a transient
             # "Market closed / No trades" feed state: the quote block shows no
@@ -727,7 +777,17 @@ async def take_snapshot(req: SnapshotRequest):
                 # is fine). The broken state is identified by a blank canvas
                 # and an unparsable quote, both checked below.
                 for attempt in range(3):
-                    await _load_ig_page_and_select_1d(reload_page=attempt > 0)
+                    try:
+                        await _load_ig_page_and_select_1d(
+                            reload_page=attempt > 0
+                        )
+                    except Exception as range_exc:
+                        failures.append(
+                            f"attempt {attempt + 1}: 1-day selection failed: "
+                            f"{type(range_exc).__name__}: {range_exc}"
+                        )
+                        print(f"  ⚠ NASDAQ {failures[-1]}, reloading")
+                        continue
                     # Fixed against the IG symbol-page layout after pressing
                     # 1 day. Optional crop_* request fields let us tune this
                     # live with curl without restarting the Playwright service.
@@ -769,8 +829,10 @@ async def take_snapshot(req: SnapshotRequest):
                 if os.path.exists(tmp_filepath):
                     os.remove(tmp_filepath)
             print(f"  ✅ NASDAQ IG page snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
+            integrity = _snapshot_integrity(filepath)
             return {"status": "success", "url": filename, "path": filepath, "clip": clip,
-                    "viewport": nasdaq_viewport, "quote": quote, "text": text}
+                    "viewport": nasdaq_viewport, "quote": quote, "text": text,
+                    **integrity}
 
         await page.set_viewport_size(GENERIC_SNAPSHOT_VIEWPORT)
         await page.evaluate("window.scrollTo(0, 0)")
@@ -914,6 +976,7 @@ async def take_snapshot(req: SnapshotRequest):
             _trim_bottom_whitespace(filepath, padding=34, min_trim=34)
             _overlay_title(filepath, meta["title"])
 
+        integrity = _snapshot_integrity(filepath)
         return {
             "status": "success",
             "url": filename,
@@ -922,6 +985,7 @@ async def take_snapshot(req: SnapshotRequest):
             "viewport": GENERIC_SNAPSHOT_VIEWPORT,
             "quote": quote,
             "text": text,
+            **integrity,
         }
     except Exception as e:
         print(f"❌ Error during snapshot for {req.key}: {e}")

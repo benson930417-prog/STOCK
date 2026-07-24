@@ -1,5 +1,7 @@
 import argparse
 import json
+import os
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -9,6 +11,12 @@ import requests
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from src.market_chart_cache import file_sha256  # noqa: E402
+
+
 QUOTE_CACHE_DIR = ROOT_DIR / "data" / "quote_cache"
 CHART_SERVICE_URL = "http://127.0.0.1:5005"
 
@@ -48,6 +56,21 @@ def refresh_key(key, timeout):
         raise RuntimeError(
             f"{key} snapshot returned no text (same-moment quote failed): {snapshot_payload}"
         )
+    snapshot_path = Path(
+        snapshot_payload.get("path")
+        or ROOT_DIR / "data" / "images" / snapshot_payload["url"]
+    )
+    if not snapshot_path.is_absolute():
+        snapshot_path = ROOT_DIR / snapshot_path
+    snapshot_sha256 = file_sha256(snapshot_path)
+    service_sha256 = str(snapshot_payload.get("sha256") or "")
+    if not service_sha256:
+        raise RuntimeError(f"{key} snapshot returned no image checksum")
+    if snapshot_sha256 != service_sha256:
+        raise RuntimeError(
+            f"{key} snapshot changed before cache commit: "
+            f"service={service_sha256[:12]} current={snapshot_sha256[:12]}"
+        )
 
     payload = {
         "key": key,
@@ -55,7 +78,11 @@ def refresh_key(key, timeout):
         "text": text,
         "quote": snapshot_payload.get("quote"),
         "snapshot_url": snapshot_payload["url"],
-        "snapshot_path": snapshot_payload.get("path"),
+        "snapshot_path": str(snapshot_path),
+        "snapshot_sha256": snapshot_sha256,
+        "snapshot_size": int(
+            snapshot_payload.get("size") or os.path.getsize(snapshot_path)
+        ),
         "clip": snapshot_payload.get("clip"),
         "viewport": snapshot_payload.get("viewport"),
         "source": "chart_service",

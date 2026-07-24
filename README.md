@@ -223,7 +223,7 @@ curl -s -X POST http://127.0.0.1:5005/market-text -H "Content-Type: application/
 
 ### Caching and Resource Limits
 
-All LINE market commands (`油價`, `匯率`, `債券`, `黃金`, `那斯達克`) are served **only from cache**. The webhook never renders TradingView live during a reply — it reads `data/quote_cache/market_<key>.json`.
+All LINE market commands (`油價`, `匯率`, `債券`, `黃金`, `那斯達克`) are served **only from cache**. The webhook never renders TradingView live during a reply — it reads `data/quote_cache/market_<key>.json`. Each cache records the image SHA-256. At reply time the webhook copies those checksum-verified bytes to a content-versioned `line_market_<key>_...png`; historical LINE messages therefore never change when the minute monitor replaces `<key>_chart.png`.
 
 | Concern | Where | Value |
 |---|---|---|
@@ -234,7 +234,9 @@ All LINE market commands (`油價`, `匯率`, `債券`, `黃金`, `那斯達克`
 | ETF quote-card cache | `stock-quote-monitor-*.service` → `monitor_etf_quotes.py <TICKER> --interval 180 --max-workers 4 --jitter 150` | every **180s** (3 min), `MemoryMax=512M`, `CPUQuota=35%`, `RuntimeMaxSec=12h` |
 | Gold quote cache | `stock-gold-monitor.service` → `monitor_gold_quote.py --interval 60 --scanner-only` | every **60s**, `MemoryMax=512M` |
 
-**Same-moment price + chart.** `monitor_market_charts.refresh_key` makes a single `/snapshot` call per key. `chart_service.py` reads the price/% from the *same page render* that produced the screenshot and returns both, so the cached text never drifts from the cached chart. There is no separate `/market-text` pass and no per-key price buffer.
+**Same-moment price + chart.** `monitor_market_charts.refresh_key` makes a single `/snapshot` call per key. `chart_service.py` reads the price/% from the *same page render* that produced the screenshot and returns both, then the monitor stores that image's SHA-256 beside the text. The webhook retries instead of replying if the mutable source no longer matches that checksum. There is no separate `/market-text` pass and no per-key price buffer.
+
+**NASDAQ timeframe is verified, not assumed.** TradingView may open `?timeframe=1D` while the actual range button still has `1 year` selected. The NASDAQ snapshot path must click the visible `1 day` control and verify its `selected-*` class before accepting the canvas. Missing/failed selection rejects that refresh and preserves the previous valid cache; a merely nonblank long-range chart is never sufficient.
 
 **Snapshot crop rules.** Generic 1-month charts (`oil`, `brent`, `bond`, `gold`, `usdtwd`, `usdjpy`, `usdchf`) may detect the chart's `y` and `height`, but they must use the full TradingView viewport width: `clip.x = 0` and `clip.width = window.innerWidth`. Their LINE quote text remains the same four performance rows (`1日`, `1週`, `1月`, `6月`); only the plotted chart window is one month. Do not crop or shift the x-axis for generic charts; the right price axis and last-price marker live at the far right edge. NASDAQ is the exception: it uses a separate IG-NASDAQ 24h branch with its own `1200x900` viewport, fixed `y`/`height`, 1-day button click, and trading-session overlay. Do not "simplify" NASDAQ into the generic crop path unless it is manually reverified.
 

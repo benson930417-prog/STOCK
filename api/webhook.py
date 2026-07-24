@@ -25,11 +25,17 @@ import subprocess
 import threading
 import sqlite3
 from datetime import datetime, timezone
+from pathlib import Path
 
 # Ensure the root STOCK directory is in sys.path so 'scripts' can be imported dynamically
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if parent_dir not in sys.path:
     sys.path.append(parent_dir)
+
+from src.market_chart_cache import (  # noqa: E402
+    MarketImageChecksumMismatch,
+    freeze_market_reply_image,
+)
 
 app = Flask(__name__)
 
@@ -816,6 +822,35 @@ def _cached_market_text(key):
         print(f"Cached market text failed for {key}: {exc}")
         return _tradingview_error_text(key, "快取報價", exc)
 
+def _freeze_cached_market_reply(key, attempts=4):
+    """Return quote metadata plus immutable bytes from the exact same cache."""
+    images_dir = Path(parent_dir) / "data" / "images"
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        cache = get_cached_market_chart(
+            key,
+            max_age_seconds=MARKET_CACHE_MAX_AGE,
+        )
+        try:
+            frozen_name = freeze_market_reply_image(
+                cache,
+                images_dir,
+                require_checksum=True,
+            )
+            return cache, frozen_name
+        except MarketImageChecksumMismatch as exc:
+            last_error = exc
+            print(
+                f"Market cache changed while freezing {key}, "
+                f"attempt {attempt}/{attempts}: {exc}",
+                flush=True,
+            )
+            if attempt < attempts:
+                time.sleep(0.08 * attempt)
+    raise RuntimeError(
+        f"Could not bind cached market text to image for {key}: {last_error}"
+    )
+
 def reply_cached_market(reply_token, keys):
     """Reply a market card (text + chart) entirely from cache.
 
@@ -826,9 +861,12 @@ def reply_cached_market(reply_token, keys):
     texts, images = [], []
     for key in keys:
         try:
-            cache = get_cached_market_chart(key, max_age_seconds=MARKET_CACHE_MAX_AGE)
+            cache, frozen_name = _freeze_cached_market_reply(key)
             texts.append(cache["text"])
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{cache['snapshot_url']}?t={int(time.time())}"
+            img_url = (
+                "https://linechatbot.duckdns.org/api/webhook/images/"
+                f"{frozen_name}"
+            )
             images.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
         except Exception as exc:
             print(f"Cached market reply failed for {key}: {exc}")
