@@ -46,7 +46,7 @@ class EtfConsensusV4SummaryTests(unittest.TestCase):
         self.assertIn("買方共識", buy)
         self.assertIn("單一 ETF 觀察", watch)
 
-    def test_three_wide_images_cover_every_card_once(self) -> None:
+    def test_line_images_keep_only_buy_sell_top_five(self) -> None:
         def card(stock_id, tier="", freshness=0):
             return {
                 "stock_id": stock_id,
@@ -63,6 +63,10 @@ class EtfConsensusV4SummaryTests(unittest.TestCase):
                 "buying": [
                     card("b-core", tier="core"),
                     card("b-tracking", tier="tracking"),
+                    card("b-3"),
+                    card("b-4"),
+                    card("b-5"),
+                    card("b-hidden"),
                 ],
                 "selling": [
                     card("s-core", tier="core"),
@@ -71,29 +75,33 @@ class EtfConsensusV4SummaryTests(unittest.TestCase):
             }
         }
         specs = build_page_specs(payload)
-        self.assertEqual(3, len(specs))
+        self.assertEqual(2, len(specs))
         self.assertEqual(
-            ["buying", "selling", "watching"],
+            ["buying", "selling"],
             [spec["lane_key"] for spec in specs],
         )
         stock_ids = [
             card["stock_id"] for spec in specs for card in spec["cards"]
         ]
-        self.assertEqual(6, len(stock_ids))
-        self.assertEqual(6, len(set(stock_ids)))
+        self.assertEqual(7, len(stock_ids))
+        self.assertEqual(7, len(set(stock_ids)))
+        self.assertNotIn("b-hidden", stock_ids)
+        self.assertNotIn("w-fresh", stock_ids)
+        self.assertNotIn("w-cooling", stock_ids)
         self.assertEqual(
             [
-                "etf_consensus_v4_buy_wide_latest.jpg",
-                "etf_consensus_v4_sell_wide_latest.jpg",
-                "etf_consensus_v4_watch_wide_latest.jpg",
+                "etf_consensus_v4_buy_top5_latest.jpg",
+                "etf_consensus_v4_sell_top5_latest.jpg",
             ],
             [spec["filename"] for spec in specs],
         )
         html = render_wide_html(payload, specs[0])
         self.assertIn("width:1800px", html)
+        self.assertIn("height:180px", html)
+        self.assertIn("background:#000", html)
         self.assertEqual(2, html.count('class="tfv4-lane tfv4-lane-buy"'))
-        self.assertIn("買方共識｜順序 1–1", html)
-        self.assertIn("買方共識｜順序 2–2", html)
+        self.assertIn("買方前 5 名｜順序 1–3", html)
+        self.assertIn("買方前 5 名｜順序 4–5", html)
 
     def test_preview_contains_three_lanes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

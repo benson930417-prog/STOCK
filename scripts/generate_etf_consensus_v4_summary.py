@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render three wide, two-column V4 images for the on-demand LINE reply."""
+"""Render buy/sell top-five V4 images for the on-demand LINE reply."""
 from __future__ import annotations
 
 import argparse
@@ -26,7 +26,7 @@ from src.etf_consensus_v4_cards import (  # noqa: E402
 CACHE = ROOT / "data" / "etf_consensus_v4.json"
 SUMMARY_DIR = ROOT / "data" / "summaries"
 MANIFEST_PATH = SUMMARY_DIR / "etf_consensus_v4_manifest.json"
-LINE_IMAGE_COUNT = 3
+LINE_IMAGE_COUNT = 2
 
 
 def _column(
@@ -71,41 +71,32 @@ def _balanced_columns(
 
 
 def build_page_specs(payload: dict) -> list[dict]:
-    """Build exactly three images; every current card appears exactly once."""
+    """Build two decision-summary images; the website retains the full board."""
     signals = payload.get("signals") or {}
     buying = list(signals.get("buying") or [])
     selling = list(signals.get("selling") or [])
-    watching = list(signals.get("watching") or [])
+    buy_top = buying[:5]
+    sell_top = selling[:5]
 
     specs = [
         {
             "lane_key": "buying",
-            "filename": "etf_consensus_v4_buy_wide_latest.jpg",
+            "filename": "etf_consensus_v4_buy_top5_latest.jpg",
             "columns": _balanced_columns(
                 lane_key="buying",
-                cards=buying,
-                title="🔴 買方共識",
-                note="依共識強度排序；核心決策徽章仍標示真正優先名單",
+                cards=buy_top,
+                title="🔴 買方前 5 名",
+                note="LINE 決策摘要｜依共識強度排序；完整名單請看網站",
             ),
         },
         {
             "lane_key": "selling",
-            "filename": "etf_consensus_v4_sell_wide_latest.jpg",
+            "filename": "etf_consensus_v4_sell_top5_latest.jpg",
             "columns": _balanced_columns(
                 lane_key="selling",
-                cards=selling,
-                title="🟢 賣方共識",
-                note="依共識強度排序；核心決策徽章標示優先警示",
-            ),
-        },
-        {
-            "lane_key": "watching",
-            "filename": "etf_consensus_v4_watch_wide_latest.jpg",
-            "columns": _balanced_columns(
-                lane_key="watching",
-                cards=watching,
-                title="🟡 單一 ETF 觀察",
-                note="依觀察成熟度排序；分數再高也仍不等於兩檔 ETF 共識",
+                cards=sell_top,
+                title="🟢 賣方前 5 名",
+                note="LINE 決策摘要｜依共識強度排序；完整名單請看網站",
             ),
         },
     ]
@@ -119,9 +110,13 @@ def build_page_specs(payload: dict) -> list[dict]:
         for spec in specs
         for card in spec["cards"]
     ]
-    expected = len(buying) + len(selling) + len(watching)
+    expected = len(buy_top) + len(sell_top)
     if len(all_cards) != expected or len(set(all_cards)) != expected:
-        raise RuntimeError("V4 wide images must contain every card exactly once")
+        raise RuntimeError("V4 LINE top-five images contain duplicate cards")
+    if len(specs) != LINE_IMAGE_COUNT:
+        raise RuntimeError(
+            f"V4 LINE summary must contain {LINE_IMAGE_COUNT} images"
+        )
     return specs
 
 
@@ -145,10 +140,12 @@ def _document(body_html: str, *, width: int) -> str:
   <style>
     * {{ box-sizing:border-box; }}
     html {{ background:#0b0e16; font-size:20px; }}
-    body {{ margin:0; width:{width}px; padding:20px; background:#0b0e16;
+    body {{ margin:0; width:{width}px; padding:0 20px 20px; background:#0b0e16;
       color:#f8fafc; font-family:"Noto Sans TC","Microsoft JhengHei",
       "PingFang TC",Arial,sans-serif; }}
     {V4_CSS}
+    .tfv4-safe-top {{ height:180px;background:#000;
+      margin:0 -20px 20px; }}
     .tfv4-wide-grid {{ display:grid;grid-template-columns:1fr 1fr;
       gap:18px;align-items:start; }}
     .tfv4-lane {{ margin:0; background-color:rgba(15,23,42,.72); }}
@@ -171,7 +168,7 @@ def _document(body_html: str, *, width: int) -> str:
     .tfv4-chart {{ height:1.55rem; }}
   </style>
 </head>
-<body>{body_html}</body>
+<body><div class="tfv4-safe-top" aria-hidden="true"></div>{body_html}</body>
 </html>"""
 
 
@@ -225,10 +222,15 @@ def _compress(path: Path) -> tuple[int, int]:
 
 def _write_manifest(payload: dict, results: list[dict]) -> None:
     manifest = {
-        "schema_version": 2,
+        "schema_version": 3,
         "as_of": payload.get("as_of"),
-        "reply_order": "buying_then_selling_then_watching",
-        "layout": "three_wide_two_column_images",
+        "reply_order": "buying_top5_then_selling_top5",
+        "layout": "two_wide_top5_images_with_iphone_safe_top",
+        "selection": {
+            "buying": "first_five_by_existing_consensus_score",
+            "selling": "first_five_by_existing_consensus_score",
+            "watching": "website_only",
+        },
         "images": results,
     }
     MANIFEST_PATH.write_text(

@@ -189,9 +189,9 @@ def load_etf_intent_image_paths():
         with open(manifest_path, encoding="utf-8") as fh:
             manifest = json.load(fh)
         images = list(manifest.get("images") or [])
-        if len(images) != 3:
+        if len(images) != 2:
             raise ValueError(
-                f"ETF consensus manifest must contain 3 images, got {len(images)}"
+                f"ETF consensus manifest must contain 2 images, got {len(images)}"
             )
         filenames = []
         for item in images:
@@ -199,7 +199,7 @@ def load_etf_intent_image_paths():
             if (
                 os.path.basename(filename) != filename
                 or not re.fullmatch(
-                    r"etf_consensus_v4_(buy|sell|watch)_wide_latest\.jpg",
+                    r"etf_consensus_v4_(buy|sell)_top5_latest\.jpg",
                     filename,
                 )
             ):
@@ -211,9 +211,8 @@ def load_etf_intent_image_paths():
         # Transitional fallback for a server updated before the new generator
         # has written its first manifest.
         filenames = [
-            "etf_consensus_v4_watch_latest.jpg",
-            "etf_consensus_v4_buy_latest.jpg",
-            "etf_consensus_v4_sell_latest.jpg",
+            "etf_consensus_v4_buy_top5_latest.jpg",
+            "etf_consensus_v4_sell_top5_latest.jpg",
         ]
     paths = [os.path.join(summary_dir, name) for name in filenames]
     missing = [path for path in paths if not os.path.exists(path)]
@@ -932,9 +931,9 @@ def handle_message(event):
                     original_content_url=img_url,
                     preview_image_url=img_url,
                 ))
-            if len(messages) != 3:
+            if len(messages) != 2:
                 raise AssertionError(
-                    "ETF consensus reply must contain 3 images, "
+                    "ETF consensus reply must contain 2 images, "
                     f"got {len(messages)}"
                 )
             reply_line(event.reply_token, messages)
