@@ -181,12 +181,41 @@ def load_etf_action_image_paths():
     return paths
 
 def load_etf_intent_image_paths():
-    filenames = [
-        "etf_consensus_v4_watch_latest.jpg",
-        "etf_consensus_v4_buy_latest.jpg",
-        "etf_consensus_v4_sell_latest.jpg",
-    ]
-    paths = [os.path.join(parent_dir, "data", "summaries", name) for name in filenames]
+    summary_dir = os.path.join(parent_dir, "data", "summaries")
+    manifest_path = os.path.join(
+        summary_dir, "etf_consensus_v4_manifest.json"
+    )
+    if os.path.exists(manifest_path):
+        with open(manifest_path, encoding="utf-8") as fh:
+            manifest = json.load(fh)
+        images = list(manifest.get("images") or [])
+        if not 1 <= len(images) <= 5:
+            raise ValueError(
+                f"ETF consensus manifest must contain 1..5 images, got {len(images)}"
+            )
+        filenames = []
+        for item in images:
+            filename = str((item or {}).get("filename") or "")
+            if (
+                os.path.basename(filename) != filename
+                or not re.fullmatch(
+                    r"etf_consensus_v4_(watch|buy|sell)_p[1-5]_latest\.jpg",
+                    filename,
+                )
+            ):
+                raise ValueError(
+                    f"Unsafe ETF consensus manifest filename: {filename!r}"
+                )
+            filenames.append(filename)
+    else:
+        # Transitional fallback for a server updated before the new generator
+        # has written its first manifest.
+        filenames = [
+            "etf_consensus_v4_watch_latest.jpg",
+            "etf_consensus_v4_buy_latest.jpg",
+            "etf_consensus_v4_sell_latest.jpg",
+        ]
+    paths = [os.path.join(summary_dir, name) for name in filenames]
     missing = [path for path in paths if not os.path.exists(path)]
     if missing:
         raise FileNotFoundError(f"Missing cached ETF intent images: {missing}")
@@ -903,9 +932,10 @@ def handle_message(event):
                     original_content_url=img_url,
                     preview_image_url=img_url,
                 ))
-            if len(messages) != 3:
+            if not 1 <= len(messages) <= 5:
                 raise AssertionError(
-                    f"ETF consensus reply must contain 3 images, got {len(messages)}"
+                    "ETF consensus reply must contain 1..5 images, "
+                    f"got {len(messages)}"
                 )
             reply_line(event.reply_token, messages)
         except Exception as e:

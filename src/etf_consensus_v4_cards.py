@@ -28,58 +28,108 @@ V4_CSS = """
 .tfv4-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
   gap:1rem;align-items:start;margin:.7rem 0 1rem}
 .tfv4-lane {border:1px solid rgba(148,163,184,.24);border-radius:1rem;
-  padding:1rem;background:rgba(15,23,42,.34);min-width:0}
+  padding:1rem;background:rgba(15,23,42,.34);min-width:0;
+  --accent:148,163,184}
+.tfv4-lane-watch {--accent:242,174,50;border-color:rgba(242,174,50,.34);
+  background:linear-gradient(180deg,rgba(242,174,50,.055),rgba(15,23,42,.38) 9rem)}
+.tfv4-lane-buy {--accent:231,91,78;border-color:rgba(231,91,78,.34);
+  background:linear-gradient(180deg,rgba(231,91,78,.055),rgba(15,23,42,.38) 9rem)}
+.tfv4-lane-sell {--accent:69,200,121;border-color:rgba(69,200,121,.34);
+  background:linear-gradient(180deg,rgba(69,200,121,.055),rgba(15,23,42,.38) 9rem)}
 .tfv4-head {display:flex;justify-content:space-between;align-items:center;gap:.6rem}
-.tfv4-title {font-weight:900;font-size:1.02rem}
+.tfv4-title {font-weight:900;font-size:1.02rem;color:rgb(var(--accent))}
 .tfv4-count {display:inline-flex;align-items:center;justify-content:center;
   min-width:2rem;height:2rem;padding:0 .55rem;border-radius:999px;
-  background:rgba(148,163,184,.14);font-size:.74rem;font-weight:850}
-.tfv4-note {font-size:.69rem;opacity:.64;line-height:1.45;margin:.15rem 0 .72rem}
+  color:rgb(var(--accent));border:1px solid rgba(var(--accent),.35);
+  background:rgba(var(--accent),.11);font-size:.74rem;font-weight:850}
+.tfv4-note {font-size:.69rem;color:rgba(226,232,240,.68);
+  line-height:1.45;margin:.15rem 0 .72rem}
+.tfv4-section-label {display:flex;align-items:center;gap:.4rem;
+  margin:.68rem .1rem .26rem;color:rgb(var(--accent));font-size:.67rem;
+  font-weight:850;letter-spacing:.02em}
+.tfv4-section-label:after {content:"";height:1px;flex:1;
+  background:linear-gradient(90deg,rgba(var(--accent),.44),transparent)}
 .tfv4-card {position:relative;border-radius:.84rem;padding:.9rem .92rem;
-  margin:.62rem 0;background:#111827;border-left:4px solid transparent;
+  margin:.62rem 0;background:linear-gradient(135deg,rgba(var(--card-accent),.045),#111827 34%);
+  border:1px solid rgba(var(--card-accent),.10);
+  border-left:4px solid rgb(var(--card-accent));
   box-shadow:0 5px 18px rgba(0,0,0,.12)}
-.tfv4-watch {border-left-color:#F2AE32}
-.tfv4-buy {border-left-color:#E75B4E}
-.tfv4-sell {border-left-color:#45C879}
+.tfv4-watch {--card-accent:242,174,50}
+.tfv4-buy {--card-accent:231,91,78}
+.tfv4-sell {--card-accent:69,200,121}
+.tfv4-core {border-color:rgba(var(--card-accent),.34);
+  box-shadow:0 0 0 1px rgba(var(--card-accent),.08),0 8px 22px rgba(0,0,0,.18)}
 .tfv4-top {display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem}
 .tfv4-stock {font-size:1rem;font-weight:900;line-height:1.25}
 .tfv4-code {font-size:.62rem;opacity:.58;margin-left:.35rem}
+.tfv4-badges {display:flex;align-items:center;justify-content:flex-end;
+  gap:.28rem;flex-wrap:wrap}
+.tfv4-tier {font-size:.58rem;white-space:nowrap;padding:.27rem .46rem;
+  border-radius:999px;font-weight:850;color:rgb(var(--card-accent));
+  border:1px solid rgba(var(--card-accent),.48);
+  background:rgba(var(--card-accent),.13)}
 .tfv4-score {font-size:.61rem;white-space:nowrap;padding:.26rem .48rem;
-  border:1px solid rgba(226,232,240,.24);border-radius:999px;
-  color:rgba(241,245,249,.86)}
+  border:1px solid rgba(var(--card-accent),.28);border-radius:999px;
+  color:rgba(241,245,249,.90);background:rgba(var(--card-accent),.07)}
 .tfv4-action {font-size:.83rem;font-weight:850;margin:.52rem 0 .22rem}
 .tfv4-summary {font-size:.70rem;line-height:1.48;color:rgba(226,232,240,.76)}
+.tfv4-core-reason {font-size:.62rem;margin-top:.28rem;color:rgb(var(--card-accent));
+  font-weight:760}
 .tfv4-meta {display:grid;grid-template-columns:4.25rem minmax(0,1fr);
   gap:.19rem .42rem;margin-top:.55rem;font-size:.68rem;line-height:1.42}
-.tfv4-meta span {color:rgba(203,213,225,.56)}
+.tfv4-meta span {color:rgba(var(--card-accent),.68)}
 .tfv4-meta b {font-weight:730;min-width:0}
 .tfv4-points {display:flex;gap:.28rem;flex-wrap:wrap;margin-top:.58rem}
-.tfv4-point {font-size:.58rem;color:rgba(226,232,240,.67);
-  padding:.19rem .36rem;border-radius:.35rem;background:rgba(148,163,184,.07)}
+.tfv4-point {font-size:.58rem;color:rgba(241,245,249,.76);
+  padding:.19rem .36rem;border-radius:.35rem;
+  border:1px solid rgba(var(--card-accent),.12);
+  background:rgba(var(--card-accent),.065)}
 .tfv4-evidence {margin-top:.55rem;padding:.45rem .52rem;border-radius:.58rem;
-  background:rgba(148,163,184,.055);font-size:.63rem;line-height:1.5}
+  border:1px solid rgba(var(--card-accent),.10);
+  background:rgba(var(--card-accent),.055);font-size:.63rem;line-height:1.5}
 .tfv4-evidence-row {display:grid;grid-template-columns:auto minmax(0,1fr);
   gap:.05rem .5rem;padding:.08rem 0}
 .tfv4-evidence-row b {font-weight:780;color:rgba(248,250,252,.91)}
 .tfv4-evidence-row span {text-align:right}
 .tfv4-evidence-row small {grid-column:1/-1;text-align:right;
-  color:rgba(203,213,225,.55);font-size:.55rem}
-.tfv4-charts {border-top:1px solid rgba(148,163,184,.13);
+  color:rgba(203,213,225,.67);font-size:.55rem}
+.tfv4-charts {border-top:1px solid rgba(var(--card-accent),.20);
   margin-top:.58rem;padding-top:.42rem}
 .tfv4-chart-note {display:flex;justify-content:space-between;gap:.5rem;
-  font-size:.55rem;color:rgba(203,213,225,.48);margin-bottom:.2rem}
+  font-size:.55rem;color:rgba(203,213,225,.65);margin-bottom:.2rem}
 .tfv4-chart-row {display:grid;grid-template-columns:1.8rem minmax(0,1fr);
   gap:.35rem;align-items:center;margin:.12rem 0}
-.tfv4-chart-label {font-size:.55rem;font-weight:800;color:rgba(226,232,240,.65)}
+.tfv4-chart-label {font-size:.55rem;font-weight:800;color:rgba(226,232,240,.78)}
 .tfv4-chart {display:block;width:100%;height:1.85rem;overflow:visible}
-.tfv4-axis {stroke:rgba(148,163,184,.22);stroke-width:1}
-.tfv4-buybar {fill:#E76A5C;opacity:.80}
-.tfv4-sellbar {fill:#45C879;opacity:.82}
-.tfv4-window {fill:rgba(226,232,240,.045)}
-.tfv4-trigger {fill:none;stroke:rgba(248,250,252,.84);stroke-width:1.05}
-.tfv4-muted {opacity:.32}
+.tfv4-axis {stroke:rgba(148,163,184,.34);stroke-width:1}
+.tfv4-buybar {fill:#F06B5E;opacity:.92}
+.tfv4-sellbar {fill:#4FD284;opacity:.92}
+.tfv4-window-watch {fill:rgba(242,174,50,.24);stroke:rgba(242,174,50,.52)}
+.tfv4-window-buy {fill:rgba(231,91,78,.22);stroke:rgba(231,91,78,.50)}
+.tfv4-window-sell {fill:rgba(69,200,121,.22);stroke:rgba(69,200,121,.50)}
+.tfv4-trigger-watch {fill:rgba(255,211,106,.07);stroke:#FFD36A;stroke-width:1.55}
+.tfv4-trigger-buy {fill:rgba(255,138,126,.07);stroke:#FF8A7E;stroke-width:1.55}
+.tfv4-trigger-sell {fill:rgba(114,232,161,.07);stroke:#72E8A1;stroke-width:1.55}
+.tfv4-muted {opacity:.48}
 .tfv4-empty {font-size:.75rem;opacity:.60;padding:1rem .15rem}
+.tfv4-priority {border:1px solid rgba(231,91,78,.28);border-radius:1rem;
+  padding:.85rem 1rem;margin:.7rem 0 .9rem;
+  background:linear-gradient(135deg,rgba(231,91,78,.075),rgba(69,200,121,.045))}
+.tfv4-priority-head {display:flex;justify-content:space-between;align-items:center;
+  gap:.7rem;font-weight:900}
+.tfv4-priority-head span:last-child {font-size:.67rem;color:rgba(226,232,240,.68)}
+.tfv4-priority-note {font-size:.66rem;color:rgba(226,232,240,.68);margin:.18rem 0 .55rem}
+.tfv4-priority-list {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.38rem}
+.tfv4-priority-item {border-radius:.58rem;padding:.45rem .55rem;
+  border-left:3px solid rgb(var(--priority-accent));
+  background:rgba(var(--priority-accent),.075)}
+.tfv4-priority-buy {--priority-accent:231,91,78}
+.tfv4-priority-sell {--priority-accent:69,200,121}
+.tfv4-priority-item b {display:block;font-size:.72rem}
+.tfv4-priority-item span {display:block;font-size:.57rem;
+  color:rgba(226,232,240,.68);margin-top:.08rem}
 @media (max-width:1000px){.tfv4-grid{grid-template-columns:1fr}}
+@media (max-width:700px){.tfv4-priority-list{grid-template-columns:1fr 1fr}}
 """
 
 
@@ -109,7 +159,12 @@ def _date_short(value: str) -> str:
     return str(value or "")[5:].replace("-", "/")
 
 
-def _sparkline(rows: list[dict], etf_label: str, participant: bool) -> str:
+def _sparkline(
+    rows: list[dict],
+    etf_label: str,
+    participant: bool,
+    group: str,
+) -> str:
     rows = list(rows or [])[-20:]
     if not rows:
         return ""
@@ -132,7 +187,7 @@ def _sparkline(rows: list[dict], etf_label: str, participant: bool) -> str:
         x = start * slot
         window_width = (latest_significant - start + 1) * slot
         elements.append(
-            f'<rect class="tfv4-window" x="{x:.2f}" y="1" '
+            f'<rect class="tfv4-window-{group}" x="{x:.2f}" y="1" '
             f'width="{window_width:.2f}" height="{height - 2:g}" rx="2"/>'
         )
     for index, (row, value) in enumerate(zip(rows, values)):
@@ -155,7 +210,7 @@ def _sparkline(rows: list[dict], etf_label: str, participant: bool) -> str:
     if participant and latest_significant is not None:
         x = latest_significant * slot + .6
         elements.append(
-            f'<rect class="tfv4-trigger" x="{x:.2f}" y="1" '
+            f'<rect class="tfv4-trigger-{group}" x="{x:.2f}" y="1" '
             f'width="{max(1.0, slot - 1.2):.2f}" height="{height - 2:g}" rx="2">'
             f"<title>{escape(etf_label)} 最近顯著動作</title></rect>"
         )
@@ -169,7 +224,7 @@ def _sparkline(rows: list[dict], etf_label: str, participant: bool) -> str:
     )
 
 
-def _charts(card: dict) -> str:
+def _charts(card: dict, group: str) -> str:
     trends = card.get("etf_trends") or {}
     participants = set(card.get("participants") or [])
     rows = "".join(
@@ -177,6 +232,7 @@ def _charts(card: dict) -> str:
             list(series or []),
             ETF_LABEL.get(str(etf), str(etf)),
             str(etf) in participants,
+            group,
         )
         for etf, series in trends.items()
     )
@@ -232,6 +288,8 @@ def render_v4_card(card: dict, group: str) -> str:
         identity += f'<span class="tfv4-code">{escape(stock_id)}</span>'
     score = int(card.get("score") or 0)
     score_label = str(card.get("score_label") or "分數")
+    decision_tier = str(card.get("decision_tier") or "")
+    decision_reason = str(card.get("decision_reason") or "")
     state = str(card.get("state") or "")
     transition = str(card.get("transition") or "")
     if state == "watch":
@@ -277,35 +335,131 @@ def render_v4_card(card: dict, group: str) -> str:
         f'{escape(COMPONENT_LABELS.get(key, key))} {int(value)}</span>'
         for key, value in (card.get("score_components") or {}).items()
     )
+    tier_badge = ""
+    if decision_tier == "core":
+        tier_badge = '<span class="tfv4-tier">核心決策</span>'
+    elif decision_tier == "tracking":
+        tier_badge = '<span class="tfv4-tier">有效追蹤</span>'
+    core_reason = (
+        f'<div class="tfv4-core-reason">先看原因｜{escape(decision_reason)}</div>'
+        if decision_tier == "core" and decision_reason
+        else ""
+    )
+    card_classes = f"tfv4-card tfv4-{group}"
+    if decision_tier == "core":
+        card_classes += " tfv4-core"
     return (
-        f'<article class="tfv4-card tfv4-{group}">'
+        f'<article class="{card_classes}">'
         '<div class="tfv4-top">'
         f'<div class="tfv4-stock">{identity}</div>'
+        '<div class="tfv4-badges">'
+        f"{tier_badge}"
         f'<span class="tfv4-score">{escape(score_label)} {score}/100</span>'
+        "</div>"
         "</div>"
         f'<div class="tfv4-action">{escape(transition)}</div>'
         f'<div class="tfv4-summary">{escape(summary)}</div>'
+        f"{core_reason}"
         f'<div class="tfv4-meta">{meta_html}</div>'
         f'<div class="tfv4-points">{points}</div>'
         f"{_evidence(card)}"
-        f"{_charts(card)}"
+        f"{_charts(card, group)}"
         "</article>"
     )
 
 
-def render_v4_lane(payload: dict, lane_key: str) -> str:
+def _render_lane_cards(cards: list[dict], group: str) -> str:
+    if not cards:
+        return '<div class="tfv4-empty">目前沒有符合此狀態的個股。</div>'
+    if group == "watch":
+        return "".join(render_v4_card(card, group) for card in cards)
+    core = [
+        card for card in cards if str(card.get("decision_tier") or "") == "core"
+    ]
+    tracking = [
+        card for card in cards if str(card.get("decision_tier") or "") != "core"
+    ]
+    sections = []
+    if core:
+        sections.append(
+            '<div class="tfv4-section-label">核心決策｜先看這些</div>'
+            + "".join(render_v4_card(card, group) for card in core)
+        )
+    if tracking:
+        sections.append(
+            '<div class="tfv4-section-label">有效共識｜持續追蹤</div>'
+            + "".join(render_v4_card(card, group) for card in tracking)
+        )
+    return "".join(sections)
+
+
+def render_v4_priority_summary(payload: dict) -> str:
+    signals = payload.get("signals") or {}
+    core = []
+    for lane_key, group in (("buying", "buy"), ("selling", "sell")):
+        for card in signals.get(lane_key) or []:
+            if str(card.get("decision_tier") or "") == "core":
+                core.append((group, card))
+    core.sort(key=lambda item: int(item[1].get("score") or 0), reverse=True)
+    if not core:
+        return (
+            '<section class="tfv4-priority">'
+            '<div class="tfv4-priority-head"><span>核心決策名單</span>'
+            "<span>目前 0 檔</span></div>"
+            '<div class="tfv4-priority-note">'
+            "今天沒有同時通過共識、力道、新鮮度與持續性的個股；不勉強湊名單。"
+            "</div></section>"
+        )
+    items = []
+    for group, card in core:
+        stock_id = str(card.get("stock_id") or "")
+        name = str(card.get("name") or stock_id)
+        direction = "優先看買方" if group == "buy" else "優先看賣方"
+        items.append(
+            f'<div class="tfv4-priority-item tfv4-priority-{group}">'
+            f"<b>{escape(name)} {escape(stock_id)}｜{direction}</b>"
+            f'<span>{escape(str(card.get("decision_reason") or ""))}'
+            f'・{int(card.get("score") or 0)}分</span></div>'
+        )
+    return (
+        '<section class="tfv4-priority">'
+        '<div class="tfv4-priority-head"><span>核心決策名單</span>'
+        f"<span>{len(core)} 檔先看</span></div>"
+        '<div class="tfv4-priority-note">'
+        "只有第二位經理人的動作仍夠新、夠大，並已重複確認或剛形成強訊號才進核心；"
+        "其餘共識仍保留在下方追蹤，不混成同一優先級。"
+        "</div>"
+        f'<div class="tfv4-priority-list">{"".join(items)}</div></section>'
+    )
+
+
+def render_v4_lane(
+    payload: dict,
+    lane_key: str,
+    *,
+    cards: list[dict] | None = None,
+    total_count: int | None = None,
+    page_label: str = "",
+) -> str:
     if lane_key not in V4_LANES:
         raise ValueError(f"Unknown V4 lane: {lane_key}")
     title, note, group = V4_LANES[lane_key]
-    cards = list((payload.get("signals") or {}).get(lane_key) or [])
-    body = "".join(render_v4_card(card, group) for card in cards)
-    if not body:
-        body = '<div class="tfv4-empty">目前沒有符合此狀態的個股。</div>'
+    cards = (
+        list(cards)
+        if cards is not None
+        else list((payload.get("signals") or {}).get(lane_key) or [])
+    )
+    body = _render_lane_cards(cards, group)
+    total = len(cards) if total_count is None else int(total_count)
+    count_label = str(len(cards))
+    if total != len(cards):
+        count_label = f"{len(cards)}／{total}"
+    title_label = title + (f"｜{escape(page_label)}" if page_label else "")
     return (
-        '<section class="tfv4-lane">'
+        f'<section class="tfv4-lane tfv4-lane-{group}">'
         '<div class="tfv4-head">'
-        f'<div class="tfv4-title">{title}</div>'
-        f'<div class="tfv4-count">{len(cards)}</div>'
+        f'<div class="tfv4-title">{title_label}</div>'
+        f'<div class="tfv4-count">{count_label}</div>'
         "</div>"
         f'<div class="tfv4-note">{note}</div>'
         f"{body}</section>"

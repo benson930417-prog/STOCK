@@ -4,6 +4,7 @@ from datetime import date, timedelta
 import unittest
 
 from src.etf_consensus_v4 import (
+    _decision_priority,
     _score,
     assign_v4_action_scales,
     build_consensus_payload,
@@ -61,6 +62,34 @@ def _histories(
 
 
 class EtfConsensusV4Tests(unittest.TestCase):
+    def test_core_decision_requires_fresh_meaningful_confirmation(self) -> None:
+        core = _decision_priority(
+            state="buy",
+            score=72,
+            components={
+                "freshness": 13,
+                "relative_strength": 10,
+                "joint_persistence": 5,
+                "horizon_alignment": 4,
+            },
+            participants=["00403A", "00981A"],
+            state_days=2,
+        )
+        tracking = _decision_priority(
+            state="buy",
+            score=72,
+            components={
+                "freshness": 7,
+                "relative_strength": 10,
+                "joint_persistence": 18,
+                "horizon_alignment": 4,
+            },
+            participants=["00403A", "00981A"],
+            state_days=12,
+        )
+        self.assertEqual("core", core[0])
+        self.assertEqual("tracking", tracking[0])
+
     def test_ordinary_single_etf_action_never_becomes_consensus(self) -> None:
         histories, _ = _histories({"00403A": {29: 250}})
         payload = build_consensus_payload(histories, {})

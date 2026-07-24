@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import unittest
 
-from src.etf_consensus_v4_cards import render_v4_card, render_v4_lane
+from src.etf_consensus_v4_cards import (
+    render_v4_card,
+    render_v4_lane,
+    render_v4_priority_summary,
+)
 
 
 class EtfConsensusV4CardTests(unittest.TestCase):
@@ -26,6 +30,8 @@ class EtfConsensusV4CardTests(unittest.TestCase):
             "confirmed_date": "2026-07-23",
             "state_days": 1,
             "valid_sessions_remaining": 8,
+            "decision_tier": "core",
+            "decision_reason": "剛形成的雙 ETF 強確認",
             "evidence": [
                 {
                     "etf_label": "403",
@@ -60,12 +66,37 @@ class EtfConsensusV4CardTests(unittest.TestCase):
         self.assertIn("10日淨動作 +0.310%", html)
         self.assertIn("最多再 8 個交易日", html)
         self.assertIn("3日窗", html)
+        self.assertIn("核心決策", html)
+        self.assertIn("剛形成的雙 ETF 強確認", html)
+        self.assertIn("tfv4-window-buy", html)
+        self.assertIn("tfv4-trigger-buy", html)
         self.assertNotIn("×門檻", html)
         self.assertNotIn("勝率", html)
 
     def test_empty_lane_has_explicit_empty_state(self) -> None:
         html = render_v4_lane({"signals": {"selling": []}}, "selling")
         self.assertIn("目前沒有符合此狀態", html)
+
+    def test_priority_summary_only_lists_core_consensus(self) -> None:
+        tracking = dict(self.card)
+        tracking.update(
+            {
+                "stock_id": "3037",
+                "name": "欣興",
+                "decision_tier": "tracking",
+            }
+        )
+        html = render_v4_priority_summary(
+            {
+                "signals": {
+                    "buying": [self.card, tracking],
+                    "selling": [],
+                }
+            }
+        )
+        self.assertIn("台達電", html)
+        self.assertNotIn("欣興", html)
+        self.assertIn("1 檔先看", html)
 
 
 if __name__ == "__main__":

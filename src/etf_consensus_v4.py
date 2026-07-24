@@ -32,6 +32,11 @@ SIGNAL_OVERLAP_SESSIONS = 3
 SUPPORT_SESSIONS = 10
 WATCH_SESSIONS = SUPPORT_SESSIONS
 MAINTENANCE_SCORE = 40
+CORE_SCORE = 60
+CORE_FRESHNESS = 8
+CORE_RELATIVE_STRENGTH = 8
+CORE_PERSISTENCE = 10
+CORE_FRESH_STATE_DAYS = 3
 ACTION_BASELINE_SESSIONS = 10
 MIN_BASELINE_OBSERVATIONS = 8
 MIN_ACTIVE_FLOW = 0.02
@@ -514,6 +519,49 @@ def _transition_label(previous: str, current: str, direction: int) -> str:
     return "離開有效狀態"
 
 
+def _decision_priority(
+    *,
+    state: str,
+    score: int,
+    components: dict[str, int],
+    participants: list[str],
+    state_days: int,
+) -> tuple[str, str]:
+    """Separate actionable consensus from valid but lower-priority tracking.
+
+    The hard red/green state still answers whether consensus exists.  This
+    stricter layer answers which confirmed names deserve attention first:
+    the second manager must still be fresh and meaningful, while confirmation
+    must either be repeated or be a genuinely strong new formation.
+    """
+    if state not in {"buy", "sell"}:
+        return "watch", "單一 ETF 前兆，尚未形成共識"
+    freshness = int(components.get("freshness") or 0)
+    strength = int(components.get("relative_strength") or 0)
+    persistence = int(components.get("joint_persistence") or 0)
+    alignment = int(components.get("horizon_alignment") or 0)
+    fresh_formation = (
+        state_days <= CORE_FRESH_STATE_DAYS
+        and freshness >= 12
+        and strength >= CORE_RELATIVE_STRENGTH
+    )
+    repeated_confirmation = persistence >= CORE_PERSISTENCE
+    is_core = (
+        score >= CORE_SCORE
+        and freshness >= CORE_FRESHNESS
+        and strength >= CORE_RELATIVE_STRENGTH
+        and alignment >= 3
+        and (fresh_formation or repeated_confirmation)
+    )
+    if not is_core:
+        return "tracking", "共識有效，但第二經理人力道、持續或新鮮度尚未達核心"
+    if len(participants) >= 3:
+        return "core", "3 ETF 共識，且新鮮度與相對力道達標"
+    if fresh_formation and not repeated_confirmation:
+        return "core", "剛形成的雙 ETF 強確認"
+    return "core", "雙 ETF 重複確認且目前仍有力道"
+
+
 def _compact_card(
     *,
     stock_id: str,
@@ -618,6 +666,13 @@ def _compact_card(
     valid_sessions_remaining = max(
         0, SUPPORT_SESSIONS - 1 - expiry_age
     )
+    decision_tier, decision_reason = _decision_priority(
+        state=state,
+        score=score,
+        components=components,
+        participants=participants,
+        state_days=state_days,
+    )
     return {
         "stock_id": stock_id,
         "name": name,
@@ -636,6 +691,8 @@ def _compact_card(
         "confirmed_date": confirmed_date,
         "last_confirmed_date": last_confirmed,
         "state_days": state_days,
+        "decision_tier": decision_tier,
+        "decision_reason": decision_reason,
         "valid_sessions_remaining": valid_sessions_remaining,
         "freshness_rule": "無新顯著同向動作時每日減分",
         "evidence": evidence,
@@ -901,7 +958,7 @@ def build_consensus_payload(
             )
     latest = common_dates[-1]
     payload = {
-        "schema_version": 2,
+        "schema_version": 3,
         "generated": datetime.now().astimezone().isoformat(timespec="seconds"),
         "as_of": latest,
         "etfs": etfs,
@@ -918,6 +975,13 @@ def build_consensus_payload(
             "display_multiple_is_gate_multiple": False,
             "support_requires_positive_10d_derivative": True,
             "quiet_sessions_reduce_score": True,
+            "core_decision_rule": {
+                "minimum_score": CORE_SCORE,
+                "minimum_freshness_points": CORE_FRESHNESS,
+                "minimum_relative_strength_points": CORE_RELATIVE_STRENGTH,
+                "repeated_confirmation_points": CORE_PERSISTENCE,
+                "fresh_formation_max_state_days": CORE_FRESH_STATE_DAYS,
+            },
             "fixed_ewma_half_lives": list(EWMA_HALFLIVES),
             "single_etf_score_can_confirm": False,
             "ordinary_single_etf_actions_hidden": True,

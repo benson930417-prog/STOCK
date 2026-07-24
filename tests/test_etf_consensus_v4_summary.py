@@ -6,6 +6,8 @@ import tempfile
 import unittest
 
 from scripts.generate_etf_consensus_v4_summary import (
+    allocate_pages,
+    build_page_specs,
     render_lane_html,
     write_html_preview,
 )
@@ -44,6 +46,29 @@ class EtfConsensusV4SummaryTests(unittest.TestCase):
         self.assertIn("買方共識", buy)
         self.assertIn("單一 ETF 觀察", watch)
 
+    def test_long_lanes_use_all_five_line_images(self) -> None:
+        make_cards = lambda count: [  # noqa: E731
+            {"stock_id": str(index)} for index in range(count)
+        ]
+        payload = {
+            "signals": {
+                "watching": make_cards(12),
+                "buying": make_cards(13),
+                "selling": make_cards(2),
+            }
+        }
+        self.assertEqual(
+            {"watching": 2, "buying": 2, "selling": 1},
+            allocate_pages(payload),
+        )
+        specs = build_page_specs(payload)
+        self.assertEqual(5, len(specs))
+        self.assertEqual(
+            ["buying", "buying", "selling", "watching", "watching"],
+            [spec["lane_key"] for spec in specs],
+        )
+        self.assertEqual(27, sum(len(spec["cards"]) for spec in specs))
+
     def test_preview_contains_three_lanes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -64,7 +89,7 @@ class EtfConsensusV4SummaryTests(unittest.TestCase):
             )
             write_html_preview(preview, cache)
             html = preview.read_text(encoding="utf-8")
-        self.assertEqual(3, html.count('class="tfv4-lane"'))
+        self.assertEqual(3, html.count('class="tfv4-lane tfv4-lane-'))
         self.assertIn("主動 ETF 共識追蹤 V4", html)
 
 
