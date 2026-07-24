@@ -177,7 +177,7 @@ Common LINE commands:
 | `981`, `988`, `0050`, `830`, `878`, `891`, `918`, `9805`, `9820` | ETF quote card/report for the mapped ETF. |
 | `吳大師` | Master holding portfolio card. |
 | `ETF動作` / `ETF 動作` | Currently exactly three reply objects: mobile-width vertical images for `買進觀察`, `續抱參考`, and `賣出警示`, in that order. The cached text remains available but is temporarily disabled by `ETF_ACTION_INCLUDE_TEXT = False` in `api/webhook.py`; switch it to `True` to restore text-first delivery. Each image is only its website lane—no repeated methodology/header block—and includes every card in that lane. 類股 is context only and 概念 is never interpreted. The three JPGs are regenerated daily and served from cache; the webhook never screenshots or recalculates on demand. |
-| `ETF共識` / `ETF意圖` | Between three and five cached image reply objects and no text. Decision order is red `買方共識`, green `賣方共識`, then yellow `單一 ETF 觀察`; long lanes are split evenly and every lane always gets at least one image. The generator uses all five objects when needed, records the exact order in a manifest, and retains every valid V4 card. The webhook only validates and serves that cache; it never calculates or screenshots on demand. The rich-menu action uses `ETF共識`; legacy `ETF意圖` aliases intentionally route to the same final result. |
+| `ETF共識` / `ETF意圖` | Exactly three cached 1800px-wide image reply objects and no text: red buy, green sell, then yellow one-manager watch. Each former page 1/page 2 pair is placed side by side in one image, split evenly by its existing score order and labelled with non-overlapping rank ranges. Every valid card appears exactly once. The webhook only validates and serves the manifest cache; it never calculates or screenshots on demand. The rich-menu action uses `ETF共識`; legacy `ETF意圖` aliases intentionally route to the same final result. |
 | `市場脈動` | Latest generated market pulse image. |
 | `融資維持率` / `融資風險` | Latest generated financing-risk image. This is also a visible quick-reply button under `吳大師`. |
 | `油價` | WTI and Brent TradingView text quotes plus charts. |
@@ -324,7 +324,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/build_etf_intent_v3.py` | Reads the three active-ETF holding histories plus category metadata and writes the self-contained schema-v3 `data/etf_intent_v3.json`. It is pure local computation and sends nothing. |
 | `scripts/generate_etf_intent_v3_summary.py` | Renders the shared V3 website cards into two uncropped, mobile-width LINE images: `etf_intent_v3_buy_latest.jpg` and `etf_intent_v3_sell_latest.jpg`. It verifies that every cached event became a card before saving. |
 | `scripts/build_etf_consensus_v4.py` | Builds the final date-keyed V4 state/history cache from the three active ETF histories and 類股 context. Pure local computation; no network and no LINE send. |
-| `scripts/generate_etf_consensus_v4_summary.py` | Renders the shared V4 website cards into three-to-five uncropped, high-resolution mobile images. It gives every lane one page, allocates the remaining two LINE objects to the longest lanes, partitions cards without dropping any, verifies every page's rendered count, and writes `etf_consensus_v4_manifest.json` as the webhook reply contract. |
+| `scripts/generate_etf_consensus_v4_summary.py` | Renders the shared V4 website cards into exactly three uncropped 1800px-wide LINE images. Each lane is split into two balanced, side-by-side rank ranges so the reply is wide rather than skinny. Core/tracking remains visible on each card badge. The generator verifies that every source card is rendered exactly once and writes `etf_consensus_v4_manifest.json` as the webhook reply contract. |
 | `scripts/line_active_report_payload.py` | Single source of truth for the scheduled and manual active-ETF LINE payload: exactly one combined header/action text object followed by at most four active-ETF images. It hard-fails above the five-object LINE limit instead of chunking or starting a second broadcast. |
 | `scripts/generate_etf_summary.py` | Builds daily ETF summary images for LINE broadcast. |
 | `scripts/generate_market_pulse_summary.py` | Renders the market pulse summary image served by the LINE `市場脈動` command. |
@@ -449,7 +449,7 @@ Tracked files in `data/` are source/history state that should move with the repo
 | `data/summaries/margin_maintenance_latest.jpg` | Latest generated 融資風險 LINE card. It is regenerated and committed by the daily job, then served on demand. |
 | `data/summaries/etf_action_{buy,hold,sell}_latest.jpg` | Three latest mobile-width `ETF 動作` lane images. Together they contain every event in the qualified board; they are regenerated and committed daily, then served directly in the free on-demand LINE reply. The optional cached text is currently disabled. |
 | `data/summaries/etf_intent_v3_{buy,sell}_latest.jpg` | Legacy V3 audit images; no longer used by the main rich-menu action. |
-| `data/summaries/etf_consensus_v4_{watch,buy,sell}_pN_latest.jpg` + `etf_consensus_v4_manifest.json` | Dynamic three-to-five-page V4 LINE cache. The manifest is the sole ordered reply list (maximum five); no text object is included. Page images and manifest are generated/ignored artifacts, not tracked source. |
+| `data/summaries/etf_consensus_v4_{buy,sell,watch}_wide_latest.jpg` + `etf_consensus_v4_manifest.json` | Three two-column V4 LINE images in buy/sell/watch order. The manifest is the sole ordered reply list; no text object is included. Images and manifest are generated/ignored artifacts, not tracked source. |
 
 Ignored generated data:
 
@@ -677,7 +677,7 @@ Each of these is a trap that has already caused a wrong result or a missed step.
 
     **Core is a priority layer, never a replacement for the hard state.** A red/green card enters `core` only when score ≥60, freshness ≥8, relative strength ≥8, 3/10/20 alignment ≥3, and it is either repeatedly confirmed (joint-persistence component ≥10) or a strong formation no older than three state sessions. Everything else remains visible as valid `tracking`. This protects the user from choice overload without pretending that deleting cards improves the underlying evidence.
 
-    The LINE command/rich-menu reply contains no text, fetch, on-demand screenshot, or paid push. It reads the generated manifest and sends **three to five cached images** in decision-first buy/sell/watch order. Every lane receives one image; up to two spare LINE objects split the currently longest lanes. Never exceed five objects, silently drop cards, or return to one ultra-long low-resolution image.
+    The LINE command/rich-menu reply contains no text, fetch, on-demand screenshot, or paid push. It reads the generated manifest and sends exactly **three 1800px-wide, two-column cached images** in buy/sell/watch order. Each lane is split evenly by its existing score order; the two headers state non-overlapping rank ranges, while core/tracking remains a card-level badge. Every card must occur exactly once. Never return five same-colour continuation previews or one ultra-long low-resolution image.
 
 ## ETF Maintenance Playbook For Agents
 

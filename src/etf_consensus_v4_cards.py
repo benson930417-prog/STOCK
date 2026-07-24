@@ -440,6 +440,9 @@ def render_v4_lane(
     cards: list[dict] | None = None,
     total_count: int | None = None,
     page_label: str = "",
+    title_override: str = "",
+    note_override: str = "",
+    show_sections: bool = True,
 ) -> str:
     if lane_key not in V4_LANES:
         raise ValueError(f"Unknown V4 lane: {lane_key}")
@@ -449,19 +452,28 @@ def render_v4_lane(
         if cards is not None
         else list((payload.get("signals") or {}).get(lane_key) or [])
     )
-    body = _render_lane_cards(cards, group)
+    body = (
+        _render_lane_cards(cards, group)
+        if show_sections
+        else "".join(render_v4_card(card, group) for card in cards)
+    )
+    if not body:
+        body = '<div class="tfv4-empty">目前沒有符合此狀態的個股。</div>'
     total = len(cards) if total_count is None else int(total_count)
     count_label = str(len(cards))
     if total != len(cards):
         count_label = f"{len(cards)}／{total}"
-    title_label = title + (f"｜{escape(page_label)}" if page_label else "")
+    title_label = (title_override or title) + (
+        f"｜{escape(page_label)}" if page_label else ""
+    )
+    note_label = note_override or note
     return (
         f'<section class="tfv4-lane tfv4-lane-{group}">'
         '<div class="tfv4-head">'
         f'<div class="tfv4-title">{title_label}</div>'
         f'<div class="tfv4-count">{count_label}</div>'
         "</div>"
-        f'<div class="tfv4-note">{note}</div>'
+        f'<div class="tfv4-note">{note_label}</div>'
         f"{body}</section>"
     )
 

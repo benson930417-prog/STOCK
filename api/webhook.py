@@ -189,9 +189,9 @@ def load_etf_intent_image_paths():
         with open(manifest_path, encoding="utf-8") as fh:
             manifest = json.load(fh)
         images = list(manifest.get("images") or [])
-        if not 1 <= len(images) <= 5:
+        if len(images) != 3:
             raise ValueError(
-                f"ETF consensus manifest must contain 1..5 images, got {len(images)}"
+                f"ETF consensus manifest must contain 3 images, got {len(images)}"
             )
         filenames = []
         for item in images:
@@ -199,7 +199,7 @@ def load_etf_intent_image_paths():
             if (
                 os.path.basename(filename) != filename
                 or not re.fullmatch(
-                    r"etf_consensus_v4_(watch|buy|sell)_p[1-5]_latest\.jpg",
+                    r"etf_consensus_v4_(buy|sell|watch)_wide_latest\.jpg",
                     filename,
                 )
             ):
@@ -932,9 +932,9 @@ def handle_message(event):
                     original_content_url=img_url,
                     preview_image_url=img_url,
                 ))
-            if not 1 <= len(messages) <= 5:
+            if len(messages) != 3:
                 raise AssertionError(
-                    "ETF consensus reply must contain 1..5 images, "
+                    "ETF consensus reply must contain 3 images, "
                     f"got {len(messages)}"
                 )
             reply_line(event.reply_token, messages)
