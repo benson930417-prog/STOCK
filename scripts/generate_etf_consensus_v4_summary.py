@@ -27,6 +27,8 @@ CACHE = ROOT / "data" / "etf_consensus_v4.json"
 SUMMARY_DIR = ROOT / "data" / "summaries"
 MANIFEST_PATH = SUMMARY_DIR / "etf_consensus_v4_manifest.json"
 LINE_IMAGE_COUNT = 2
+LINE_IMAGE_WIDTH = 720
+LINE_SAFE_TOP_HEIGHT = 96
 
 
 def _column(
@@ -129,31 +131,32 @@ def _document(body_html: str, *, width: int) -> str:
       color:#f8fafc; font-family:"Noto Sans TC","Microsoft JhengHei",
       "PingFang TC",Arial,sans-serif; }}
     {V4_CSS}
-    .tfv4-safe-top {{ height:180px;background:#000;
+    .tfv4-safe-top {{ height:{LINE_SAFE_TOP_HEIGHT}px;background:#000;
       margin:0 -20px 20px; }}
-    .tfv4-wide-grid {{ display:grid;grid-template-columns:1fr 1fr;
+    .tfv4-line-grid {{ display:grid;grid-template-columns:1fr;
       gap:18px;align-items:start; }}
-    .tfv4-wide-grid.tfv4-single-column {{ grid-template-columns:1fr; }}
     .tfv4-lane {{ margin:0; background-color:rgba(15,23,42,.72); }}
-    .tfv4-card {{ padding:13px 15px; margin:7px 0; }}
-    .tfv4-title {{ font-size:24px; }}
-    .tfv4-count {{ min-width:36px; height:36px; font-size:17px; }}
-    .tfv4-note {{ font-size:15px; min-height:43px; }}
-    .tfv4-stock {{ font-size:23px; }}
-    .tfv4-rank {{ min-width:42px;height:29px;font-size:16px;
+    .tfv4-card {{ padding:16px 17px; margin:11px 0; }}
+    .tfv4-title {{ font-size:26px; }}
+    .tfv4-count {{ min-width:38px; height:38px; font-size:18px; }}
+    .tfv4-note {{ font-size:16px; margin:.2rem 0 .75rem; }}
+    .tfv4-stock {{ font-size:25px; }}
+    .tfv4-rank {{ min-width:43px;height:31px;font-size:17px;
       margin-right:10px; }}
-    .tfv4-code,.tfv4-score,.tfv4-tier {{ font-size:13px; }}
-    .tfv4-action {{ font-size:19px; }}
-    .tfv4-summary {{ font-size:16px; }}
-    .tfv4-core-reason {{ font-size:14px; }}
+    .tfv4-code,.tfv4-score,.tfv4-tier {{ font-size:14px; }}
+    .tfv4-action {{ font-size:21px; }}
+    .tfv4-summary {{ font-size:17px; }}
+    .tfv4-core-reason {{ font-size:16px; }}
     .tfv4-meta {{ grid-template-columns:94px minmax(0,1fr);
-      font-size:16px; gap:4px 10px; }}
+      font-size:17px; gap:5px 10px; }}
     .tfv4-point {{ font-size:13px; }}
     .tfv4-points {{ display:none; }}
-    .tfv4-evidence {{ font-size:15px; }}
-    .tfv4-chart-note,.tfv4-chart-label {{ font-size:13px; }}
-    .tfv4-chart-row {{ grid-template-columns:42px minmax(0,1fr); }}
-    .tfv4-chart {{ height:1.55rem; }}
+    .tfv4-evidence {{ font-size:16px; }}
+    .tfv4-evidence-row small {{ font-size:14px; }}
+    .tfv4-chart-note,.tfv4-chart-label {{ font-size:14px; }}
+    .tfv4-chart-row {{ grid-template-columns:48px minmax(0,1fr);
+      margin:.2rem 0; }}
+    .tfv4-chart {{ height:2.5rem; }}
   </style>
 </head>
 <body><div class="tfv4-safe-top" aria-hidden="true"></div>{body_html}</body>
@@ -184,18 +187,13 @@ def render_lane_html(
     return _document(lane_html, width=900)
 
 
-def render_wide_html(payload: dict, spec: dict) -> str:
+def render_line_html(payload: dict, spec: dict) -> str:
     columns = "".join(
         _render_column(payload, column) for column in spec["columns"]
     )
-    layout_class = (
-        "tfv4-wide-grid tfv4-single-column"
-        if len(spec["columns"]) == 1
-        else "tfv4-wide-grid"
-    )
     return _document(
-        f'<div class="{layout_class}">{columns}</div>',
-        width=1800,
+        f'<div class="tfv4-line-grid">{columns}</div>',
+        width=LINE_IMAGE_WIDTH,
     )
 
 
@@ -218,7 +216,7 @@ def _write_manifest(payload: dict, results: list[dict]) -> None:
         "schema_version": 3,
         "as_of": payload.get("as_of"),
         "reply_order": "buying_top5_then_selling_top5",
-        "layout": "two_wide_single_column_top5_images_with_iphone_safe_top",
+        "layout": "two_mobile_single_column_top5_images_with_iphone_safe_top",
         "selection": {
             "buying": "first_five_by_existing_consensus_score",
             "selling": "first_five_by_existing_consensus_score",
@@ -258,13 +256,13 @@ def generate(cache_path: Path = CACHE) -> list[tuple[Path, int, tuple[int, int]]
             launch_args["executable_path"] = browser_path
         browser = playwright.chromium.launch(**launch_args)
         page = browser.new_page(
-            viewport={"width": 1800, "height": 900},
+            viewport={"width": LINE_IMAGE_WIDTH, "height": 900},
             device_scale_factor=1,
         )
         for spec in specs:
             output = SUMMARY_DIR / spec["filename"]
             expected = spec["total_count"]
-            page.set_content(render_wide_html(payload, spec), wait_until="load")
+            page.set_content(render_line_html(payload, spec), wait_until="load")
             try:
                 page.wait_for_function(
                     "document.fonts ? document.fonts.status === 'loaded' : true",

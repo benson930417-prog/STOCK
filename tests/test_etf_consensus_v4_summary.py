@@ -8,7 +8,7 @@ import unittest
 from scripts.generate_etf_consensus_v4_summary import (
     build_page_specs,
     render_lane_html,
-    render_wide_html,
+    render_line_html,
     write_html_preview,
 )
 
@@ -95,12 +95,13 @@ class EtfConsensusV4SummaryTests(unittest.TestCase):
             ],
             [spec["filename"] for spec in specs],
         )
-        html = render_wide_html(payload, specs[0])
-        self.assertIn("width:1800px", html)
-        self.assertIn("height:180px", html)
+        html = render_line_html(payload, specs[0])
+        self.assertIn("width:720px", html)
+        self.assertIn("height:96px", html)
         self.assertIn("background:#000", html)
         self.assertEqual(1, html.count('class="tfv4-lane tfv4-lane-buy"'))
-        self.assertIn("tfv4-single-column", html)
+        self.assertIn("tfv4-line-grid", html)
+        self.assertIn("height:2.5rem", html)
         self.assertIn("由上往下依共識強度排列 01 → 05", html)
         for rank in ("01", "02", "03", "04", "05"):
             self.assertIn(f'class="tfv4-rank">{rank}</span>', html)
