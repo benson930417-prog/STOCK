@@ -99,9 +99,11 @@ class EtfConsensusV4SummaryTests(unittest.TestCase):
         self.assertIn("width:1800px", html)
         self.assertIn("height:180px", html)
         self.assertIn("background:#000", html)
-        self.assertEqual(2, html.count('class="tfv4-lane tfv4-lane-buy"'))
-        self.assertIn("買方前 5 名｜順序 1–3", html)
-        self.assertIn("買方前 5 名｜順序 4–5", html)
+        self.assertEqual(1, html.count('class="tfv4-lane tfv4-lane-buy"'))
+        self.assertIn("tfv4-single-column", html)
+        self.assertIn("由上往下依共識強度排列 01 → 05", html)
+        for rank in ("01", "02", "03", "04", "05"):
+            self.assertIn(f'class="tfv4-rank">{rank}</span>', html)
 
     def test_preview_contains_three_lanes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

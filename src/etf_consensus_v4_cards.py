@@ -61,6 +61,11 @@ V4_CSS = """
   box-shadow:0 0 0 1px rgba(var(--card-accent),.08),0 8px 22px rgba(0,0,0,.18)}
 .tfv4-top {display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem}
 .tfv4-stock {font-size:1rem;font-weight:900;line-height:1.25}
+.tfv4-rank {display:inline-flex;align-items:center;justify-content:center;
+  min-width:2rem;height:1.45rem;margin-right:.48rem;border-radius:.38rem;
+  color:rgb(var(--card-accent));background:rgba(var(--card-accent),.14);
+  border:1px solid rgba(var(--card-accent),.34);font-size:.68rem;
+  vertical-align:.08rem}
 .tfv4-code {font-size:.62rem;opacity:.58;margin-left:.35rem}
 .tfv4-badges {display:flex;align-items:center;justify-content:flex-end;
   gap:.28rem;flex-wrap:wrap}
@@ -284,6 +289,9 @@ def _evidence(card: dict) -> str:
 def render_v4_card(card: dict, group: str) -> str:
     stock_id = str(card.get("stock_id") or "")
     identity = escape(str(card.get("name") or stock_id))
+    line_rank = int(card.get("line_rank") or 0)
+    if line_rank:
+        identity = f'<span class="tfv4-rank">{line_rank:02d}</span>' + identity
     if stock_id:
         identity += f'<span class="tfv4-code">{escape(stock_id)}</span>'
     score = int(card.get("score") or 0)

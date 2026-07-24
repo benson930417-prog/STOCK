@@ -44,30 +44,11 @@ def _column(
     }
 
 
-def _balanced_columns(
-    *,
-    lane_key: str,
-    cards: list[dict],
-    title: str,
-    note: str,
-) -> list[dict]:
-    cut = (len(cards) + 1) // 2
-    halves = (cards[:cut], cards[cut:])
-    columns = []
-    start = 1
-    for half in halves:
-        end = start + len(half) - 1
-        range_label = f"{start}–{end}" if half else "無"
-        columns.append(
-            _column(
-                lane_key=lane_key,
-                cards=half,
-                title=f"{title}｜順序 {range_label}",
-                note=note,
-            )
-        )
-        start = end + 1
-    return columns
+def _ranked(cards: list[dict]) -> list[dict]:
+    return [
+        {**card, "line_rank": index}
+        for index, card in enumerate(cards, start=1)
+    ]
 
 
 def build_page_specs(payload: dict) -> list[dict]:
@@ -75,29 +56,33 @@ def build_page_specs(payload: dict) -> list[dict]:
     signals = payload.get("signals") or {}
     buying = list(signals.get("buying") or [])
     selling = list(signals.get("selling") or [])
-    buy_top = buying[:5]
-    sell_top = selling[:5]
+    buy_top = _ranked(buying[:5])
+    sell_top = _ranked(selling[:5])
 
     specs = [
         {
             "lane_key": "buying",
             "filename": "etf_consensus_v4_buy_top5_latest.jpg",
-            "columns": _balanced_columns(
-                lane_key="buying",
-                cards=buy_top,
-                title="🔴 買方前 5 名",
-                note="LINE 決策摘要｜依共識強度排序；完整名單請看網站",
-            ),
+            "columns": [
+                _column(
+                    lane_key="buying",
+                    cards=buy_top,
+                    title="🔴 買方前 5 名",
+                    note="由上往下依共識強度排列 01 → 05；完整名單請看網站",
+                )
+            ],
         },
         {
             "lane_key": "selling",
             "filename": "etf_consensus_v4_sell_top5_latest.jpg",
-            "columns": _balanced_columns(
-                lane_key="selling",
-                cards=sell_top,
-                title="🟢 賣方前 5 名",
-                note="LINE 決策摘要｜依共識強度排序；完整名單請看網站",
-            ),
+            "columns": [
+                _column(
+                    lane_key="selling",
+                    cards=sell_top,
+                    title="🟢 賣方前 5 名",
+                    note="由上往下依共識強度排列 01 → 05；完整名單請看網站",
+                )
+            ],
         },
     ]
     for spec in specs:
@@ -148,12 +133,15 @@ def _document(body_html: str, *, width: int) -> str:
       margin:0 -20px 20px; }}
     .tfv4-wide-grid {{ display:grid;grid-template-columns:1fr 1fr;
       gap:18px;align-items:start; }}
+    .tfv4-wide-grid.tfv4-single-column {{ grid-template-columns:1fr; }}
     .tfv4-lane {{ margin:0; background-color:rgba(15,23,42,.72); }}
     .tfv4-card {{ padding:13px 15px; margin:7px 0; }}
     .tfv4-title {{ font-size:24px; }}
     .tfv4-count {{ min-width:36px; height:36px; font-size:17px; }}
     .tfv4-note {{ font-size:15px; min-height:43px; }}
     .tfv4-stock {{ font-size:23px; }}
+    .tfv4-rank {{ min-width:42px;height:29px;font-size:16px;
+      margin-right:10px; }}
     .tfv4-code,.tfv4-score,.tfv4-tier {{ font-size:13px; }}
     .tfv4-action {{ font-size:19px; }}
     .tfv4-summary {{ font-size:16px; }}
@@ -200,8 +188,13 @@ def render_wide_html(payload: dict, spec: dict) -> str:
     columns = "".join(
         _render_column(payload, column) for column in spec["columns"]
     )
+    layout_class = (
+        "tfv4-wide-grid tfv4-single-column"
+        if len(spec["columns"]) == 1
+        else "tfv4-wide-grid"
+    )
     return _document(
-        f'<div class="tfv4-wide-grid">{columns}</div>',
+        f'<div class="{layout_class}">{columns}</div>',
         width=1800,
     )
 
@@ -225,7 +218,7 @@ def _write_manifest(payload: dict, results: list[dict]) -> None:
         "schema_version": 3,
         "as_of": payload.get("as_of"),
         "reply_order": "buying_top5_then_selling_top5",
-        "layout": "two_wide_top5_images_with_iphone_safe_top",
+        "layout": "two_wide_single_column_top5_images_with_iphone_safe_top",
         "selection": {
             "buying": "first_five_by_existing_consensus_score",
             "selling": "first_five_by_existing_consensus_score",
