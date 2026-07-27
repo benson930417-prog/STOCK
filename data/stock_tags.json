@@ -1,10 +1,10 @@
 {
-  "generated": "2026-07-26 10:32:57",
+  "generated": "2026-07-27 10:33:17",
   "source": "cmoney.tw/forum/stock",
-  "count": 103,
+  "count": 104,
   "coverage": {
-    "covered": 103,
-    "universe": 103,
+    "covered": 104,
+    "universe": 104,
     "missing": 0
   },
   "tags": {
@@ -13,35 +13,35 @@
       "group": "電子中游",
       "concepts": [
         {
-          "id": "C50270",
-          "name": "第三方支付",
-          "avg_pct": 1.83
-        },
-        {
           "id": "C50250",
           "name": "一帶一路",
-          "avg_pct": 2.34
+          "avg_pct": 0.14
         },
         {
-          "id": "C50917",
-          "name": "GB200",
-          "avg_pct": 2.37
+          "id": "C50874",
+          "name": "虛擬貨幣",
+          "avg_pct": 0.0
         },
         {
-          "id": "C50320",
-          "name": "MWC",
-          "avg_pct": 2.41
+          "id": "C50926",
+          "name": "AWS",
+          "avg_pct": 0.0
         },
         {
-          "id": "C50290",
-          "name": "無線充電",
-          "avg_pct": 2.47
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 0.07
+        },
+        {
+          "id": "C50820",
+          "name": "iPhone",
+          "avg_pct": 0.07
         }
       ],
       "category_id": "C23170",
       "category_full": "電子中游-電源供應器",
       "name": "台達電子",
-      "checked_at_utc": "2026-07-26T10:32:56.723419Z"
+      "checked_at_utc": "2026-07-27T10:33:17.095996Z"
     },
     "6274": {
       "category": "PCB-材料設備",
@@ -2823,6 +2823,36 @@
       "category_full": "電子中游-網通",
       "name": "啟碁",
       "checked_at_utc": "2026-07-21T14:29:41.225486Z"
+    },
+    "3450": {
+      "category": "IC-封測",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50911",
+          "name": "光通訊",
+          "avg_pct": 1.19
+        },
+        {
+          "id": "C50460",
+          "name": "3D感測",
+          "avg_pct": 0.06
+        },
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 0.07
+        },
+        {
+          "id": "C50907",
+          "name": "3D列印",
+          "avg_pct": 0.65
+        }
+      ],
+      "category_id": "C23060",
+      "category_full": "電子上游-IC-封測",
+      "name": "聯鈞",
+      "checked_at_utc": "2026-07-27T10:33:13.486398Z"
     }
   }
 }
