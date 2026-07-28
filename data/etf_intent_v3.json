@@ -1,7 +1,7 @@
 {
   "schema_version": 4,
-  "generated": "2026-07-27T10:33:22+00:00",
-  "as_of": "2026-07-27",
+  "generated": "2026-07-28T10:33:17+00:00",
+  "as_of": "2026-07-28",
   "etfs": [
     "00403A",
     "00981A",
@@ -49,7 +49,8 @@
         "2026-07-22",
         "2026-07-23",
         "2026-07-24",
-        "2026-07-27"
+        "2026-07-27",
+        "2026-07-28"
       ],
       "00981A": [
         "2026-03-23",
@@ -137,7 +138,8 @@
         "2026-07-22",
         "2026-07-23",
         "2026-07-24",
-        "2026-07-27"
+        "2026-07-27",
+        "2026-07-28"
       ],
       "00991A": [
         "2026-03-12",
@@ -211,7 +213,8 @@
         "2026-07-22",
         "2026-07-23",
         "2026-07-24",
-        "2026-07-27"
+        "2026-07-27",
+        "2026-07-28"
       ]
     },
     "common": [
@@ -244,9 +247,10 @@
       "2026-07-22",
       "2026-07-23",
       "2026-07-24",
-      "2026-07-27"
+      "2026-07-27",
+      "2026-07-28"
     ],
-    "latest": "2026-07-27"
+    "latest": "2026-07-28"
   },
   "methodology": {
     "signal": "actual shares minus prior shares scaled by exact/estimated outstanding ETF units",
@@ -268,7 +272,7 @@
     "concepts_interpreted": false
   },
   "data_quality": {
-    "exact_move_rows": 152,
+    "exact_move_rows": 303,
     "estimated_move_rows": 4374,
     "historical_estimate": "fund_size / rounded NAV"
   },
@@ -2136,11 +2140,6 @@
   "regime_audit": {
     "1303": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -2232,17 +2231,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1319": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -2334,17 +2333,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1519": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -2436,17 +2435,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1560": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -2538,17 +2537,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1590": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -2640,17 +2639,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1815": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -2742,17 +2741,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2002": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -2844,17 +2843,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2049": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -2946,17 +2945,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2059": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -3050,14 +3049,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2303": [
-      {
-        "date": "2026-06-29",
-        "score": 0.3037,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.2551,
@@ -3152,14 +3151,14 @@
         "date": "2026-07-27",
         "score": 0.0111,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0093,
+        "state": "neutral"
       }
     ],
     "2308": [
-      {
-        "date": "2026-06-29",
-        "score": -0.2426,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": -0.2038,
@@ -3254,14 +3253,14 @@
         "date": "2026-07-27",
         "score": 0.4222,
         "state": "buy"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.3547,
+        "state": "buy"
       }
     ],
     "2313": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -3354,17 +3353,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2317": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -3456,17 +3455,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2327": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -3560,14 +3559,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2330": [
-      {
-        "date": "2026-06-29",
-        "score": -0.0843,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": -0.0708,
@@ -3662,14 +3661,14 @@
         "date": "2026-07-27",
         "score": -0.3147,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": -0.2643,
+        "state": "neutral"
       }
     ],
     "2337": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -3762,17 +3761,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2344": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -3864,17 +3863,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2345": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -3966,17 +3965,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2357": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -4068,17 +4067,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2360": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -4172,14 +4171,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2368": [
-      {
-        "date": "2026-06-29",
-        "score": -0.1422,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": -0.1195,
@@ -4274,14 +4273,14 @@
         "date": "2026-07-27",
         "score": -0.0052,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": -0.0044,
+        "state": "neutral"
       }
     ],
     "2382": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -4376,14 +4375,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2383": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -4478,14 +4477,14 @@
         "date": "2026-07-27",
         "score": 0.1796,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.1509,
+        "state": "neutral"
       }
     ],
     "2404": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -4580,14 +4579,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2408": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -4682,14 +4681,14 @@
         "date": "2026-07-27",
         "score": 0.1422,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.1195,
+        "state": "neutral"
       }
     ],
     "2412": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -4782,17 +4781,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2439": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -4884,17 +4883,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2449": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -4988,14 +4987,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2454": [
-      {
-        "date": "2026-06-29",
-        "score": 0.2836,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.2383,
@@ -5090,14 +5089,14 @@
         "date": "2026-07-27",
         "score": 0.0352,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0296,
+        "state": "neutral"
       }
     ],
     "2455": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -5190,17 +5189,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2481": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -5292,17 +5291,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2492": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -5394,17 +5393,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2603": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -5496,17 +5495,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2880": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -5598,17 +5597,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2881": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -5700,17 +5699,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2882": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -5802,17 +5801,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2883": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -5904,17 +5903,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2885": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -6006,17 +6005,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2886": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -6108,17 +6107,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2890": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -6210,17 +6209,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2891": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -6312,17 +6311,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3008": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -6414,17 +6413,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3017": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -6516,17 +6515,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3026": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -6618,17 +6617,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3036": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -6722,14 +6721,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "3037": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -6824,14 +6823,14 @@
         "date": "2026-07-27",
         "score": 0.0353,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0296,
+        "state": "neutral"
       }
     ],
     "3042": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -6924,17 +6923,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3044": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -7026,17 +7025,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3045": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -7128,17 +7127,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3081": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -7230,17 +7229,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3105": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -7334,14 +7333,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "3189": [
-      {
-        "date": "2026-06-29",
-        "score": 0.1987,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.1669,
@@ -7436,14 +7435,14 @@
         "date": "2026-07-27",
         "score": 0.0072,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0061,
+        "state": "neutral"
       }
     ],
     "3211": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -7536,17 +7535,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3231": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -7638,17 +7637,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3264": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -7740,17 +7739,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3324": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -7842,17 +7841,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3376": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -7944,17 +7943,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3443": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -8046,17 +8045,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3450": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -8148,17 +8147,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3529": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -8250,17 +8249,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3533": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -8352,17 +8351,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3583": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -8454,17 +8453,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3653": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -8556,17 +8555,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3661": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -8660,14 +8659,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "3665": [
-      {
-        "date": "2026-06-29",
-        "score": -0.1004,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": -0.0843,
@@ -8762,14 +8761,14 @@
         "date": "2026-07-27",
         "score": 0.3079,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.2587,
+        "state": "neutral"
       }
     ],
     "3711": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -8864,14 +8863,14 @@
         "date": "2026-07-27",
         "score": 0.0595,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.05,
+        "state": "neutral"
       }
     ],
     "4958": [
-      {
-        "date": "2026-06-29",
-        "score": 0.042,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0353,
@@ -8966,14 +8965,14 @@
         "date": "2026-07-27",
         "score": 0.0015,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0013,
+        "state": "neutral"
       }
     ],
     "4966": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -9066,17 +9065,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "4979": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -9170,14 +9169,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "5274": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -9272,14 +9271,14 @@
         "date": "2026-07-27",
         "score": 0.0844,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0709,
+        "state": "neutral"
       }
     ],
     "5347": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -9372,17 +9371,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "5439": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -9474,17 +9473,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6147": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -9576,17 +9575,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6187": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -9678,17 +9677,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6191": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -9780,17 +9779,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6196": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -9884,14 +9883,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "6223": [
-      {
-        "date": "2026-06-29",
-        "score": 0.1842,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.1547,
@@ -9986,14 +9985,14 @@
         "date": "2026-07-27",
         "score": 0.0215,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.018,
+        "state": "neutral"
       }
     ],
     "6239": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -10086,17 +10085,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6271": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -10188,17 +10187,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6274": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -10290,17 +10289,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6278": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -10392,17 +10391,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6285": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -10494,17 +10493,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6415": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -10596,17 +10595,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6442": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -10700,14 +10699,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "6488": [
-      {
-        "date": "2026-06-29",
-        "score": 0.05,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.042,
@@ -10802,14 +10801,14 @@
         "date": "2026-07-27",
         "score": 0.0018,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0015,
+        "state": "neutral"
       }
     ],
     "6510": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -10904,14 +10903,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "6515": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -11006,14 +11005,14 @@
         "date": "2026-07-27",
         "score": -0.1195,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": -0.1004,
+        "state": "neutral"
       }
     ],
     "6669": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -11108,14 +11107,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "6805": [
-      {
-        "date": "2026-06-29",
-        "score": 0.042,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0353,
@@ -11210,14 +11209,14 @@
         "date": "2026-07-27",
         "score": 0.2904,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.2439,
+        "state": "neutral"
       }
     ],
     "7769": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -11312,14 +11311,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "8046": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -11414,14 +11413,14 @@
         "date": "2026-07-27",
         "score": 0.1867,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.1568,
+        "state": "neutral"
       }
     ],
     "8150": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -11516,14 +11515,14 @@
         "date": "2026-07-27",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "8210": [
-      {
-        "date": "2026-06-29",
-        "score": -0.1004,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": -0.0843,
@@ -11618,14 +11617,14 @@
         "date": "2026-07-27",
         "score": -0.0037,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": -0.0031,
+        "state": "neutral"
       }
     ],
     "8299": [
-      {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-06-30",
         "score": 0.0,
@@ -11718,17 +11717,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "8358": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -11820,17 +11819,17 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "8996": [
       {
-        "date": "2026-06-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-06-30",
         "score": 0.0,
         "state": "neutral"
@@ -11922,6 +11921,11 @@
       },
       {
         "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
         "score": 0.0,
         "state": "neutral"
       }
