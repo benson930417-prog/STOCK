@@ -153,7 +153,7 @@ def master_insight_quick_reply():
                 action=MessageAction(label="🔥 ETF 動作", text="ETF動作")
             ),
             QuickReplyButton(
-                action=MessageAction(label="⚠️ 融資風險", text="融資維持率")
+                action=MessageAction(label="⚠️ 融資餘額", text="融資餘額")
             ),
         ]
     )
@@ -250,6 +250,7 @@ def is_margin_risk_command(text):
     return (
         "融資維持率" in normalized
         or "融資風險" in normalized
+        or "融資餘額" in normalized
         or compact in {"marginrisk", "marginmaintenance", "全市場融資"}
     )
 
@@ -1047,7 +1048,7 @@ def handle_message(event):
                 event.reply_token,
                 [
                     TextSendMessage(
-                        text=f"融資風險雷達｜資料截至 {latest_date}\n公開資料估算，不等同個別帳戶維持率"
+                        text=f"融資餘額與風險｜資料截至 {latest_date}\n公開資料估算，不等同個別帳戶維持率"
                     ),
                     ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
                 ],
