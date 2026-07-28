@@ -225,6 +225,115 @@ class EtfConsensusV4Tests(unittest.TestCase):
             places=2,
         )
 
+    def test_buy_baseline_never_pools_larger_sell_distribution(self) -> None:
+        dates = [
+            (date(2026, 2, 1) + timedelta(days=index)).isoformat()
+            for index in range(17)
+        ]
+        records = {}
+        for index, session in enumerate(dates):
+            if index == len(dates) - 1:
+                flow = 0.2
+            else:
+                flow = 0.1 if index % 2 == 0 else -1.0
+            records[session] = {
+                "2330": {
+                    "00403A": {
+                        "active_flow": flow,
+                        "copyable": True,
+                        "position_event": (
+                            "increase" if flow > 0 else "decrease"
+                        ),
+                        "money_twd": abs(flow) / 100 * 10_000_000_000,
+                    }
+                }
+            }
+        assign_v4_action_scales(records, dates, ["00403A"])
+        move = records[dates[-1]]["2330"]["00403A"]
+        self.assertAlmostEqual(0.1, move["normal_action_flow"], places=5)
+        self.assertAlmostEqual(2.0, move["normal_action_multiple"], places=2)
+        self.assertEqual(
+            "same_direction_expanded", move["v4_baseline_source"]
+        )
+
+    def test_maintenance_direction_uses_direction_standardized_actions(self) -> None:
+        histories, _ = _histories(
+            {"00403A": {20: 100, 21: 100, 22: -300}}
+        )
+        payload = build_consensus_payload(histories, {})
+        latest = payload["series"]["2330"]["00403A"][-1]
+        self.assertLess(latest["net_active_flow_10"], 0)
+        self.assertEqual(-1, latest["raw_net_direction_10"])
+        self.assertGreater(latest["net_ratio_10"], 0)
+        self.assertEqual(1, latest["net_direction_10"])
+
+    def test_watch_direction_flip_resets_age_instead_of_inheriting_it(self) -> None:
+        histories, dates = _histories({}, stock_id="2449")
+        for index, session in enumerate(dates):
+            shares = (
+                {"2449": 1_000}
+                if index < 10 or index >= 15
+                else {}
+            )
+            histories["00981A"][session] = _day(session, shares)
+        payload = build_consensus_payload(histories, {})
+        reentry = hydrate_board(payload, dates[15])["signals"]["watching"][0]
+        self.assertEqual(1, reentry["direction"])
+        transition = next(
+            row
+            for row in payload["transitions"]["2449"]
+            if row["date"] == dates[15]
+        )
+        self.assertEqual(0, transition["watch_age"])
+        self.assertIn("反手", transition["transition"])
+
+    def test_fresh_same_direction_action_renews_watch_lifetime(self) -> None:
+        histories, dates = _histories({}, stock_id="6488")
+        for index, session in enumerate(dates):
+            shares = 0
+            if index >= 10:
+                shares = 500
+            if index >= 18:
+                shares = 750
+            histories["00991A"][session] = _day(
+                session, {"6488": shares} if shares else {}
+            )
+        payload = build_consensus_payload(histories, {})
+        renewed = hydrate_board(payload, dates[18])["signals"]["watching"][0]
+        self.assertEqual(
+            "高資訊觀察獲得新證據", renewed["transition"]
+        )
+        still_valid = hydrate_board(payload, dates[27])["signals"]["watching"]
+        self.assertTrue(still_valid)
+
+    def test_payload_keeps_backtest_ready_daily_state_history(self) -> None:
+        histories, dates = _histories(
+            {"00403A": {27: 250}, "00981A": {29: 250}}
+        )
+        payload = build_consensus_payload(histories, {})
+        rows = payload["state_history"]["2330"]
+        self.assertEqual(len(payload["dates"]), len(rows))
+        self.assertEqual(dates[-1], rows[-1]["date"])
+        self.assertTrue(
+            all(row["state_days"] == 0 for row in rows if row["state"] == "none")
+        )
+        self.assertTrue(
+            payload["data_quality"]["historical_signal_replay_ready"]
+        )
+        self.assertFalse(payload["data_quality"]["price_returns_embedded"])
+
+    def test_full_history_mode_does_not_drop_old_backtest_sessions(self) -> None:
+        histories, _ = _histories({}, sessions=270)
+        live = build_consensus_payload(histories, {})
+        full = build_consensus_payload(
+            histories, {}, history_sessions=None
+        )
+        self.assertEqual(260, len(live["dates"]))
+        self.assertEqual(269, len(full["dates"]))
+        self.assertIsNone(
+            full["data_quality"]["history_session_limit_applied"]
+        )
+
     def test_confirmed_score_declines_each_quiet_session(self) -> None:
         histories, dates = _histories(
             {

@@ -8,8 +8,8 @@ V4 separates *state* from *score*:
 
 The colour is a hard gate.  A large one-manager score can never become a
 red/green conclusion.  The score only ranks maturity inside the same lane.
-V4 assigns its own ETF-wide, preceding-10-session usual-action scale without
-look-ahead; concept tags are never interpreted.
+V4 assigns its own ETF-wide, direction-specific preceding-session usual-action
+scale without look-ahead; concept tags are never interpreted.
 """
 from __future__ import annotations
 
@@ -38,6 +38,7 @@ CORE_RELATIVE_STRENGTH = 8
 CORE_PERSISTENCE = 10
 CORE_FRESH_STATE_DAYS = 3
 ACTION_BASELINE_SESSIONS = 10
+ACTION_BASELINE_BACKFILL_SESSIONS = 60
 MIN_BASELINE_OBSERVATIONS = 8
 MIN_ACTIVE_FLOW = 0.02
 SIGNIFICANCE_GATE_FRACTION = 0.60
@@ -63,6 +64,8 @@ def assign_v4_action_scales(
     records: dict[str, dict[str, dict[str, dict]]],
     common_dates: list[str],
     etfs: list[str],
+    *,
+    dates_by_etf: dict[str, list[str]] | None = None,
 ) -> None:
     """Attach a no-look-ahead ETF-wide usual-action scale to each move.
 
@@ -71,49 +74,81 @@ def assign_v4_action_scales(
     ``23.9x``.  V4 now gives the two concepts separate fields:
 
     * ``normal_action_multiple`` compares the move with the ETF's median
-      non-zero same-direction trade during the preceding 10 common sessions;
+      non-zero same-direction routine trade during its preceding disclosure
+      sessions;
     * ``significance_gate`` is only the qualification line (60% of usual,
       never below 0.02% of ETF size).
 
-    Direction-specific history is preferred; the combined buy/sell sample is
-    used until there are enough same-direction observations.  The current date
+    Buy and sell histories are different conditional distributions and are
+    never pooled.  The primary sample is the preceding 10 disclosure sessions
+    for that ETF.  When it is sparse, the search expands to 60 preceding ETF
+    sessions in the same direction only.  Structural entries/exits are kept as
+    events but do not define the scale of a routine add/trim.  The current date
     is never included in its own baseline.
     """
     fallback_typical = MIN_ACTIVE_FLOW / SIGNIFICANCE_GATE_FRACTION
+    available_dates: dict[str, list[str]] = {}
+    for etf in etfs:
+        supplied = list((dates_by_etf or {}).get(etf) or [])
+        if supplied:
+            available_dates[etf] = sorted(set(supplied))
+            continue
+        available_dates[etf] = sorted(
+            date
+            for date, by_stock in records.items()
+            if any(etf in by_etf for by_etf in by_stock.values())
+        )
+
+    def _directional_sample(
+        etf: str,
+        dates: list[str],
+        direction: int,
+    ) -> list[float]:
+        sample: list[float] = []
+        for prior_date in dates:
+            for by_etf in records.get(prior_date, {}).values():
+                prior_move = by_etf.get(etf)
+                if not prior_move or not prior_move.get("copyable"):
+                    continue
+                if prior_move.get("position_event") in STRUCTURAL_EVENTS:
+                    continue
+                flow = float(prior_move.get("active_flow") or 0.0)
+                if flow * direction > 1e-9:
+                    sample.append(abs(flow))
+        return sample
+
     for date_index, date in enumerate(common_dates):
-        prior_dates = common_dates[
-            max(0, date_index - ACTION_BASELINE_SESSIONS) : date_index
-        ]
         for etf in etfs:
-            buy_sample: list[float] = []
-            sell_sample: list[float] = []
-            for prior_date in prior_dates:
-                for by_etf in records.get(prior_date, {}).values():
-                    prior_move = by_etf.get(etf)
-                    if not prior_move or not prior_move.get("copyable"):
-                        continue
-                    flow = float(prior_move.get("active_flow") or 0.0)
-                    if flow > 1e-9:
-                        buy_sample.append(flow)
-                    elif flow < -1e-9:
-                        sell_sample.append(abs(flow))
-            combined_sample = buy_sample + sell_sample
+            prior_etf_dates = [
+                session for session in available_dates.get(etf, []) if session < date
+            ]
+            primary_dates = prior_etf_dates[-ACTION_BASELINE_SESSIONS:]
+            expanded_dates = prior_etf_dates[-ACTION_BASELINE_BACKFILL_SESSIONS:]
+            recent_buy = _directional_sample(etf, primary_dates, 1)
+            recent_sell = _directional_sample(etf, primary_dates, -1)
             for by_etf in records.get(date, {}).values():
                 move = by_etf.get(etf)
                 if move is None:
                     continue
                 flow = float(move.get("active_flow") or 0.0)
                 magnitude = abs(flow) if move.get("copyable") else 0.0
-                directional = buy_sample if flow > 0 else sell_sample
-                if len(directional) >= MIN_BASELINE_OBSERVATIONS:
-                    sample = directional
+                direction = _direction(flow)
+                recent = recent_buy if direction > 0 else recent_sell
+                if len(recent) >= MIN_BASELINE_OBSERVATIONS:
+                    sample = recent
                     source = "same_direction"
-                elif len(combined_sample) >= MIN_BASELINE_OBSERVATIONS:
-                    sample = combined_sample
-                    source = "combined"
                 else:
-                    sample = []
-                    source = "fallback"
+                    expanded = (
+                        _directional_sample(etf, expanded_dates, direction)
+                        if direction
+                        else []
+                    )
+                    if len(expanded) >= MIN_BASELINE_OBSERVATIONS:
+                        sample = expanded
+                        source = "same_direction_expanded"
+                    else:
+                        sample = []
+                        source = "directional_fallback"
                 typical = median(sample) if sample else fallback_typical
                 gate = max(MIN_ACTIVE_FLOW, typical * SIGNIFICANCE_GATE_FRACTION)
                 multiple = magnitude / typical if typical else 0.0
@@ -121,7 +156,7 @@ def assign_v4_action_scales(
                 typical_money_twd = (
                     money_twd * typical / magnitude if magnitude > 0 else 0.0
                 )
-                move["v4_baseline_sessions"] = len(prior_dates)
+                move["v4_baseline_sessions"] = len(primary_dates)
                 move["v4_baseline_observations"] = len(sample)
                 move["v4_baseline_source"] = source
                 move["normal_action_flow"] = round(typical, 6)
@@ -352,7 +387,7 @@ def _features_for_date(
         net_ratio_10 = sum(
             float(item["ratio"]) for item in trailing_10 if item["copyable"]
         )
-        result[etf] = {
+        feature = {
             **row,
             "ewma_3": round(ewmas[etf][3], 4),
             "ewma_10": round(ewmas[etf][10], 4),
@@ -373,7 +408,12 @@ def _features_for_date(
             ),
             "net_active_flow_10": round(net_active_flow_10, 6),
             "net_ratio_10": round(net_ratio_10, 3),
-            "net_direction_10": _direction(net_active_flow_10),
+            # Manager intent must compare a routine buy with that ETF's usual
+            # buy and a routine sell with its usual sell.  Raw allocation
+            # changes remain useful economic context, but a naturally larger
+            # sell distribution must not cancel several normal staged buys.
+            "net_direction_10": _direction(net_ratio_10),
+            "raw_net_direction_10": _direction(net_active_flow_10),
             "same_days_3": sum(
                 item["significant"]
                 and _direction(float(item["ratio"])) == last_direction
@@ -429,6 +469,8 @@ def _features_for_date(
                 else 0
             ),
         }
+        histories[etf][-1] = feature
+        result[etf] = feature
     return result
 
 
@@ -500,7 +542,14 @@ def _high_information_watch(
     return etf, direction, kind
 
 
-def _transition_label(previous: str, current: str, direction: int) -> str:
+def _transition_label(
+    previous: str,
+    current: str,
+    direction: int,
+    *,
+    previous_direction: int = 0,
+    fresh_watch_evidence: bool = False,
+) -> str:
     action = "買方" if direction > 0 else "賣方"
     if current in {"buy", "sell"} and previous == "watch":
         return f"觀察升級為{action}共識"
@@ -513,6 +562,10 @@ def _transition_label(previous: str, current: str, direction: int) -> str:
     if current == "watch" and previous in {"buy", "sell"}:
         return "共識降溫，退回觀察"
     if current == "watch" and previous == "watch":
+        if previous_direction and previous_direction != direction:
+            return f"高資訊觀察反手為{action}"
+        if fresh_watch_evidence:
+            return "高資訊觀察獲得新證據"
         return "高資訊觀察延續"
     if current == "watch":
         return "新增高資訊觀察"
@@ -704,16 +757,25 @@ def build_consensus_payload(
     tags: dict,
     *,
     as_of: str | None = None,
+    history_sessions: int | None = HISTORY_SESSIONS,
 ) -> dict:
     etfs = sorted(histories)
     records, dates_by_etf = build_move_store(histories, tags)
     common_dates = _common_dates(dates_by_etf)
     if as_of is not None:
         common_dates = [date for date in common_dates if date <= as_of]
-    common_dates = common_dates[-HISTORY_SESSIONS:]
+    if history_sessions is not None:
+        if history_sessions <= 0:
+            raise ValueError("history_sessions must be positive or None")
+        common_dates = common_dates[-history_sessions:]
     if not common_dates:
         raise ValueError("V4 requires at least one common ETF disclosure date")
-    assign_v4_action_scales(records, common_dates, etfs)
+    assign_v4_action_scales(
+        records,
+        common_dates,
+        etfs,
+        dates_by_etf=dates_by_etf,
+    )
     stock_ids = sorted(
         {
             stock_id
@@ -828,24 +890,34 @@ def build_consensus_payload(
                     previous_state == "watch"
                     and previous_direction
                     and audit[stock_id]
-                    and int(audit[stock_id][-1].get("watch_age") or 0)
-                    < WATCH_SESSIONS - 1
-                    and any(
-                        int(features.get(etf, {}).get("net_direction_10") or 0)
-                        == previous_direction
-                        for etf in (
-                            audit[stock_id][-1].get("participants") or []
-                        )
-                    )
                 ):
-                    current_state = "watch"
-                    direction = previous_direction
-                    participants = list(
-                        audit[stock_id][-1].get("participants") or []
+                    prior_row = audit[stock_id][-1]
+                    prior_participants = list(prior_row.get("participants") or [])
+                    supported = [
+                        etf
+                        for etf in prior_participants
+                        if int(
+                            features.get(etf, {}).get("net_direction_10") or 0
+                        )
+                        == previous_direction
+                    ]
+                    renewed = any(
+                        bool(features.get(etf, {}).get("significant"))
+                        and _direction(
+                            float(features.get(etf, {}).get("ratio") or 0.0)
+                        )
+                        == previous_direction
+                        for etf in supported
                     )
-                    watch_kind = str(
-                        audit[stock_id][-1].get("watch_kind") or ""
+                    not_expired = (
+                        int(prior_row.get("watch_age") or 0)
+                        < WATCH_SESSIONS - 1
                     )
+                    if supported and (renewed or not_expired):
+                        current_state = "watch"
+                        direction = previous_direction
+                        participants = supported
+                        watch_kind = str(prior_row.get("watch_kind") or "")
 
             if current_state == "watch" and participants:
                 direction = direction or _direction(
@@ -865,26 +937,51 @@ def build_consensus_payload(
                     watch_kind=watch_kind,
                 )
 
-            if current_state == previous_state and direction == previous_direction:
-                state_days += 1
-            elif current_state != "none":
-                state_days = 1
-                first_seen = date
-            else:
+            if current_state == "none":
                 state_days = 0
                 first_seen = ""
                 confirmed_date = ""
                 last_confirmed = ""
+            elif (
+                current_state == previous_state
+                and direction == previous_direction
+            ):
+                state_days += 1
+            else:
+                state_days = 1
+                first_seen = date
             if current_state in {"buy", "sell"}:
                 if previous_state != current_state:
                     confirmed_date = date
                 last_confirmed = date
+            fresh_watch_evidence = bool(
+                current_state == "watch"
+                and any(
+                    bool(features.get(etf, {}).get("significant"))
+                    and _direction(
+                        float(features.get(etf, {}).get("ratio") or 0.0)
+                    )
+                    == direction
+                    for etf in participants
+                )
+            )
             transition = _transition_label(
-                previous_state, current_state, direction
+                previous_state,
+                current_state,
+                direction,
+                previous_direction=previous_direction,
+                fresh_watch_evidence=fresh_watch_evidence,
+            )
+            same_watch_identity = bool(
+                current_state == previous_state == "watch"
+                and direction == previous_direction
+                and audit[stock_id]
+                and set(participants)
+                == set(audit[stock_id][-1].get("participants") or [])
             )
             watch_age = (
                 int(audit[stock_id][-1].get("watch_age") or 0) + 1
-                if current_state == previous_state == "watch"
+                if same_watch_identity and not fresh_watch_evidence
                 else 0
             )
             state_row = {
@@ -895,6 +992,7 @@ def build_consensus_payload(
                 "participants": participants,
                 "watch_kind": watch_kind,
                 "watch_age": watch_age,
+                "state_days": state_days,
                 "transition": transition,
             }
             audit[stock_id].append(state_row)
@@ -940,10 +1038,17 @@ def build_consensus_payload(
                     "normal_action_multiple": row["normal_action_multiple"],
                     "significance_ratio": row["significance_ratio"],
                     "significant": row["significant"],
+                    "baseline_observations": row["baseline_observations"],
+                    "baseline_source": row["baseline_source"],
                     "estimated_money_yi": row["estimated_money_yi"],
                     "normal_action_money_yi": row["normal_action_money_yi"],
+                    "net_active_flow_10": row["net_active_flow_10"],
+                    "net_ratio_10": row["net_ratio_10"],
+                    "net_direction_10": row["net_direction_10"],
+                    "raw_net_direction_10": row["raw_net_direction_10"],
+                    "last_significant_age": row["last_significant_age"],
                 }
-                for row in rows[-HISTORY_SESSIONS:]
+                for row in rows
             ]
             for etf, rows in per_etf_history.items()
         }
@@ -958,7 +1063,7 @@ def build_consensus_payload(
             )
     latest = common_dates[-1]
     payload = {
-        "schema_version": 3,
+        "schema_version": 4,
         "generated": datetime.now().astimezone().isoformat(timespec="seconds"),
         "as_of": latest,
         "etfs": etfs,
@@ -969,11 +1074,19 @@ def build_consensus_payload(
             "minimum_confirming_etfs": 2,
             "signal_overlap_sessions": SIGNAL_OVERLAP_SESSIONS,
             "support_sessions": SUPPORT_SESSIONS,
+            "live_replay_session_limit": HISTORY_SESSIONS,
+            "full_history_rebuild_supported": True,
             "action_baseline_sessions": ACTION_BASELINE_SESSIONS,
-            "action_baseline": "ETF-wide median non-zero same-direction action",
+            "action_baseline_backfill_sessions": ACTION_BASELINE_BACKFILL_SESSIONS,
+            "action_baseline": (
+                "ETF-wide median non-zero same-direction routine action; "
+                "buy and sell are never pooled"
+            ),
             "significance_gate_fraction": SIGNIFICANCE_GATE_FRACTION,
             "display_multiple_is_gate_multiple": False,
-            "support_requires_positive_10d_derivative": True,
+            "support_requires_positive_10d_standardized_derivative": True,
+            "raw_net_flow_is_explanatory_only": True,
+            "structural_events_excluded_from_routine_action_baseline": True,
             "quiet_sessions_reduce_score": True,
             "core_decision_rule": {
                 "minimum_score": CORE_SCORE,
@@ -992,15 +1105,19 @@ def build_consensus_payload(
         "signals": boards[latest],
         "boards": boards,
         "series": series,
+        "state_history": {
+            stock_id: rows
+            for stock_id, rows in audit.items()
+        },
         "transitions": {
             stock_id: [
                 row
-                for index, row in enumerate(rows[-HISTORY_SESSIONS:])
+                for index, row in enumerate(rows)
                 if index == 0
                 or row["state"]
-                != rows[-HISTORY_SESSIONS:][index - 1]["state"]
+                != rows[index - 1]["state"]
                 or row["direction"]
-                != rows[-HISTORY_SESSIONS:][index - 1]["direction"]
+                != rows[index - 1]["direction"]
             ]
             for stock_id, rows in audit.items()
         },
@@ -1008,6 +1125,23 @@ def build_consensus_payload(
             "exact_move_rows": exact_rows,
             "estimated_move_rows": estimated_rows,
             "historical_estimate": "fund_size / rounded NAV",
+            "complete_panel_start": common_dates[0],
+            "complete_panel_sessions": len(common_dates),
+            "history_session_limit_applied": history_sessions,
+            "per_etf_history": {
+                etf: {
+                    "sessions": len(dates_by_etf.get(etf) or []),
+                    "first": (dates_by_etf.get(etf) or [""])[0],
+                    "last": (dates_by_etf.get(etf) or [""])[-1],
+                }
+                for etf in etfs
+            },
+            "historical_signal_replay_ready": True,
+            "price_returns_embedded": False,
+            "backtest_execution_timing": (
+                "Signals use disclosed holdings; any return backtest must "
+                "enter no earlier than the next tradable session."
+            ),
         },
     }
     return hydrate_board(payload, latest)
