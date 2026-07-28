@@ -737,7 +737,7 @@ Run this when LINE rich-menu buttons change:
 cd /home/ubuntu/STOCK && source venv/bin/activate && source /home/ubuntu/.stock_secrets && python scripts/setup_rich_menu.py
 ```
 
-The rich menu uses three LINE rich-menu aliases. Page 1 is fast market/macro plus direct `市場脈動`, `吳大師`, and `ETF 共識` actions; Page 2 is the primary ETF watchlist, and Page 3 is ETF overflow. Navigation convention is fixed: previous page is bottom-left, next page is bottom-right, and the last page uses bottom-right `首頁` until another page is needed. Page 1's narrow five-column row uses the width-fitted `ETF 共識` / `觀察・買・賣` tile and `那斯達克` / `24 小時` tile. The former three-lane `ETF動作` remains available as a typed command for audit.
+The rich menu uses three LINE rich-menu aliases. Page 1 is fast market/macro: its top row is `油價`, `黃金`, `匯率`, `債券`, and `融資餘額`; its bottom row contains direct `市場脈動`, `吳大師`, `ETF 共識`, and `那斯達克` actions plus navigation. Page 2 is the primary ETF watchlist, and Page 3 is ETF overflow. Navigation convention is fixed: previous page is bottom-left, next page is bottom-right, and the last page uses bottom-right `首頁` until another page is needed. Page 1's narrow five-column rows use width-fitted labels. The former three-lane `ETF動作` remains available as a typed command for audit.
 
 ## ⚠️ Invariants & Gotchas (read before editing)
 

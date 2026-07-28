@@ -27,3 +27,12 @@ def test_phone_row_uses_short_labels() -> None:
     labels = {(cell[5], cell[6]) for cell in PAGE1 if cell[1] == 843}
     assert ("ETF 共識", "觀察・買・賣") in labels
     assert ("那斯達克", "24 小時") in labels
+
+
+def test_page_one_has_financing_balance_action() -> None:
+    financing = [cell for cell in PAGE1 if cell[5] == "融資餘額"]
+    assert len(financing) == 1
+    cell = financing[0]
+    assert cell[1] == 0
+    assert cell[8] == "message"
+    assert cell[9] == "融資餘額"
