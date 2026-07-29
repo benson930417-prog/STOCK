@@ -1,10 +1,10 @@
 {
-  "generated": "2026-07-28 10:33:15",
+  "generated": "2026-07-29 10:34:01",
   "source": "cmoney.tw/forum/stock",
-  "count": 104,
+  "count": 108,
   "coverage": {
-    "covered": 104,
-    "universe": 104,
+    "covered": 108,
+    "universe": 108,
     "missing": 0
   },
   "tags": {
@@ -13,35 +13,35 @@
       "group": "電子中游",
       "concepts": [
         {
-          "id": "C50901",
-          "name": "氣候變遷",
-          "avg_pct": 3.48
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 2.55
         },
         {
-          "id": "C50881",
-          "name": "元宇宙",
-          "avg_pct": 3.66
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 2.58
         },
         {
-          "id": "C50900",
-          "name": "碳權",
-          "avg_pct": 3.79
+          "id": "C50510",
+          "name": "智慧城市",
+          "avg_pct": 3.06
         },
         {
-          "id": "C50921",
-          "name": "3DIC聯盟",
-          "avg_pct": 3.84
+          "id": "C50080",
+          "name": "物聯網",
+          "avg_pct": 3.32
         },
         {
-          "id": "C50917",
-          "name": "GB200",
-          "avg_pct": 3.86
+          "id": "C50320",
+          "name": "MWC",
+          "avg_pct": 3.39
         }
       ],
       "category_id": "C23170",
       "category_full": "電子中游-電源供應器",
       "name": "台達電子",
-      "checked_at_utc": "2026-07-28T10:33:14.380769Z"
+      "checked_at_utc": "2026-07-29T10:34:00.779870Z"
     },
     "6274": {
       "category": "PCB-材料設備",
@@ -2853,6 +2853,141 @@
       "category_full": "電子上游-IC-封測",
       "name": "聯鈞",
       "checked_at_utc": "2026-07-27T10:33:13.486398Z"
+    },
+    "1216": {
+      "category": "食品",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50750",
+          "name": "寵物",
+          "avg_pct": 0.85
+        },
+        {
+          "id": "C50580",
+          "name": "三孩政策",
+          "avg_pct": 0.74
+        },
+        {
+          "id": "C50120",
+          "name": "文創",
+          "avg_pct": 0.67
+        },
+        {
+          "id": "C50140",
+          "name": "夏季",
+          "avg_pct": 0.79
+        },
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 2.58
+        }
+      ],
+      "category_id": "C12010",
+      "category_full": "傳產-食品",
+      "name": "統一企業",
+      "checked_at_utc": "2026-07-29T10:33:46.947508Z"
+    },
+    "2379": {
+      "category": "IC-設計",
+      "group": "電子上游",
+      "concepts": [
+        {
+          "id": "C50100",
+          "name": "VR",
+          "avg_pct": 0.61
+        },
+        {
+          "id": "C50090",
+          "name": "Type C",
+          "avg_pct": 2.03
+        },
+        {
+          "id": "C50867",
+          "name": "Chromebook",
+          "avg_pct": 2.39
+        },
+        {
+          "id": "C50080",
+          "name": "物聯網",
+          "avg_pct": 3.32
+        },
+        {
+          "id": "C50400",
+          "name": "Switch",
+          "avg_pct": 3.33
+        }
+      ],
+      "category_id": "C23010",
+      "category_full": "電子上游-IC-設計",
+      "name": "瑞昱半導",
+      "checked_at_utc": "2026-07-29T10:33:50.275924Z"
+    },
+    "2884": {
+      "category": "金控",
+      "group": "金融",
+      "concepts": [
+        {
+          "id": "C50840",
+          "name": "雙十一",
+          "avg_pct": 0.37
+        },
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 2.55
+        },
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 2.58
+        },
+        {
+          "id": "C50160",
+          "name": "行動支付",
+          "avg_pct": 3.43
+        }
+      ],
+      "category_id": "C28010",
+      "category_full": "金融-金控",
+      "name": "玉山金融",
+      "checked_at_utc": "2026-07-29T10:33:53.405292Z"
+    },
+    "2912": {
+      "category": "百貨",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50560",
+          "name": "新零售",
+          "avg_pct": 1.64
+        },
+        {
+          "id": "C50871",
+          "name": "電商宅經濟",
+          "avg_pct": 1.6
+        },
+        {
+          "id": "C50869",
+          "name": "物流",
+          "avg_pct": 1.41
+        },
+        {
+          "id": "C50840",
+          "name": "雙十一",
+          "avg_pct": 0.37
+        },
+        {
+          "id": "C50430",
+          "name": "暑假",
+          "avg_pct": 0.59
+        }
+      ],
+      "category_id": "C29010",
+      "category_full": "傳產-百貨",
+      "name": "統一超商",
+      "checked_at_utc": "2026-07-29T10:33:57.521974Z"
     }
   }
 }
