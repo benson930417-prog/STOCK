@@ -1,10 +1,10 @@
 {
-  "generated": "2026-07-29 10:34:01",
+  "generated": "2026-07-30 10:33:03",
   "source": "cmoney.tw/forum/stock",
-  "count": 108,
+  "count": 109,
   "coverage": {
-    "covered": 108,
-    "universe": 108,
+    "covered": 109,
+    "universe": 109,
     "missing": 0
   },
   "tags": {
@@ -13,35 +13,35 @@
       "group": "電子中游",
       "concepts": [
         {
-          "id": "C50250",
-          "name": "一帶一路",
-          "avg_pct": 2.55
+          "id": "C50856",
+          "name": "電感",
+          "avg_pct": 2.25
+        },
+        {
+          "id": "C50862",
+          "name": "電源供應器",
+          "avg_pct": 2.18
+        },
+        {
+          "id": "C50861",
+          "name": "變壓器",
+          "avg_pct": 2.07
+        },
+        {
+          "id": "C50918",
+          "name": "BBU",
+          "avg_pct": 2.05
         },
         {
           "id": "C50270",
           "name": "第三方支付",
-          "avg_pct": 2.58
-        },
-        {
-          "id": "C50510",
-          "name": "智慧城市",
-          "avg_pct": 3.06
-        },
-        {
-          "id": "C50080",
-          "name": "物聯網",
-          "avg_pct": 3.32
-        },
-        {
-          "id": "C50320",
-          "name": "MWC",
-          "avg_pct": 3.39
+          "avg_pct": 1.9
         }
       ],
       "category_id": "C23170",
       "category_full": "電子中游-電源供應器",
       "name": "台達電子",
-      "checked_at_utc": "2026-07-29T10:34:00.779870Z"
+      "checked_at_utc": "2026-07-30T10:33:02.989424Z"
     },
     "6274": {
       "category": "PCB-材料設備",
@@ -2988,6 +2988,31 @@
       "category_full": "傳產-百貨",
       "name": "統一超商",
       "checked_at_utc": "2026-07-29T10:33:57.521974Z"
+    },
+    "2887": {
+      "category": "金控",
+      "group": "金融",
+      "concepts": [
+        {
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 1.9
+        },
+        {
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 0.61
+        },
+        {
+          "id": "C50160",
+          "name": "行動支付",
+          "avg_pct": 0.43
+        }
+      ],
+      "category_id": "C28010",
+      "category_full": "金融-金控",
+      "name": "台新新光",
+      "checked_at_utc": "2026-07-30T10:32:59.373715Z"
     }
   }
 }

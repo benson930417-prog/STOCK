@@ -1,7 +1,7 @@
 {
   "schema_version": 4,
-  "generated": "2026-07-29T10:34:04+00:00",
-  "as_of": "2026-07-29",
+  "generated": "2026-07-30T10:33:06+00:00",
+  "as_of": "2026-07-30",
   "etfs": [
     "00403A",
     "00981A",
@@ -51,7 +51,8 @@
         "2026-07-24",
         "2026-07-27",
         "2026-07-28",
-        "2026-07-29"
+        "2026-07-29",
+        "2026-07-30"
       ],
       "00981A": [
         "2026-03-23",
@@ -141,7 +142,8 @@
         "2026-07-24",
         "2026-07-27",
         "2026-07-28",
-        "2026-07-29"
+        "2026-07-29",
+        "2026-07-30"
       ],
       "00991A": [
         "2026-03-12",
@@ -217,7 +219,8 @@
         "2026-07-24",
         "2026-07-27",
         "2026-07-28",
-        "2026-07-29"
+        "2026-07-29",
+        "2026-07-30"
       ]
     },
     "common": [
@@ -252,9 +255,10 @@
       "2026-07-24",
       "2026-07-27",
       "2026-07-28",
-      "2026-07-29"
+      "2026-07-29",
+      "2026-07-30"
     ],
-    "latest": "2026-07-29"
+    "latest": "2026-07-30"
   },
   "methodology": {
     "signal": "actual shares minus prior shares scaled by exact/estimated outstanding ETF units",
@@ -276,23 +280,22 @@
     "concepts_interpreted": false
   },
   "data_quality": {
-    "exact_move_rows": 461,
+    "exact_move_rows": 613,
     "estimated_move_rows": 4374,
     "historical_estimate": "fund_size / rounded NAV"
   },
   "signals": {
-    "buying": [],
-    "selling": [
+    "buying": [
       {
-        "stock_id": "1303",
-        "name": "南亞塑膠",
-        "category": "塑膠",
-        "signal_date": "2026-07-29",
-        "direction": -1,
-        "event_type": "full_exit",
+        "stock_id": "3008",
+        "name": "大立光",
+        "category": "光學鏡片",
+        "signal_date": "2026-07-30",
+        "direction": 1,
+        "event_type": "new_position",
         "event_kind": "structural",
-        "event_label": "形成出清共識",
-        "reason": "991 完整出清，403 同步顯著賣出",
+        "event_label": "形成建倉共識",
+        "reason": "991 首次納入，403 同步顯著買進",
         "etfs": [
           "00403A",
           "00991A"
@@ -300,40 +303,185 @@
         "etf_label": "403・991",
         "breadth": 2,
         "consensus_etfs": 2,
-        "weakest_significance_ratio": 16.33,
+        "weakest_significance_ratio": 0.3,
+        "strength": 4.4,
+        "data_quality": "exact",
+        "data_quality_label": "精確單位數",
+        "estimated_money_yi": 1.17,
+        "evidence": [
+          {
+            "etf": "00403A",
+            "etf_label": "403",
+            "action": "買進",
+            "active_flow": 0.0743,
+            "significance_ratio": 3.72,
+            "position_event": "increase",
+            "raw_delta_shares": 30000,
+            "unit_quality": "exact"
+          },
+          {
+            "etf": "00991A",
+            "etf_label": "991",
+            "action": "買進",
+            "active_flow": 0.006,
+            "significance_ratio": 0.3,
+            "position_event": "new_position",
+            "raw_delta_shares": 1000,
+            "unit_quality": "exact"
+          }
+        ],
+        "age_sessions": 0,
+        "flow_trend_20d": [
+          {
+            "date": "2026-07-02",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-03",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-06",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-07",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-08",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-09",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-13",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-14",
+            "flow": 0.08,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-15",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-16",
+            "flow": 0.069937,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-17",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-20",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-21",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-22",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-23",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-24",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-27",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-28",
+            "flow": 0.045279,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-29",
+            "flow": 0.068342,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-30",
+            "flow": 0.080311,
+            "breadth": 2
+          }
+        ],
+        "signal_phase": "new",
+        "timing_label": "本交易日新形成"
+      },
+      {
+        "stock_id": "2360",
+        "name": "致茂電子",
+        "category": "儀器設備工程",
+        "signal_date": "2026-07-30",
+        "direction": 1,
+        "event_type": "buy_onset",
+        "event_kind": "onset",
+        "event_label": "形成買方共識",
+        "reason": "403、991 本交易日同步形成顯著買進共識",
+        "etfs": [
+          "00403A",
+          "00991A"
+        ],
+        "etf_label": "403・991",
+        "breadth": 2,
+        "consensus_etfs": 2,
+        "weakest_significance_ratio": 4.55,
         "strength": 6.4,
         "data_quality": "exact",
         "data_quality_label": "精確單位數",
-        "estimated_money_yi": -18.34,
+        "estimated_money_yi": 14.2,
         "evidence": [
           {
             "etf": "00403A",
             "etf_label": "403",
-            "action": "賣出",
-            "active_flow": -0.6224,
-            "significance_ratio": 16.33,
-            "position_event": "decrease",
-            "raw_delta_shares": -6113000,
+            "action": "買進",
+            "active_flow": 0.091,
+            "significance_ratio": 4.55,
+            "position_event": "increase",
+            "raw_delta_shares": 80000,
             "unit_quality": "exact"
           },
           {
             "etf": "00991A",
             "etf_label": "991",
-            "action": "賣出",
-            "active_flow": -1.363,
-            "significance_ratio": 68.15,
-            "position_event": "full_exit",
-            "raw_delta_shares": -6000000,
+            "action": "買進",
+            "active_flow": 1.944,
+            "significance_ratio": 97.2,
+            "position_event": "increase",
+            "raw_delta_shares": 659000,
             "unit_quality": "exact"
           }
         ],
         "age_sessions": 0,
         "flow_trend_20d": [
-          {
-            "date": "2026-07-01",
-            "flow": 0,
-            "breadth": 0
-          },
           {
             "date": "2026-07-02",
             "flow": 0,
@@ -356,13 +504,13 @@
           },
           {
             "date": "2026-07-08",
-            "flow": 0.036652,
-            "breadth": 1
+            "flow": 0,
+            "breadth": 0
           },
           {
             "date": "2026-07-09",
-            "flow": 0.064762,
-            "breadth": 1
+            "flow": 0,
+            "breadth": 0
           },
           {
             "date": "2026-07-13",
@@ -371,18 +519,18 @@
           },
           {
             "date": "2026-07-14",
-            "flow": 0.044012,
-            "breadth": 1
+            "flow": 0,
+            "breadth": 0
           },
           {
             "date": "2026-07-15",
-            "flow": 0.118752,
+            "flow": 0.102355,
             "breadth": 1
           },
           {
             "date": "2026-07-16",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.162979,
+            "breadth": 1
           },
           {
             "date": "2026-07-17",
@@ -396,18 +544,18 @@
           },
           {
             "date": "2026-07-21",
-            "flow": 1.255,
-            "breadth": 1
+            "flow": 0,
+            "breadth": 0
           },
           {
             "date": "2026-07-22",
-            "flow": 0.096145,
+            "flow": 0.098223,
             "breadth": 1
           },
           {
             "date": "2026-07-23",
-            "flow": 0.31879,
-            "breadth": 1
+            "flow": 0,
+            "breadth": 0
           },
           {
             "date": "2026-07-24",
@@ -426,7 +574,12 @@
           },
           {
             "date": "2026-07-29",
-            "flow": -1.985405,
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-30",
+            "flow": 2.035026,
             "breadth": 2
           }
         ],
@@ -434,15 +587,15 @@
         "timing_label": "本交易日新形成"
       },
       {
-        "stock_id": "2368",
-        "name": "金像電子",
-        "category": "PCB-製造",
-        "signal_date": "2026-07-29",
-        "direction": -1,
-        "event_type": "full_exit",
-        "event_kind": "structural",
-        "event_label": "形成出清共識",
-        "reason": "991 完整出清，403 同步顯著賣出",
+        "stock_id": "5274",
+        "name": "信驊科技",
+        "category": "IC-設計",
+        "signal_date": "2026-07-30",
+        "direction": 1,
+        "event_type": "buy_restart",
+        "event_kind": "restart",
+        "event_label": "沉寂後重新買進",
+        "reason": "沉寂至少 5 個交易日後，403、991 重新顯著買進",
         "etfs": [
           "00403A",
           "00991A"
@@ -450,40 +603,35 @@
         "etf_label": "403・991",
         "breadth": 2,
         "consensus_etfs": 2,
-        "weakest_significance_ratio": 0.55,
-        "strength": 4.4,
+        "weakest_significance_ratio": 1.28,
+        "strength": 3.24,
         "data_quality": "exact",
         "data_quality_label": "精確單位數",
-        "estimated_money_yi": -5.91,
+        "estimated_money_yi": 4.23,
         "evidence": [
           {
             "etf": "00403A",
             "etf_label": "403",
-            "action": "賣出",
-            "active_flow": -0.3855,
-            "significance_ratio": 19.28,
-            "position_event": "decrease",
-            "raw_delta_shares": -720000,
+            "action": "買進",
+            "active_flow": 0.1632,
+            "significance_ratio": 1.56,
+            "position_event": "increase",
+            "raw_delta_shares": 20000,
             "unit_quality": "exact"
           },
           {
             "etf": "00991A",
             "etf_label": "991",
-            "action": "賣出",
-            "active_flow": -0.011,
-            "significance_ratio": 0.55,
-            "position_event": "full_exit",
-            "raw_delta_shares": -9000,
+            "action": "買進",
+            "active_flow": 0.265,
+            "significance_ratio": 1.28,
+            "position_event": "increase",
+            "raw_delta_shares": 15000,
             "unit_quality": "exact"
           }
         ],
         "age_sessions": 0,
         "flow_trend_20d": [
-          {
-            "date": "2026-07-01",
-            "flow": 0,
-            "breadth": 0
-          },
           {
             "date": "2026-07-02",
             "flow": 0,
@@ -496,13 +644,13 @@
           },
           {
             "date": "2026-07-06",
-            "flow": 0,
-            "breadth": 0
+            "flow": -0.218173,
+            "breadth": 1
           },
           {
             "date": "2026-07-07",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.463909,
+            "breadth": 3
           },
           {
             "date": "2026-07-08",
@@ -511,178 +659,28 @@
           },
           {
             "date": "2026-07-09",
-            "flow": 0,
-            "breadth": 0
+            "flow": -0.499609,
+            "breadth": 1
           },
           {
             "date": "2026-07-13",
-            "flow": 0,
-            "breadth": 0
+            "flow": -0.701294,
+            "breadth": 1
           },
           {
             "date": "2026-07-14",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.118534,
+            "breadth": 1
           },
           {
             "date": "2026-07-15",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-16",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-17",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-20",
-            "flow": -0.446366,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-21",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-22",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-23",
-            "flow": -0.283003,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-24",
-            "flow": -0.148697,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-27",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-28",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-29",
-            "flow": -0.39651,
+            "flow": 0.273816,
             "breadth": 2
-          }
-        ],
-        "signal_phase": "new",
-        "timing_label": "本交易日新形成"
-      },
-      {
-        "stock_id": "6510",
-        "name": "中華精測",
-        "category": "IC-封測",
-        "signal_date": "2026-07-29",
-        "direction": -1,
-        "event_type": "full_exit",
-        "event_kind": "structural",
-        "event_label": "形成出清共識",
-        "reason": "991 完整出清，981 同步顯著賣出",
-        "etfs": [
-          "00981A",
-          "00991A"
-        ],
-        "etf_label": "981・991",
-        "breadth": 2,
-        "consensus_etfs": 2,
-        "weakest_significance_ratio": 0.2,
-        "strength": 3.03,
-        "data_quality": "exact",
-        "data_quality_label": "精確單位數",
-        "estimated_money_yi": -0.81,
-        "evidence": [
-          {
-            "etf": "00981A",
-            "etf_label": "981",
-            "action": "賣出",
-            "active_flow": -0.0326,
-            "significance_ratio": 1.63,
-            "position_event": "decrease",
-            "raw_delta_shares": -30000,
-            "unit_quality": "exact"
-          },
-          {
-            "etf": "00991A",
-            "etf_label": "991",
-            "action": "賣出",
-            "active_flow": -0.004,
-            "significance_ratio": 0.2,
-            "position_event": "full_exit",
-            "raw_delta_shares": -1000,
-            "unit_quality": "exact"
-          }
-        ],
-        "age_sessions": 0,
-        "flow_trend_20d": [
-          {
-            "date": "2026-07-01",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-02",
-            "flow": -0.196754,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-03",
-            "flow": -0.047794,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-06",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-07",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-08",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-09",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-13",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-14",
-            "flow": -0.068568,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-15",
-            "flow": 0,
-            "breadth": 0
           },
           {
             "date": "2026-07-16",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.126059,
+            "breadth": 1
           },
           {
             "date": "2026-07-17",
@@ -691,8 +689,8 @@
           },
           {
             "date": "2026-07-20",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.101426,
+            "breadth": 1
           },
           {
             "date": "2026-07-21",
@@ -701,13 +699,13 @@
           },
           {
             "date": "2026-07-22",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.337375,
+            "breadth": 1
           },
           {
             "date": "2026-07-23",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.139263,
+            "breadth": 1
           },
           {
             "date": "2026-07-24",
@@ -726,7 +724,12 @@
           },
           {
             "date": "2026-07-29",
-            "flow": -0.036574,
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-30",
+            "flow": 0.428235,
             "breadth": 2
           }
         ],
@@ -734,15 +737,15 @@
         "timing_label": "本交易日新形成"
       },
       {
-        "stock_id": "2337",
-        "name": "旺宏電子",
-        "category": "記憶體製造",
-        "signal_date": "2026-07-29",
-        "direction": -1,
-        "event_type": "full_exit",
-        "event_kind": "structural",
-        "event_label": "形成出清共識",
-        "reason": "991 完整出清，403 同步顯著賣出",
+        "stock_id": "2345",
+        "name": "智邦",
+        "category": "網通",
+        "signal_date": "2026-07-30",
+        "direction": 1,
+        "event_type": "buy_onset",
+        "event_kind": "onset",
+        "event_label": "形成買方共識",
+        "reason": "403、991 本交易日同步形成顯著買進共識",
         "etfs": [
           "00403A",
           "00991A"
@@ -750,40 +753,35 @@
         "etf_label": "403・991",
         "breadth": 2,
         "consensus_etfs": 2,
-        "weakest_significance_ratio": 0.05,
-        "strength": 4.4,
+        "weakest_significance_ratio": 1.06,
+        "strength": 4.46,
         "data_quality": "exact",
         "data_quality_label": "精確單位數",
-        "estimated_money_yi": -2.93,
+        "estimated_money_yi": 3.63,
         "evidence": [
           {
             "etf": "00403A",
             "etf_label": "403",
-            "action": "賣出",
-            "active_flow": -0.1932,
-            "significance_ratio": 9.66,
-            "position_event": "decrease",
-            "raw_delta_shares": -2502000,
+            "action": "買進",
+            "active_flow": 0.0212,
+            "significance_ratio": 1.06,
+            "position_event": "increase",
+            "raw_delta_shares": 30000,
             "unit_quality": "exact"
           },
           {
             "etf": "00991A",
             "etf_label": "991",
-            "action": "賣出",
-            "active_flow": -0.001,
-            "significance_ratio": 0.05,
-            "position_event": "full_exit",
-            "raw_delta_shares": -9000,
+            "action": "買進",
+            "active_flow": 0.5019,
+            "significance_ratio": 5.49,
+            "position_event": "increase",
+            "raw_delta_shares": 200000,
             "unit_quality": "exact"
           }
         ],
         "age_sessions": 0,
         "flow_trend_20d": [
-          {
-            "date": "2026-07-01",
-            "flow": 0,
-            "breadth": 0
-          },
           {
             "date": "2026-07-02",
             "flow": 0,
@@ -801,13 +799,13 @@
           },
           {
             "date": "2026-07-07",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.289217,
+            "breadth": 1
           },
           {
             "date": "2026-07-08",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.098904,
+            "breadth": 1
           },
           {
             "date": "2026-07-09",
@@ -816,8 +814,8 @@
           },
           {
             "date": "2026-07-13",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.089496,
+            "breadth": 1
           },
           {
             "date": "2026-07-14",
@@ -826,8 +824,8 @@
           },
           {
             "date": "2026-07-15",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.278857,
+            "breadth": 1
           },
           {
             "date": "2026-07-16",
@@ -841,18 +839,18 @@
           },
           {
             "date": "2026-07-20",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.451861,
+            "breadth": 1
           },
           {
             "date": "2026-07-21",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.030646,
+            "breadth": 1
           },
           {
             "date": "2026-07-22",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.082894,
+            "breadth": 1
           },
           {
             "date": "2026-07-23",
@@ -876,23 +874,30 @@
           },
           {
             "date": "2026-07-29",
-            "flow": -0.194214,
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-30",
+            "flow": 0.52314,
             "breadth": 2
           }
         ],
         "signal_phase": "new",
         "timing_label": "本交易日新形成"
-      },
+      }
+    ],
+    "selling": [
       {
         "stock_id": "6515",
         "name": "穎崴",
         "category": "IC-封測",
-        "signal_date": "2026-07-29",
+        "signal_date": "2026-07-30",
         "direction": -1,
-        "event_type": "sell_restart",
-        "event_kind": "restart",
-        "event_label": "沉寂後重新賣出",
-        "reason": "沉寂至少 5 個交易日後，403、991 重新顯著賣出",
+        "event_type": "full_exit",
+        "event_kind": "structural",
+        "event_label": "形成出清共識",
+        "reason": "991 完整出清，403 同步顯著賣出",
         "etfs": [
           "00403A",
           "00991A"
@@ -900,18 +905,18 @@
         "etf_label": "403・991",
         "breadth": 2,
         "consensus_etfs": 2,
-        "weakest_significance_ratio": 6.29,
+        "weakest_significance_ratio": 5.51,
         "strength": 6.4,
         "data_quality": "exact",
         "data_quality_label": "精確單位數",
-        "estimated_money_yi": -5.96,
+        "estimated_money_yi": -9.33,
         "evidence": [
           {
             "etf": "00403A",
             "etf_label": "403",
             "action": "賣出",
-            "active_flow": -0.1258,
-            "significance_ratio": 6.29,
+            "active_flow": -0.1103,
+            "significance_ratio": 5.51,
             "position_event": "decrease",
             "raw_delta_shares": -30000,
             "unit_quality": "exact"
@@ -920,20 +925,15 @@
             "etf": "00991A",
             "etf_label": "991",
             "action": "賣出",
-            "active_flow": -0.6203,
-            "significance_ratio": 31.01,
-            "position_event": "decrease",
-            "raw_delta_shares": -70000,
+            "active_flow": -1.16,
+            "significance_ratio": 58.0,
+            "position_event": "full_exit",
+            "raw_delta_shares": -140000,
             "unit_quality": "exact"
           }
         ],
         "age_sessions": 0,
         "flow_trend_20d": [
-          {
-            "date": "2026-07-01",
-            "flow": 0,
-            "breadth": 0
-          },
           {
             "date": "2026-07-02",
             "flow": 0.08031,
@@ -1027,6 +1027,11 @@
           {
             "date": "2026-07-29",
             "flow": -0.746052,
+            "breadth": 2
+          },
+          {
+            "date": "2026-07-30",
+            "flow": -1.270256,
             "breadth": 2
           }
         ],
@@ -1599,6 +1604,96 @@
       ]
     },
     {
+      "stock_id": "2345",
+      "name": "智邦",
+      "category": "網通",
+      "signal_date": "2026-07-30",
+      "direction": 1,
+      "event_type": "buy_onset",
+      "event_kind": "onset",
+      "event_label": "形成買方共識",
+      "reason": "403、991 本交易日同步形成顯著買進共識",
+      "etfs": [
+        "00403A",
+        "00991A"
+      ],
+      "etf_label": "403・991",
+      "breadth": 2,
+      "consensus_etfs": 2,
+      "weakest_significance_ratio": 1.06,
+      "strength": 4.46,
+      "data_quality": "exact",
+      "data_quality_label": "精確單位數",
+      "estimated_money_yi": 3.63,
+      "evidence": [
+        {
+          "etf": "00403A",
+          "etf_label": "403",
+          "action": "買進",
+          "active_flow": 0.0212,
+          "significance_ratio": 1.06,
+          "position_event": "increase",
+          "raw_delta_shares": 30000,
+          "unit_quality": "exact"
+        },
+        {
+          "etf": "00991A",
+          "etf_label": "991",
+          "action": "買進",
+          "active_flow": 0.5019,
+          "significance_ratio": 5.49,
+          "position_event": "increase",
+          "raw_delta_shares": 200000,
+          "unit_quality": "exact"
+        }
+      ]
+    },
+    {
+      "stock_id": "2360",
+      "name": "致茂電子",
+      "category": "儀器設備工程",
+      "signal_date": "2026-07-30",
+      "direction": 1,
+      "event_type": "buy_onset",
+      "event_kind": "onset",
+      "event_label": "形成買方共識",
+      "reason": "403、991 本交易日同步形成顯著買進共識",
+      "etfs": [
+        "00403A",
+        "00991A"
+      ],
+      "etf_label": "403・991",
+      "breadth": 2,
+      "consensus_etfs": 2,
+      "weakest_significance_ratio": 4.55,
+      "strength": 6.4,
+      "data_quality": "exact",
+      "data_quality_label": "精確單位數",
+      "estimated_money_yi": 14.2,
+      "evidence": [
+        {
+          "etf": "00403A",
+          "etf_label": "403",
+          "action": "買進",
+          "active_flow": 0.091,
+          "significance_ratio": 4.55,
+          "position_event": "increase",
+          "raw_delta_shares": 80000,
+          "unit_quality": "exact"
+        },
+        {
+          "etf": "00991A",
+          "etf_label": "991",
+          "action": "買進",
+          "active_flow": 1.944,
+          "significance_ratio": 97.2,
+          "position_event": "increase",
+          "raw_delta_shares": 659000,
+          "unit_quality": "exact"
+        }
+      ]
+    },
+    {
       "stock_id": "2368",
       "name": "金像電子",
       "category": "PCB-製造",
@@ -2094,6 +2189,51 @@
       ]
     },
     {
+      "stock_id": "3008",
+      "name": "大立光",
+      "category": "光學鏡片",
+      "signal_date": "2026-07-30",
+      "direction": 1,
+      "event_type": "new_position",
+      "event_kind": "structural",
+      "event_label": "形成建倉共識",
+      "reason": "991 首次納入，403 同步顯著買進",
+      "etfs": [
+        "00403A",
+        "00991A"
+      ],
+      "etf_label": "403・991",
+      "breadth": 2,
+      "consensus_etfs": 2,
+      "weakest_significance_ratio": 0.3,
+      "strength": 4.4,
+      "data_quality": "exact",
+      "data_quality_label": "精確單位數",
+      "estimated_money_yi": 1.17,
+      "evidence": [
+        {
+          "etf": "00403A",
+          "etf_label": "403",
+          "action": "買進",
+          "active_flow": 0.0743,
+          "significance_ratio": 3.72,
+          "position_event": "increase",
+          "raw_delta_shares": 30000,
+          "unit_quality": "exact"
+        },
+        {
+          "etf": "00991A",
+          "etf_label": "991",
+          "action": "買進",
+          "active_flow": 0.006,
+          "significance_ratio": 0.3,
+          "position_event": "new_position",
+          "raw_delta_shares": 1000,
+          "unit_quality": "exact"
+        }
+      ]
+    },
+    {
       "stock_id": "3037",
       "name": "欣興",
       "category": "ABF",
@@ -2521,6 +2661,51 @@
       ]
     },
     {
+      "stock_id": "5274",
+      "name": "信驊科技",
+      "category": "IC-設計",
+      "signal_date": "2026-07-30",
+      "direction": 1,
+      "event_type": "buy_restart",
+      "event_kind": "restart",
+      "event_label": "沉寂後重新買進",
+      "reason": "沉寂至少 5 個交易日後，403、991 重新顯著買進",
+      "etfs": [
+        "00403A",
+        "00991A"
+      ],
+      "etf_label": "403・991",
+      "breadth": 2,
+      "consensus_etfs": 2,
+      "weakest_significance_ratio": 1.28,
+      "strength": 3.24,
+      "data_quality": "exact",
+      "data_quality_label": "精確單位數",
+      "estimated_money_yi": 4.23,
+      "evidence": [
+        {
+          "etf": "00403A",
+          "etf_label": "403",
+          "action": "買進",
+          "active_flow": 0.1632,
+          "significance_ratio": 1.56,
+          "position_event": "increase",
+          "raw_delta_shares": 20000,
+          "unit_quality": "exact"
+        },
+        {
+          "etf": "00991A",
+          "etf_label": "991",
+          "action": "買進",
+          "active_flow": 0.265,
+          "significance_ratio": 1.28,
+          "position_event": "increase",
+          "raw_delta_shares": 15000,
+          "unit_quality": "exact"
+        }
+      ]
+    },
+    {
       "stock_id": "6223",
       "name": "旺矽科技",
       "category": "IC-封測",
@@ -2847,6 +3032,51 @@
       ]
     },
     {
+      "stock_id": "6515",
+      "name": "穎崴",
+      "category": "IC-封測",
+      "signal_date": "2026-07-30",
+      "direction": -1,
+      "event_type": "full_exit",
+      "event_kind": "structural",
+      "event_label": "形成出清共識",
+      "reason": "991 完整出清，403 同步顯著賣出",
+      "etfs": [
+        "00403A",
+        "00991A"
+      ],
+      "etf_label": "403・991",
+      "breadth": 2,
+      "consensus_etfs": 2,
+      "weakest_significance_ratio": 5.51,
+      "strength": 6.4,
+      "data_quality": "exact",
+      "data_quality_label": "精確單位數",
+      "estimated_money_yi": -9.33,
+      "evidence": [
+        {
+          "etf": "00403A",
+          "etf_label": "403",
+          "action": "賣出",
+          "active_flow": -0.1103,
+          "significance_ratio": 5.51,
+          "position_event": "decrease",
+          "raw_delta_shares": -30000,
+          "unit_quality": "exact"
+        },
+        {
+          "etf": "00991A",
+          "etf_label": "991",
+          "action": "賣出",
+          "active_flow": -1.16,
+          "significance_ratio": 58.0,
+          "position_event": "full_exit",
+          "raw_delta_shares": -140000,
+          "unit_quality": "exact"
+        }
+      ]
+    },
+    {
       "stock_id": "6805",
       "name": "富世達",
       "category": "連接元件",
@@ -3120,11 +3350,6 @@
   "regime_audit": {
     "1216": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -3218,14 +3443,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "1303": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -3320,14 +3545,14 @@
         "date": "2026-07-29",
         "score": -0.24,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": -0.2016,
+        "state": "neutral"
       }
     ],
     "1319": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -3420,17 +3645,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1519": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -3522,17 +3747,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1560": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -3624,17 +3849,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1590": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -3726,17 +3951,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1815": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -3828,17 +4053,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2002": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -3930,17 +4155,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2049": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -4032,17 +4257,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2059": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -4136,14 +4361,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2303": [
-      {
-        "date": "2026-07-01",
-        "score": 0.2143,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.18,
@@ -4238,14 +4463,14 @@
         "date": "2026-07-29",
         "score": 0.0078,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0066,
+        "state": "neutral"
       }
     ],
     "2308": [
-      {
-        "date": "2026-07-01",
-        "score": -0.1712,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": -0.1438,
@@ -4340,14 +4565,14 @@
         "date": "2026-07-29",
         "score": 0.2979,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.2503,
+        "state": "neutral"
       }
     ],
     "2313": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -4440,17 +4665,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2317": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -4542,17 +4767,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2327": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -4646,14 +4871,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2330": [
-      {
-        "date": "2026-07-01",
-        "score": -0.0595,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": -0.05,
@@ -4748,14 +4973,14 @@
         "date": "2026-07-29",
         "score": -0.222,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": -0.1865,
+        "state": "neutral"
       }
     ],
     "2337": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -4850,14 +5075,14 @@
         "date": "2026-07-29",
         "score": -0.24,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": -0.2016,
+        "state": "neutral"
       }
     ],
     "2344": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -4950,17 +5175,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2345": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -5053,16 +5278,16 @@
       {
         "date": "2026-07-29",
         "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.24,
         "state": "neutral"
       }
     ],
     "2357": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -5154,17 +5379,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2360": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -5258,14 +5483,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.24,
+        "state": "neutral"
       }
     ],
     "2368": [
-      {
-        "date": "2026-07-01",
-        "score": -0.1004,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": -0.0843,
@@ -5360,14 +5585,14 @@
         "date": "2026-07-29",
         "score": -0.2437,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": -0.2047,
+        "state": "neutral"
       }
     ],
     "2379": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -5460,17 +5685,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2382": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -5564,14 +5789,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2383": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -5666,14 +5891,14 @@
         "date": "2026-07-29",
         "score": 0.1267,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.1065,
+        "state": "neutral"
       }
     ],
     "2404": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -5768,14 +5993,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2408": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -5870,14 +6095,14 @@
         "date": "2026-07-29",
         "score": 0.1004,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0843,
+        "state": "neutral"
       }
     ],
     "2412": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -5970,17 +6195,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2439": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -6072,17 +6297,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2449": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -6176,14 +6401,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2454": [
-      {
-        "date": "2026-07-01",
-        "score": 0.2001,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.1681,
@@ -6278,14 +6503,14 @@
         "date": "2026-07-29",
         "score": 0.0248,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0209,
+        "state": "neutral"
       }
     ],
     "2455": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -6378,17 +6603,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2481": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -6480,17 +6705,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2492": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -6582,17 +6807,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2603": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -6684,17 +6909,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2880": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -6786,17 +7011,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2881": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -6888,17 +7113,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2882": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -6990,17 +7215,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2883": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -7092,17 +7317,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2884": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -7194,17 +7419,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2885": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -7296,16 +7521,118 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2886": [
       {
-        "date": "2026-07-01",
+        "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
       },
+      {
+        "date": "2026-07-03",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-06",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-07",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-08",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-09",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-13",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-14",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-15",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-16",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-20",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-21",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-22",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-23",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-24",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-27",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-28",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
+      }
+    ],
+    "2887": [
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -7398,17 +7725,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2890": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -7500,17 +7827,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2891": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -7602,17 +7929,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2912": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -7704,17 +8031,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3008": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -7807,16 +8134,16 @@
       {
         "date": "2026-07-29",
         "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.24,
         "state": "neutral"
       }
     ],
     "3017": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -7908,17 +8235,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3026": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -8010,17 +8337,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3036": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -8114,14 +8441,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "3037": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -8216,14 +8543,14 @@
         "date": "2026-07-29",
         "score": 0.0249,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0209,
+        "state": "neutral"
       }
     ],
     "3042": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -8316,17 +8643,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3044": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -8418,17 +8745,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3045": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -8520,17 +8847,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3081": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -8622,17 +8949,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3105": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -8726,14 +9053,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "3189": [
-      {
-        "date": "2026-07-01",
-        "score": 0.1402,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.1178,
@@ -8828,14 +9155,14 @@
         "date": "2026-07-29",
         "score": 0.0051,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0043,
+        "state": "neutral"
       }
     ],
     "3211": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -8928,17 +9255,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3231": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -9030,17 +9357,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3264": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -9132,17 +9459,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3324": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -9234,17 +9561,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3376": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -9336,17 +9663,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3443": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -9438,17 +9765,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3450": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -9540,17 +9867,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3529": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -9642,17 +9969,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3533": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -9744,17 +10071,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3583": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -9846,17 +10173,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3653": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -9948,17 +10275,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3661": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -10052,14 +10379,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "3665": [
-      {
-        "date": "2026-07-01",
-        "score": -0.0708,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": -0.0595,
@@ -10154,14 +10481,14 @@
         "date": "2026-07-29",
         "score": 0.2173,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.1825,
+        "state": "neutral"
       }
     ],
     "3711": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -10256,14 +10583,14 @@
         "date": "2026-07-29",
         "score": 0.042,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0353,
+        "state": "neutral"
       }
     ],
     "4958": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0296,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0249,
@@ -10358,14 +10685,14 @@
         "date": "2026-07-29",
         "score": 0.0011,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0009,
+        "state": "neutral"
       }
     ],
     "4966": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -10458,17 +10785,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "4979": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -10562,14 +10889,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "5274": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -10664,14 +10991,14 @@
         "date": "2026-07-29",
         "score": 0.0595,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.266,
+        "state": "neutral"
       }
     ],
     "5347": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -10764,17 +11091,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "5439": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -10866,17 +11193,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6147": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -10968,17 +11295,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6187": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -11070,17 +11397,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6191": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -11172,17 +11499,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6196": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -11276,14 +11603,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "6223": [
-      {
-        "date": "2026-07-01",
-        "score": 0.13,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.3492,
@@ -11378,14 +11705,14 @@
         "date": "2026-07-29",
         "score": 0.0151,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0127,
+        "state": "neutral"
       }
     ],
     "6239": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -11478,17 +11805,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6271": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -11580,17 +11907,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6274": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -11682,17 +12009,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6278": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -11784,17 +12111,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6285": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -11886,17 +12213,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6415": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -11988,17 +12315,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6442": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -12092,14 +12419,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "6488": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0353,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0296,
@@ -12194,14 +12521,14 @@
         "date": "2026-07-29",
         "score": 0.0013,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0011,
+        "state": "neutral"
       }
     ],
     "6510": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -12296,14 +12623,14 @@
         "date": "2026-07-29",
         "score": -0.202,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": -0.1697,
+        "state": "neutral"
       }
     ],
     "6515": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -12398,14 +12725,14 @@
         "date": "2026-07-29",
         "score": -0.3243,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": -0.5124,
+        "state": "sell"
       }
     ],
     "6669": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -12500,14 +12827,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "6805": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0296,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0249,
@@ -12602,14 +12929,14 @@
         "date": "2026-07-29",
         "score": 0.2049,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.1721,
+        "state": "neutral"
       }
     ],
     "7769": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -12704,14 +13031,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "8046": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -12806,14 +13133,14 @@
         "date": "2026-07-29",
         "score": 0.1317,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.1107,
+        "state": "neutral"
       }
     ],
     "8150": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -12908,14 +13235,14 @@
         "date": "2026-07-29",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "8210": [
-      {
-        "date": "2026-07-01",
-        "score": -0.0708,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": -0.0595,
@@ -13010,14 +13337,14 @@
         "date": "2026-07-29",
         "score": -0.0026,
         "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
+        "score": -0.0022,
+        "state": "neutral"
       }
     ],
     "8299": [
-      {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-02",
         "score": 0.0,
@@ -13110,17 +13437,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "8358": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -13212,17 +13539,17 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "8996": [
       {
-        "date": "2026-07-01",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-02",
         "score": 0.0,
         "state": "neutral"
@@ -13314,6 +13641,11 @@
       },
       {
         "date": "2026-07-29",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-07-30",
         "score": 0.0,
         "state": "neutral"
       }

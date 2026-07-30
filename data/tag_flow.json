@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated": "2026-07-29 10:34:01",
+  "generated": "2026-07-30 10:33:03",
   "etfs": [
     "00403A",
     "00981A",
@@ -50,7 +50,8 @@
         "2026-07-24",
         "2026-07-27",
         "2026-07-28",
-        "2026-07-29"
+        "2026-07-29",
+        "2026-07-30"
       ],
       "00981A": [
         "2026-03-23",
@@ -140,7 +141,8 @@
         "2026-07-24",
         "2026-07-27",
         "2026-07-28",
-        "2026-07-29"
+        "2026-07-29",
+        "2026-07-30"
       ],
       "00991A": [
         "2026-03-12",
@@ -216,7 +218,8 @@
         "2026-07-24",
         "2026-07-27",
         "2026-07-28",
-        "2026-07-29"
+        "2026-07-29",
+        "2026-07-30"
       ]
     },
     "common": [
@@ -251,9 +254,10 @@
       "2026-07-24",
       "2026-07-27",
       "2026-07-28",
-      "2026-07-29"
+      "2026-07-29",
+      "2026-07-30"
     ],
-    "latest": "2026-07-29"
+    "latest": "2026-07-30"
   },
   "methodology": {
     "signal": "ActiveWeight = delta shares * current weight / current shares",
@@ -2329,11 +2333,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.0446,
           "money_twd": 44581948.0,
@@ -3225,11 +3229,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.0138,
           "money_twd": 13791287.0,
@@ -3736,11 +3740,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.2607,
           "money_twd": 73747662.0,
@@ -4860,11 +4864,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.1002,
           "money_twd": 123552200.0,
@@ -5562,11 +5566,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.1486,
           "money_twd": 192588423.0,
@@ -6432,11 +6436,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.0655,
           "money_twd": 89318754.0,
@@ -7005,11 +7009,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.1286,
           "money_twd": 186190070.0,
@@ -7668,11 +7672,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.1193,
           "money_twd": -36900313.0,
@@ -7736,11 +7740,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.4701,
           "money_twd": 721766658.0,
@@ -8551,11 +8555,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.2407,
           "money_twd": 406498987.0,
@@ -9107,11 +9111,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.1835,
           "money_twd": -57001328.0,
@@ -9251,11 +9255,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.5521,
           "money_twd": 1012054089.0,
@@ -10114,11 +10118,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.0209,
           "money_twd": 40291932.0,
@@ -10623,11 +10627,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.494,
           "money_twd": -161207171.0,
@@ -10841,11 +10845,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.1833,
           "money_twd": 366070224.0,
@@ -13476,11 +13480,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.0781,
           "money_twd": 203517785.0,
@@ -14002,11 +14006,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.4289,
           "money_twd": -173213429.0,
@@ -14253,11 +14257,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.082,
           "money_twd": 221178279.0,
@@ -14862,11 +14866,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.2957,
           "money_twd": 806419391.0,
@@ -15579,11 +15583,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.2064,
           "money_twd": -89792405.0,
@@ -17225,11 +17229,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.3019,
           "money_twd": 587145146.0,
@@ -18644,11 +18648,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.2378,
           "money_twd": 434282055.0,
@@ -20002,11 +20006,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.0748,
           "money_twd": 44300696.0,
@@ -21312,11 +21316,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.4009,
           "money_twd": -257976975.0,
@@ -21611,11 +21615,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.2509,
           "money_twd": -753103087.0,
@@ -21719,11 +21723,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.6387,
           "money_twd": -430013907.0,
@@ -22197,11 +22201,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.4647,
           "money_twd": -311945514.0,
@@ -22602,11 +22606,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.2138,
           "money_twd": -623515807.0,
@@ -22689,11 +22693,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -1.323,
           "money_twd": -894321274.0,
@@ -23187,11 +23191,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.2004,
           "money_twd": -586593180.0,
@@ -25092,11 +25096,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": -0.3938,
           "money_twd": -1164813474.0,
@@ -27165,11 +27169,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.0906,
           "money_twd": 239360242.0,
@@ -27401,11 +27405,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.115,
           "money_twd": 189257364.0,
@@ -27920,11 +27924,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.0824,
           "money_twd": 133408537.0,
@@ -28143,11 +28147,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.1122,
           "money_twd": 173798619.0,
@@ -28467,11 +28471,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.0449,
           "money_twd": 112627989.0,
@@ -28712,11 +28716,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.134,
           "money_twd": 220198830.0,
@@ -28954,11 +28958,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.2184,
           "money_twd": 586450222.0,
@@ -29109,11 +29113,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 1.2299,
           "money_twd": 919568103.0,
@@ -29480,11 +29484,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.1113,
           "money_twd": 187980162.0,
@@ -29922,11 +29926,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.2413,
           "money_twd": 188047127.0,
@@ -30083,11 +30087,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.1338,
           "money_twd": 225601692.0,
@@ -30289,11 +30293,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "第三方支付",
-            "智慧城市",
-            "物聯網",
-            "MWC"
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
           ],
           "flow": 0.1208,
           "money_twd": 94026040.0,
@@ -31394,6 +31398,838 @@
           "position_event": "full_exit",
           "percentile": 4.5,
           "label": "減碼"
+        }
+      ]
+    },
+    {
+      "etf": "00403A",
+      "date": "2026-07-30",
+      "prev_date": "2026-07-29",
+      "fund_size": 152059631518.0,
+      "baseline": {
+        "n": 138,
+        "median": 0.0984,
+        "p80": 0.1755,
+        "p95": 0.5291
+      },
+      "stocks": [
+        {
+          "id": "2330",
+          "name": "台灣積體",
+          "category": "IC-代工",
+          "group": "電子上游",
+          "concepts": [
+            "AI PC",
+            "PS5",
+            "Apple",
+            "CES",
+            "TPU"
+          ],
+          "flow": 0.348,
+          "money_twd": 529167518.0,
+          "dshares": 240000,
+          "position_event": "increase",
+          "percentile": 90.6,
+          "label": "明顯加碼"
+        },
+        {
+          "id": "2368",
+          "name": "金像電子",
+          "category": "PCB-製造",
+          "group": "電子上游",
+          "concepts": [
+            "PCB",
+            "美元升值",
+            "Apple",
+            "TPU",
+            "AWS"
+          ],
+          "flow": -0.3143,
+          "money_twd": -477901699.0,
+          "dshares": -660000,
+          "position_event": "decrease",
+          "percentile": 89.9,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "5274",
+          "name": "信驊科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "ChatGPT"
+          ],
+          "flow": 0.173,
+          "money_twd": 263078947.0,
+          "dshares": 20000,
+          "position_event": "increase",
+          "percentile": 79.0,
+          "label": "加碼"
+        },
+        {
+          "id": "2454",
+          "name": "聯發科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "快速充電",
+            "Apple Pay",
+            "無線耳機",
+            "Wifi 7",
+            "ASIC"
+          ],
+          "flow": 0.1383,
+          "money_twd": 210342098.0,
+          "dshares": 65000,
+          "position_event": "increase",
+          "percentile": 71.7,
+          "label": "加碼"
+        },
+        {
+          "id": "2383",
+          "name": "台光電子",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "軌道衛星",
+            "銅箔基板",
+            "低軌衛星",
+            "GB300",
+            "美元升值"
+          ],
+          "flow": 0.1278,
+          "money_twd": 194322469.0,
+          "dshares": 45000,
+          "position_event": "increase",
+          "percentile": 67.4,
+          "label": "加碼"
+        },
+        {
+          "id": "6515",
+          "name": "穎崴科技",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "3DIC聯盟",
+            "CoWoS"
+          ],
+          "flow": -0.1045,
+          "money_twd": -158893772.0,
+          "dshares": -30000,
+          "position_event": "decrease",
+          "percentile": 51.4,
+          "label": "減碼"
+        },
+        {
+          "id": "2360",
+          "name": "致茂電子",
+          "category": "儀器設備工程",
+          "group": "電子中游",
+          "concepts": [
+            "無人機",
+            "MIH概念股",
+            "Tesla",
+            "軍工",
+            "電動車"
+          ],
+          "flow": 0.101,
+          "money_twd": 153507818.0,
+          "dshares": 80000,
+          "position_event": "increase",
+          "percentile": 50.7,
+          "label": "加碼"
+        },
+        {
+          "id": "3008",
+          "name": "大立光",
+          "category": "光學鏡片",
+          "group": "電子中游",
+          "concepts": [
+            "無人機",
+            "小米",
+            "Apple",
+            "CES",
+            "穿載式裝置"
+          ],
+          "flow": 0.0729,
+          "money_twd": 110786303.0,
+          "dshares": 30000,
+          "position_event": "increase",
+          "percentile": 31.9,
+          "label": "加碼"
+        },
+        {
+          "id": "8358",
+          "name": "金居",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "電動車",
+            "銅箔",
+            "AMD"
+          ],
+          "flow": -0.0512,
+          "money_twd": -77837842.0,
+          "dshares": -292000,
+          "position_event": "decrease",
+          "percentile": 23.9,
+          "label": "減碼"
+        },
+        {
+          "id": "2345",
+          "name": "智邦科技",
+          "category": "網通",
+          "group": "電子中游",
+          "concepts": [
+            "5G",
+            "美元升值",
+            "光通訊",
+            "遠距教學",
+            "AWS"
+          ],
+          "flow": 0.0381,
+          "money_twd": 57968584.0,
+          "dshares": 30000,
+          "position_event": "increase",
+          "percentile": 10.1,
+          "label": "加碼"
+        }
+      ]
+    },
+    {
+      "etf": "00981A",
+      "date": "2026-07-30",
+      "prev_date": "2026-07-29",
+      "fund_size": 243997546845.0,
+      "baseline": {
+        "n": 68,
+        "median": 0.092,
+        "p80": 0.1812,
+        "p95": 0.3259
+      },
+      "stocks": [
+        {
+          "id": "3037",
+          "name": "欣興電子",
+          "category": "ABF",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "小米",
+            "玻璃基板",
+            "太陽能"
+          ],
+          "flow": 0.2528,
+          "money_twd": 616836416.0,
+          "dshares": 862000,
+          "position_event": "increase",
+          "percentile": 91.2,
+          "label": "明顯加碼"
+        },
+        {
+          "id": "2383",
+          "name": "台光電子",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "軌道衛星",
+            "銅箔基板",
+            "低軌衛星",
+            "GB300",
+            "美元升值"
+          ],
+          "flow": 0.1097,
+          "money_twd": 267584839.0,
+          "dshares": 62000,
+          "position_event": "increase",
+          "percentile": 61.8,
+          "label": "加碼"
+        },
+        {
+          "id": "2454",
+          "name": "聯發科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "快速充電",
+            "Apple Pay",
+            "無線耳機",
+            "Wifi 7",
+            "ASIC"
+          ],
+          "flow": 0.0914,
+          "money_twd": 223074757.0,
+          "dshares": 69000,
+          "position_event": "increase",
+          "percentile": 48.5,
+          "label": "加碼"
+        },
+        {
+          "id": "2345",
+          "name": "智邦科技",
+          "category": "網通",
+          "group": "電子中游",
+          "concepts": [
+            "5G",
+            "美元升值",
+            "光通訊",
+            "遠距教學",
+            "AWS"
+          ],
+          "flow": 0.0674,
+          "money_twd": 164457920.0,
+          "dshares": 85000,
+          "position_event": "increase",
+          "percentile": 38.2,
+          "label": "加碼"
+        },
+        {
+          "id": "6669",
+          "name": "緯穎科技",
+          "category": "EMS",
+          "group": "電子中游",
+          "concepts": [
+            "GB300",
+            "美元升值",
+            "Oracle甲骨文",
+            "AWS",
+            "GB200"
+          ],
+          "flow": 0.0643,
+          "money_twd": 156859836.0,
+          "dshares": 32000,
+          "position_event": "increase",
+          "percentile": 36.8,
+          "label": "加碼"
+        },
+        {
+          "id": "2327",
+          "name": "國巨股份",
+          "category": "被動元件",
+          "group": "電子上游",
+          "concepts": [
+            "被動元件",
+            "電容",
+            "Apple",
+            "車聯網"
+          ],
+          "flow": 0.0634,
+          "money_twd": 154784055.0,
+          "dshares": 339000,
+          "position_event": "increase",
+          "percentile": 35.3,
+          "label": "加碼"
+        },
+        {
+          "id": "3017",
+          "name": "奇鋐科技",
+          "category": "NB與手機零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "GB300",
+            "美元升值",
+            "AI PC",
+            "AWS"
+          ],
+          "flow": 0.0631,
+          "money_twd": 153941320.0,
+          "dshares": 73000,
+          "position_event": "increase",
+          "percentile": 35.3,
+          "label": "加碼"
+        },
+        {
+          "id": "2303",
+          "name": "聯華電子",
+          "category": "IC-代工",
+          "group": "電子上游",
+          "concepts": [
+            "無人機",
+            "CES",
+            "穿載式裝置",
+            "AMD",
+            "碳權"
+          ],
+          "flow": 0.0526,
+          "money_twd": 128332507.0,
+          "dshares": 1168000,
+          "position_event": "increase",
+          "percentile": 32.4,
+          "label": "加碼"
+        },
+        {
+          "id": "3665",
+          "name": "貿聯-KY",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "MIH概念股",
+            "Tesla",
+            "太陽能",
+            "GB300",
+            "車用電子"
+          ],
+          "flow": 0.0508,
+          "money_twd": 123994844.0,
+          "dshares": 65000,
+          "position_event": "increase",
+          "percentile": 30.9,
+          "label": "加碼"
+        },
+        {
+          "id": "2308",
+          "name": "台達電子",
+          "category": "電源供應器",
+          "group": "電子中游",
+          "concepts": [
+            "電感",
+            "電源供應器",
+            "變壓器",
+            "BBU",
+            "第三方支付"
+          ],
+          "flow": 0.0471,
+          "money_twd": 114819831.0,
+          "dshares": 75000,
+          "position_event": "increase",
+          "percentile": 29.4,
+          "label": "加碼"
+        },
+        {
+          "id": "6147",
+          "name": "頎邦",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "Apple",
+            "CES",
+            "穿載式裝置",
+            "iPhone",
+            "3D感測"
+          ],
+          "flow": -0.0467,
+          "money_twd": -114026919.0,
+          "dshares": -942000,
+          "position_event": "decrease",
+          "percentile": 29.4,
+          "label": "減碼"
+        },
+        {
+          "id": "5439",
+          "name": "高技",
+          "category": "PCB-製造",
+          "group": "電子上游",
+          "concepts": [
+            "PCB",
+            "電動車"
+          ],
+          "flow": -0.0403,
+          "money_twd": -98341217.0,
+          "dshares": -530000,
+          "position_event": "decrease",
+          "percentile": 23.5,
+          "label": "減碼"
+        },
+        {
+          "id": "3653",
+          "name": "健策精密",
+          "category": "散熱零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "連接器",
+            "PS5",
+            "AMD",
+            "ChatGPT"
+          ],
+          "flow": 0.0385,
+          "money_twd": 94008633.0,
+          "dshares": 30000,
+          "position_event": "increase",
+          "percentile": 22.1,
+          "label": "加碼"
+        },
+        {
+          "id": "5274",
+          "name": "信驊科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "ChatGPT"
+          ],
+          "flow": 0.0324,
+          "money_twd": 79169131.0,
+          "dshares": 6000,
+          "position_event": "increase",
+          "percentile": 13.2,
+          "label": "加碼"
+        },
+        {
+          "id": "2368",
+          "name": "金像電子",
+          "category": "PCB-製造",
+          "group": "電子上游",
+          "concepts": [
+            "PCB",
+            "美元升值",
+            "Apple",
+            "TPU",
+            "AWS"
+          ],
+          "flow": 0.0299,
+          "money_twd": 72835473.0,
+          "dshares": 101000,
+          "position_event": "increase",
+          "percentile": 10.3,
+          "label": "加碼"
+        },
+        {
+          "id": "6274",
+          "name": "台燿科技",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "銅箔基板",
+            "GB300"
+          ],
+          "flow": 0.0285,
+          "money_twd": 69545600.0,
+          "dshares": 69000,
+          "position_event": "increase",
+          "percentile": 8.8,
+          "label": "加碼"
+        },
+        {
+          "id": "6510",
+          "name": "中華精測",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "TPU",
+            "ChatGPT"
+          ],
+          "flow": -0.028,
+          "money_twd": -68386856.0,
+          "dshares": -30000,
+          "position_event": "decrease",
+          "percentile": 8.8,
+          "label": "減碼"
+        },
+        {
+          "id": "6278",
+          "name": "台表科",
+          "category": "PCB-製造",
+          "group": "電子上游",
+          "concepts": [
+            "PCB",
+            "Apple",
+            "Micro LED",
+            "MiniLED"
+          ],
+          "flow": -0.0191,
+          "money_twd": -46487954.0,
+          "dshares": -362000,
+          "position_event": "decrease",
+          "percentile": 2.9,
+          "label": "減碼"
+        },
+        {
+          "id": "6271",
+          "name": "同欣電",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "軌道衛星",
+            "PCB",
+            "車用電子",
+            "3D感測"
+          ],
+          "flow": -0.0151,
+          "money_twd": -36747809.0,
+          "dshares": -248000,
+          "position_event": "decrease",
+          "percentile": 1.5,
+          "label": "減碼"
+        },
+        {
+          "id": "6805",
+          "name": "富世達股",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "GB300"
+          ],
+          "flow": 0.0132,
+          "money_twd": 32092472.0,
+          "dshares": 26000,
+          "position_event": "increase",
+          "percentile": 1.5,
+          "label": "加碼"
+        },
+        {
+          "id": "8210",
+          "name": "勤誠興業",
+          "category": "機殼",
+          "group": "電子中游",
+          "concepts": [
+            "GB300"
+          ],
+          "flow": 0.0118,
+          "money_twd": 28680600.0,
+          "dshares": 30000,
+          "position_event": "increase",
+          "percentile": 1.5,
+          "label": "加碼"
+        },
+        {
+          "id": "2449",
+          "name": "京元電子",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "車用電子",
+            "Type C",
+            "人工智慧",
+            "穿載式裝置",
+            "NFC"
+          ],
+          "flow": 0.0084,
+          "money_twd": 20377739.0,
+          "dshares": 100000,
+          "position_event": "increase",
+          "percentile": 1.5,
+          "label": "加碼"
+        }
+      ]
+    },
+    {
+      "etf": "00991A",
+      "date": "2026-07-30",
+      "prev_date": "2026-07-29",
+      "fund_size": 65948721230.0,
+      "baseline": {
+        "n": 142,
+        "median": 0.218,
+        "p80": 0.5057,
+        "p95": 1.1628
+      },
+      "stocks": [
+        {
+          "id": "2360",
+          "name": "致茂電子",
+          "category": "儀器設備工程",
+          "group": "電子中游",
+          "concepts": [
+            "無人機",
+            "MIH概念股",
+            "Tesla",
+            "軍工",
+            "電動車"
+          ],
+          "flow": 1.9081,
+          "money_twd": 1258370547.0,
+          "dshares": 659000,
+          "position_event": "increase",
+          "percentile": 100.0,
+          "label": "異常加碼"
+        },
+        {
+          "id": "6515",
+          "name": "穎崴科技",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "3DIC聯盟",
+            "CoWoS"
+          ],
+          "flow": -1.16,
+          "money_twd": -757941978.0,
+          "dshares": -140000,
+          "position_event": "full_exit",
+          "percentile": 94.4,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "2345",
+          "name": "智邦科技",
+          "category": "網通",
+          "group": "電子中游",
+          "concepts": [
+            "5G",
+            "美元升值",
+            "光通訊",
+            "遠距教學",
+            "AWS"
+          ],
+          "flow": 0.5868,
+          "money_twd": 387002614.0,
+          "dshares": 200000,
+          "position_event": "increase",
+          "percentile": 84.5,
+          "label": "明顯加碼"
+        },
+        {
+          "id": "6223",
+          "name": "旺矽科技",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "TPU",
+            "CoWoS"
+          ],
+          "flow": 0.5822,
+          "money_twd": 383976731.0,
+          "dshares": 80000,
+          "position_event": "increase",
+          "percentile": 84.5,
+          "label": "明顯加碼"
+        },
+        {
+          "id": "2059",
+          "name": "川湖科技",
+          "category": "金屬製品",
+          "group": "電子中游",
+          "concepts": [
+            "GB300",
+            "CES",
+            "AWS"
+          ],
+          "flow": 0.3248,
+          "money_twd": 214201447.0,
+          "dshares": 30000,
+          "position_event": "increase",
+          "percentile": 68.3,
+          "label": "加碼"
+        },
+        {
+          "id": "5274",
+          "name": "信驊科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "ChatGPT"
+          ],
+          "flow": 0.3003,
+          "money_twd": 198053332.0,
+          "dshares": 15000,
+          "position_event": "increase",
+          "percentile": 63.4,
+          "label": "加碼"
+        },
+        {
+          "id": "2408",
+          "name": "南亞科技",
+          "category": "記憶體製造",
+          "group": "電子上游",
+          "concepts": [
+            "記憶體",
+            "AI PC",
+            "CES",
+            "虛擬貨幣"
+          ],
+          "flow": 0.2984,
+          "money_twd": 196811276.0,
+          "dshares": 600000,
+          "position_event": "increase",
+          "percentile": 63.4,
+          "label": "加碼"
+        },
+        {
+          "id": "8299",
+          "name": "群聯電子",
+          "category": "記憶體IC設計",
+          "group": "電子上游",
+          "concepts": [
+            "鴻海MIH電動車平台",
+            "Type C",
+            "記憶體",
+            "PS5",
+            "CES"
+          ],
+          "flow": 0.2267,
+          "money_twd": 149483768.0,
+          "dshares": 100000,
+          "position_event": "increase",
+          "percentile": 52.1,
+          "label": "加碼"
+        },
+        {
+          "id": "2383",
+          "name": "台光電子",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "軌道衛星",
+            "銅箔基板",
+            "低軌衛星",
+            "GB300",
+            "美元升值"
+          ],
+          "flow": 0.1963,
+          "money_twd": 129447919.0,
+          "dshares": 30000,
+          "position_event": "increase",
+          "percentile": 45.8,
+          "label": "加碼"
+        },
+        {
+          "id": "3189",
+          "name": "景碩科技",
+          "category": "ABF",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "玻璃基板",
+            "美元升值",
+            "AI PC"
+          ],
+          "flow": 0.1753,
+          "money_twd": 115616352.0,
+          "dshares": 200000,
+          "position_event": "increase",
+          "percentile": 37.3,
+          "label": "加碼"
+        },
+        {
+          "id": "3017",
+          "name": "奇鋐科技",
+          "category": "NB與手機零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "GB300",
+            "美元升值",
+            "AI PC",
+            "AWS"
+          ],
+          "flow": 0.128,
+          "money_twd": 84414363.0,
+          "dshares": 40000,
+          "position_event": "increase",
+          "percentile": 23.9,
+          "label": "加碼"
+        },
+        {
+          "id": "3008",
+          "name": "大立光",
+          "category": "光學鏡片",
+          "group": "電子中游",
+          "concepts": [
+            "無人機",
+            "小米",
+            "Apple",
+            "CES",
+            "穿載式裝置"
+          ],
+          "flow": 0.006,
+          "money_twd": 3956923.0,
+          "dshares": 1000,
+          "position_event": "new_position",
+          "percentile": 11.3,
+          "label": "加碼"
         }
       ]
     }
