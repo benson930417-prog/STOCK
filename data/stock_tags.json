@@ -1,11 +1,11 @@
 {
-  "generated": "2026-07-30 10:33:03",
+  "generated": "2026-07-31 10:33:31",
   "source": "cmoney.tw/forum/stock",
-  "count": 109,
+  "count": 110,
   "coverage": {
-    "covered": 109,
-    "universe": 109,
-    "missing": 0
+    "covered": 110,
+    "universe": 112,
+    "missing": 2
   },
   "tags": {
     "2308": {
@@ -13,35 +13,35 @@
       "group": "電子中游",
       "concepts": [
         {
-          "id": "C50856",
-          "name": "電感",
-          "avg_pct": 2.25
+          "id": "C50874",
+          "name": "虛擬貨幣",
+          "avg_pct": 9.78
         },
         {
-          "id": "C50862",
-          "name": "電源供應器",
-          "avg_pct": 2.18
+          "id": "C50921",
+          "name": "3DIC聯盟",
+          "avg_pct": 9.76
         },
         {
-          "id": "C50861",
-          "name": "變壓器",
-          "avg_pct": 2.07
+          "id": "C50850",
+          "name": "PS5",
+          "avg_pct": 9.75
         },
         {
-          "id": "C50918",
-          "name": "BBU",
-          "avg_pct": 2.05
+          "id": "C50901",
+          "name": "氣候變遷",
+          "avg_pct": 9.75
         },
         {
-          "id": "C50270",
-          "name": "第三方支付",
-          "avg_pct": 1.9
+          "id": "C50290",
+          "name": "無線充電",
+          "avg_pct": 9.74
         }
       ],
       "category_id": "C23170",
       "category_full": "電子中游-電源供應器",
       "name": "台達電子",
-      "checked_at_utc": "2026-07-30T10:33:02.989424Z"
+      "checked_at_utc": "2026-07-31T10:33:30.883111Z"
     },
     "6274": {
       "category": "PCB-材料設備",
@@ -3013,6 +3013,41 @@
       "category_full": "金融-金控",
       "name": "台新新光",
       "checked_at_utc": "2026-07-30T10:32:59.373715Z"
+    },
+    "1717": {
+      "category": "化學工業",
+      "group": "傳產",
+      "concepts": [
+        {
+          "id": "C50921",
+          "name": "3DIC聯盟",
+          "avg_pct": 9.76
+        },
+        {
+          "id": "C50931",
+          "name": "玻璃基板",
+          "avg_pct": 9.63
+        },
+        {
+          "id": "C50260",
+          "name": "穿載式裝置",
+          "avg_pct": 9.53
+        },
+        {
+          "id": "C50908",
+          "name": "太陽能",
+          "avg_pct": 7.59
+        },
+        {
+          "id": "C50929",
+          "name": "特用化學",
+          "avg_pct": 7.12
+        }
+      ],
+      "category_id": "C17010",
+      "category_full": "傳產-化學工業",
+      "name": "長興",
+      "checked_at_utc": "2026-07-31T10:33:19.391532Z"
     }
   }
 }
