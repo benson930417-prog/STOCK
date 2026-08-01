@@ -533,6 +533,24 @@ class TagFlowEventTests(unittest.TestCase):
         self.assertEqual("new_position", moves["NEW"]["position_event"])
         self.assertEqual("full_exit", moves["EXIT"]["position_event"])
 
+    def test_flow_builder_rejects_incomplete_rows(self) -> None:
+        base = {
+            "holdings": [
+                {"id": "2308", "name": "台達電", "shares": 100, "weight_pct": 2.0},
+                {"id": "TX", "name": "台指期貨(B)", "shares": None, "weight_pct": 5.0},
+            ]
+        }
+        current = {
+            "holdings": [
+                {"id": "2308", "name": "台達電", "shares": 120, "weight_pct": 2.4},
+                {"id": "股票代號", "name": "股票名稱", "shares": None, "weight_pct": None},
+                {"id": "2330", "name": "台積電", "shares": None, "weight_pct": None},
+            ]
+        }
+
+        with self.assertRaisesRegex(ValueError, "Invalid numeric holding fields"):
+            flow_between(current, base)
+
 
 if __name__ == "__main__":
     unittest.main()

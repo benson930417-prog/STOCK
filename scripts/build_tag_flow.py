@@ -52,14 +52,37 @@ def load_json(path: Path) -> dict:
 
 
 def per_share_weight(holding: dict) -> float:
-    shares = holding.get("shares") or 0
-    return (holding.get("weight_pct", 0.0) / shares) if shares else 0.0
+    shares = _number(holding.get("shares"))
+    weight = _number(holding.get("weight_pct"))
+    return (weight / shares) if shares else 0.0
+
+
+def _number(value) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _holding_map(day: dict) -> dict[str, dict]:
+    result = {}
+    for holding in day.get("holdings", []):
+        stock_id = str(holding.get("id", "")).strip()
+        try:
+            shares = float(holding.get("shares"))
+            weight = float(holding.get("weight_pct"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid numeric holding fields for {stock_id or '?'}") from exc
+        if not stock_id or shares <= 0 or weight < 0:
+            raise ValueError(f"Invalid holding row for {stock_id or '?'}")
+        result[stock_id] = holding
+    return result
 
 
 def flow_between(cur_day: dict, base_day: dict) -> dict[str, dict]:
     """Return normalized and estimated-cash flow between two disclosures."""
-    cur = {str(h["id"]): h for h in cur_day.get("holdings", [])}
-    base = {str(h["id"]): h for h in base_day.get("holdings", [])}
+    cur = _holding_map(cur_day)
+    base = _holding_map(base_day)
     cur_fund_size = float(cur_day.get("meta", {}).get("fund_size") or 0.0)
     base_fund_size = float(base_day.get("meta", {}).get("fund_size") or 0.0)
     out: dict[str, dict] = {}
@@ -67,7 +90,7 @@ def flow_between(cur_day: dict, base_day: dict) -> dict[str, dict]:
     for stock_id, current in cur.items():
         previous = base.get(stock_id)
         if previous is None:
-            flow = float(current.get("weight_pct", 0.0))
+            flow = _number(current.get("weight_pct"))
             out[stock_id] = {
                 "name": current.get("name", stock_id),
                 "flow": flow,
@@ -98,7 +121,7 @@ def flow_between(cur_day: dict, base_day: dict) -> dict[str, dict]:
 
     for stock_id, previous in base.items():
         if stock_id not in cur:
-            flow = -float(previous.get("weight_pct", 0.0))
+            flow = -_number(previous.get("weight_pct"))
             out[stock_id] = {
                 "name": previous.get("name", stock_id),
                 "flow": flow,

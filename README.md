@@ -439,7 +439,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/admin_email.py` | Sends daily run summaries through Gmail SMTP. Exits successfully when email secrets are missing so the daily job is not blocked. |
 | `scripts/chart_service.py` | TradingView quote/chart FastAPI service used by the LINE webhook. |
 | `scripts/fetch_etf_00403A.py` | Fetches official 00403A holdings/NAV data from Unified's `fundCode=63YTW` Excel endpoint. |
-| `scripts/fetch_etf_00981A.py` | Fetches official 00981A holdings/NAV data into tracked history/log JSON. |
+| `scripts/fetch_etf_00981A.py` | Fetches official 00981A holdings/NAV data into tracked history/log JSON. The issuer workbook contains separate futures and stock tables; the parser must require the exact `股票代號／股票名稱／股數／持股權重` header and reject incomplete or implausible portfolios before writing history. |
 | `scripts/fetch_etf_00988A.py` | Fetches official 00988A holdings/NAV data from Unified's `fundCode=61YTW` Excel endpoint. |
 | `scripts/fetch_etf_00991A.py` | Fetches official 00991A (主動復華未來50) holdings/NAV from Fuh Hwa's `assetsExcel/ETF23` Excel endpoint. |
 | `scripts/fetch_passive_0050.py` | Fetches 0050 passive ETF holdings/history. |

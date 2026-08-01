@@ -67,7 +67,7 @@ def load_universe() -> dict[str, str]:
         for day in d.values():
             for h in day.get("holdings", []):
                 sid = str(h.get("id", "")).strip()
-                if sid:
+                if re.fullmatch(r"\d{4}", sid):
                     uni[sid] = h.get("name", uni.get(sid, ""))
     return uni
 

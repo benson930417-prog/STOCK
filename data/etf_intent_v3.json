@@ -1,6 +1,6 @@
 {
   "schema_version": 4,
-  "generated": "2026-08-01T10:34:52+00:00",
+  "generated": "2026-08-01T18:44:39+08:00",
   "as_of": "2026-07-31",
   "etfs": [
     "00403A",
@@ -284,12 +284,162 @@
     "concepts_interpreted": false
   },
   "data_quality": {
-    "exact_move_rows": 769,
+    "exact_move_rows": 767,
     "estimated_move_rows": 4374,
     "historical_estimate": "fund_size / rounded NAV"
   },
   "signals": {
     "buying": [
+      {
+        "stock_id": "2360",
+        "name": "致茂電子",
+        "category": "儀器設備工程",
+        "signal_date": "2026-07-31",
+        "direction": 1,
+        "event_type": "new_position",
+        "event_kind": "structural",
+        "event_label": "形成建倉共識",
+        "reason": "981 首次納入，403 同步顯著買進",
+        "etfs": [
+          "00403A",
+          "00981A"
+        ],
+        "etf_label": "403・981",
+        "breadth": 2,
+        "consensus_etfs": 2,
+        "weakest_significance_ratio": 2.62,
+        "strength": 6.02,
+        "data_quality": "exact",
+        "data_quality_label": "精確單位數",
+        "estimated_money_yi": 8.07,
+        "evidence": [
+          {
+            "etf": "00403A",
+            "etf_label": "403",
+            "action": "買進",
+            "active_flow": 0.0524,
+            "significance_ratio": 2.62,
+            "position_event": "increase",
+            "raw_delta_shares": 57000,
+            "unit_quality": "exact"
+          },
+          {
+            "etf": "00981A",
+            "etf_label": "981",
+            "action": "買進",
+            "active_flow": 0.25,
+            "significance_ratio": 12.5,
+            "position_event": "new_position",
+            "raw_delta_shares": 348000,
+            "unit_quality": "exact"
+          }
+        ],
+        "age_sessions": 0,
+        "flow_trend_20d": [
+          {
+            "date": "2026-07-03",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-06",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-07",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-08",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-09",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-13",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-14",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-15",
+            "flow": 0.102355,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-16",
+            "flow": 0.162979,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-17",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-20",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-21",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-22",
+            "flow": 0.098223,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-23",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-24",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-27",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-28",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-29",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-30",
+            "flow": 2.035026,
+            "breadth": 2
+          },
+          {
+            "date": "2026-07-31",
+            "flow": 0.302426,
+            "breadth": 2
+          }
+        ],
+        "signal_phase": "new",
+        "timing_label": "本交易日新形成"
+      },
       {
         "stock_id": "2330",
         "name": "台積電",
@@ -433,316 +583,15 @@
           },
           {
             "date": "2026-07-31",
-            "flow": -7.379174,
-            "breadth": 3
+            "flow": 2.330826,
+            "breadth": 2
           }
         ],
         "signal_phase": "new",
         "timing_label": "本交易日新形成"
       }
     ],
-    "selling": [
-      {
-        "stock_id": "2368",
-        "name": "金像電子",
-        "category": "PCB-製造",
-        "signal_date": "2026-07-31",
-        "direction": -1,
-        "event_type": "full_exit",
-        "event_kind": "structural",
-        "event_label": "形成出清共識",
-        "reason": "403 完整出清，981 同步顯著賣出",
-        "etfs": [
-          "00403A",
-          "00981A"
-        ],
-        "etf_label": "403・981",
-        "breadth": 2,
-        "consensus_etfs": 2,
-        "weakest_significance_ratio": 6.73,
-        "strength": 6.4,
-        "data_quality": "exact",
-        "data_quality_label": "精確單位數",
-        "estimated_money_yi": -67.84,
-        "evidence": [
-          {
-            "etf": "00403A",
-            "etf_label": "403",
-            "action": "賣出",
-            "active_flow": -0.2,
-            "significance_ratio": 6.73,
-            "position_event": "full_exit",
-            "raw_delta_shares": -420000,
-            "unit_quality": "exact"
-          },
-          {
-            "etf": "00981A",
-            "etf_label": "981",
-            "action": "賣出",
-            "active_flow": -2.24,
-            "significance_ratio": 112.0,
-            "position_event": "decrease",
-            "raw_delta_shares": -7579000,
-            "unit_quality": "exact"
-          }
-        ],
-        "age_sessions": 0,
-        "flow_trend_20d": [
-          {
-            "date": "2026-07-03",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-06",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-07",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-08",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-09",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-13",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-14",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-15",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-16",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-17",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-20",
-            "flow": -0.446366,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-21",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-22",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-23",
-            "flow": -0.283003,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-24",
-            "flow": -0.148697,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-27",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-28",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-29",
-            "flow": -0.39651,
-            "breadth": 2
-          },
-          {
-            "date": "2026-07-30",
-            "flow": -0.318943,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-31",
-            "flow": -2.44,
-            "breadth": 2
-          }
-        ],
-        "signal_phase": "new",
-        "timing_label": "本交易日新形成"
-      },
-      {
-        "stock_id": "6515",
-        "name": "穎崴",
-        "category": "IC-封測",
-        "signal_date": "2026-07-31",
-        "direction": -1,
-        "event_type": "sell_followthrough",
-        "event_kind": "followthrough",
-        "event_label": "賣方共識延續",
-        "reason": "前一交易日已形成共識，403、981 本交易日仍顯著賣出",
-        "etfs": [
-          "00403A",
-          "00981A"
-        ],
-        "etf_label": "403・981",
-        "breadth": 2,
-        "consensus_etfs": 2,
-        "weakest_significance_ratio": 2.15,
-        "strength": 5.55,
-        "data_quality": "exact",
-        "data_quality_label": "精確單位數",
-        "estimated_money_yi": -7.56,
-        "evidence": [
-          {
-            "etf": "00403A",
-            "etf_label": "403",
-            "action": "賣出",
-            "active_flow": -0.108,
-            "significance_ratio": 2.15,
-            "position_event": "decrease",
-            "raw_delta_shares": -30000,
-            "unit_quality": "exact"
-          },
-          {
-            "etf": "00981A",
-            "etf_label": "981",
-            "action": "賣出",
-            "active_flow": -0.2,
-            "significance_ratio": 10.0,
-            "position_event": "decrease",
-            "raw_delta_shares": -93000,
-            "unit_quality": "exact"
-          }
-        ],
-        "age_sessions": 0,
-        "flow_trend_20d": [
-          {
-            "date": "2026-07-03",
-            "flow": -0.078497,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-06",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-07",
-            "flow": 0.004896,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-08",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-09",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-13",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-14",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-15",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-16",
-            "flow": -0.196184,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-17",
-            "flow": -0.145839,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-20",
-            "flow": -0.0557,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-21",
-            "flow": -0.15087,
-            "breadth": 2
-          },
-          {
-            "date": "2026-07-22",
-            "flow": -0.091039,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-23",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-24",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-27",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-28",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-29",
-            "flow": -0.746052,
-            "breadth": 2
-          },
-          {
-            "date": "2026-07-30",
-            "flow": -1.270256,
-            "breadth": 2
-          },
-          {
-            "date": "2026-07-31",
-            "flow": -0.308035,
-            "breadth": 2
-          }
-        ],
-        "signal_phase": "confirmed",
-        "timing_label": "昨日形成・本交易日仍確認"
-      }
-    ]
+    "selling": []
   },
   "events": [
     {
@@ -1443,6 +1292,51 @@
       ]
     },
     {
+      "stock_id": "2360",
+      "name": "致茂電子",
+      "category": "儀器設備工程",
+      "signal_date": "2026-07-31",
+      "direction": 1,
+      "event_type": "new_position",
+      "event_kind": "structural",
+      "event_label": "形成建倉共識",
+      "reason": "981 首次納入，403 同步顯著買進",
+      "etfs": [
+        "00403A",
+        "00981A"
+      ],
+      "etf_label": "403・981",
+      "breadth": 2,
+      "consensus_etfs": 2,
+      "weakest_significance_ratio": 2.62,
+      "strength": 6.02,
+      "data_quality": "exact",
+      "data_quality_label": "精確單位數",
+      "estimated_money_yi": 8.07,
+      "evidence": [
+        {
+          "etf": "00403A",
+          "etf_label": "403",
+          "action": "買進",
+          "active_flow": 0.0524,
+          "significance_ratio": 2.62,
+          "position_event": "increase",
+          "raw_delta_shares": 57000,
+          "unit_quality": "exact"
+        },
+        {
+          "etf": "00981A",
+          "etf_label": "981",
+          "action": "買進",
+          "active_flow": 0.25,
+          "significance_ratio": 12.5,
+          "position_event": "new_position",
+          "raw_delta_shares": 348000,
+          "unit_quality": "exact"
+        }
+      ]
+    },
+    {
       "stock_id": "2368",
       "name": "金像電子",
       "category": "PCB-製造",
@@ -1528,51 +1422,6 @@
           "significance_ratio": 0.55,
           "position_event": "full_exit",
           "raw_delta_shares": -9000,
-          "unit_quality": "exact"
-        }
-      ]
-    },
-    {
-      "stock_id": "2368",
-      "name": "金像電子",
-      "category": "PCB-製造",
-      "signal_date": "2026-07-31",
-      "direction": -1,
-      "event_type": "full_exit",
-      "event_kind": "structural",
-      "event_label": "形成出清共識",
-      "reason": "403 完整出清，981 同步顯著賣出",
-      "etfs": [
-        "00403A",
-        "00981A"
-      ],
-      "etf_label": "403・981",
-      "breadth": 2,
-      "consensus_etfs": 2,
-      "weakest_significance_ratio": 6.73,
-      "strength": 6.4,
-      "data_quality": "exact",
-      "data_quality_label": "精確單位數",
-      "estimated_money_yi": -67.84,
-      "evidence": [
-        {
-          "etf": "00403A",
-          "etf_label": "403",
-          "action": "賣出",
-          "active_flow": -0.2,
-          "significance_ratio": 6.73,
-          "position_event": "full_exit",
-          "raw_delta_shares": -420000,
-          "unit_quality": "exact"
-        },
-        {
-          "etf": "00981A",
-          "etf_label": "981",
-          "action": "賣出",
-          "active_flow": -2.24,
-          "significance_ratio": 112.0,
-          "position_event": "decrease",
-          "raw_delta_shares": -7579000,
           "unit_quality": "exact"
         }
       ]
@@ -2866,51 +2715,6 @@
           "significance_ratio": 58.0,
           "position_event": "full_exit",
           "raw_delta_shares": -140000,
-          "unit_quality": "exact"
-        }
-      ]
-    },
-    {
-      "stock_id": "6515",
-      "name": "穎崴",
-      "category": "IC-封測",
-      "signal_date": "2026-07-31",
-      "direction": -1,
-      "event_type": "sell_followthrough",
-      "event_kind": "followthrough",
-      "event_label": "賣方共識延續",
-      "reason": "前一交易日已形成共識，403、981 本交易日仍顯著賣出",
-      "etfs": [
-        "00403A",
-        "00981A"
-      ],
-      "etf_label": "403・981",
-      "breadth": 2,
-      "consensus_etfs": 2,
-      "weakest_significance_ratio": 2.15,
-      "strength": 5.55,
-      "data_quality": "exact",
-      "data_quality_label": "精確單位數",
-      "estimated_money_yi": -7.56,
-      "evidence": [
-        {
-          "etf": "00403A",
-          "etf_label": "403",
-          "action": "賣出",
-          "active_flow": -0.108,
-          "significance_ratio": 2.15,
-          "position_event": "decrease",
-          "raw_delta_shares": -30000,
-          "unit_quality": "exact"
-        },
-        {
-          "etf": "00981A",
-          "etf_label": "981",
-          "action": "賣出",
-          "active_flow": -0.2,
-          "significance_ratio": 10.0,
-          "position_event": "decrease",
-          "raw_delta_shares": -93000,
           "unit_quality": "exact"
         }
       ]
@@ -5427,8 +5231,8 @@
       },
       {
         "date": "2026-07-31",
-        "score": 0.2016,
-        "state": "neutral"
+        "score": 0.4416,
+        "state": "buy"
       }
     ],
     "2368": [
@@ -5529,8 +5333,8 @@
       },
       {
         "date": "2026-07-31",
-        "score": -0.4119,
-        "state": "sell"
+        "score": -0.1719,
+        "state": "neutral"
       }
     ],
     "2379": [
@@ -12669,7 +12473,7 @@
       },
       {
         "date": "2026-07-31",
-        "score": -0.6704,
+        "score": -0.4304,
         "state": "sell"
       }
     ],
@@ -13490,210 +13294,6 @@
       }
     ],
     "8996": [
-      {
-        "date": "2026-07-03",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-06",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-07",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-08",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-09",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-13",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-14",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-15",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-16",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-17",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-20",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-22",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-23",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-24",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-27",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-28",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-30",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-31",
-        "score": 0.0,
-        "state": "neutral"
-      }
-    ],
-    "TX": [
-      {
-        "date": "2026-07-03",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-06",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-07",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-08",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-09",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-13",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-14",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-15",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-16",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-17",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-20",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-22",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-23",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-24",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-27",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-28",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-29",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-30",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
-        "date": "2026-07-31",
-        "score": 0.0,
-        "state": "neutral"
-      }
-    ],
-    "股票代號": [
       {
         "date": "2026-07-03",
         "score": 0.0,

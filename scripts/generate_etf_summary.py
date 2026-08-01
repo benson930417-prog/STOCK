@@ -32,6 +32,23 @@ def share_change_text(ticker, share_diff):
         return f"{sign}{share_diff:,.0f} 股"
     return f"{sign}{share_diff // 1000:,} 張"
 
+
+def _holding_map(day):
+    result = {}
+    for raw in day.get("holdings", []):
+        try:
+            holding = dict(raw)
+            holding["id"] = str(holding["id"]).strip()
+            holding["shares"] = int(float(holding["shares"]))
+            holding["weight_pct"] = float(holding["weight_pct"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raw_id = raw.get("id", "?") if isinstance(raw, dict) else "?"
+            raise ValueError(f"Invalid holding fields for {raw_id}") from exc
+        if not holding["id"] or holding["shares"] <= 0 or holding["weight_pct"] < 0:
+            raise ValueError(f"Invalid holding row for {holding['id'] or '?'}")
+        result[holding["id"]] = holding
+    return result
+
 def render_html(title, data_curr, date_curr, data_prev, date_prev):
     if not data_curr:
         return False
@@ -66,8 +83,8 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
         prem_str = f"{prem_pct:+.2f}%"
         prem_color_class = "text-[#CC2400] bg-red-50" if prem_pct > 0 else "text-[#258C18] bg-green-50"
         
-    ph_map = {h['id']: h for h in data_prev.get('holdings', [])}
-    ch_map = {h['id']: h for h in data_curr.get('holdings', [])}
+    ph_map = _holding_map(data_prev)
+    ch_map = _holding_map(data_curr)
     
     new_s, del_s, inc_s, dec_s = [], [], [], []
     for sid, ch in ch_map.items():

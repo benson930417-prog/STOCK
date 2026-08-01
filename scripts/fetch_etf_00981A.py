@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import requests
 import pandas as pd
 from datetime import datetime, timezone, timedelta
@@ -11,6 +12,60 @@ requests.packages.urllib3.disable_warnings()
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 HISTORY_FILE = os.path.join(DATA_DIR, "etf_00981A_history.json")
 LOG_FILE = os.path.join(DATA_DIR, "etf_00981A_log.json")
+
+
+def _num(value):
+    if pd.isna(value):
+        return None
+    text = str(value).replace(",", "").replace("%", "").strip()
+    if not text or text.lower() == "nan":
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def _find_stock_header_row(df_raw):
+    """Find the stock table, not the similarly shaped futures table above it."""
+    required = {"股票代號", "股票名稱", "股數", "持股權重"}
+    for i, row in df_raw.iterrows():
+        labels = {str(value).strip() for value in row.values if pd.notna(value)}
+        if required.issubset(labels):
+            return i
+    return -1
+
+
+def _parse_stock_holdings(df_raw, header_row):
+    headers = [
+        str(value).strip() if pd.notna(value) else ""
+        for value in df_raw.iloc[header_row]
+    ]
+    df = df_raw.iloc[header_row + 1:].copy()
+    df.columns = headers
+    holdings = []
+    for row in df.dropna(how="all").to_dict("records"):
+        sid = re.sub(r"\.0$", "", str(row.get("股票代號") or "").strip())
+        name = str(row.get("股票名稱") or "").strip()
+        shares = _num(row.get("股數"))
+        weight = _num(row.get("持股權重"))
+        if not re.fullmatch(r"\d{4}", sid) or not name or name.lower() == "nan":
+            continue
+        if shares is None or weight is None or shares <= 0 or weight < 0:
+            continue
+        holdings.append(
+            {"id": sid, "name": name, "weight_pct": weight, "shares": int(shares)}
+        )
+
+    ids = [row["id"] for row in holdings]
+    total_weight = sum(row["weight_pct"] for row in holdings)
+    if len(holdings) < 10:
+        raise RuntimeError(f"Only parsed {len(holdings)} valid stock holdings")
+    if len(ids) != len(set(ids)):
+        raise RuntimeError("Parsed duplicate stock ids")
+    if not 20 <= total_weight <= 110:
+        raise RuntimeError(f"Implausible total stock weight: {total_weight:.2f}%")
+    return holdings
 
 def fetch_and_update_holdings():
     now_utc = datetime.now(timezone.utc).isoformat()
@@ -36,26 +91,12 @@ def fetch_and_update_holdings():
         excel_data = BytesIO(r.content)
         df_raw = pd.read_excel(excel_data, header=None)
         
-        # Find where the actual table headers are
-        header_row = -1
-        for i, row in df_raw.iterrows():
-            row_str = " ".join([str(x) for x in row.values])
-            if "代碼" in row_str or "名稱" in row_str:
-                header_row = i
-                break
+        # The workbook also has a futures table; require the exact stock header.
+        header_row = _find_stock_header_row(df_raw)
         
         if header_row == -1:
-             print("Could not find table headers in the excel file.")
-             log_data["status"] = "Error parsing Excel"
-             save_log(log_data)
-             return
+             raise RuntimeError("Could not find the 00981A stock holding header row")
              
-        headers = df_raw.iloc[header_row].fillna("").astype(str).tolist()
-        df = df_raw.iloc[header_row+1:].copy()
-        df.columns = headers
-        df = df.dropna(how='all')
-        records = df.to_dict('records')
-        
         file_date_str = datetime.now().strftime("%Y-%m-%d")
         fund_size = None
         outstanding_units = None
@@ -99,35 +140,7 @@ def fetch_and_update_holdings():
                             nav = float(v_str)
                         except: pass
         
-        clean_records = []
-        for r in records:
-             sid, sname, weight, shares = None, None, None, None
-             for k, v in r.items():
-                  k_str = str(k)
-                  if "代" in k_str or "股票代碼" in k_str:
-                       sid = str(v).strip()
-                  elif "名" in k_str or "股票名稱" in k_str:
-                       sname = str(v).strip()
-                  elif "權重" in k_str or "比例" in k_str or "%" in k_str:
-                       try: weight = float(str(v).replace("%", ""))
-                       except Exception: pass
-                  elif "股數" in k_str or "持股" in k_str:
-                       try: shares = int(str(v).replace(",", ""))
-                       except Exception: pass
-                            
-             if sid and str(sid) != "nan" and sname and str(sname) != "nan":
-                  clean_records.append({
-                       "id": sid,
-                       "name": sname,
-                       "weight_pct": weight,
-                       "shares": shares
-                  })
-                  
-        if not clean_records:
-             print("Parsed no valid stock records.")
-             log_data["status"] = "No valid records found"
-             save_log(log_data)
-             return
+        clean_records = _parse_stock_holdings(df_raw, header_row)
              
         closing_price = nav
         try:
@@ -150,7 +163,7 @@ def fetch_and_update_holdings():
                  "fund_size": fund_size,
                  "outstanding_units": outstanding_units,
                  "nav": nav,
-                 "closing_price": float(closing_price)
+                 "closing_price": float(closing_price) if closing_price is not None else None
              },
              "holdings": clean_records
         }
@@ -198,6 +211,7 @@ def fetch_and_update_holdings():
         print(f"Error fetching/parsing ETF data: {e}")
         log_data["status"] = f"Error: {e}"
         save_log(log_data)
+        raise
 
 def save_log(log_data):
     os.makedirs(DATA_DIR, exist_ok=True)

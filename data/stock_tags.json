@@ -1,11 +1,11 @@
 {
-  "generated": "2026-08-01 10:34:49",
+  "generated": "2026-08-01 18:45:11",
   "source": "cmoney.tw/forum/stock",
   "count": 110,
   "coverage": {
     "covered": 110,
-    "universe": 112,
-    "missing": 2
+    "universe": 110,
+    "missing": 0
   },
   "tags": {
     "2308": {
@@ -41,7 +41,7 @@
       "category_id": "C23170",
       "category_full": "電子中游-電源供應器",
       "name": "台達電子",
-      "checked_at_utc": "2026-08-01T10:34:49.200903Z"
+      "checked_at_utc": "2026-08-01T10:45:10.456724Z"
     },
     "6274": {
       "category": "PCB-材料設備",
