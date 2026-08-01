@@ -7,7 +7,9 @@ V4 separates *state* from *score*:
 * green/sell = at least two managers independently confirmed selling.
 
 The colour is a hard gate.  A large one-manager score can never become a
-red/green conclusion.  The score only ranks maturity inside the same lane.
+red/green conclusion.  The score ranks current decision priority inside the
+same lane, emphasizing fresh confirmation and the weaker manager's latest
+action rather than letting an old, persistent state stay first indefinitely.
 V4 assigns its own ETF-wide, direction-specific preceding-session usual-action
 scale without look-ahead; concept tags are never interpreted.
 """
@@ -32,11 +34,15 @@ SIGNAL_OVERLAP_SESSIONS = 3
 SUPPORT_SESSIONS = 10
 WATCH_SESSIONS = SUPPORT_SESSIONS
 MAINTENANCE_SCORE = 40
-CORE_SCORE = 60
-CORE_FRESHNESS = 8
-CORE_RELATIVE_STRENGTH = 8
-CORE_PERSISTENCE = 10
+CORE_SCORE = 55
+CORE_FRESHNESS = 14
+CORE_RELATIVE_STRENGTH = 4
+CORE_PERSISTENCE = 4
+CORE_FRESH_FORMATION_FRESHNESS = 20
 CORE_FRESH_STATE_DAYS = 3
+SCORE_PERSISTENCE_MAX = 10
+SCORE_RECENT_STRENGTH_MAX = 25
+SCORE_FRESHNESS_MAX = 25
 ACTION_BASELINE_SESSIONS = 10
 ACTION_BASELINE_BACKFILL_SESSIONS = 60
 MIN_BASELINE_OBSERVATIONS = 8
@@ -200,26 +206,22 @@ def _score(
         reverse=True,
     )
     weaker_count = counts[1] if len(counts) >= 2 else 0
-    persistence = round(25 * min(weaker_count, 5) / 5)
+    persistence = round(SCORE_PERSISTENCE_MAX * min(weaker_count, 5) / 5)
     strengths = sorted(
         (
-            float(
-                features[etf][
-                    "buy_strength_10" if direction > 0 else "sell_strength_10"
-                ]
-            )
+            float(features[etf].get("signal_normal_action_multiple") or 0.0)
             for etf in participants
         ),
         reverse=True,
     )
     weaker_strength = strengths[1] if len(strengths) >= 2 else 0.0
-    strength = round(20 * min(weaker_strength / 5.0, 1.0))
+    strength = round(
+        SCORE_RECENT_STRENGTH_MAX * min(weaker_strength / 5.0, 1.0)
+    )
     top_two = sorted(
         participants,
         key=lambda etf: float(
-            features[etf][
-                "buy_strength_10" if direction > 0 else "sell_strength_10"
-            ]
+            features[etf].get("signal_normal_action_multiple") or 0.0
         ),
         reverse=True,
     )[:2]
@@ -241,7 +243,7 @@ def _score(
     )
     consensus_age = ages[1] if len(ages) >= 2 else SUPPORT_SESSIONS
     freshness = round(
-        15
+        SCORE_FRESHNESS_MAX
         * max(0.0, (SUPPORT_SESSIONS - 1 - consensus_age))
         / (SUPPORT_SESSIONS - 1)
     )
@@ -595,7 +597,7 @@ def _decision_priority(
     alignment = int(components.get("horizon_alignment") or 0)
     fresh_formation = (
         state_days <= CORE_FRESH_STATE_DAYS
-        and freshness >= 12
+        and freshness >= CORE_FRESH_FORMATION_FRESHNESS
         and strength >= CORE_RELATIVE_STRENGTH
     )
     repeated_confirmation = persistence >= CORE_PERSISTENCE
@@ -1093,6 +1095,7 @@ def build_consensus_payload(
                 "minimum_freshness_points": CORE_FRESHNESS,
                 "minimum_relative_strength_points": CORE_RELATIVE_STRENGTH,
                 "repeated_confirmation_points": CORE_PERSISTENCE,
+                "fresh_formation_freshness_points": CORE_FRESH_FORMATION_FRESHNESS,
                 "fresh_formation_max_state_days": CORE_FRESH_STATE_DAYS,
             },
             "fixed_ewma_half_lives": list(EWMA_HALFLIVES),

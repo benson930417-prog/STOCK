@@ -67,7 +67,7 @@ class EtfConsensusV4Tests(unittest.TestCase):
             state="buy",
             score=72,
             components={
-                "freshness": 13,
+                "freshness": 21,
                 "relative_strength": 10,
                 "joint_persistence": 5,
                 "horizon_alignment": 4,
@@ -176,6 +176,7 @@ class EtfConsensusV4Tests(unittest.TestCase):
                 "sell_days_10": 0,
                 "buy_strength_10": 30,
                 "sell_strength_10": 0,
+                "signal_normal_action_multiple": 30,
                 "ewma_3": 2,
                 "ewma_10": 2,
                 "ewma_20": 2,
@@ -185,6 +186,7 @@ class EtfConsensusV4Tests(unittest.TestCase):
                 "sell_days_10": 0,
                 "buy_strength_10": 1,
                 "sell_strength_10": 0,
+                "signal_normal_action_multiple": 1,
                 "ewma_3": 1,
                 "ewma_10": 1,
                 "ewma_20": 1,
@@ -193,9 +195,39 @@ class EtfConsensusV4Tests(unittest.TestCase):
         score, components = _score(
             features, ["00403A", "00981A"], 1
         )
-        self.assertEqual(5, components["joint_persistence"])
-        self.assertEqual(4, components["relative_strength"])
+        self.assertEqual(2, components["joint_persistence"])
+        self.assertEqual(5, components["relative_strength"])
         self.assertLess(score, 55)
+
+    def test_fresh_strong_consensus_outranks_old_persistent_consensus(self) -> None:
+        def feature(*, days: int, multiple: float, age: int) -> dict:
+            return {
+                "buy_days_10": days,
+                "sell_days_10": 0,
+                "buy_strength_10": multiple * days,
+                "sell_strength_10": 0,
+                "signal_normal_action_multiple": multiple,
+                "last_significant_age": age,
+                "ewma_3": 1,
+                "ewma_10": 1,
+                "ewma_20": 1,
+            }
+
+        old = {
+            "00403A": feature(days=4, multiple=1.65, age=6),
+            "00981A": feature(days=3, multiple=1.90, age=8),
+            "00991A": feature(days=4, multiple=0.63, age=0),
+        }
+        fresh = {
+            "00403A": feature(days=1, multiple=0.65, age=0),
+            "00981A": feature(days=1, multiple=2.71, age=0),
+            "00991A": feature(days=1, multiple=9.48, age=1),
+        }
+
+        old_score, _ = _score(old, list(old), 1)
+        fresh_score, _ = _score(fresh, list(fresh), 1)
+
+        self.assertGreater(fresh_score, old_score)
 
     def test_usual_action_multiple_is_not_the_significance_gate_multiple(self) -> None:
         dates = [
