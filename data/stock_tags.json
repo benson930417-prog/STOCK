@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-02 10:32:33",
+  "generated": "2026-08-03 10:32:50",
   "source": "cmoney.tw/forum/stock",
   "count": 110,
   "coverage": {
@@ -13,35 +13,35 @@
       "group": "電子中游",
       "concepts": [
         {
-          "id": "C50874",
-          "name": "虛擬貨幣",
-          "avg_pct": 9.78
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 4.08
         },
         {
-          "id": "C50921",
-          "name": "3DIC聯盟",
-          "avg_pct": 9.76
+          "id": "C50903",
+          "name": "鴻海MIH電動車平台",
+          "avg_pct": 3.83
         },
         {
-          "id": "C50850",
-          "name": "PS5",
-          "avg_pct": 9.75
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 3.69
         },
         {
-          "id": "C50901",
-          "name": "氣候變遷",
-          "avg_pct": 9.75
+          "id": "C50080",
+          "name": "物聯網",
+          "avg_pct": 3.59
         },
         {
-          "id": "C50290",
-          "name": "無線充電",
-          "avg_pct": 9.74
+          "id": "C50878",
+          "name": "MIH概念股",
+          "avg_pct": 3.05
         }
       ],
       "category_id": "C23170",
       "category_full": "電子中游-電源供應器",
       "name": "台達電子",
-      "checked_at_utc": "2026-08-02T10:32:32.916227Z"
+      "checked_at_utc": "2026-08-03T10:32:50.294393Z"
     },
     "6274": {
       "category": "PCB-材料設備",

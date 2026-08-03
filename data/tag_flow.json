@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated": "2026-08-02 10:32:33",
+  "generated": "2026-08-03 10:32:51",
   "etfs": [
     "00403A",
     "00981A",
@@ -52,7 +52,8 @@
         "2026-07-28",
         "2026-07-29",
         "2026-07-30",
-        "2026-07-31"
+        "2026-07-31",
+        "2026-08-03"
       ],
       "00981A": [
         "2026-03-23",
@@ -144,7 +145,8 @@
         "2026-07-28",
         "2026-07-29",
         "2026-07-30",
-        "2026-07-31"
+        "2026-07-31",
+        "2026-08-03"
       ],
       "00991A": [
         "2026-03-12",
@@ -222,7 +224,8 @@
         "2026-07-28",
         "2026-07-29",
         "2026-07-30",
-        "2026-07-31"
+        "2026-07-31",
+        "2026-08-03"
       ]
     },
     "common": [
@@ -259,9 +262,10 @@
       "2026-07-28",
       "2026-07-29",
       "2026-07-30",
-      "2026-07-31"
+      "2026-07-31",
+      "2026-08-03"
     ],
-    "latest": "2026-07-31"
+    "latest": "2026-08-03"
   },
   "methodology": {
     "signal": "ActiveWeight = delta shares * current weight / current shares",
@@ -2337,11 +2341,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.0446,
           "money_twd": 44581948.0,
@@ -3233,11 +3237,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.0138,
           "money_twd": 13791287.0,
@@ -3744,11 +3748,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.2607,
           "money_twd": 73747662.0,
@@ -4868,11 +4872,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.1002,
           "money_twd": 123552200.0,
@@ -5570,11 +5574,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.1486,
           "money_twd": 192588423.0,
@@ -6440,11 +6444,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.0655,
           "money_twd": 89318754.0,
@@ -7013,11 +7017,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.1286,
           "money_twd": 186190070.0,
@@ -7676,11 +7680,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.1193,
           "money_twd": -36900313.0,
@@ -7744,11 +7748,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.4701,
           "money_twd": 721766658.0,
@@ -8559,11 +8563,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.2407,
           "money_twd": 406498987.0,
@@ -9115,11 +9119,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.1835,
           "money_twd": -57001328.0,
@@ -9259,11 +9263,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.5521,
           "money_twd": 1012054089.0,
@@ -10122,11 +10126,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.0209,
           "money_twd": 40291932.0,
@@ -10631,11 +10635,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.494,
           "money_twd": -161207171.0,
@@ -10849,11 +10853,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.1833,
           "money_twd": 366070224.0,
@@ -13484,11 +13488,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.0781,
           "money_twd": 203517785.0,
@@ -14010,11 +14014,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.4289,
           "money_twd": -173213429.0,
@@ -14261,11 +14265,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.082,
           "money_twd": 221178279.0,
@@ -14870,11 +14874,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.2957,
           "money_twd": 806419391.0,
@@ -15587,11 +15591,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.2064,
           "money_twd": -89792405.0,
@@ -17233,11 +17237,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.3019,
           "money_twd": 587145146.0,
@@ -18652,11 +18656,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.2378,
           "money_twd": 434282055.0,
@@ -20010,11 +20014,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.0748,
           "money_twd": 44300696.0,
@@ -21320,11 +21324,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.4009,
           "money_twd": -257976975.0,
@@ -21619,11 +21623,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.2509,
           "money_twd": -753103087.0,
@@ -21727,11 +21731,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.6387,
           "money_twd": -430013907.0,
@@ -22205,11 +22209,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.4647,
           "money_twd": -311945514.0,
@@ -22610,11 +22614,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.2138,
           "money_twd": -623515807.0,
@@ -22697,11 +22701,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -1.323,
           "money_twd": -894321274.0,
@@ -23195,11 +23199,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.2004,
           "money_twd": -586593180.0,
@@ -25100,11 +25104,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": -0.3938,
           "money_twd": -1164813474.0,
@@ -27173,11 +27177,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.0906,
           "money_twd": 239360242.0,
@@ -27409,11 +27413,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.115,
           "money_twd": 189257364.0,
@@ -27928,11 +27932,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.0824,
           "money_twd": 133408537.0,
@@ -28151,11 +28155,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.1122,
           "money_twd": 173798619.0,
@@ -28475,11 +28479,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.0449,
           "money_twd": 112627989.0,
@@ -28720,11 +28724,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.134,
           "money_twd": 220198830.0,
@@ -28962,11 +28966,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.2184,
           "money_twd": 586450222.0,
@@ -29117,11 +29121,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 1.2299,
           "money_twd": 919568103.0,
@@ -29488,11 +29492,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.1113,
           "money_twd": 187980162.0,
@@ -29930,11 +29934,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.2413,
           "money_twd": 188047127.0,
@@ -30091,11 +30095,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.1338,
           "money_twd": 225601692.0,
@@ -30297,11 +30301,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.1208,
           "money_twd": 94026040.0,
@@ -31788,11 +31792,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.0471,
           "money_twd": 114819831.0,
@@ -32499,11 +32503,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.1652,
           "money_twd": 475883715.0,
@@ -32714,11 +32718,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "虛擬貨幣",
-            "3DIC聯盟",
-            "PS5",
-            "氣候變遷",
-            "無線充電"
+            "GB300",
+            "鴻海MIH電動車平台",
+            "車用電子",
+            "物聯網",
+            "MIH概念股"
           ],
           "flow": 0.3793,
           "money_twd": 328098417.0,
@@ -32797,6 +32801,763 @@
           "dshares": 5000,
           "position_event": "increase",
           "percentile": 13.1,
+          "label": "加碼"
+        }
+      ]
+    },
+    {
+      "etf": "00403A",
+      "date": "2026-08-03",
+      "prev_date": "2026-07-31",
+      "fund_size": 172225560262.0,
+      "baseline": {
+        "n": 146,
+        "median": 0.0955,
+        "p80": 0.1729,
+        "p95": 0.5328
+      },
+      "stocks": [
+        {
+          "id": "2383",
+          "name": "台光電子",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "軌道衛星",
+            "銅箔基板",
+            "低軌衛星",
+            "GB300",
+            "美元升值"
+          ],
+          "flow": 0.2601,
+          "money_twd": 447901658.0,
+          "dshares": 90000,
+          "position_event": "increase",
+          "percentile": 89.0,
+          "label": "明顯加碼"
+        },
+        {
+          "id": "3665",
+          "name": "貿聯-KY",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "MIH概念股",
+            "Tesla",
+            "太陽能",
+            "GB300",
+            "車用電子"
+          ],
+          "flow": 0.1583,
+          "money_twd": 272662050.0,
+          "dshares": 130000,
+          "position_event": "increase",
+          "percentile": 76.7,
+          "label": "加碼"
+        },
+        {
+          "id": "5274",
+          "name": "信驊科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "ChatGPT"
+          ],
+          "flow": 0.1298,
+          "money_twd": 223621579.0,
+          "dshares": 14000,
+          "position_event": "increase",
+          "percentile": 70.5,
+          "label": "加碼"
+        },
+        {
+          "id": "2303",
+          "name": "聯華電子",
+          "category": "IC-代工",
+          "group": "電子上游",
+          "concepts": [
+            "無人機",
+            "CES",
+            "穿載式裝置",
+            "AMD",
+            "碳權"
+          ],
+          "flow": 0.1233,
+          "money_twd": 212382008.0,
+          "dshares": 1800000,
+          "position_event": "increase",
+          "percentile": 65.8,
+          "label": "加碼"
+        },
+        {
+          "id": "6515",
+          "name": "穎崴科技",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "3DIC聯盟",
+            "CoWoS"
+          ],
+          "flow": -0.1138,
+          "money_twd": -195980810.0,
+          "dshares": -30000,
+          "position_event": "decrease",
+          "percentile": 63.0,
+          "label": "減碼"
+        },
+        {
+          "id": "6239",
+          "name": "力成科技",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "HBM",
+            "FOPLP扇出型封裝",
+            "Apple",
+            "穿載式裝置"
+          ],
+          "flow": 0.0993,
+          "money_twd": 170973011.0,
+          "dshares": 714000,
+          "position_event": "increase",
+          "percentile": 52.7,
+          "label": "加碼"
+        },
+        {
+          "id": "6488",
+          "name": "環球晶",
+          "category": "晶圓材料",
+          "group": "電子上游",
+          "concepts": [
+            "車用電子",
+            "美元升值",
+            "次世代半導體",
+            "矽晶圓"
+          ],
+          "flow": 0.0952,
+          "money_twd": 164005102.0,
+          "dshares": 189000,
+          "position_event": "increase",
+          "percentile": 50.0,
+          "label": "加碼"
+        },
+        {
+          "id": "1560",
+          "name": "中砂",
+          "category": "IC-代工",
+          "group": "電子上游",
+          "concepts": [
+            "CoWoS",
+            "次世代半導體"
+          ],
+          "flow": 0.093,
+          "money_twd": 160246316.0,
+          "dshares": 237000,
+          "position_event": "increase",
+          "percentile": 48.6,
+          "label": "加碼"
+        },
+        {
+          "id": "3653",
+          "name": "健策精密",
+          "category": "散熱零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "連接器",
+            "PS5",
+            "AMD",
+            "ChatGPT"
+          ],
+          "flow": 0.0874,
+          "money_twd": 150488354.0,
+          "dshares": 40000,
+          "position_event": "increase",
+          "percentile": 46.6,
+          "label": "加碼"
+        },
+        {
+          "id": "3008",
+          "name": "大立光",
+          "category": "光學鏡片",
+          "group": "電子中游",
+          "concepts": [
+            "無人機",
+            "小米",
+            "Apple",
+            "CES",
+            "穿載式裝置"
+          ],
+          "flow": 0.0688,
+          "money_twd": 118531709.0,
+          "dshares": 30000,
+          "position_event": "increase",
+          "percentile": 33.6,
+          "label": "加碼"
+        },
+        {
+          "id": "2345",
+          "name": "智邦科技",
+          "category": "網通",
+          "group": "電子中游",
+          "concepts": [
+            "5G",
+            "美元升值",
+            "光通訊",
+            "遠距教學",
+            "AWS"
+          ],
+          "flow": 0.0231,
+          "money_twd": 39723113.0,
+          "dshares": 17000,
+          "position_event": "increase",
+          "percentile": 5.5,
+          "label": "加碼"
+        },
+        {
+          "id": "2404",
+          "name": "漢唐集成",
+          "category": "儀器設備工程",
+          "group": "電子中游",
+          "concepts": [],
+          "flow": 0.0192,
+          "money_twd": 33067308.0,
+          "dshares": 30000,
+          "position_event": "increase",
+          "percentile": 4.1,
+          "label": "加碼"
+        },
+        {
+          "id": "1717",
+          "name": "長興",
+          "category": "化學工業",
+          "group": "傳產",
+          "concepts": [
+            "3DIC聯盟",
+            "玻璃基板",
+            "穿載式裝置",
+            "太陽能",
+            "特用化學"
+          ],
+          "flow": 0.012,
+          "money_twd": 20667067.0,
+          "dshares": 300000,
+          "position_event": "increase",
+          "percentile": 2.7,
+          "label": "加碼"
+        },
+        {
+          "id": "3450",
+          "name": "聯鈞",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "光通訊",
+            "3D感測",
+            "CES",
+            "3D列印"
+          ],
+          "flow": 0.0088,
+          "money_twd": 15127230.0,
+          "dshares": 37000,
+          "position_event": "increase",
+          "percentile": 0.7,
+          "label": "加碼"
+        }
+      ]
+    },
+    {
+      "etf": "00981A",
+      "date": "2026-08-03",
+      "prev_date": "2026-07-31",
+      "fund_size": 301542979398.0,
+      "baseline": {
+        "n": 93,
+        "median": 0.0643,
+        "p80": 0.1642,
+        "p95": 0.2886
+      },
+      "stocks": [
+        {
+          "id": "2449",
+          "name": "京元電子",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "車用電子",
+            "Type C",
+            "人工智慧",
+            "穿載式裝置",
+            "NFC"
+          ],
+          "flow": 0.289,
+          "money_twd": 871420488.0,
+          "dshares": 3752000,
+          "position_event": "increase",
+          "percentile": 94.6,
+          "label": "明顯加碼"
+        },
+        {
+          "id": "6669",
+          "name": "緯穎科技",
+          "category": "EMS",
+          "group": "電子中游",
+          "concepts": [
+            "GB300",
+            "美元升值",
+            "Oracle甲骨文",
+            "AWS",
+            "GB200"
+          ],
+          "flow": 0.2829,
+          "money_twd": 853050390.0,
+          "dshares": 144000,
+          "position_event": "increase",
+          "percentile": 94.6,
+          "label": "明顯加碼"
+        },
+        {
+          "id": "2383",
+          "name": "台光電子",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "軌道衛星",
+            "銅箔基板",
+            "低軌衛星",
+            "GB300",
+            "美元升值"
+          ],
+          "flow": 0.1354,
+          "money_twd": 408242803.0,
+          "dshares": 82000,
+          "position_event": "increase",
+          "percentile": 73.1,
+          "label": "加碼"
+        },
+        {
+          "id": "3017",
+          "name": "奇鋐科技",
+          "category": "NB與手機零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "GB300",
+            "美元升值",
+            "AI PC",
+            "AWS"
+          ],
+          "flow": 0.1143,
+          "money_twd": 344557428.0,
+          "dshares": 135000,
+          "position_event": "increase",
+          "percentile": 71.0,
+          "label": "加碼"
+        },
+        {
+          "id": "2360",
+          "name": "致茂電子",
+          "category": "儀器設備工程",
+          "group": "電子中游",
+          "concepts": [
+            "無人機",
+            "MIH概念股",
+            "Tesla",
+            "軍工",
+            "電動車"
+          ],
+          "flow": 0.0814,
+          "money_twd": 245578647.0,
+          "dshares": 124000,
+          "position_event": "increase",
+          "percentile": 52.7,
+          "label": "加碼"
+        },
+        {
+          "id": "2454",
+          "name": "聯發科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "快速充電",
+            "Apple Pay",
+            "無線耳機",
+            "Wifi 7",
+            "ASIC"
+          ],
+          "flow": 0.0765,
+          "money_twd": 230718509.0,
+          "dshares": 59000,
+          "position_event": "increase",
+          "percentile": 52.7,
+          "label": "加碼"
+        },
+        {
+          "id": "2049",
+          "name": "上銀",
+          "category": "電機",
+          "group": "傳產",
+          "concepts": [
+            "無人機",
+            "軍工",
+            "3D列印",
+            "一帶一路",
+            "航太"
+          ],
+          "flow": 0.05,
+          "money_twd": 150771490.0,
+          "dshares": 430000,
+          "position_event": "new_position",
+          "percentile": 40.9,
+          "label": "加碼"
+        },
+        {
+          "id": "3037",
+          "name": "欣興電子",
+          "category": "ABF",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "小米",
+            "玻璃基板",
+            "太陽能"
+          ],
+          "flow": 0.0456,
+          "money_twd": 137504403.0,
+          "dshares": 159000,
+          "position_event": "increase",
+          "percentile": 38.7,
+          "label": "加碼"
+        },
+        {
+          "id": "6147",
+          "name": "頎邦",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "Apple",
+            "CES",
+            "穿載式裝置",
+            "iPhone",
+            "3D感測"
+          ],
+          "flow": -0.0402,
+          "money_twd": -121131551.0,
+          "dshares": -942000,
+          "position_event": "decrease",
+          "percentile": 33.3,
+          "label": "減碼"
+        }
+      ]
+    },
+    {
+      "etf": "00991A",
+      "date": "2026-08-03",
+      "prev_date": "2026-07-31",
+      "fund_size": 90701660318.0,
+      "baseline": {
+        "n": 150,
+        "median": 0.2201,
+        "p80": 0.4875,
+        "p95": 1.169
+      },
+      "stocks": [
+        {
+          "id": "3231",
+          "name": "緯創資通",
+          "category": "筆記型電腦",
+          "group": "電子下游",
+          "concepts": [
+            "GB300",
+            "車用電子",
+            "美元升值",
+            "AI PC",
+            "Apple"
+          ],
+          "flow": 1.0232,
+          "money_twd": 928018573.0,
+          "dshares": 4991000,
+          "position_event": "increase",
+          "percentile": 90.0,
+          "label": "明顯加碼"
+        },
+        {
+          "id": "2404",
+          "name": "漢唐集成",
+          "category": "儀器設備工程",
+          "group": "電子中游",
+          "concepts": [],
+          "flow": -0.4858,
+          "money_twd": -440612793.0,
+          "dshares": -399000,
+          "position_event": "decrease",
+          "percentile": 79.3,
+          "label": "減碼"
+        },
+        {
+          "id": "2881",
+          "name": "富邦金融",
+          "category": "金控",
+          "group": "金融",
+          "concepts": [
+            "A股入摩",
+            "一帶一路",
+            "行動支付",
+            "福建自貿區"
+          ],
+          "flow": 0.4557,
+          "money_twd": 413340788.0,
+          "dshares": 3191000,
+          "position_event": "increase",
+          "percentile": 77.3,
+          "label": "加碼"
+        },
+        {
+          "id": "3037",
+          "name": "欣興電子",
+          "category": "ABF",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "小米",
+            "玻璃基板",
+            "太陽能"
+          ],
+          "flow": 0.3338,
+          "money_twd": 302756227.0,
+          "dshares": 350000,
+          "position_event": "increase",
+          "percentile": 70.0,
+          "label": "加碼"
+        },
+        {
+          "id": "7769",
+          "name": "鴻勁精密",
+          "category": "IC-半導體設備",
+          "group": "電子上游",
+          "concepts": [],
+          "flow": 0.2833,
+          "money_twd": 256957804.0,
+          "dshares": 40000,
+          "position_event": "increase",
+          "percentile": 60.7,
+          "label": "加碼"
+        },
+        {
+          "id": "3017",
+          "name": "奇鋐科技",
+          "category": "NB與手機零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "GB300",
+            "美元升值",
+            "AI PC",
+            "AWS"
+          ],
+          "flow": 0.2812,
+          "money_twd": 255036578.0,
+          "dshares": 100000,
+          "position_event": "increase",
+          "percentile": 60.7,
+          "label": "加碼"
+        },
+        {
+          "id": "2383",
+          "name": "台光電子",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "軌道衛星",
+            "銅箔基板",
+            "低軌衛星",
+            "GB300",
+            "美元升值"
+          ],
+          "flow": 0.2745,
+          "money_twd": 249002348.0,
+          "dshares": 50000,
+          "position_event": "increase",
+          "percentile": 60.0,
+          "label": "加碼"
+        },
+        {
+          "id": "2885",
+          "name": "元大金融",
+          "category": "金控",
+          "group": "金融",
+          "concepts": [
+            "第三方支付"
+          ],
+          "flow": 0.2393,
+          "money_twd": 217071749.0,
+          "dshares": 3191000,
+          "position_event": "increase",
+          "percentile": 54.7,
+          "label": "加碼"
+        },
+        {
+          "id": "2059",
+          "name": "川湖科技",
+          "category": "金屬製品",
+          "group": "電子中游",
+          "concepts": [
+            "GB300",
+            "CES",
+            "AWS"
+          ],
+          "flow": 0.238,
+          "money_twd": 215869952.0,
+          "dshares": 25000,
+          "position_event": "increase",
+          "percentile": 54.0,
+          "label": "加碼"
+        },
+        {
+          "id": "2345",
+          "name": "智邦科技",
+          "category": "網通",
+          "group": "電子中游",
+          "concepts": [
+            "5G",
+            "美元升值",
+            "光通訊",
+            "遠距教學",
+            "AWS"
+          ],
+          "flow": 0.1545,
+          "money_twd": 140103144.0,
+          "dshares": 60000,
+          "position_event": "increase",
+          "percentile": 28.7,
+          "label": "加碼"
+        },
+        {
+          "id": "3665",
+          "name": "貿聯-KY",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "MIH概念股",
+            "Tesla",
+            "太陽能",
+            "GB300",
+            "車用電子"
+          ],
+          "flow": 0.1386,
+          "money_twd": 125712501.0,
+          "dshares": 60000,
+          "position_event": "increase",
+          "percentile": 27.3,
+          "label": "加碼"
+        },
+        {
+          "id": "3653",
+          "name": "健策精密",
+          "category": "散熱零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "連接器",
+            "PS5",
+            "AMD",
+            "ChatGPT"
+          ],
+          "flow": 0.1246,
+          "money_twd": 113028223.0,
+          "dshares": 30000,
+          "position_event": "increase",
+          "percentile": 25.3,
+          "label": "加碼"
+        },
+        {
+          "id": "5274",
+          "name": "信驊科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "ChatGPT"
+          ],
+          "flow": 0.0881,
+          "money_twd": 79869045.0,
+          "dshares": 5000,
+          "position_event": "increase",
+          "percentile": 16.0,
+          "label": "加碼"
+        },
+        {
+          "id": "2454",
+          "name": "聯發科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "快速充電",
+            "Apple Pay",
+            "無線耳機",
+            "Wifi 7",
+            "ASIC"
+          ],
+          "flow": 0.0862,
+          "money_twd": 78201322.0,
+          "dshares": 20000,
+          "position_event": "increase",
+          "percentile": 15.3,
+          "label": "加碼"
+        },
+        {
+          "id": "8299",
+          "name": "群聯電子",
+          "category": "記憶體IC設計",
+          "group": "電子上游",
+          "concepts": [
+            "鴻海MIH電動車平台",
+            "Type C",
+            "記憶體",
+            "PS5",
+            "CES"
+          ],
+          "flow": 0.0776,
+          "money_twd": 70396192.0,
+          "dshares": 40000,
+          "position_event": "increase",
+          "percentile": 13.3,
+          "label": "加碼"
+        },
+        {
+          "id": "3711",
+          "name": "日月光投",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "GB300",
+            "A股入摩",
+            "FOPLP扇出型封裝",
+            "AI PC",
+            "iPhone"
+          ],
+          "flow": 0.0336,
+          "money_twd": 30497099.0,
+          "dshares": 50000,
+          "position_event": "increase",
+          "percentile": 12.0,
+          "label": "加碼"
+        },
+        {
+          "id": "6223",
+          "name": "旺矽科技",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "TPU",
+            "CoWoS"
+          ],
+          "flow": 0.032,
+          "money_twd": 29024531.0,
+          "dshares": 5000,
+          "position_event": "increase",
+          "percentile": 12.0,
           "label": "加碼"
         }
       ]
