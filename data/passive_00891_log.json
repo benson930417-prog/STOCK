@@ -1,10 +1,10 @@
 {
-  "last_checked_utc": "2026-08-03T10:30:56.066952Z",
-  "last_updated_utc": "2026-07-31T10:30:49.706108Z",
-  "latest_date": "2026-07-31",
-  "status": "NO CHANGE",
+  "last_checked_utc": "2026-08-04T10:30:51.983632Z",
+  "last_updated_utc": "2026-08-04T10:30:51.983632Z",
+  "latest_date": "2026-08-04",
+  "status": "NEW DATA FOUND",
   "source": "https://www.ctbcinvestments.com/Etf/88182265/Combination",
   "holdings_count": 30,
   "provider": "CTBC Investments",
-  "payload_changed": false
+  "payload_changed": true
 }
