@@ -31,14 +31,35 @@ def render_etf_consensus_backtest_tab(*, DATA_DIR=None, **kwargs):
 
     strategy_name = st.selectbox(
         "策略",
-        ["V4 三檔 ETF 買方共識", "00981A 續買特殊版"],
-        help="兩個策略共用同一套資金、成交成本、下一交易日成交與績效計算引擎。",
+        [
+            "V4 三檔 ETF 買方共識",
+            "00981A 續買特殊版（立即退出）",
+            "00981A 波段版（容許暫停續買）",
+        ],
+        help="三個策略共用同一套資金、成交成本、下一交易日成交與績效計算引擎。",
     )
-    if strategy_name == "00981A 續買特殊版":
-        signal = build_981_follow_signal(history_981, tag_payload.get("tags") or {})
+    if strategy_name.startswith("00981A"):
+        missed_limit = 1
+        if strategy_name == "00981A 波段版（容許暫停續買）":
+            missed_limit = st.slider(
+                "連續幾次未續買才退出",
+                min_value=2,
+                max_value=5,
+                value=2,
+                help="第 N 次連續未續買的揭露日形成退出訊號，下一個可交易日開盤賣出；中途重新續買會歸零。",
+            )
+        signal = build_981_follow_signal(
+            history_981,
+            tag_payload.get("tags") or {},
+            exit_after_missed_disclosures=missed_limit,
+        )
+        if missed_limit == 1:
+            exit_copy = "下一次揭露沒有續買，就於再下一交易日賣出"
+        else:
+            exit_copy = f"連續 {missed_limit} 次揭露都沒有續買，才於下一交易日賣出；中途續買會重新計數"
         st.info(
             "特殊版不等共識：00981A 實際股數增加，且扣除基金申購贖回後的主動配置也增加，"
-            "就於下一交易日買進；下一次揭露沒有續買，就於再下一交易日賣出。任何正向可抄動作都算，不設顯著門檻。"
+            f"就於下一交易日買進；{exit_copy}。任何正向可抄動作都算，不設顯著門檻。"
         )
     else:
         signal = consensus
