@@ -159,6 +159,9 @@ def fetch_and_update_holdings():
 
         day_data = {
              "date": file_date_str,
+             # Upper bound on when this snapshot became public. The backtest
+             # needs it to prove it never trades on data it could not have had.
+             "first_seen_utc": now_utc,
              "meta": {
                  "fund_size": fund_size,
                  "outstanding_units": outstanding_units,
@@ -179,18 +182,25 @@ def fetch_and_update_holdings():
         # Detect Changes
         is_changed = True
         existing_day_data = history.get(file_date_str)
-        
+
         if existing_day_data:
+             # Keep the earliest sighting; re-running today must not make an old
+             # snapshot look like it arrived later than it really did.
+             if existing_day_data.get("first_seen_utc"):
+                  day_data["first_seen_utc"] = existing_day_data["first_seen_utc"]
+
              # Deep compare the whole day_data EXCEPT closing_price which constantly floats during market open hours
              import copy
              curr_cmp = copy.deepcopy(day_data)
              prev_cmp = copy.deepcopy(existing_day_data)
              curr_cmp["meta"].pop("closing_price", None)
              prev_cmp["meta"].pop("closing_price", None)
-             
+             curr_cmp.pop("first_seen_utc", None)
+             prev_cmp.pop("first_seen_utc", None)
+
              if json.dumps(curr_cmp, sort_keys=True) == json.dumps(prev_cmp, sort_keys=True):
                   is_changed = False
-                  
+
         history[file_date_str] = day_data
         
         os.makedirs(DATA_DIR, exist_ok=True)

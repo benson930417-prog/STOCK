@@ -1,0 +1,768 @@
+{
+  "schema_version": 1,
+  "method": "first git commit containing each snapshot date (upper bound on disclosure time)",
+  "tracked_path": "data/etf_00981A_history.json",
+  "rebuilt_at_utc": "2026-08-05T17:26:02.031773Z",
+  "market_close_taipei": "13:30",
+  "date_count": 94,
+  "suspect_count": 1,
+  "suspect_dates": [
+    "2026-03-24"
+  ],
+  "first_seen": {
+    "2026-03-22": "2026-03-24T01:30:18+01:00",
+    "2026-03-23": "2026-03-24T00:21:05+01:00",
+    "2026-03-24": "2026-03-24T00:36:07+01:00",
+    "2026-03-25": "2026-03-25T11:11:33Z",
+    "2026-03-26": "2026-03-26T11:26:55Z",
+    "2026-03-27": "2026-03-27T11:11:43Z",
+    "2026-03-30": "2026-03-30T11:31:42Z",
+    "2026-03-31": "2026-03-31T10:58:50Z",
+    "2026-04-01": "2026-04-01T10:45:18Z",
+    "2026-04-02": "2026-04-02T10:45:19Z",
+    "2026-04-07": "2026-04-07T10:45:25Z",
+    "2026-04-08": "2026-04-08T10:45:18Z",
+    "2026-04-09": "2026-04-09T10:45:18Z",
+    "2026-04-10": "2026-04-10T21:18:18+08:00",
+    "2026-04-13": "2026-04-14T04:35:52Z",
+    "2026-04-14": "2026-04-14T10:45:46Z",
+    "2026-04-15": "2026-04-15T10:19:13Z",
+    "2026-04-16": "2026-04-16T09:45:30Z",
+    "2026-04-17": "2026-04-17T09:45:35Z",
+    "2026-04-20": "2026-04-20T09:45:46Z",
+    "2026-04-21": "2026-04-21T09:45:49Z",
+    "2026-04-22": "2026-04-22T09:45:39Z",
+    "2026-04-23": "2026-04-23T09:45:34Z",
+    "2026-04-24": "2026-04-24T09:45:41Z",
+    "2026-04-27": "2026-04-27T09:45:38Z",
+    "2026-04-28": "2026-04-28T09:45:54Z",
+    "2026-04-29": "2026-04-29T09:45:52Z",
+    "2026-04-30": "2026-04-30T09:45:43Z",
+    "2026-05-04": "2026-05-04T09:45:28Z",
+    "2026-05-05": "2026-05-05T09:45:55Z",
+    "2026-05-06": "2026-05-06T09:45:32Z",
+    "2026-05-07": "2026-05-07T09:45:45Z",
+    "2026-05-08": "2026-05-08T09:45:34Z",
+    "2026-05-11": "2026-05-11T09:45:34Z",
+    "2026-05-12": "2026-05-12T09:46:01Z",
+    "2026-05-13": "2026-05-13T10:00:29Z",
+    "2026-05-14": "2026-05-14T09:31:12Z",
+    "2026-05-15": "2026-05-15T09:31:06Z",
+    "2026-05-18": "2026-05-18T09:30:44Z",
+    "2026-05-19": "2026-05-19T09:30:54Z",
+    "2026-05-20": "2026-05-20T09:30:48Z",
+    "2026-05-21": "2026-05-21T09:31:04Z",
+    "2026-05-22": "2026-05-22T09:31:19Z",
+    "2026-05-25": "2026-05-25T09:32:56Z",
+    "2026-05-26": "2026-05-26T09:33:18Z",
+    "2026-05-27": "2026-05-27T09:32:16Z",
+    "2026-05-28": "2026-05-28T09:32:07Z",
+    "2026-05-29": "2026-05-29T09:32:11Z",
+    "2026-06-01": "2026-06-01T09:32:55Z",
+    "2026-06-02": "2026-06-02T09:32:53Z",
+    "2026-06-03": "2026-06-03T09:32:59Z",
+    "2026-06-04": "2026-06-04T09:33:33Z",
+    "2026-06-05": "2026-06-05T09:32:10Z",
+    "2026-06-08": "2026-06-08T09:33:02Z",
+    "2026-06-09": "2026-06-09T09:33:15Z",
+    "2026-06-10": "2026-06-10T09:33:05Z",
+    "2026-06-11": "2026-06-11T09:32:40Z",
+    "2026-06-12": "2026-06-12T09:32:49Z",
+    "2026-06-15": "2026-06-15T09:33:02Z",
+    "2026-06-16": "2026-06-16T09:32:28Z",
+    "2026-06-17": "2026-06-17T09:35:13Z",
+    "2026-06-18": "2026-06-18T10:32:21Z",
+    "2026-06-22": "2026-06-22T10:32:19Z",
+    "2026-06-23": "2026-06-23T10:32:24Z",
+    "2026-06-24": "2026-06-24T10:32:24Z",
+    "2026-06-25": "2026-06-25T10:32:03Z",
+    "2026-06-26": "2026-06-26T10:33:08Z",
+    "2026-06-29": "2026-06-29T10:32:56Z",
+    "2026-06-30": "2026-06-30T10:32:32Z",
+    "2026-07-01": "2026-07-01T10:32:21Z",
+    "2026-07-02": "2026-07-02T10:32:44Z",
+    "2026-07-03": "2026-07-03T10:32:06Z",
+    "2026-07-06": "2026-07-06T10:32:21Z",
+    "2026-07-07": "2026-07-07T10:32:32Z",
+    "2026-07-08": "2026-07-08T10:32:17Z",
+    "2026-07-09": "2026-07-09T10:32:09Z",
+    "2026-07-13": "2026-07-13T10:32:45Z",
+    "2026-07-14": "2026-07-14T10:32:36Z",
+    "2026-07-15": "2026-07-15T10:32:43Z",
+    "2026-07-16": "2026-07-16T10:31:47Z",
+    "2026-07-17": "2026-07-17T10:32:18Z",
+    "2026-07-20": "2026-07-20T10:32:20Z",
+    "2026-07-21": "2026-07-21T10:32:10Z",
+    "2026-07-22": "2026-07-22T10:33:13Z",
+    "2026-07-23": "2026-07-23T10:33:02Z",
+    "2026-07-24": "2026-07-24T10:33:42Z",
+    "2026-07-27": "2026-07-27T10:33:43Z",
+    "2026-07-28": "2026-07-28T10:33:29Z",
+    "2026-07-29": "2026-07-29T10:34:17Z",
+    "2026-07-30": "2026-07-30T10:33:18Z",
+    "2026-07-31": "2026-07-31T10:33:45Z",
+    "2026-08-03": "2026-08-03T10:33:09Z",
+    "2026-08-04": "2026-08-04T10:33:12Z",
+    "2026-08-05": "2026-08-05T10:33:27Z"
+  },
+  "audit": [
+    {
+      "date": "2026-03-22",
+      "first_seen_utc": "2026-03-24T01:30:18+01:00",
+      "first_seen_taipei": "2026-03-24 08:30",
+      "after_market_close": true,
+      "hours_after_close": 43.01
+    },
+    {
+      "date": "2026-03-23",
+      "first_seen_utc": "2026-03-24T00:21:05+01:00",
+      "first_seen_taipei": "2026-03-24 07:21",
+      "after_market_close": true,
+      "hours_after_close": 17.85
+    },
+    {
+      "date": "2026-03-24",
+      "first_seen_utc": "2026-03-24T00:36:07+01:00",
+      "first_seen_taipei": "2026-03-24 07:36",
+      "after_market_close": false,
+      "hours_after_close": -5.9
+    },
+    {
+      "date": "2026-03-25",
+      "first_seen_utc": "2026-03-25T11:11:33Z",
+      "first_seen_taipei": "2026-03-25 19:11",
+      "after_market_close": true,
+      "hours_after_close": 5.69
+    },
+    {
+      "date": "2026-03-26",
+      "first_seen_utc": "2026-03-26T11:26:55Z",
+      "first_seen_taipei": "2026-03-26 19:26",
+      "after_market_close": true,
+      "hours_after_close": 5.95
+    },
+    {
+      "date": "2026-03-27",
+      "first_seen_utc": "2026-03-27T11:11:43Z",
+      "first_seen_taipei": "2026-03-27 19:11",
+      "after_market_close": true,
+      "hours_after_close": 5.7
+    },
+    {
+      "date": "2026-03-30",
+      "first_seen_utc": "2026-03-30T11:31:42Z",
+      "first_seen_taipei": "2026-03-30 19:31",
+      "after_market_close": true,
+      "hours_after_close": 6.03
+    },
+    {
+      "date": "2026-03-31",
+      "first_seen_utc": "2026-03-31T10:58:50Z",
+      "first_seen_taipei": "2026-03-31 18:58",
+      "after_market_close": true,
+      "hours_after_close": 5.48
+    },
+    {
+      "date": "2026-04-01",
+      "first_seen_utc": "2026-04-01T10:45:18Z",
+      "first_seen_taipei": "2026-04-01 18:45",
+      "after_market_close": true,
+      "hours_after_close": 5.25
+    },
+    {
+      "date": "2026-04-02",
+      "first_seen_utc": "2026-04-02T10:45:19Z",
+      "first_seen_taipei": "2026-04-02 18:45",
+      "after_market_close": true,
+      "hours_after_close": 5.26
+    },
+    {
+      "date": "2026-04-07",
+      "first_seen_utc": "2026-04-07T10:45:25Z",
+      "first_seen_taipei": "2026-04-07 18:45",
+      "after_market_close": true,
+      "hours_after_close": 5.26
+    },
+    {
+      "date": "2026-04-08",
+      "first_seen_utc": "2026-04-08T10:45:18Z",
+      "first_seen_taipei": "2026-04-08 18:45",
+      "after_market_close": true,
+      "hours_after_close": 5.25
+    },
+    {
+      "date": "2026-04-09",
+      "first_seen_utc": "2026-04-09T10:45:18Z",
+      "first_seen_taipei": "2026-04-09 18:45",
+      "after_market_close": true,
+      "hours_after_close": 5.25
+    },
+    {
+      "date": "2026-04-10",
+      "first_seen_utc": "2026-04-10T21:18:18+08:00",
+      "first_seen_taipei": "2026-04-10 21:18",
+      "after_market_close": true,
+      "hours_after_close": 7.8
+    },
+    {
+      "date": "2026-04-13",
+      "first_seen_utc": "2026-04-14T04:35:52Z",
+      "first_seen_taipei": "2026-04-14 12:35",
+      "after_market_close": true,
+      "hours_after_close": 23.1
+    },
+    {
+      "date": "2026-04-14",
+      "first_seen_utc": "2026-04-14T10:45:46Z",
+      "first_seen_taipei": "2026-04-14 18:45",
+      "after_market_close": true,
+      "hours_after_close": 5.26
+    },
+    {
+      "date": "2026-04-15",
+      "first_seen_utc": "2026-04-15T10:19:13Z",
+      "first_seen_taipei": "2026-04-15 18:19",
+      "after_market_close": true,
+      "hours_after_close": 4.82
+    },
+    {
+      "date": "2026-04-16",
+      "first_seen_utc": "2026-04-16T09:45:30Z",
+      "first_seen_taipei": "2026-04-16 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-04-17",
+      "first_seen_utc": "2026-04-17T09:45:35Z",
+      "first_seen_taipei": "2026-04-17 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-04-20",
+      "first_seen_utc": "2026-04-20T09:45:46Z",
+      "first_seen_taipei": "2026-04-20 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-04-21",
+      "first_seen_utc": "2026-04-21T09:45:49Z",
+      "first_seen_taipei": "2026-04-21 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-04-22",
+      "first_seen_utc": "2026-04-22T09:45:39Z",
+      "first_seen_taipei": "2026-04-22 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-04-23",
+      "first_seen_utc": "2026-04-23T09:45:34Z",
+      "first_seen_taipei": "2026-04-23 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-04-24",
+      "first_seen_utc": "2026-04-24T09:45:41Z",
+      "first_seen_taipei": "2026-04-24 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-04-27",
+      "first_seen_utc": "2026-04-27T09:45:38Z",
+      "first_seen_taipei": "2026-04-27 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-04-28",
+      "first_seen_utc": "2026-04-28T09:45:54Z",
+      "first_seen_taipei": "2026-04-28 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-04-29",
+      "first_seen_utc": "2026-04-29T09:45:52Z",
+      "first_seen_taipei": "2026-04-29 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-04-30",
+      "first_seen_utc": "2026-04-30T09:45:43Z",
+      "first_seen_taipei": "2026-04-30 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-05-04",
+      "first_seen_utc": "2026-05-04T09:45:28Z",
+      "first_seen_taipei": "2026-05-04 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-05-05",
+      "first_seen_utc": "2026-05-05T09:45:55Z",
+      "first_seen_taipei": "2026-05-05 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.27
+    },
+    {
+      "date": "2026-05-06",
+      "first_seen_utc": "2026-05-06T09:45:32Z",
+      "first_seen_taipei": "2026-05-06 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-05-07",
+      "first_seen_utc": "2026-05-07T09:45:45Z",
+      "first_seen_taipei": "2026-05-07 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-05-08",
+      "first_seen_utc": "2026-05-08T09:45:34Z",
+      "first_seen_taipei": "2026-05-08 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-05-11",
+      "first_seen_utc": "2026-05-11T09:45:34Z",
+      "first_seen_taipei": "2026-05-11 17:45",
+      "after_market_close": true,
+      "hours_after_close": 4.26
+    },
+    {
+      "date": "2026-05-12",
+      "first_seen_utc": "2026-05-12T09:46:01Z",
+      "first_seen_taipei": "2026-05-12 17:46",
+      "after_market_close": true,
+      "hours_after_close": 4.27
+    },
+    {
+      "date": "2026-05-13",
+      "first_seen_utc": "2026-05-13T10:00:29Z",
+      "first_seen_taipei": "2026-05-13 18:00",
+      "after_market_close": true,
+      "hours_after_close": 4.51
+    },
+    {
+      "date": "2026-05-14",
+      "first_seen_utc": "2026-05-14T09:31:12Z",
+      "first_seen_taipei": "2026-05-14 17:31",
+      "after_market_close": true,
+      "hours_after_close": 4.02
+    },
+    {
+      "date": "2026-05-15",
+      "first_seen_utc": "2026-05-15T09:31:06Z",
+      "first_seen_taipei": "2026-05-15 17:31",
+      "after_market_close": true,
+      "hours_after_close": 4.02
+    },
+    {
+      "date": "2026-05-18",
+      "first_seen_utc": "2026-05-18T09:30:44Z",
+      "first_seen_taipei": "2026-05-18 17:30",
+      "after_market_close": true,
+      "hours_after_close": 4.01
+    },
+    {
+      "date": "2026-05-19",
+      "first_seen_utc": "2026-05-19T09:30:54Z",
+      "first_seen_taipei": "2026-05-19 17:30",
+      "after_market_close": true,
+      "hours_after_close": 4.01
+    },
+    {
+      "date": "2026-05-20",
+      "first_seen_utc": "2026-05-20T09:30:48Z",
+      "first_seen_taipei": "2026-05-20 17:30",
+      "after_market_close": true,
+      "hours_after_close": 4.01
+    },
+    {
+      "date": "2026-05-21",
+      "first_seen_utc": "2026-05-21T09:31:04Z",
+      "first_seen_taipei": "2026-05-21 17:31",
+      "after_market_close": true,
+      "hours_after_close": 4.02
+    },
+    {
+      "date": "2026-05-22",
+      "first_seen_utc": "2026-05-22T09:31:19Z",
+      "first_seen_taipei": "2026-05-22 17:31",
+      "after_market_close": true,
+      "hours_after_close": 4.02
+    },
+    {
+      "date": "2026-05-25",
+      "first_seen_utc": "2026-05-25T09:32:56Z",
+      "first_seen_taipei": "2026-05-25 17:32",
+      "after_market_close": true,
+      "hours_after_close": 4.05
+    },
+    {
+      "date": "2026-05-26",
+      "first_seen_utc": "2026-05-26T09:33:18Z",
+      "first_seen_taipei": "2026-05-26 17:33",
+      "after_market_close": true,
+      "hours_after_close": 4.05
+    },
+    {
+      "date": "2026-05-27",
+      "first_seen_utc": "2026-05-27T09:32:16Z",
+      "first_seen_taipei": "2026-05-27 17:32",
+      "after_market_close": true,
+      "hours_after_close": 4.04
+    },
+    {
+      "date": "2026-05-28",
+      "first_seen_utc": "2026-05-28T09:32:07Z",
+      "first_seen_taipei": "2026-05-28 17:32",
+      "after_market_close": true,
+      "hours_after_close": 4.04
+    },
+    {
+      "date": "2026-05-29",
+      "first_seen_utc": "2026-05-29T09:32:11Z",
+      "first_seen_taipei": "2026-05-29 17:32",
+      "after_market_close": true,
+      "hours_after_close": 4.04
+    },
+    {
+      "date": "2026-06-01",
+      "first_seen_utc": "2026-06-01T09:32:55Z",
+      "first_seen_taipei": "2026-06-01 17:32",
+      "after_market_close": true,
+      "hours_after_close": 4.05
+    },
+    {
+      "date": "2026-06-02",
+      "first_seen_utc": "2026-06-02T09:32:53Z",
+      "first_seen_taipei": "2026-06-02 17:32",
+      "after_market_close": true,
+      "hours_after_close": 4.05
+    },
+    {
+      "date": "2026-06-03",
+      "first_seen_utc": "2026-06-03T09:32:59Z",
+      "first_seen_taipei": "2026-06-03 17:32",
+      "after_market_close": true,
+      "hours_after_close": 4.05
+    },
+    {
+      "date": "2026-06-04",
+      "first_seen_utc": "2026-06-04T09:33:33Z",
+      "first_seen_taipei": "2026-06-04 17:33",
+      "after_market_close": true,
+      "hours_after_close": 4.06
+    },
+    {
+      "date": "2026-06-05",
+      "first_seen_utc": "2026-06-05T09:32:10Z",
+      "first_seen_taipei": "2026-06-05 17:32",
+      "after_market_close": true,
+      "hours_after_close": 4.04
+    },
+    {
+      "date": "2026-06-08",
+      "first_seen_utc": "2026-06-08T09:33:02Z",
+      "first_seen_taipei": "2026-06-08 17:33",
+      "after_market_close": true,
+      "hours_after_close": 4.05
+    },
+    {
+      "date": "2026-06-09",
+      "first_seen_utc": "2026-06-09T09:33:15Z",
+      "first_seen_taipei": "2026-06-09 17:33",
+      "after_market_close": true,
+      "hours_after_close": 4.05
+    },
+    {
+      "date": "2026-06-10",
+      "first_seen_utc": "2026-06-10T09:33:05Z",
+      "first_seen_taipei": "2026-06-10 17:33",
+      "after_market_close": true,
+      "hours_after_close": 4.05
+    },
+    {
+      "date": "2026-06-11",
+      "first_seen_utc": "2026-06-11T09:32:40Z",
+      "first_seen_taipei": "2026-06-11 17:32",
+      "after_market_close": true,
+      "hours_after_close": 4.04
+    },
+    {
+      "date": "2026-06-12",
+      "first_seen_utc": "2026-06-12T09:32:49Z",
+      "first_seen_taipei": "2026-06-12 17:32",
+      "after_market_close": true,
+      "hours_after_close": 4.05
+    },
+    {
+      "date": "2026-06-15",
+      "first_seen_utc": "2026-06-15T09:33:02Z",
+      "first_seen_taipei": "2026-06-15 17:33",
+      "after_market_close": true,
+      "hours_after_close": 4.05
+    },
+    {
+      "date": "2026-06-16",
+      "first_seen_utc": "2026-06-16T09:32:28Z",
+      "first_seen_taipei": "2026-06-16 17:32",
+      "after_market_close": true,
+      "hours_after_close": 4.04
+    },
+    {
+      "date": "2026-06-17",
+      "first_seen_utc": "2026-06-17T09:35:13Z",
+      "first_seen_taipei": "2026-06-17 17:35",
+      "after_market_close": true,
+      "hours_after_close": 4.09
+    },
+    {
+      "date": "2026-06-18",
+      "first_seen_utc": "2026-06-18T10:32:21Z",
+      "first_seen_taipei": "2026-06-18 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-06-22",
+      "first_seen_utc": "2026-06-22T10:32:19Z",
+      "first_seen_taipei": "2026-06-22 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-06-23",
+      "first_seen_utc": "2026-06-23T10:32:24Z",
+      "first_seen_taipei": "2026-06-23 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-06-24",
+      "first_seen_utc": "2026-06-24T10:32:24Z",
+      "first_seen_taipei": "2026-06-24 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-06-25",
+      "first_seen_utc": "2026-06-25T10:32:03Z",
+      "first_seen_taipei": "2026-06-25 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.03
+    },
+    {
+      "date": "2026-06-26",
+      "first_seen_utc": "2026-06-26T10:33:08Z",
+      "first_seen_taipei": "2026-06-26 18:33",
+      "after_market_close": true,
+      "hours_after_close": 5.05
+    },
+    {
+      "date": "2026-06-29",
+      "first_seen_utc": "2026-06-29T10:32:56Z",
+      "first_seen_taipei": "2026-06-29 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.05
+    },
+    {
+      "date": "2026-06-30",
+      "first_seen_utc": "2026-06-30T10:32:32Z",
+      "first_seen_taipei": "2026-06-30 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-07-01",
+      "first_seen_utc": "2026-07-01T10:32:21Z",
+      "first_seen_taipei": "2026-07-01 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-07-02",
+      "first_seen_utc": "2026-07-02T10:32:44Z",
+      "first_seen_taipei": "2026-07-02 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.05
+    },
+    {
+      "date": "2026-07-03",
+      "first_seen_utc": "2026-07-03T10:32:06Z",
+      "first_seen_taipei": "2026-07-03 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-07-06",
+      "first_seen_utc": "2026-07-06T10:32:21Z",
+      "first_seen_taipei": "2026-07-06 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-07-07",
+      "first_seen_utc": "2026-07-07T10:32:32Z",
+      "first_seen_taipei": "2026-07-07 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-07-08",
+      "first_seen_utc": "2026-07-08T10:32:17Z",
+      "first_seen_taipei": "2026-07-08 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-07-09",
+      "first_seen_utc": "2026-07-09T10:32:09Z",
+      "first_seen_taipei": "2026-07-09 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-07-13",
+      "first_seen_utc": "2026-07-13T10:32:45Z",
+      "first_seen_taipei": "2026-07-13 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.05
+    },
+    {
+      "date": "2026-07-14",
+      "first_seen_utc": "2026-07-14T10:32:36Z",
+      "first_seen_taipei": "2026-07-14 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-07-15",
+      "first_seen_utc": "2026-07-15T10:32:43Z",
+      "first_seen_taipei": "2026-07-15 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.05
+    },
+    {
+      "date": "2026-07-16",
+      "first_seen_utc": "2026-07-16T10:31:47Z",
+      "first_seen_taipei": "2026-07-16 18:31",
+      "after_market_close": true,
+      "hours_after_close": 5.03
+    },
+    {
+      "date": "2026-07-17",
+      "first_seen_utc": "2026-07-17T10:32:18Z",
+      "first_seen_taipei": "2026-07-17 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-07-20",
+      "first_seen_utc": "2026-07-20T10:32:20Z",
+      "first_seen_taipei": "2026-07-20 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-07-21",
+      "first_seen_utc": "2026-07-21T10:32:10Z",
+      "first_seen_taipei": "2026-07-21 18:32",
+      "after_market_close": true,
+      "hours_after_close": 5.04
+    },
+    {
+      "date": "2026-07-22",
+      "first_seen_utc": "2026-07-22T10:33:13Z",
+      "first_seen_taipei": "2026-07-22 18:33",
+      "after_market_close": true,
+      "hours_after_close": 5.05
+    },
+    {
+      "date": "2026-07-23",
+      "first_seen_utc": "2026-07-23T10:33:02Z",
+      "first_seen_taipei": "2026-07-23 18:33",
+      "after_market_close": true,
+      "hours_after_close": 5.05
+    },
+    {
+      "date": "2026-07-24",
+      "first_seen_utc": "2026-07-24T10:33:42Z",
+      "first_seen_taipei": "2026-07-24 18:33",
+      "after_market_close": true,
+      "hours_after_close": 5.06
+    },
+    {
+      "date": "2026-07-27",
+      "first_seen_utc": "2026-07-27T10:33:43Z",
+      "first_seen_taipei": "2026-07-27 18:33",
+      "after_market_close": true,
+      "hours_after_close": 5.06
+    },
+    {
+      "date": "2026-07-28",
+      "first_seen_utc": "2026-07-28T10:33:29Z",
+      "first_seen_taipei": "2026-07-28 18:33",
+      "after_market_close": true,
+      "hours_after_close": 5.06
+    },
+    {
+      "date": "2026-07-29",
+      "first_seen_utc": "2026-07-29T10:34:17Z",
+      "first_seen_taipei": "2026-07-29 18:34",
+      "after_market_close": true,
+      "hours_after_close": 5.07
+    },
+    {
+      "date": "2026-07-30",
+      "first_seen_utc": "2026-07-30T10:33:18Z",
+      "first_seen_taipei": "2026-07-30 18:33",
+      "after_market_close": true,
+      "hours_after_close": 5.05
+    },
+    {
+      "date": "2026-07-31",
+      "first_seen_utc": "2026-07-31T10:33:45Z",
+      "first_seen_taipei": "2026-07-31 18:33",
+      "after_market_close": true,
+      "hours_after_close": 5.06
+    },
+    {
+      "date": "2026-08-03",
+      "first_seen_utc": "2026-08-03T10:33:09Z",
+      "first_seen_taipei": "2026-08-03 18:33",
+      "after_market_close": true,
+      "hours_after_close": 5.05
+    },
+    {
+      "date": "2026-08-04",
+      "first_seen_utc": "2026-08-04T10:33:12Z",
+      "first_seen_taipei": "2026-08-04 18:33",
+      "after_market_close": true,
+      "hours_after_close": 5.05
+    },
+    {
+      "date": "2026-08-05",
+      "first_seen_utc": "2026-08-05T10:33:27Z",
+      "first_seen_taipei": "2026-08-05 18:33",
+      "after_market_close": true,
+      "hours_after_close": 5.06
+    }
+  ]
+}
