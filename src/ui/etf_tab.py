@@ -428,7 +428,10 @@ def render_etf_tab(
                               return f"color: {LOSS_COLOR}; font-weight: bold;"
                          return ""
                          
-                    styler = df_ops_show.style.applymap(style_status, subset=[T(lang, "Status", "狀態")])
+                    base_styler = df_ops_show.style
+                    styler = (base_styler.map if hasattr(base_styler, "map") else base_styler.applymap)(
+                        style_status, subset=[T(lang, "Status", "狀態")]
+                    )
                     st.dataframe(styler, width="stretch", height=600)
                 else:
                     st.info(T(lang, "No portfolio changes detected from previous day.", "相較前日無任何持股變動。"))

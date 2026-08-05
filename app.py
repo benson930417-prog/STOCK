@@ -48,6 +48,7 @@ from src.ui.tag_flow_tab import render_tag_flow_tab
 from src.ui.tag_flow_v2_tab import render_tag_flow_v2_tab
 from src.ui.etf_intent_v3_tab import render_etf_intent_v3_tab
 from src.ui.etf_consensus_v4_tab import render_etf_consensus_v4_tab
+from src.ui.etf_consensus_backtest_tab import render_etf_consensus_backtest_tab
 from scripts.master_manual_positions import (
     CASH_LABEL as MANUAL_CASH_LABEL,
     MANUAL_PATH as MANUAL_POSITIONS_PATH,
@@ -1654,11 +1655,11 @@ def make_trade_styler(df_show: pd.DataFrame, profit_color: str, loss_color: str)
     for col in df_show.columns:
         low = str(col).lower()
         if low in ["realized p/l", "total p/l", "month p/l"] or col in ["已實現損益", "總損益", "損益", "月損益", "未實現損益", "未實損益", "今日貢獻"]:
-            styler = styler.applymap(color_pl, subset=[col])
+            styler = (styler.map if hasattr(styler, "map") else styler.applymap)(color_pl, subset=[col])
         if low in ["realized %", "total p/l %", "month %", "p/l %"] or col in ["已實現%", "總損益%", "報酬%", "月報酬%", "損益%", "未實現%", "未實%", "今日漲跌%", "今日漲跌", "權重%"]:
-            styler = styler.applymap(color_pct, subset=[col])
+            styler = (styler.map if hasattr(styler, "map") else styler.applymap)(color_pct, subset=[col])
         if low in ["win rate %", "win rate"] or col in ["勝率%", "勝率"]:
-            styler = styler.applymap(color_winrate, subset=[col])
+            styler = (styler.map if hasattr(styler, "map") else styler.applymap)(color_winrate, subset=[col])
     return styler
 
 
@@ -2318,6 +2319,8 @@ try:
     # Calculate Time-Weighted Return (TWR) for the KPI
     # 1. Get daily pnl
     d_pnl = f_sorted.groupby("date")["realized_pnl"].sum().reset_index()
+    d_pnl["date"] = pd.to_datetime(d_pnl["date"]).astype("datetime64[ns]")
+    daily_base["date"] = pd.to_datetime(daily_base["date"]).astype("datetime64[ns]")
     # 2. Merge with daily_base to get dynamic_base
     d_merge = pd.merge_asof(d_pnl.sort_values("date"), daily_base.sort_values("date"), on="date")
     d_merge["dynamic_base"] = d_merge["dynamic_base"].ffill().bfill().replace(0, 1.0)
@@ -2467,7 +2470,7 @@ try:
     (tab_overview, tab_leader, tab_monthly, tab_trades, tab_etf, tab_passive_etf,
      tab_master_holding, tab_etf_compare, tab_market_pulse, tab_margin_risk,
      tab_tag_flow, tab_tag_flow_v2, tab_etf_intent_v3,
-     tab_etf_consensus_v4) = st.tabs(
+     tab_etf_consensus_v4, tab_etf_consensus_backtest) = st.tabs(
         [
             T(lang, "Overview", "總覽"),
             T(lang, "Leaderboard", "排行"),
@@ -2483,6 +2486,7 @@ try:
             "ETF 動作",
             "ETF 意圖 V3",
             "ETF 共識 V4",
+            "ETF 共識回測",
         ]
     )
 
@@ -2545,6 +2549,7 @@ try:
 
         # Aggregate to Daily Close for a smooth "Pro" curve
         daily_agg = f_sorted.groupby("date", as_index=False)["realized_pnl"].sum()
+        daily_agg["date"] = pd.to_datetime(daily_agg["date"]).astype("datetime64[ns]")
         
         # Merge with daily_base early for TWR calculation
         daily_agg = pd.merge_asof(
@@ -3988,6 +3993,11 @@ try:
 
     with tab_etf_consensus_v4:
         render_etf_consensus_v4_tab(
+            DATA_DIR=DATA_DIR,
+        )
+
+    with tab_etf_consensus_backtest:
+        render_etf_consensus_backtest_tab(
             DATA_DIR=DATA_DIR,
         )
 
