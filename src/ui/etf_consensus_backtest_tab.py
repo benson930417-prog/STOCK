@@ -26,7 +26,20 @@ def render_etf_consensus_backtest_tab(*, DATA_DIR=None, **kwargs):
         st.warning("缺少 V4 共識或元大日 K 回補檔，尚無法回測。")
         return
 
-    dates = list(consensus.get("dates") or [])
+    benchmark = (prices.get("symbols") or {}).get(str(prices.get("benchmark") or "0050")) or []
+    price_dates = {str(bar.get("date")) for bar in benchmark}
+    dates = [day for day in (consensus.get("dates") or []) if day in price_dates]
+    if not dates:
+        st.warning("元大行情快照與 V4 共識沒有共同交易日。")
+        return
+    price_end = max(price_dates)
+    st.caption(
+        f"行情來源：{prices.get('source', 'Yuanta SPARK')}｜"
+        f"快照截止 {price_end}｜{prices.get('successful_symbols', len(prices.get('symbols') or {}))}/"
+        f"{prices.get('symbol_count', len(prices.get('symbols') or {}))} 檔成功"
+    )
+    if str(consensus.get("as_of") or "") > price_end:
+        st.info(f"V4 已更新至 {consensus.get('as_of')}，本次單次行情快照只到 {price_end}；回測暫停在快照截止日。")
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         capital = st.number_input("初始資金", min_value=100_000, max_value=100_000_000, value=1_000_000, step=100_000)
@@ -90,7 +103,7 @@ def render_etf_consensus_backtest_tab(*, DATA_DIR=None, **kwargs):
         audit = audit.rename(columns={"signal_date": "訊號日", "next_trading_date": "下一交易日", "covered_symbols": "有行情", "expected_symbols": "應有", "invalid_ohlc": "OHLC異常", "passed": "通過"})
         st.dataframe(audit, use_container_width=True, hide_index=True)
         if bool(audit["通過"].all()):
-            st.success("最近三個 V4 交易日：日期、102 檔覆蓋及 OHLC 邏輯全部通過。")
+            st.success("快照內最近三個 V4 交易日：日期、102 檔覆蓋及 OHLC 邏輯全部通過。")
         else:
             st.warning("三日稽核有缺值或 OHLC 異常，請先檢查行情回補檔。")
 

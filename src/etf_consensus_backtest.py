@@ -236,7 +236,8 @@ def audit_latest_three_days(consensus: dict[str, Any], price_payload: dict[str, 
     benchmark = bars.get(str(price_payload.get("benchmark") or "0050"), {})
     symbols = sorted(consensus.get("state_history") or {})
     rows: list[dict[str, Any]] = []
-    for signal_day in list(consensus.get("dates") or [])[-3:]:
+    auditable_dates = [day for day in (consensus.get("dates") or []) if day in benchmark]
+    for signal_day in auditable_dates[-3:]:
         present = 0
         invalid = 0
         for symbol in symbols:
