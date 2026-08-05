@@ -110,7 +110,7 @@ def run_backtest(
                     "side": event,
                     "symbol": code,
                     "signal_date": signal_day,
-                    "score": int(row.get("score") or 0),
+                    "score": float(row.get("score") or 0),
                     "tier": str(card.get("decision_tier") or "tracking"),
                     "transition": str(row.get("transition") or ""),
                 }

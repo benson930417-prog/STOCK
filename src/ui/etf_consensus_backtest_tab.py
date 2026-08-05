@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src.etf_consensus_backtest import BacktestConfig, audit_latest_three_days, run_backtest
+from src.etf_981_follow_strategy import build_981_follow_signal
 
 
 def _load(path):
@@ -18,17 +19,34 @@ def _load(path):
 
 
 def render_etf_consensus_backtest_tab(*, DATA_DIR=None, **kwargs):
-    st.subheader("ETF 共識回測")
-    st.caption("V4 買方共識的無偷看回測｜訊號揭露後，最早於下一個可交易日開盤成交。")
+    st.subheader("ETF 策略回測")
+    st.caption("共用無偷看回測工具｜訊號揭露後，最早於下一個可交易日開盤成交。")
     consensus = _load(DATA_DIR / "etf_consensus_v4.json")
+    history_981 = _load(DATA_DIR / "etf_00981A_history.json")
+    tag_payload = _load(DATA_DIR / "stock_tags.json") or {}
     prices = _load(DATA_DIR / "yuanta_v4_daily_k.json")
-    if not consensus or not prices:
-        st.warning("缺少 V4 共識或元大日 K 回補檔，尚無法回測。")
+    if not consensus or not history_981 or not prices:
+        st.warning("缺少 V4、00981A 歷史或元大日 K 回補檔，尚無法回測。")
         return
+
+    strategy_name = st.selectbox(
+        "策略",
+        ["V4 三檔 ETF 買方共識", "00981A 續買特殊版"],
+        help="兩個策略共用同一套資金、成交成本、下一交易日成交與績效計算引擎。",
+    )
+    if strategy_name == "00981A 續買特殊版":
+        signal = build_981_follow_signal(history_981, tag_payload.get("tags") or {})
+        st.info(
+            "特殊版不等共識：00981A 實際股數增加，且扣除基金申購贖回後的主動配置也增加，"
+            "就於下一交易日買進；下一次揭露沒有續買，就於再下一交易日賣出。任何正向可抄動作都算，不設顯著門檻。"
+        )
+    else:
+        signal = consensus
+        st.info("通用版：股票首次進入 V4 三檔 ETF 買方共識時買進，不再維持買方共識時賣出。")
 
     benchmark = (prices.get("symbols") or {}).get(str(prices.get("benchmark") or "0050")) or []
     price_dates = {str(bar.get("date")) for bar in benchmark}
-    dates = [day for day in (consensus.get("dates") or []) if day in price_dates]
+    dates = [day for day in (signal.get("dates") or []) if day in price_dates]
     if not dates:
         st.warning("元大行情快照與 V4 共識沒有共同交易日。")
         return
@@ -38,8 +56,8 @@ def render_etf_consensus_backtest_tab(*, DATA_DIR=None, **kwargs):
         f"快照截止 {price_end}｜{prices.get('successful_symbols', len(prices.get('symbols') or {}))}/"
         f"{prices.get('symbol_count', len(prices.get('symbols') or {}))} 檔成功"
     )
-    if str(consensus.get("as_of") or "") > price_end:
-        st.info(f"V4 已更新至 {consensus.get('as_of')}，本次單次行情快照只到 {price_end}；回測暫停在快照截止日。")
+    if str(signal.get("as_of") or "") > price_end:
+        st.info(f"策略訊號已更新至 {signal.get('as_of')}，本次單次行情快照只到 {price_end}；回測暫停在快照截止日。")
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         capital = st.number_input("初始資金", min_value=100_000, max_value=100_000_000, value=1_000_000, step=100_000)
@@ -63,7 +81,7 @@ def render_etf_consensus_backtest_tab(*, DATA_DIR=None, **kwargs):
         slippage_bps=float(slippage_bps),
     )
     try:
-        result = run_backtest(consensus, prices, config, start_date=start_date, end_date=end_date)
+        result = run_backtest(signal, prices, config, start_date=start_date, end_date=end_date)
     except ValueError as exc:
         st.error(str(exc))
         return
@@ -99,19 +117,20 @@ def render_etf_consensus_backtest_tab(*, DATA_DIR=None, **kwargs):
             st.dataframe(view, use_container_width=True, hide_index=True, column_config={"報酬率 %": st.column_config.NumberColumn(format="%.2f"), "進場價": st.column_config.NumberColumn(format="%.2f"), "出場/市價": st.column_config.NumberColumn(format="%.2f"), "損益": st.column_config.NumberColumn(format="%.0f")})
     with right:
         st.markdown("#### 三交易日資料稽核")
-        audit = pd.DataFrame(audit_latest_three_days(consensus, prices))
+        audit = pd.DataFrame(audit_latest_three_days(signal, prices))
         audit = audit.rename(columns={"signal_date": "訊號日", "next_trading_date": "下一交易日", "covered_symbols": "有行情", "expected_symbols": "應有", "invalid_ohlc": "OHLC異常", "passed": "通過"})
         st.dataframe(audit, use_container_width=True, hide_index=True)
         if bool(audit["通過"].all()):
-            st.success("快照內最近三個 V4 交易日：日期、102 檔覆蓋及 OHLC 邏輯全部通過。")
+            expected = int(audit["應有"].max()) if not audit.empty else 0
+            st.success(f"快照內最近三個策略交易日：日期、{expected} 檔覆蓋及 OHLC 邏輯全部通過。")
         else:
             st.warning("三日稽核有缺值或 OHLC 異常，請先檢查行情回補檔。")
 
     with st.expander("成交與出場規則（重要）"):
         st.markdown(
             """
-- **進場**：股票第一次進入 V4 `buy`，於下一個有該股票行情的交易日開盤買進；同日候選先排核心層，再排共識分數。
-- **出場**：股票不再維持 `buy`（降為觀察、無訊號或賣方共識），於下一個可交易日開盤全數賣出。第一版不放空。
+- **進場**：策略訊號第一次進入 `buy`，於下一個有該股票行情的交易日開盤買進；V4 同日候選先排核心層再排共識分數，981 特殊版依主動配置增加幅度排序。
+- **出場**：策略訊號不再維持 `buy`，於下一個可交易日開盤全數賣出。第一版不放空。
 - **資金**：每格預算＝初始資金 ÷ 最多持股；支援整股零股，不使用融資。已滿倉的訊號不會延後追買。
 - **成本**：買賣手續費可調；賣出證交稅固定 0.3%；買賣皆套用可調滑價。
 - **均價限制**：元大歷史 `GetKLine` 只有 OHLCV，沒有歷史成交均價；當日逐筆也只能查當日。因此回測採下一交易日開盤價，沒有用訊號日收盤偷看。
