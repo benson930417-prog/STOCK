@@ -3233,7 +3233,7 @@
     },
     "2026-08-05": {
       "as_of": "2026-08-05",
-      "generated": "2026-08-05T10:33:15+00:00",
+      "generated": "2026-08-06T10:33:06+00:00",
       "signals": {
         "buying": [
           {
@@ -3545,6 +3545,289 @@
             "etf_label": "981"
           }
         ]
+      }
+    },
+    "2026-08-06": {
+      "as_of": "2026-08-06",
+      "generated": "2026-08-06T10:33:06+00:00",
+      "signals": {
+        "buying": [],
+        "holding": [
+          {
+            "score": 0.7212,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "欣興",
+            "stock_id": "3037",
+            "category": "ABF",
+            "event_type": "conviction_buy",
+            "event_label": "續抱有效",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 4,
+            "sell_days": 0,
+            "lifecycle_label": "今日未動・續抱仍有效",
+            "progress_label": "若無新買，5 個交易日後轉為降溫",
+            "evidence_expires_in": 5,
+            "quiet_sessions_to_downgrade": 5,
+            "qualification_label": "續抱（3檔）",
+            "etf_label": "403・981・991"
+          },
+          {
+            "score": 0.5729,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "聯發科技",
+            "stock_id": "2454",
+            "category": "IC-設計",
+            "event_type": "conviction_buy",
+            "event_label": "持續加碼",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 5,
+            "sell_days": 0,
+            "lifecycle_label": "今日續買・續抱有效",
+            "progress_label": "若無新買，5 個交易日後轉為降溫",
+            "evidence_expires_in": 1,
+            "quiet_sessions_to_downgrade": 5,
+            "qualification_label": "續抱（3檔）",
+            "etf_label": "403・981・991"
+          },
+          {
+            "score": 0.3827,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "信驊科技",
+            "stock_id": "5274",
+            "category": "IC-設計",
+            "event_type": "conviction_buy",
+            "event_label": "持續加碼",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 4,
+            "sell_days": 0,
+            "lifecycle_label": "今日續買・續抱有效",
+            "progress_label": "若無新買，5 個交易日後轉為降溫",
+            "evidence_expires_in": 5,
+            "quiet_sessions_to_downgrade": 5,
+            "qualification_label": "續抱（3檔）",
+            "etf_label": "403・981・991"
+          },
+          {
+            "score": 0.3378,
+            "etfs": [
+              "00981A",
+              "00991A"
+            ],
+            "name": "緯穎科技",
+            "stock_id": "6669",
+            "category": "EMS",
+            "event_type": "conviction_buy",
+            "event_label": "升級續抱",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 4,
+            "sell_days": 1,
+            "lifecycle_label": "今日升級為續抱",
+            "progress_label": "若無新買，5 個交易日後轉為降溫",
+            "evidence_expires_in": 5,
+            "quiet_sessions_to_downgrade": 5,
+            "qualification_label": "續抱（2檔）",
+            "etf_label": "981・991"
+          },
+          {
+            "score": 0.6035,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "健策精密",
+            "stock_id": "3653",
+            "category": "散熱零組件",
+            "event_type": "conviction_buy",
+            "event_label": "續抱有效",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 6,
+            "sell_days": 0,
+            "lifecycle_label": "今日未動・續抱仍有效",
+            "progress_label": "若無新買，6 個交易日後轉為降溫",
+            "evidence_expires_in": 4,
+            "quiet_sessions_to_downgrade": 6,
+            "qualification_label": "續抱（3檔）",
+            "etf_label": "403・981・991"
+          },
+          {
+            "score": 0.4322,
+            "etfs": [
+              "00981A",
+              "00991A"
+            ],
+            "name": "奇鋐科技",
+            "stock_id": "3017",
+            "category": "NB與手機零組件",
+            "event_type": "conviction_buy",
+            "event_label": "續抱有效",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 5,
+            "sell_days": 0,
+            "lifecycle_label": "今日未動・續抱仍有效",
+            "progress_label": "若無新買，6 個交易日後轉為降溫",
+            "evidence_expires_in": 5,
+            "quiet_sessions_to_downgrade": 6,
+            "qualification_label": "續抱（2檔）",
+            "etf_label": "981・991"
+          },
+          {
+            "score": 0.4771,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "貿聯-KY",
+            "stock_id": "3665",
+            "category": "連接元件",
+            "event_type": "conviction_buy",
+            "event_label": "持續加碼",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 10,
+            "sell_days": 0,
+            "lifecycle_label": "今日續買・續抱有效",
+            "progress_label": "若無新買，7 個交易日後轉為降溫",
+            "evidence_expires_in": 1,
+            "quiet_sessions_to_downgrade": 7,
+            "qualification_label": "續抱（3檔）",
+            "etf_label": "403・981・991"
+          },
+          {
+            "score": 0.5053,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "台光電",
+            "stock_id": "2383",
+            "category": "PCB-材料設備",
+            "event_type": "conviction_watch",
+            "event_label": "接近續抱",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 3,
+            "sell_days": 0,
+            "lifecycle_label": "尚未升級・接近門檻",
+            "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日",
+            "evidence_expires_in": 5,
+            "quiet_sessions_to_downgrade": 0,
+            "qualification_label": "升級觀察（3檔）",
+            "etf_label": "403・981・991"
+          },
+          {
+            "score": 0.3704,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "致茂電子",
+            "stock_id": "2360",
+            "category": "儀器設備工程",
+            "event_type": "conviction_watch",
+            "event_label": "接近續抱",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 3,
+            "sell_days": 1,
+            "lifecycle_label": "尚未升級・接近門檻",
+            "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日",
+            "evidence_expires_in": 5,
+            "quiet_sessions_to_downgrade": 0,
+            "qualification_label": "升級觀察（3檔）",
+            "etf_label": "403・981・991"
+          },
+          {
+            "score": 0.3451,
+            "etfs": [
+              "00403A",
+              "00991A"
+            ],
+            "name": "景碩科技",
+            "stock_id": "3189",
+            "category": "ABF",
+            "event_type": "conviction_watch",
+            "event_label": "接近續抱",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 3,
+            "sell_days": 0,
+            "lifecycle_label": "尚未升級・接近門檻",
+            "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日",
+            "evidence_expires_in": 5,
+            "quiet_sessions_to_downgrade": 0,
+            "qualification_label": "升級觀察（2檔）",
+            "etf_label": "403・991"
+          },
+          {
+            "score": 0.2806,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "國巨股份",
+            "stock_id": "2327",
+            "category": "被動元件",
+            "event_type": "conviction_watch",
+            "event_label": "接近續抱",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 3,
+            "sell_days": 0,
+            "lifecycle_label": "尚未升級・接近門檻",
+            "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日",
+            "evidence_expires_in": 5,
+            "quiet_sessions_to_downgrade": 0,
+            "qualification_label": "升級觀察（3檔）",
+            "etf_label": "403・981・991"
+          },
+          {
+            "score": 0.2733,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "日月光投控",
+            "stock_id": "3711",
+            "category": "IC-封測",
+            "event_type": "conviction_watch",
+            "event_label": "接近續抱",
+            "event_date": "2026-08-06",
+            "current_confirmation_date": "2026-08-06",
+            "buy_days": 3,
+            "sell_days": 0,
+            "lifecycle_label": "尚未升級・接近門檻",
+            "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日",
+            "evidence_expires_in": 8,
+            "quiet_sessions_to_downgrade": 0,
+            "qualification_label": "升級觀察（3檔）",
+            "etf_label": "403・981・991"
+          }
+        ],
+        "selling": []
       }
     }
   }
