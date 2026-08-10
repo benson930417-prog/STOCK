@@ -1,9 +1,9 @@
 {
-  "last_checked_utc": "2026-08-09T10:30:39.363709Z",
-  "last_updated_utc": "2026-08-07T10:31:12.253101Z",
-  "latest_date": "2026-08-06",
-  "status": "NO CHANGE",
+  "last_checked_utc": "2026-08-10T10:30:51.422192Z",
+  "last_updated_utc": "2026-08-10T10:30:51.422192Z",
+  "latest_date": "2026-08-07",
+  "status": "NEW DATA FOUND",
   "source": "https://www.cathaysite.com.tw/ETF/detail/EBO?tab=etf3",
   "holdings_count": 30,
-  "payload_changed": false
+  "payload_changed": true
 }
