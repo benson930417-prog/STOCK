@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-10 10:32:58",
+  "generated": "2026-08-11 10:33:02",
   "source": "cmoney.tw/forum/stock",
   "count": 110,
   "coverage": {
@@ -13,35 +13,35 @@
       "group": "電子中游",
       "concepts": [
         {
-          "id": "C50856",
-          "name": "電感",
-          "avg_pct": 9.93
+          "id": "C50853",
+          "name": "被動元件",
+          "avg_pct": 1.64
         },
         {
-          "id": "C50918",
-          "name": "BBU",
-          "avg_pct": 9.74
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 0.7
         },
         {
-          "id": "C50862",
-          "name": "電源供應器",
-          "avg_pct": 9.59
+          "id": "C50410",
+          "name": "人工智慧",
+          "avg_pct": 0.62
         },
         {
-          "id": "C50490",
-          "name": "氫燃料電池",
-          "avg_pct": 9.58
+          "id": "C50881",
+          "name": "元宇宙",
+          "avg_pct": 0.62
         },
         {
-          "id": "C50861",
-          "name": "變壓器",
-          "avg_pct": 9.45
+          "id": "C50926",
+          "name": "AWS",
+          "avg_pct": 0.6
         }
       ],
       "category_id": "C23170",
       "category_full": "電子中游-電源供應器",
       "name": "台達電子",
-      "checked_at_utc": "2026-08-10T10:32:57.868986Z"
+      "checked_at_utc": "2026-08-11T10:33:01.960466Z"
     },
     "6274": {
       "category": "PCB-材料設備",
