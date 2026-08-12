@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated": "2026-08-11 10:33:03",
+  "generated": "2026-08-12 10:33:09",
   "etfs": [
     "00403A",
     "00981A",
@@ -59,7 +59,8 @@
         "2026-08-06",
         "2026-08-07",
         "2026-08-10",
-        "2026-08-11"
+        "2026-08-11",
+        "2026-08-12"
       ],
       "00981A": [
         "2026-03-23",
@@ -158,7 +159,8 @@
         "2026-08-06",
         "2026-08-07",
         "2026-08-10",
-        "2026-08-11"
+        "2026-08-11",
+        "2026-08-12"
       ],
       "00991A": [
         "2026-03-12",
@@ -243,7 +245,8 @@
         "2026-08-06",
         "2026-08-07",
         "2026-08-10",
-        "2026-08-11"
+        "2026-08-11",
+        "2026-08-12"
       ]
     },
     "common": [
@@ -287,9 +290,10 @@
       "2026-08-06",
       "2026-08-07",
       "2026-08-10",
-      "2026-08-11"
+      "2026-08-11",
+      "2026-08-12"
     ],
-    "latest": "2026-08-11"
+    "latest": "2026-08-12"
   },
   "methodology": {
     "signal": "ActiveWeight = delta shares * current weight / current shares",
@@ -2365,11 +2369,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.0446,
           "money_twd": 44581948.0,
@@ -3261,11 +3265,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.0138,
           "money_twd": 13791287.0,
@@ -3772,11 +3776,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.2607,
           "money_twd": 73747662.0,
@@ -4896,11 +4900,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.1002,
           "money_twd": 123552200.0,
@@ -5598,11 +5602,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.1486,
           "money_twd": 192588423.0,
@@ -6468,11 +6472,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.0655,
           "money_twd": 89318754.0,
@@ -7041,11 +7045,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.1286,
           "money_twd": 186190070.0,
@@ -7704,11 +7708,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.1193,
           "money_twd": -36900313.0,
@@ -7772,11 +7776,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.4701,
           "money_twd": 721766658.0,
@@ -8587,11 +8591,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.2407,
           "money_twd": 406498987.0,
@@ -9143,11 +9147,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.1835,
           "money_twd": -57001328.0,
@@ -9287,11 +9291,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.5521,
           "money_twd": 1012054089.0,
@@ -10150,11 +10154,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.0209,
           "money_twd": 40291932.0,
@@ -10659,11 +10663,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.494,
           "money_twd": -161207171.0,
@@ -10877,11 +10881,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.1833,
           "money_twd": 366070224.0,
@@ -13512,11 +13516,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.0781,
           "money_twd": 203517785.0,
@@ -14038,11 +14042,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.4289,
           "money_twd": -173213429.0,
@@ -14289,11 +14293,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.082,
           "money_twd": 221178279.0,
@@ -14898,11 +14902,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.2957,
           "money_twd": 806419391.0,
@@ -15615,11 +15619,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.2064,
           "money_twd": -89792405.0,
@@ -17261,11 +17265,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.3019,
           "money_twd": 587145146.0,
@@ -18680,11 +18684,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.2378,
           "money_twd": 434282055.0,
@@ -20038,11 +20042,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.0748,
           "money_twd": 44300696.0,
@@ -21348,11 +21352,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.4009,
           "money_twd": -257976975.0,
@@ -21647,11 +21651,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.2509,
           "money_twd": -753103087.0,
@@ -21755,11 +21759,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.6387,
           "money_twd": -430013907.0,
@@ -22233,11 +22237,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.4647,
           "money_twd": -311945514.0,
@@ -22638,11 +22642,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.2138,
           "money_twd": -623515807.0,
@@ -22725,11 +22729,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -1.323,
           "money_twd": -894321274.0,
@@ -23223,11 +23227,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.2004,
           "money_twd": -586593180.0,
@@ -25128,11 +25132,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -0.3938,
           "money_twd": -1164813474.0,
@@ -27201,11 +27205,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.0906,
           "money_twd": 239360242.0,
@@ -27437,11 +27441,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.115,
           "money_twd": 189257364.0,
@@ -27956,11 +27960,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.0824,
           "money_twd": 133408537.0,
@@ -28179,11 +28183,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.1122,
           "money_twd": 173798619.0,
@@ -28503,11 +28507,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.0449,
           "money_twd": 112627989.0,
@@ -28748,11 +28752,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.134,
           "money_twd": 220198830.0,
@@ -28990,11 +28994,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.2184,
           "money_twd": 586450222.0,
@@ -29145,11 +29149,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 1.2299,
           "money_twd": 919568103.0,
@@ -29516,11 +29520,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.1113,
           "money_twd": 187980162.0,
@@ -29958,11 +29962,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.2413,
           "money_twd": 188047127.0,
@@ -30119,11 +30123,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.1338,
           "money_twd": 225601692.0,
@@ -30325,11 +30329,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.1208,
           "money_twd": 94026040.0,
@@ -31816,11 +31820,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.0471,
           "money_twd": 114819831.0,
@@ -32527,11 +32531,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.1652,
           "money_twd": 475883715.0,
@@ -32742,11 +32746,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.3793,
           "money_twd": 328098417.0,
@@ -34086,11 +34090,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": -1.718,
           "money_twd": -1478393522.0,
@@ -35078,11 +35082,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.3109,
           "money_twd": 961747122.0,
@@ -35383,11 +35387,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.1109,
           "money_twd": 331275573.0,
@@ -35713,11 +35717,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "被動元件",
-            "Apple",
-            "人工智慧",
-            "元宇宙",
-            "AWS"
+            "車用電子",
+            "電動車",
+            "AWS",
+            "GB200",
+            "PS5"
           ],
           "flow": 0.2188,
           "money_twd": 661261448.0,
@@ -36054,6 +36058,444 @@
         "p95": 1.2475
       },
       "stocks": []
+    },
+    {
+      "etf": "00403A",
+      "date": "2026-08-12",
+      "prev_date": "2026-08-11",
+      "fund_size": 180782494683.0,
+      "baseline": {
+        "n": 188,
+        "median": 0.099,
+        "p80": 0.1848,
+        "p95": 0.3593
+      },
+      "stocks": [
+        {
+          "id": "4958",
+          "name": "臻鼎-KY",
+          "category": "PCB-製造",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "MIH概念股",
+            "鴻海MIH電動車平台",
+            "Apple"
+          ],
+          "flow": -0.65,
+          "money_twd": -1175086215.0,
+          "dshares": -2500000,
+          "position_event": "decrease",
+          "percentile": 98.4,
+          "label": "異常減碼"
+        },
+        {
+          "id": "3008",
+          "name": "大立光",
+          "category": "光學鏡片",
+          "group": "電子中游",
+          "concepts": [
+            "無人機",
+            "小米",
+            "Apple",
+            "CES",
+            "穿載式裝置"
+          ],
+          "flow": 0.5116,
+          "money_twd": 924808112.0,
+          "dshares": 202000,
+          "position_event": "increase",
+          "percentile": 96.8,
+          "label": "異常加碼"
+        },
+        {
+          "id": "5274",
+          "name": "信驊科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "ChatGPT"
+          ],
+          "flow": 0.1441,
+          "money_twd": 260427929.0,
+          "dshares": 15000,
+          "position_event": "increase",
+          "percentile": 72.3,
+          "label": "加碼"
+        },
+        {
+          "id": "7769",
+          "name": "鴻勁精密",
+          "category": "IC-半導體設備",
+          "group": "電子上游",
+          "concepts": [],
+          "flow": -0.1265,
+          "money_twd": -228759388.0,
+          "dshares": -35000,
+          "position_event": "decrease",
+          "percentile": 66.0,
+          "label": "減碼"
+        },
+        {
+          "id": "2383",
+          "name": "台光電子",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "軌道衛星",
+            "銅箔基板",
+            "低軌衛星",
+            "GB300",
+            "美元升值"
+          ],
+          "flow": 0.1109,
+          "money_twd": 200464014.0,
+          "dshares": 35000,
+          "position_event": "increase",
+          "percentile": 58.5,
+          "label": "加碼"
+        },
+        {
+          "id": "3017",
+          "name": "奇鋐科技",
+          "category": "NB與手機零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "GB300",
+            "美元升值",
+            "AI PC",
+            "AWS"
+          ],
+          "flow": 0.1047,
+          "money_twd": 189217297.0,
+          "dshares": 65000,
+          "position_event": "increase",
+          "percentile": 53.2,
+          "label": "加碼"
+        },
+        {
+          "id": "1303",
+          "name": "南亞塑膠",
+          "category": "塑膠",
+          "group": "傳產",
+          "concepts": [
+            "醫療器材耗材",
+            "一帶一路"
+          ],
+          "flow": 0.1043,
+          "money_twd": 188530316.0,
+          "dshares": 1000000,
+          "position_event": "increase",
+          "percentile": 52.7,
+          "label": "加碼"
+        },
+        {
+          "id": "8358",
+          "name": "金居",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "電動車",
+            "銅箔",
+            "AMD"
+          ],
+          "flow": -0.0961,
+          "money_twd": -173792238.0,
+          "dshares": -412000,
+          "position_event": "decrease",
+          "percentile": 47.9,
+          "label": "減碼"
+        },
+        {
+          "id": "6223",
+          "name": "旺矽科技",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "TPU",
+            "CoWoS"
+          ],
+          "flow": 0.0365,
+          "money_twd": 66002666.0,
+          "dshares": 10000,
+          "position_event": "increase",
+          "percentile": 18.6,
+          "label": "加碼"
+        },
+        {
+          "id": "8046",
+          "name": "南亞電路",
+          "category": "ABF",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "玻璃基板",
+            "車用電子",
+            "ADAS"
+          ],
+          "flow": 0.0316,
+          "money_twd": 57105111.0,
+          "dshares": 45000,
+          "position_event": "increase",
+          "percentile": 18.1,
+          "label": "加碼"
+        },
+        {
+          "id": "6415",
+          "name": "矽力*-KY",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "CES",
+            "ChatGPT"
+          ],
+          "flow": -0.0133,
+          "money_twd": -24104333.0,
+          "dshares": -50000,
+          "position_event": "decrease",
+          "percentile": 6.9,
+          "label": "減碼"
+        },
+        {
+          "id": "1717",
+          "name": "長興",
+          "category": "化學工業",
+          "group": "傳產",
+          "concepts": [
+            "3DIC聯盟",
+            "玻璃基板",
+            "穿載式裝置",
+            "太陽能",
+            "特用化學"
+          ],
+          "flow": 0.0088,
+          "money_twd": 15908860.0,
+          "dshares": 200000,
+          "position_event": "increase",
+          "percentile": 3.7,
+          "label": "加碼"
+        }
+      ]
+    },
+    {
+      "etf": "00981A",
+      "date": "2026-08-12",
+      "prev_date": "2026-08-11",
+      "fund_size": 307066831750.0,
+      "baseline": {
+        "n": 110,
+        "median": 0.09,
+        "p80": 0.1887,
+        "p95": 0.3988
+      },
+      "stocks": [
+        {
+          "id": "5274",
+          "name": "信驊科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "ChatGPT"
+          ],
+          "flow": 0.1695,
+          "money_twd": 520538123.0,
+          "dshares": 30000,
+          "position_event": "increase",
+          "percentile": 78.2,
+          "label": "加碼"
+        },
+        {
+          "id": "6510",
+          "name": "中華精測",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "TPU",
+            "ChatGPT"
+          ],
+          "flow": 0.1077,
+          "money_twd": 330707123.0,
+          "dshares": 117000,
+          "position_event": "increase",
+          "percentile": 58.2,
+          "label": "加碼"
+        },
+        {
+          "id": "3017",
+          "name": "奇鋐科技",
+          "category": "NB與手機零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "GB300",
+            "美元升值",
+            "AI PC",
+            "AWS"
+          ],
+          "flow": 0.0938,
+          "money_twd": 288023484.0,
+          "dshares": 99000,
+          "position_event": "increase",
+          "percentile": 54.5,
+          "label": "加碼"
+        },
+        {
+          "id": "8046",
+          "name": "南亞電路",
+          "category": "ABF",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "玻璃基板",
+            "車用電子",
+            "ADAS"
+          ],
+          "flow": 0.0474,
+          "money_twd": 145517295.0,
+          "dshares": 115000,
+          "position_event": "increase",
+          "percentile": 33.6,
+          "label": "加碼"
+        },
+        {
+          "id": "4979",
+          "name": "華星光",
+          "category": "通訊設備",
+          "group": "電子中游",
+          "concepts": [
+            "光通訊",
+            "ChatGPT"
+          ],
+          "flow": 0.0454,
+          "money_twd": 139345509.0,
+          "dshares": 250000,
+          "position_event": "increase",
+          "percentile": 30.9,
+          "label": "加碼"
+        },
+        {
+          "id": "2360",
+          "name": "致茂電子",
+          "category": "儀器設備工程",
+          "group": "電子中游",
+          "concepts": [
+            "無人機",
+            "MIH概念股",
+            "Tesla",
+            "軍工",
+            "電動車"
+          ],
+          "flow": 0.0354,
+          "money_twd": 108608847.0,
+          "dshares": 50000,
+          "position_event": "increase",
+          "percentile": 20.9,
+          "label": "加碼"
+        },
+        {
+          "id": "8996",
+          "name": "高力熱處",
+          "category": "電機",
+          "group": "傳產",
+          "concepts": [
+            "氫燃料電池",
+            "GB300",
+            "GB200"
+          ],
+          "flow": 0.0348,
+          "money_twd": 106822501.0,
+          "dshares": 90000,
+          "position_event": "increase",
+          "percentile": 20.9,
+          "label": "加碼"
+        },
+        {
+          "id": "6805",
+          "name": "富世達股",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "GB300"
+          ],
+          "flow": 0.0298,
+          "money_twd": 91509983.0,
+          "dshares": 50000,
+          "position_event": "increase",
+          "percentile": 14.5,
+          "label": "加碼"
+        }
+      ]
+    },
+    {
+      "etf": "00991A",
+      "date": "2026-08-12",
+      "prev_date": "2026-08-11",
+      "fund_size": 90728994922.0,
+      "baseline": {
+        "n": 141,
+        "median": 0.2382,
+        "p80": 0.4557,
+        "p95": 1.255
+      },
+      "stocks": [
+        {
+          "id": "3665",
+          "name": "貿聯-KY",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "MIH概念股",
+            "Tesla",
+            "太陽能",
+            "GB300",
+            "車用電子"
+          ],
+          "flow": -0.898,
+          "money_twd": -814746374.0,
+          "dshares": -449000,
+          "position_event": "decrease",
+          "percentile": 90.1,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "3081",
+          "name": "聯亞光電",
+          "category": "半導體元件",
+          "group": "電子上游",
+          "concepts": [
+            "GB300",
+            "5G",
+            "光通訊",
+            "TPU",
+            "元宇宙"
+          ],
+          "flow": 0.625,
+          "money_twd": 567056218.0,
+          "dshares": 208000,
+          "position_event": "new_position",
+          "percentile": 87.2,
+          "label": "明顯加碼"
+        },
+        {
+          "id": "2885",
+          "name": "元大金融",
+          "category": "金控",
+          "group": "金融",
+          "concepts": [
+            "第三方支付"
+          ],
+          "flow": -0.0413,
+          "money_twd": -37501318.0,
+          "dshares": -372000,
+          "position_event": "decrease",
+          "percentile": 12.8,
+          "label": "減碼"
+        }
+      ]
     }
   ]
 }
