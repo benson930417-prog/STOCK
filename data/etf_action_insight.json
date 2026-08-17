@@ -1,508 +1,12 @@
 {
   "schema_version": 2,
-  "generated": "2026-08-14T11:22:27+00:00",
-  "source_generated": "2026-08-14 11:22:22",
-  "as_of": "2026-08-14",
-  "line_text": "主動 ETF 動作\n━━━━━━━━━━━━━━\n截至：8月14日\n判定規則\n逐股10日門檻\n一般：顯著＋2/3同向\n1/3：只留建倉・出清\n1/3：或反轉連續 2 日\n續抱：10日4買＋2ETF\n顯示升級／降溫距離\n\n🔴 買進觀察｜0 檔\n本日無新買進訊號\n\n━━━━━━━━━━━━━━\n🟠 續抱參考｜7 檔\n01. 聯發科技｜2454\n  類股：IC-設計\n  動作：升級續抱\n  ETF：403・981・991\n  判定：續抱（3檔）\n  狀態：\n    今日升級為續抱\n  進度：\n    若無新買\n    1 日後降溫\n  依據：\n    10日4買・0賣\n    今日仍顯著加碼\n02. 奇鋐科技｜3017\n  類股：\n    NB與手機零組件\n  動作：續抱有效\n  ETF：403・981・991\n  判定：續抱（3檔）\n  狀態：\n    今未動\n    續抱有效\n  進度：\n    若無新買\n    1 日後降溫\n  依據：\n    10日4買・0賣\n    今日無顯著動作\n03. 台光電｜2383\n  類股：PCB-材料設備\n  動作：持續加碼\n  ETF：403・981・991\n  判定：續抱（3檔）\n  狀態：\n    今續買\n    續抱有效\n  進度：\n    若無新買\n    2 日後降溫\n  依據：\n    10日6買・0賣\n    今日仍顯著加碼\n04. 國巨股份｜2327\n  類股：被動元件\n  動作：續抱有效\n  ETF：403・991\n  判定：續抱（2檔）\n  狀態：\n    今未動\n    續抱有效\n  進度：\n    若無新買\n    2 日後降溫\n  依據：\n    10日4買・0賣\n    今日無顯著動作\n05. 信驊科技｜5274\n  類股：IC-設計\n  動作：續抱有效\n  ETF：403・981・991\n  判定：續抱（3檔）\n  狀態：\n    今未動\n    續抱有效\n  進度：\n    若無新買\n    2 日後降溫\n  依據：\n    10日5買・0賣\n    今日無顯著動作\n06. 欣興｜3037\n  類股：ABF\n  動作：接近續抱\n  ETF：403・981・991\n  判定：\n    升級觀察（3檔）\n  狀態：\n    待升級\n    近門檻\n  進度：\n    恢復強勢尚缺\n    再 1 次顯著買\n  依據：\n    10日3買・0賣\n    恢復強勢尚缺\n    再 1 次顯著買\n07. 健策精密｜3653\n  類股：散熱零組件\n  動作：續抱降溫\n  ETF：403・991\n  判定：\n    降溫（2檔有效）\n  狀態：\n    加碼降溫\n    尚無賣出\n  進度：\n    恢復強勢尚缺\n    再 1 次顯著買\n    淨買尚差 +0.14%\n  依據：\n    10日3買・2賣\n    今日無顯著動作\n\n━━━━━━━━━━━━━━\n🟢 賣出警示｜1 檔\n01. 日月光投控｜3711\n  類股：IC-封測\n  動作：買後轉賣\n  ETF：991\n  判定：1/3 反轉2日\n  狀態：\n    續抱→賣出警示\n  依據：\n    先前明顯加碼\n    現在轉為賣出",
+  "generated": "2026-08-17T11:21:27+00:00",
+  "source_generated": "2026-08-17 11:21:23",
+  "as_of": "2026-08-17",
+  "line_text": "主動 ETF 動作\n━━━━━━━━━━━━━━\n截至：8月17日\n判定規則\n逐股10日門檻\n一般：顯著＋2/3同向\n1/3：只留建倉・出清\n1/3：或反轉連續 2 日\n續抱：10日4買＋2ETF\n顯示升級／降溫距離\n\n🔴 買進觀察｜0 檔\n本日無新買進訊號\n\n━━━━━━━━━━━━━━\n🟠 續抱參考｜6 檔\n01. 國巨股份｜2327\n  類股：被動元件\n  動作：續抱有效\n  ETF：403・991\n  判定：續抱（2檔）\n  狀態：\n    今未動\n    續抱有效\n  進度：\n    若無新買\n    1 日後降溫\n  依據：\n    10日4買・0賣\n    今日無顯著動作\n02. 台光電｜2383\n  類股：PCB-材料設備\n  動作：續抱有效\n  ETF：403・981・991\n  判定：續抱（3檔）\n  狀態：\n    今未動\n    續抱有效\n  進度：\n    若無新買\n    1 日後降溫\n  依據：\n    10日5買・0賣\n    今日無顯著動作\n03. 信驊科技｜5274\n  類股：IC-設計\n  動作：續抱有效\n  ETF：403・981・991\n  判定：續抱（3檔）\n  狀態：\n    今未動\n    續抱有效\n  進度：\n    若無新買\n    1 日後降溫\n  依據：\n    10日4買・0賣\n    今日無顯著動作\n04. 南亞電路｜8046\n  類股：ABF\n  動作：接近續抱\n  ETF：403・981\n  判定：\n    升級觀察（2檔）\n  狀態：\n    待升級\n    近門檻\n  進度：\n    恢復強勢尚缺\n    再 1 次顯著買\n  依據：\n    10日3買・0賣\n    恢復強勢尚缺\n    再 1 次顯著買\n05. 聯發科技｜2454\n  類股：IC-設計\n  動作：續抱降溫\n  ETF：403・981・991\n  判定：\n    降溫（3檔有效）\n  狀態：\n    加碼降溫\n    尚無賣出\n  進度：\n    恢復強勢尚缺\n    再 1 次顯著買\n  依據：\n    10日3買・0賣\n    尚無顯著賣出\n06. 奇鋐科技｜3017\n  類股：\n    NB與手機零組件\n  動作：續抱降溫\n  ETF：403・981・991\n  判定：\n    降溫（3檔有效）\n  狀態：\n    加碼降溫\n    尚無賣出\n  進度：\n    恢復強勢尚缺\n    再 1 次顯著買\n    淨買尚差 +0.03%\n  依據：\n    10日3買・0賣\n    尚無顯著賣出\n\n━━━━━━━━━━━━━━\n🟢 賣出警示｜1 檔\n01. 日月光投控｜3711\n  類股：IC-封測\n  動作：買後轉賣\n  ETF：991\n  判定：1/3 反轉2日\n  狀態：昨日觸發\n  依據：\n    先前明顯加碼\n    現在轉為賣出",
   "signals": {
     "buying": [],
     "holding": [
-      {
-        "direction": 1,
-        "score": 0.4156,
-        "breadth": 3,
-        "etfs": [
-          "00403A",
-          "00981A",
-          "00991A"
-        ],
-        "new_etfs": [],
-        "exit_etfs": [],
-        "structural": false,
-        "trial_position": false,
-        "name": "聯發科技",
-        "stock_id": "2454",
-        "category": "IC-設計",
-        "threshold_details": [
-          {
-            "etf": "00403A",
-            "flow": 0.1639,
-            "threshold": 0.1177,
-            "typical_flow_10d": 0.1962,
-            "source": "same_direction",
-            "structural_exception": false
-          }
-        ],
-        "event_type": "conviction_buy",
-        "event_label": "升級續抱",
-        "event_date": "2026-08-14",
-        "current_confirmation_date": "2026-08-14",
-        "age_sessions": 0,
-        "buy_days": 4,
-        "sell_days": 0,
-        "reason": "近 10 日有 4 日顯著買、0 日顯著賣",
-        "confirmation_label": "403、981、991 都曾參與",
-        "confirmation": "conviction",
-        "lifecycle_label": "今日升級為續抱",
-        "latest_action_label": "今日仍顯著加碼",
-        "progress_label": "若無新買，1 個交易日後轉為降溫",
-        "evidence_expires_in": 1,
-        "buy_evidence_dates": [
-          "2026-08-03",
-          "2026-08-04",
-          "2026-08-06",
-          "2026-08-14"
-        ],
-        "sell_evidence_dates": [],
-        "latest_buy_evidence_date": "2026-08-14",
-        "quiet_sessions_to_downgrade": 1,
-        "conviction_qualified": true,
-        "previous_conviction_qualified": false,
-        "qualification_kind": "continuation",
-        "qualification_label": "續抱（3檔）",
-        "etf_label": "403・981・991",
-        "evidence_parts": [
-          "10日4買・0賣",
-          "今日仍顯著加碼"
-        ],
-        "significance_label": "各 ETF 均高於此股近10日慣常動作門檻",
-        "flow_trend_20d": [
-          {
-            "date": "2026-07-20",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-21",
-            "flow": 0.067,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-22",
-            "flow": 0.1139,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-23",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-24",
-            "flow": 0.4058,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-27",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-28",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-29",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-30",
-            "flow": 0.2297,
-            "breadth": 2
-          },
-          {
-            "date": "2026-07-31",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-03",
-            "flow": 0.1627,
-            "breadth": 2
-          },
-          {
-            "date": "2026-08-04",
-            "flow": 0.7242,
-            "breadth": 3
-          },
-          {
-            "date": "2026-08-05",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-06",
-            "flow": 0.1962,
-            "breadth": 1
-          },
-          {
-            "date": "2026-08-07",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-10",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-11",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-12",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-13",
-            "flow": 0.0927,
-            "breadth": 1
-          },
-          {
-            "date": "2026-08-14",
-            "flow": 0.1639,
-            "breadth": 1
-          }
-        ]
-      },
-      {
-        "direction": 1,
-        "score": 0.2997,
-        "breadth": 3,
-        "etfs": [
-          "00403A",
-          "00981A",
-          "00991A"
-        ],
-        "new_etfs": [],
-        "exit_etfs": [],
-        "structural": false,
-        "trial_position": false,
-        "name": "奇鋐科技",
-        "stock_id": "3017",
-        "category": "NB與手機零組件",
-        "threshold_details": [
-          {
-            "etf": "00403A",
-            "flow": 0.1047,
-            "threshold": 0.0347,
-            "typical_flow_10d": 0.099,
-            "source": "etf_fallback",
-            "structural_exception": false
-          },
-          {
-            "etf": "00981A",
-            "flow": 0.0938,
-            "threshold": 0.0686,
-            "typical_flow_10d": 0.1143,
-            "source": "same_direction",
-            "structural_exception": false
-          }
-        ],
-        "event_type": "conviction_buy",
-        "event_label": "續抱有效",
-        "event_date": "2026-08-14",
-        "current_confirmation_date": "2026-08-14",
-        "age_sessions": 0,
-        "buy_days": 4,
-        "sell_days": 0,
-        "reason": "近 10 日有 4 日顯著買、0 日顯著賣",
-        "confirmation_label": "403、981、991 都曾參與",
-        "confirmation": "conviction",
-        "lifecycle_label": "今日未動・續抱仍有效",
-        "latest_action_label": "今日沒有新的顯著動作",
-        "progress_label": "若無新買，1 個交易日後轉為降溫",
-        "evidence_expires_in": 1,
-        "buy_evidence_dates": [
-          "2026-08-03",
-          "2026-08-04",
-          "2026-08-05",
-          "2026-08-12"
-        ],
-        "sell_evidence_dates": [],
-        "latest_buy_evidence_date": "2026-08-12",
-        "quiet_sessions_to_downgrade": 1,
-        "conviction_qualified": true,
-        "previous_conviction_qualified": true,
-        "qualification_kind": "continuation",
-        "qualification_label": "續抱（3檔）",
-        "etf_label": "403・981・991",
-        "evidence_parts": [
-          "10日4買・0賣",
-          "今日沒有新的顯著動作"
-        ],
-        "significance_label": "均通過逐 ETF 門檻；歷史不足者採 ETF 基準",
-        "flow_trend_20d": [
-          {
-            "date": "2026-07-20",
-            "flow": 0.2936,
-            "breadth": 2
-          },
-          {
-            "date": "2026-07-21",
-            "flow": 0.2969,
-            "breadth": 2
-          },
-          {
-            "date": "2026-07-22",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-23",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-24",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-27",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-28",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-29",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-30",
-            "flow": 0.1911,
-            "breadth": 2
-          },
-          {
-            "date": "2026-07-31",
-            "flow": 0.405,
-            "breadth": 2
-          },
-          {
-            "date": "2026-08-03",
-            "flow": 0.3955,
-            "breadth": 2
-          },
-          {
-            "date": "2026-08-04",
-            "flow": 0.1511,
-            "breadth": 1
-          },
-          {
-            "date": "2026-08-05",
-            "flow": 0.1538,
-            "breadth": 1
-          },
-          {
-            "date": "2026-08-06",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-07",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-10",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-11",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-12",
-            "flow": 0.1985,
-            "breadth": 2
-          },
-          {
-            "date": "2026-08-13",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-14",
-            "flow": 0,
-            "breadth": 0
-          }
-        ]
-      },
-      {
-        "direction": 1,
-        "score": 0.5664,
-        "breadth": 3,
-        "etfs": [
-          "00403A",
-          "00981A",
-          "00991A"
-        ],
-        "new_etfs": [],
-        "exit_etfs": [],
-        "structural": false,
-        "trial_position": false,
-        "name": "台光電",
-        "stock_id": "2383",
-        "category": "PCB-材料設備",
-        "threshold_details": [
-          {
-            "etf": "00403A",
-            "flow": 0.1888,
-            "threshold": 0.0952,
-            "typical_flow_10d": 0.1587,
-            "source": "same_direction",
-            "structural_exception": false
-          }
-        ],
-        "event_type": "conviction_buy",
-        "event_label": "持續加碼",
-        "event_date": "2026-08-14",
-        "current_confirmation_date": "2026-08-14",
-        "age_sessions": 0,
-        "buy_days": 6,
-        "sell_days": 0,
-        "reason": "近 10 日有 6 日顯著買、0 日顯著賣",
-        "confirmation_label": "403、981、991 都曾參與",
-        "confirmation": "conviction",
-        "lifecycle_label": "今日續買・續抱有效",
-        "latest_action_label": "今日仍顯著加碼",
-        "progress_label": "若無新買，2 個交易日後轉為降溫",
-        "evidence_expires_in": 1,
-        "buy_evidence_dates": [
-          "2026-08-03",
-          "2026-08-04",
-          "2026-08-10",
-          "2026-08-11",
-          "2026-08-12",
-          "2026-08-14"
-        ],
-        "sell_evidence_dates": [],
-        "latest_buy_evidence_date": "2026-08-14",
-        "quiet_sessions_to_downgrade": 2,
-        "conviction_qualified": true,
-        "previous_conviction_qualified": true,
-        "qualification_kind": "continuation",
-        "qualification_label": "續抱（3檔）",
-        "etf_label": "403・981・991",
-        "evidence_parts": [
-          "10日6買・0賣",
-          "今日仍顯著加碼"
-        ],
-        "significance_label": "各 ETF 均高於此股近10日慣常動作門檻",
-        "flow_trend_20d": [
-          {
-            "date": "2026-07-20",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-21",
-            "flow": 0.6754,
-            "breadth": 2
-          },
-          {
-            "date": "2026-07-22",
-            "flow": 0.2126,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-23",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-24",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-27",
-            "flow": 0.0885,
-            "breadth": 1
-          },
-          {
-            "date": "2026-07-28",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-29",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-07-30",
-            "flow": 0.4338,
-            "breadth": 3
-          },
-          {
-            "date": "2026-07-31",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-03",
-            "flow": 0.67,
-            "breadth": 3
-          },
-          {
-            "date": "2026-08-04",
-            "flow": 0.4123,
-            "breadth": 2
-          },
-          {
-            "date": "2026-08-05",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-06",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-07",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-10",
-            "flow": 0.1632,
-            "breadth": 1
-          },
-          {
-            "date": "2026-08-11",
-            "flow": 0.1541,
-            "breadth": 1
-          },
-          {
-            "date": "2026-08-12",
-            "flow": 0.1109,
-            "breadth": 1
-          },
-          {
-            "date": "2026-08-13",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
-            "date": "2026-08-14",
-            "flow": 0.1888,
-            "breadth": 1
-          }
-        ]
-      },
       {
         "direction": 1,
         "score": 0.4617,
@@ -530,8 +34,8 @@
         ],
         "event_type": "conviction_buy",
         "event_label": "續抱有效",
-        "event_date": "2026-08-14",
-        "current_confirmation_date": "2026-08-14",
+        "event_date": "2026-08-17",
+        "current_confirmation_date": "2026-08-17",
         "age_sessions": 0,
         "buy_days": 4,
         "sell_days": 0,
@@ -540,8 +44,8 @@
         "confirmation": "conviction",
         "lifecycle_label": "今日未動・續抱仍有效",
         "latest_action_label": "今日沒有新的顯著動作",
-        "progress_label": "若無新買，2 個交易日後轉為降溫",
-        "evidence_expires_in": 2,
+        "progress_label": "若無新買，1 個交易日後轉為降溫",
+        "evidence_expires_in": 1,
         "buy_evidence_dates": [
           "2026-08-04",
           "2026-08-05",
@@ -550,7 +54,7 @@
         ],
         "sell_evidence_dates": [],
         "latest_buy_evidence_date": "2026-08-13",
-        "quiet_sessions_to_downgrade": 2,
+        "quiet_sessions_to_downgrade": 1,
         "conviction_qualified": true,
         "previous_conviction_qualified": true,
         "qualification_kind": "continuation",
@@ -562,11 +66,6 @@
         ],
         "significance_label": "各 ETF 均高於此股近10日慣常動作門檻",
         "flow_trend_20d": [
-          {
-            "date": "2026-07-20",
-            "flow": -0.405,
-            "breadth": 1
-          },
           {
             "date": "2026-07-21",
             "flow": 0,
@@ -661,12 +160,180 @@
             "date": "2026-08-14",
             "flow": 0,
             "breadth": 0
+          },
+          {
+            "date": "2026-08-17",
+            "flow": 0,
+            "breadth": 0
           }
         ]
       },
       {
         "direction": 1,
-        "score": 0.365,
+        "score": 0.3431,
+        "breadth": 3,
+        "etfs": [
+          "00403A",
+          "00981A",
+          "00991A"
+        ],
+        "new_etfs": [],
+        "exit_etfs": [],
+        "structural": false,
+        "trial_position": false,
+        "name": "台光電",
+        "stock_id": "2383",
+        "category": "PCB-材料設備",
+        "threshold_details": [
+          {
+            "etf": "00403A",
+            "flow": 0.1888,
+            "threshold": 0.0952,
+            "typical_flow_10d": 0.1587,
+            "source": "same_direction",
+            "structural_exception": false
+          }
+        ],
+        "event_type": "conviction_buy",
+        "event_label": "續抱有效",
+        "event_date": "2026-08-17",
+        "current_confirmation_date": "2026-08-17",
+        "age_sessions": 0,
+        "buy_days": 5,
+        "sell_days": 0,
+        "reason": "近 10 日有 5 日顯著買、0 日顯著賣",
+        "confirmation_label": "403、981、991 都曾參與",
+        "confirmation": "conviction",
+        "lifecycle_label": "今日未動・續抱仍有效",
+        "latest_action_label": "今日沒有新的顯著動作",
+        "progress_label": "若無新買，1 個交易日後轉為降溫",
+        "evidence_expires_in": 1,
+        "buy_evidence_dates": [
+          "2026-08-04",
+          "2026-08-10",
+          "2026-08-11",
+          "2026-08-12",
+          "2026-08-14"
+        ],
+        "sell_evidence_dates": [],
+        "latest_buy_evidence_date": "2026-08-14",
+        "quiet_sessions_to_downgrade": 1,
+        "conviction_qualified": true,
+        "previous_conviction_qualified": true,
+        "qualification_kind": "continuation",
+        "qualification_label": "續抱（3檔）",
+        "etf_label": "403・981・991",
+        "evidence_parts": [
+          "10日5買・0賣",
+          "今日沒有新的顯著動作"
+        ],
+        "significance_label": "各 ETF 均高於此股近10日慣常動作門檻",
+        "flow_trend_20d": [
+          {
+            "date": "2026-07-21",
+            "flow": 0.6754,
+            "breadth": 2
+          },
+          {
+            "date": "2026-07-22",
+            "flow": 0.2126,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-23",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-24",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-27",
+            "flow": 0.0885,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-28",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-29",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-30",
+            "flow": 0.4338,
+            "breadth": 3
+          },
+          {
+            "date": "2026-07-31",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-03",
+            "flow": 0.67,
+            "breadth": 3
+          },
+          {
+            "date": "2026-08-04",
+            "flow": 0.4123,
+            "breadth": 2
+          },
+          {
+            "date": "2026-08-05",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-06",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-07",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-10",
+            "flow": 0.1632,
+            "breadth": 1
+          },
+          {
+            "date": "2026-08-11",
+            "flow": 0.1541,
+            "breadth": 1
+          },
+          {
+            "date": "2026-08-12",
+            "flow": 0.1109,
+            "breadth": 1
+          },
+          {
+            "date": "2026-08-13",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-14",
+            "flow": 0.1888,
+            "breadth": 1
+          },
+          {
+            "date": "2026-08-17",
+            "flow": 0,
+            "breadth": 0
+          }
+        ]
+      },
+      {
+        "direction": 1,
+        "score": 0.3217,
         "breadth": 3,
         "etfs": [
           "00403A",
@@ -700,20 +367,19 @@
         ],
         "event_type": "conviction_buy",
         "event_label": "續抱有效",
-        "event_date": "2026-08-14",
-        "current_confirmation_date": "2026-08-14",
+        "event_date": "2026-08-17",
+        "current_confirmation_date": "2026-08-17",
         "age_sessions": 0,
-        "buy_days": 5,
+        "buy_days": 4,
         "sell_days": 0,
-        "reason": "近 10 日有 5 日顯著買、0 日顯著賣",
+        "reason": "近 10 日有 4 日顯著買、0 日顯著賣",
         "confirmation_label": "403、981、991 都曾參與",
         "confirmation": "conviction",
         "lifecycle_label": "今日未動・續抱仍有效",
         "latest_action_label": "今日沒有新的顯著動作",
-        "progress_label": "若無新買，2 個交易日後轉為降溫",
+        "progress_label": "若無新買，1 個交易日後轉為降溫",
         "evidence_expires_in": 1,
         "buy_evidence_dates": [
-          "2026-08-03",
           "2026-08-04",
           "2026-08-06",
           "2026-08-10",
@@ -721,23 +387,18 @@
         ],
         "sell_evidence_dates": [],
         "latest_buy_evidence_date": "2026-08-12",
-        "quiet_sessions_to_downgrade": 2,
+        "quiet_sessions_to_downgrade": 1,
         "conviction_qualified": true,
         "previous_conviction_qualified": true,
         "qualification_kind": "continuation",
         "qualification_label": "續抱（3檔）",
         "etf_label": "403・981・991",
         "evidence_parts": [
-          "10日5買・0賣",
+          "10日4買・0賣",
           "今日沒有新的顯著動作"
         ],
         "significance_label": "均通過逐 ETF 門檻；歷史不足者採 ETF 基準",
         "flow_trend_20d": [
-          {
-            "date": "2026-07-20",
-            "flow": 0.1247,
-            "breadth": 1
-          },
           {
             "date": "2026-07-21",
             "flow": 0,
@@ -832,12 +493,177 @@
             "date": "2026-08-14",
             "flow": 0,
             "breadth": 0
+          },
+          {
+            "date": "2026-08-17",
+            "flow": 0,
+            "breadth": 0
           }
         ]
       },
       {
         "direction": 1,
-        "score": 0.6369,
+        "score": 0.2127,
+        "breadth": 2,
+        "etfs": [
+          "00403A",
+          "00981A"
+        ],
+        "new_etfs": [],
+        "exit_etfs": [],
+        "structural": false,
+        "trial_position": false,
+        "name": "南亞電路",
+        "stock_id": "8046",
+        "category": "ABF",
+        "threshold_details": [
+          {
+            "etf": "00403A",
+            "flow": 0.3273,
+            "threshold": 0.0885,
+            "typical_flow_10d": 0.1474,
+            "source": "same_direction",
+            "structural_exception": false
+          }
+        ],
+        "event_type": "conviction_watch",
+        "event_label": "接近續抱",
+        "event_date": "2026-08-17",
+        "current_confirmation_date": "2026-08-17",
+        "age_sessions": 0,
+        "buy_days": 3,
+        "sell_days": 0,
+        "reason": "近 10 日有 3 日顯著買、0 日顯著賣",
+        "confirmation_label": "403、981 都曾參與",
+        "confirmation": "conviction",
+        "lifecycle_label": "尚未升級・接近門檻",
+        "latest_action_label": "今日仍顯著加碼",
+        "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日",
+        "evidence_expires_in": 7,
+        "buy_evidence_dates": [
+          "2026-08-12",
+          "2026-08-13",
+          "2026-08-17"
+        ],
+        "sell_evidence_dates": [],
+        "latest_buy_evidence_date": "2026-08-17",
+        "quiet_sessions_to_downgrade": 0,
+        "conviction_qualified": false,
+        "previous_conviction_qualified": false,
+        "qualification_kind": "continuation",
+        "qualification_label": "升級觀察（2檔）",
+        "etf_label": "403・981",
+        "evidence_parts": [
+          "10日3買・0賣",
+          "恢復強勢續抱尚缺：再 1 個顯著買進日"
+        ],
+        "significance_label": "各 ETF 均高於此股近10日慣常動作門檻",
+        "flow_trend_20d": [
+          {
+            "date": "2026-07-21",
+            "flow": 0.1592,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-22",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-23",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-24",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-27",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-28",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-29",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-30",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-31",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-03",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-04",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-05",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-06",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-07",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-10",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-11",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-12",
+            "flow": 0.079,
+            "breadth": 2
+          },
+          {
+            "date": "2026-08-13",
+            "flow": 0.2633,
+            "breadth": 1
+          },
+          {
+            "date": "2026-08-14",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-17",
+            "flow": 0.3273,
+            "breadth": 1
+          }
+        ]
+      },
+      {
+        "direction": 1,
+        "score": 0.3614,
         "breadth": 3,
         "etfs": [
           "00403A",
@@ -848,76 +674,71 @@
         "exit_etfs": [],
         "structural": false,
         "trial_position": false,
-        "name": "欣興",
-        "stock_id": "3037",
-        "category": "ABF",
+        "name": "聯發科技",
+        "stock_id": "2454",
+        "category": "IC-設計",
         "threshold_details": [
           {
             "etf": "00403A",
-            "flow": 0.2165,
-            "threshold": 0.1249,
-            "typical_flow_10d": 0.2082,
+            "flow": 0.1639,
+            "threshold": 0.1177,
+            "typical_flow_10d": 0.1962,
             "source": "same_direction",
             "structural_exception": false
           }
         ],
-        "event_type": "conviction_watch",
-        "event_label": "接近續抱",
-        "event_date": "2026-08-14",
-        "current_confirmation_date": "2026-08-14",
+        "event_type": "conviction_downgrade",
+        "event_label": "續抱降溫",
+        "event_date": "2026-08-17",
+        "current_confirmation_date": "2026-08-17",
         "age_sessions": 0,
         "buy_days": 3,
         "sell_days": 0,
         "reason": "近 10 日有 3 日顯著買、0 日顯著賣",
         "confirmation_label": "403、981、991 都曾參與",
         "confirmation": "conviction",
-        "lifecycle_label": "尚未升級・接近門檻",
-        "latest_action_label": "今日沒有新的顯著動作",
+        "lifecycle_label": "加碼動能降溫・尚無顯著賣出",
+        "latest_action_label": "尚無顯著賣出",
         "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日",
         "evidence_expires_in": 1,
         "buy_evidence_dates": [
-          "2026-08-03",
           "2026-08-04",
-          "2026-08-05"
+          "2026-08-06",
+          "2026-08-14"
         ],
         "sell_evidence_dates": [],
-        "latest_buy_evidence_date": "2026-08-05",
+        "latest_buy_evidence_date": "2026-08-14",
         "quiet_sessions_to_downgrade": 0,
         "conviction_qualified": false,
-        "previous_conviction_qualified": false,
+        "previous_conviction_qualified": true,
         "qualification_kind": "continuation",
-        "qualification_label": "升級觀察（3檔）",
+        "qualification_label": "續抱降溫（3檔仍有證據）",
         "etf_label": "403・981・991",
         "evidence_parts": [
           "10日3買・0賣",
-          "恢復強勢續抱尚缺：再 1 個顯著買進日"
+          "尚無顯著賣出"
         ],
         "significance_label": "各 ETF 均高於此股近10日慣常動作門檻",
         "flow_trend_20d": [
           {
-            "date": "2026-07-20",
-            "flow": 0,
-            "breadth": 0
-          },
-          {
             "date": "2026-07-21",
-            "flow": 0.1509,
-            "breadth": 2
+            "flow": 0.067,
+            "breadth": 1
           },
           {
             "date": "2026-07-22",
-            "flow": 0.2082,
+            "flow": 0.1139,
             "breadth": 1
           },
           {
             "date": "2026-07-23",
-            "flow": 0.0372,
-            "breadth": 1
+            "flow": 0,
+            "breadth": 0
           },
           {
             "date": "2026-07-24",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.4058,
+            "breadth": 1
           },
           {
             "date": "2026-07-27",
@@ -936,8 +757,8 @@
           },
           {
             "date": "2026-07-30",
-            "flow": 0.2528,
-            "breadth": 1
+            "flow": 0.2297,
+            "breadth": 2
           },
           {
             "date": "2026-07-31",
@@ -946,23 +767,23 @@
           },
           {
             "date": "2026-08-03",
-            "flow": 0.3794,
+            "flow": 0.1627,
             "breadth": 2
           },
           {
             "date": "2026-08-04",
-            "flow": 1.3602,
+            "flow": 0.7242,
             "breadth": 3
           },
           {
             "date": "2026-08-05",
-            "flow": 0.2165,
-            "breadth": 1
+            "flow": 0,
+            "breadth": 0
           },
           {
             "date": "2026-08-06",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.1962,
+            "breadth": 1
           },
           {
             "date": "2026-08-07",
@@ -986,11 +807,16 @@
           },
           {
             "date": "2026-08-13",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.0927,
+            "breadth": 1
           },
           {
             "date": "2026-08-14",
+            "flow": 0.1639,
+            "breadth": 1
+          },
+          {
+            "date": "2026-08-17",
             "flow": 0,
             "breadth": 0
           }
@@ -998,74 +824,75 @@
       },
       {
         "direction": 1,
-        "score": 0.0601,
-        "breadth": 2,
+        "score": 0.1679,
+        "breadth": 3,
         "etfs": [
           "00403A",
+          "00981A",
           "00991A"
         ],
         "new_etfs": [],
         "exit_etfs": [],
         "structural": false,
         "trial_position": false,
-        "name": "健策精密",
-        "stock_id": "3653",
-        "category": "散熱零組件",
+        "name": "奇鋐科技",
+        "stock_id": "3017",
+        "category": "NB與手機零組件",
         "threshold_details": [
           {
-            "etf": "00991A",
-            "flow": 0.318,
-            "threshold": 0.2364,
-            "typical_flow_10d": 0.394,
+            "etf": "00403A",
+            "flow": 0.1047,
+            "threshold": 0.0347,
+            "typical_flow_10d": 0.099,
+            "source": "etf_fallback",
+            "structural_exception": false
+          },
+          {
+            "etf": "00981A",
+            "flow": 0.0938,
+            "threshold": 0.0686,
+            "typical_flow_10d": 0.1143,
             "source": "same_direction",
             "structural_exception": false
           }
         ],
         "event_type": "conviction_downgrade",
         "event_label": "續抱降溫",
-        "event_date": "2026-08-14",
-        "current_confirmation_date": "2026-08-14",
+        "event_date": "2026-08-17",
+        "current_confirmation_date": "2026-08-17",
         "age_sessions": 0,
         "buy_days": 3,
-        "sell_days": 2,
-        "reason": "近 10 日有 3 日顯著買、2 日顯著賣",
-        "confirmation_label": "403、991 都曾參與",
+        "sell_days": 0,
+        "reason": "近 10 日有 3 日顯著買、0 日顯著賣",
+        "confirmation_label": "403、981、991 都曾參與",
         "confirmation": "conviction",
         "lifecycle_label": "加碼動能降溫・尚無顯著賣出",
-        "latest_action_label": "今日沒有新的顯著動作",
-        "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日；10日淨買再 +0.14%",
+        "latest_action_label": "尚無顯著賣出",
+        "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日；10日淨買再 +0.03%",
         "evidence_expires_in": 1,
         "buy_evidence_dates": [
-          "2026-08-03",
           "2026-08-04",
-          "2026-08-05"
+          "2026-08-05",
+          "2026-08-12"
         ],
-        "sell_evidence_dates": [
-          "2026-08-10",
-          "2026-08-11"
-        ],
-        "latest_buy_evidence_date": "2026-08-05",
+        "sell_evidence_dates": [],
+        "latest_buy_evidence_date": "2026-08-12",
         "quiet_sessions_to_downgrade": 0,
         "conviction_qualified": false,
         "previous_conviction_qualified": true,
         "qualification_kind": "continuation",
-        "qualification_label": "續抱降溫（2檔仍有證據）",
-        "etf_label": "403・991",
+        "qualification_label": "續抱降溫（3檔仍有證據）",
+        "etf_label": "403・981・991",
         "evidence_parts": [
-          "10日3買・2賣",
-          "今日沒有新的顯著動作"
+          "10日3買・0賣",
+          "尚無顯著賣出"
         ],
-        "significance_label": "各 ETF 均高於此股近10日慣常動作門檻",
+        "significance_label": "均通過逐 ETF 門檻；歷史不足者採 ETF 基準",
         "flow_trend_20d": [
           {
-            "date": "2026-07-20",
-            "flow": 0.041,
-            "breadth": 1
-          },
-          {
             "date": "2026-07-21",
-            "flow": 0.1583,
-            "breadth": 1
+            "flow": 0.2969,
+            "breadth": 2
           },
           {
             "date": "2026-07-22",
@@ -1074,8 +901,8 @@
           },
           {
             "date": "2026-07-23",
-            "flow": 0.1255,
-            "breadth": 1
+            "flow": 0,
+            "breadth": 0
           },
           {
             "date": "2026-07-24",
@@ -1094,32 +921,32 @@
           },
           {
             "date": "2026-07-29",
-            "flow": 0.1287,
-            "breadth": 1
+            "flow": 0,
+            "breadth": 0
           },
           {
             "date": "2026-07-30",
-            "flow": 0.0385,
-            "breadth": 1
+            "flow": 0.1911,
+            "breadth": 2
           },
           {
             "date": "2026-07-31",
-            "flow": 0.4873,
+            "flow": 0.405,
             "breadth": 2
           },
           {
             "date": "2026-08-03",
-            "flow": 0.212,
+            "flow": 0.3955,
             "breadth": 2
           },
           {
             "date": "2026-08-04",
-            "flow": 0.626,
+            "flow": 0.1511,
             "breadth": 1
           },
           {
             "date": "2026-08-05",
-            "flow": 0.318,
+            "flow": 0.1538,
             "breadth": 1
           },
           {
@@ -1134,18 +961,18 @@
           },
           {
             "date": "2026-08-10",
-            "flow": -0.8016,
-            "breadth": 2
+            "flow": 0,
+            "breadth": 0
           },
           {
             "date": "2026-08-11",
-            "flow": -0.1742,
-            "breadth": 1
+            "flow": 0,
+            "breadth": 0
           },
           {
             "date": "2026-08-12",
-            "flow": 0,
-            "breadth": 0
+            "flow": 0.1985,
+            "breadth": 2
           },
           {
             "date": "2026-08-13",
@@ -1154,6 +981,11 @@
           },
           {
             "date": "2026-08-14",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-17",
             "flow": 0,
             "breadth": 0
           }
@@ -1195,21 +1027,20 @@
         "event_type": "buy_to_sell",
         "event_label": "買後轉賣",
         "event_date": "2026-08-14",
-        "age_sessions": 0,
+        "age_sessions": 1,
         "prior_net": 0.7954,
         "prior_buy_days": 8,
         "prior_sell_days": 0,
         "confirmation_label": "同方向連續 2 個交易日",
         "reason": "991 剛轉為賣出；07/16–08/10 曾明顯加碼",
-        "lifecycle_label": "續抱→賣出警示",
-        "current_confirmation_date": "2026-08-14",
-        "age_display": "current",
+        "lifecycle_label": "昨日觸發",
+        "age_display": "prior",
         "buy_days": 4,
         "sell_days": 2,
         "conviction_qualified": false,
-        "previous_conviction_qualified": true,
+        "previous_conviction_qualified": false,
         "progress_label": "恢復強勢續抱尚缺：10日淨買再 +0.11%",
-        "evidence_expires_in": 2,
+        "evidence_expires_in": 1,
         "qualification_kind": "exception",
         "qualification_label": "1/3 反轉2日",
         "etf_label": "991",
@@ -1219,11 +1050,6 @@
         ],
         "significance_label": "各 ETF 均高於此股近10日慣常動作門檻",
         "flow_trend_20d": [
-          {
-            "date": "2026-07-20",
-            "flow": 0.4914,
-            "breadth": 1
-          },
           {
             "date": "2026-07-21",
             "flow": 0.0965,
@@ -1318,6 +1144,11 @@
             "date": "2026-08-14",
             "flow": -0.335,
             "breadth": 1
+          },
+          {
+            "date": "2026-08-17",
+            "flow": 0,
+            "breadth": 0
           }
         ]
       }
