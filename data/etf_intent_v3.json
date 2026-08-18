@@ -1,7 +1,7 @@
 {
   "schema_version": 4,
-  "generated": "2026-08-17T11:21:28+00:00",
-  "as_of": "2026-08-17",
+  "generated": "2026-08-18T10:33:56+00:00",
+  "as_of": "2026-08-18",
   "etfs": [
     "00403A",
     "00981A",
@@ -64,7 +64,8 @@
         "2026-08-12",
         "2026-08-13",
         "2026-08-14",
-        "2026-08-17"
+        "2026-08-17",
+        "2026-08-18"
       ],
       "00981A": [
         "2026-03-24",
@@ -166,7 +167,8 @@
         "2026-08-12",
         "2026-08-13",
         "2026-08-14",
-        "2026-08-17"
+        "2026-08-17",
+        "2026-08-18"
       ],
       "00991A": [
         "2026-03-12",
@@ -255,7 +257,8 @@
         "2026-08-12",
         "2026-08-13",
         "2026-08-14",
-        "2026-08-17"
+        "2026-08-17",
+        "2026-08-18"
       ]
     },
     "common": [
@@ -303,9 +306,10 @@
       "2026-08-12",
       "2026-08-13",
       "2026-08-14",
-      "2026-08-17"
+      "2026-08-17",
+      "2026-08-18"
     ],
-    "latest": "2026-08-17"
+    "latest": "2026-08-18"
   },
   "methodology": {
     "signal": "actual shares minus prior shares scaled by exact/estimated outstanding ETF units",
@@ -327,12 +331,163 @@
     "concepts_interpreted": false
   },
   "data_quality": {
-    "exact_move_rows": 2427,
+    "exact_move_rows": 2578,
     "estimated_move_rows": 4374,
     "historical_estimate": "fund_size / rounded NAV"
   },
   "signals": {
-    "buying": [],
+    "buying": [
+      {
+        "stock_id": "3653",
+        "name": "健策精密",
+        "category": "散熱零組件",
+        "signal_date": "2026-08-18",
+        "direction": 1,
+        "event_type": "buy_restart",
+        "event_kind": "restart",
+        "event_label": "沉寂後重新買進",
+        "reason": "沉寂至少 5 個交易日後，403、981 重新顯著買進",
+        "etfs": [
+          "00403A",
+          "00981A"
+        ],
+        "etf_label": "403・981",
+        "breadth": 2,
+        "consensus_etfs": 2,
+        "weakest_significance_ratio": 4.5,
+        "strength": 6.4,
+        "data_quality": "exact",
+        "data_quality_label": "精確單位數",
+        "estimated_money_yi": 14.35,
+        "evidence": [
+          {
+            "etf": "00403A",
+            "etf_label": "403",
+            "action": "買進",
+            "active_flow": 0.6725,
+            "significance_ratio": 7.4,
+            "position_event": "increase",
+            "raw_delta_shares": 220000,
+            "unit_quality": "exact"
+          },
+          {
+            "etf": "00981A",
+            "etf_label": "981",
+            "action": "買進",
+            "active_flow": 0.09,
+            "significance_ratio": 4.5,
+            "position_event": "increase",
+            "raw_delta_shares": 20000,
+            "unit_quality": "exact"
+          }
+        ],
+        "age_sessions": 0,
+        "flow_trend_20d": [
+          {
+            "date": "2026-07-22",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-23",
+            "flow": 0.119566,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-24",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-27",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-28",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-29",
+            "flow": 0.075632,
+            "breadth": 1
+          },
+          {
+            "date": "2026-07-30",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-07-31",
+            "flow": 0.411386,
+            "breadth": 1
+          },
+          {
+            "date": "2026-08-03",
+            "flow": 0.202862,
+            "breadth": 2
+          },
+          {
+            "date": "2026-08-04",
+            "flow": 0.628154,
+            "breadth": 1
+          },
+          {
+            "date": "2026-08-05",
+            "flow": 0.313,
+            "breadth": 1
+          },
+          {
+            "date": "2026-08-06",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-07",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-10",
+            "flow": -0.832956,
+            "breadth": 2
+          },
+          {
+            "date": "2026-08-11",
+            "flow": -0.177088,
+            "breadth": 1
+          },
+          {
+            "date": "2026-08-12",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-13",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-14",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-17",
+            "flow": 0,
+            "breadth": 0
+          },
+          {
+            "date": "2026-08-18",
+            "flow": 0.762463,
+            "breadth": 2
+          }
+        ],
+        "signal_phase": "new",
+        "timing_label": "本交易日新形成"
+      }
+    ],
     "selling": []
   },
   "events": [
@@ -2327,6 +2482,51 @@
       ]
     },
     {
+      "stock_id": "3653",
+      "name": "健策精密",
+      "category": "散熱零組件",
+      "signal_date": "2026-08-18",
+      "direction": 1,
+      "event_type": "buy_restart",
+      "event_kind": "restart",
+      "event_label": "沉寂後重新買進",
+      "reason": "沉寂至少 5 個交易日後，403、981 重新顯著買進",
+      "etfs": [
+        "00403A",
+        "00981A"
+      ],
+      "etf_label": "403・981",
+      "breadth": 2,
+      "consensus_etfs": 2,
+      "weakest_significance_ratio": 4.5,
+      "strength": 6.4,
+      "data_quality": "exact",
+      "data_quality_label": "精確單位數",
+      "estimated_money_yi": 14.35,
+      "evidence": [
+        {
+          "etf": "00403A",
+          "etf_label": "403",
+          "action": "買進",
+          "active_flow": 0.6725,
+          "significance_ratio": 7.4,
+          "position_event": "increase",
+          "raw_delta_shares": 220000,
+          "unit_quality": "exact"
+        },
+        {
+          "etf": "00981A",
+          "etf_label": "981",
+          "action": "買進",
+          "active_flow": 0.09,
+          "significance_ratio": 4.5,
+          "position_event": "increase",
+          "raw_delta_shares": 20000,
+          "unit_quality": "exact"
+        }
+      ]
+    },
+    {
       "stock_id": "3665",
       "name": "貿聯-KY",
       "category": "連接元件",
@@ -3668,11 +3868,6 @@
   "regime_audit": {
     "1216": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -3766,14 +3961,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "1303": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -3868,14 +4063,14 @@
         "date": "2026-08-17",
         "score": -0.0249,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": -0.0209,
+        "state": "neutral"
       }
     ],
     "1319": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -3968,17 +4163,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1519": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -4070,17 +4265,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1560": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -4172,17 +4367,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1590": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -4274,17 +4469,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1717": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -4376,17 +4571,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "1815": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -4478,17 +4673,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2002": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -4580,17 +4775,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2049": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -4682,17 +4877,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2059": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -4786,14 +4981,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2303": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0222,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0187,
@@ -4888,14 +5083,14 @@
         "date": "2026-08-17",
         "score": 0.0008,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0007,
+        "state": "neutral"
       }
     ],
     "2308": [
-      {
-        "date": "2026-07-21",
-        "score": 0.2223,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.4267,
@@ -4990,14 +5185,14 @@
         "date": "2026-08-17",
         "score": 0.0309,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0259,
+        "state": "neutral"
       }
     ],
     "2313": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -5090,17 +5285,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2317": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -5194,14 +5389,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2327": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -5296,14 +5491,14 @@
         "date": "2026-08-17",
         "score": 0.05,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.042,
+        "state": "neutral"
       }
     ],
     "2330": [
-      {
-        "date": "2026-07-21",
-        "score": -0.0062,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": -0.2452,
@@ -5398,14 +5593,14 @@
         "date": "2026-08-17",
         "score": -0.1571,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": -0.132,
+        "state": "neutral"
       }
     ],
     "2337": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -5500,14 +5695,14 @@
         "date": "2026-08-17",
         "score": -0.0249,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": -0.0209,
+        "state": "neutral"
       }
     ],
     "2344": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -5602,14 +5797,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2345": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -5704,14 +5899,14 @@
         "date": "2026-08-17",
         "score": 0.0602,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0505,
+        "state": "neutral"
       }
     ],
     "2357": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -5806,14 +6001,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2360": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -5908,14 +6103,14 @@
         "date": "2026-08-17",
         "score": 0.0649,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0545,
+        "state": "neutral"
       }
     ],
     "2368": [
-      {
-        "date": "2026-07-21",
-        "score": -0.0104,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": -0.0087,
@@ -6010,14 +6205,14 @@
         "date": "2026-08-17",
         "score": -0.0253,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": -0.0212,
+        "state": "neutral"
       }
     ],
     "2379": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -6110,17 +6305,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2382": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -6214,14 +6409,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2383": [
-      {
-        "date": "2026-07-21",
-        "score": 0.3608,
-        "state": "buy"
-      },
       {
         "date": "2026-07-22",
         "score": 0.3031,
@@ -6316,14 +6511,14 @@
         "date": "2026-08-17",
         "score": 0.1051,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0883,
+        "state": "neutral"
       }
     ],
     "2404": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -6418,14 +6613,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2408": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.24,
@@ -6520,14 +6715,14 @@
         "date": "2026-08-17",
         "score": 0.0104,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0087,
+        "state": "neutral"
       }
     ],
     "2412": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -6620,17 +6815,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2439": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -6722,17 +6917,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2449": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -6826,14 +7021,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "2454": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0707,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0594,
@@ -6928,14 +7123,14 @@
         "date": "2026-08-17",
         "score": 0.0945,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0794,
+        "state": "neutral"
       }
     ],
     "2455": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -7028,17 +7223,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2481": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -7130,17 +7325,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2492": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -7232,17 +7427,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2603": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -7334,17 +7529,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2880": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -7436,17 +7631,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2881": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -7538,17 +7733,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2882": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -7640,17 +7835,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2883": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -7742,17 +7937,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2884": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -7844,17 +8039,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2885": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -7946,17 +8141,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2886": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -8048,17 +8243,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2887": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -8150,17 +8345,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2890": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -8252,17 +8447,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2891": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -8354,17 +8549,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "2912": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -8458,14 +8653,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "3008": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -8560,14 +8755,14 @@
         "date": "2026-08-17",
         "score": 0.0296,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0249,
+        "state": "neutral"
       }
     ],
     "3017": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -8662,14 +8857,14 @@
         "date": "2026-08-17",
         "score": 0.1842,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.1547,
+        "state": "neutral"
       }
     ],
     "3026": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -8762,17 +8957,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3036": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -8866,14 +9061,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "3037": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0708,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0595,
@@ -8968,14 +9163,14 @@
         "date": "2026-08-17",
         "score": 0.0526,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0441,
+        "state": "neutral"
       }
     ],
     "3042": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -9068,17 +9263,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3044": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -9170,17 +9365,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3045": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -9272,17 +9467,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3081": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -9374,17 +9569,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3105": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -9478,14 +9673,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "3189": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0145,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0122,
@@ -9580,14 +9775,14 @@
         "date": "2026-08-17",
         "score": 0.0714,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0599,
+        "state": "neutral"
       }
     ],
     "3211": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -9680,17 +9875,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3231": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -9782,17 +9977,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3264": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -9884,17 +10079,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3324": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -9986,17 +10181,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3376": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -10088,17 +10283,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3443": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -10190,17 +10385,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3450": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -10292,17 +10487,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3529": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -10394,17 +10589,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3533": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -10496,17 +10691,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "3583": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -10600,14 +10795,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "3653": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -10702,14 +10897,14 @@
         "date": "2026-08-17",
         "score": -0.0584,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.1909,
+        "state": "neutral"
       }
     ],
     "3661": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -10804,14 +10999,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "3665": [
-      {
-        "date": "2026-07-21",
-        "score": -0.0073,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.2338,
@@ -10906,14 +11101,14 @@
         "date": "2026-08-17",
         "score": 0.0645,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0542,
+        "state": "neutral"
       }
     ],
     "3711": [
-      {
-        "date": "2026-07-21",
-        "score": 0.1195,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.1004,
@@ -11008,14 +11203,14 @@
         "date": "2026-08-17",
         "score": 0.1547,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.1299,
+        "state": "neutral"
       }
     ],
     "4958": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0031,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0026,
@@ -11110,14 +11305,14 @@
         "date": "2026-08-17",
         "score": 0.0001,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0001,
+        "state": "neutral"
       }
     ],
     "4966": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -11210,17 +11405,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "4979": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -11314,14 +11509,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "5274": [
-      {
-        "date": "2026-07-21",
-        "score": 0.1695,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.1423,
@@ -11416,14 +11611,14 @@
         "date": "2026-08-17",
         "score": 0.1751,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.1471,
+        "state": "neutral"
       }
     ],
     "5347": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -11516,17 +11711,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "5439": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -11618,17 +11813,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6147": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -11720,17 +11915,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6187": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -11822,17 +12017,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6191": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -11924,17 +12119,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6196": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -12028,14 +12223,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "6223": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0431,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0362,
@@ -12130,14 +12325,14 @@
         "date": "2026-08-17",
         "score": 0.0515,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0433,
+        "state": "neutral"
       }
     ],
     "6239": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -12230,17 +12425,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6271": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -12332,17 +12527,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6274": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -12434,17 +12629,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6278": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -12536,17 +12731,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6285": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -12638,17 +12833,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6415": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -12740,17 +12935,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "6442": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -12844,14 +13039,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "6488": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0037,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0031,
@@ -12946,14 +13141,14 @@
         "date": "2026-08-17",
         "score": 0.0001,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0001,
+        "state": "neutral"
       }
     ],
     "6510": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -13048,14 +13243,14 @@
         "date": "2026-08-17",
         "score": -0.0209,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": -0.0176,
+        "state": "neutral"
       }
     ],
     "6515": [
-      {
-        "date": "2026-07-21",
-        "score": -0.24,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": -0.2016,
@@ -13150,14 +13345,14 @@
         "date": "2026-08-17",
         "score": -0.0632,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": -0.0531,
+        "state": "neutral"
       }
     ],
     "6669": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -13252,14 +13447,14 @@
         "date": "2026-08-17",
         "score": 0.2016,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.1693,
+        "state": "neutral"
       }
     ],
     "6805": [
-      {
-        "date": "2026-07-21",
-        "score": 0.2431,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.2042,
@@ -13354,14 +13549,14 @@
         "date": "2026-08-17",
         "score": 0.0212,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0178,
+        "state": "neutral"
       }
     ],
     "7769": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -13456,14 +13651,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "8046": [
-      {
-        "date": "2026-07-21",
-        "score": 0.375,
-        "state": "buy"
-      },
       {
         "date": "2026-07-22",
         "score": 0.315,
@@ -13558,14 +13753,14 @@
         "date": "2026-08-17",
         "score": 0.1559,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.131,
+        "state": "neutral"
       }
     ],
     "8150": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -13660,14 +13855,14 @@
         "date": "2026-08-17",
         "score": 0.0,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": 0.0,
+        "state": "neutral"
       }
     ],
     "8210": [
-      {
-        "date": "2026-07-21",
-        "score": -0.0073,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": -0.0062,
@@ -13762,14 +13957,14 @@
         "date": "2026-08-17",
         "score": -0.0003,
         "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
+        "score": -0.0002,
+        "state": "neutral"
       }
     ],
     "8299": [
-      {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
       {
         "date": "2026-07-22",
         "score": 0.0,
@@ -13862,17 +14057,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "8358": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -13964,17 +14159,17 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
     ],
     "8996": [
       {
-        "date": "2026-07-21",
-        "score": 0.0,
-        "state": "neutral"
-      },
-      {
         "date": "2026-07-22",
         "score": 0.0,
         "state": "neutral"
@@ -14066,6 +14261,11 @@
       },
       {
         "date": "2026-08-17",
+        "score": 0.0,
+        "state": "neutral"
+      },
+      {
+        "date": "2026-08-18",
         "score": 0.0,
         "state": "neutral"
       }
