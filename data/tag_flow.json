@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated": "2026-08-18 10:33:49",
+  "generated": "2026-08-19 10:33:34",
   "etfs": [
     "00403A",
     "00981A",
@@ -64,7 +64,8 @@
         "2026-08-13",
         "2026-08-14",
         "2026-08-17",
-        "2026-08-18"
+        "2026-08-18",
+        "2026-08-19"
       ],
       "00981A": [
         "2026-03-24",
@@ -167,7 +168,8 @@
         "2026-08-13",
         "2026-08-14",
         "2026-08-17",
-        "2026-08-18"
+        "2026-08-18",
+        "2026-08-19"
       ],
       "00991A": [
         "2026-03-12",
@@ -257,7 +259,8 @@
         "2026-08-13",
         "2026-08-14",
         "2026-08-17",
-        "2026-08-18"
+        "2026-08-18",
+        "2026-08-19"
       ]
     },
     "common": [
@@ -306,9 +309,10 @@
       "2026-08-13",
       "2026-08-14",
       "2026-08-17",
-      "2026-08-18"
+      "2026-08-18",
+      "2026-08-19"
     ],
-    "latest": "2026-08-18"
+    "latest": "2026-08-19"
   },
   "methodology": {
     "signal": "ActiveWeight = delta shares * current weight / current shares",
@@ -1768,11 +1772,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.0446,
           "money_twd": 44581948.0,
@@ -2664,11 +2668,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.0138,
           "money_twd": 13791287.0,
@@ -3175,11 +3179,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.2607,
           "money_twd": 73747662.0,
@@ -4299,11 +4303,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.1002,
           "money_twd": 123552200.0,
@@ -5001,11 +5005,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.1486,
           "money_twd": 192588423.0,
@@ -5871,11 +5875,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.0655,
           "money_twd": 89318754.0,
@@ -6444,11 +6448,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.1286,
           "money_twd": 186190070.0,
@@ -7107,11 +7111,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.1193,
           "money_twd": -36900313.0,
@@ -7175,11 +7179,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.4701,
           "money_twd": 721766658.0,
@@ -7990,11 +7994,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.2407,
           "money_twd": 406498987.0,
@@ -8546,11 +8550,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.1835,
           "money_twd": -57001328.0,
@@ -8690,11 +8694,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.5521,
           "money_twd": 1012054089.0,
@@ -9553,11 +9557,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.0209,
           "money_twd": 40291932.0,
@@ -10062,11 +10066,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.494,
           "money_twd": -161207171.0,
@@ -10280,11 +10284,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.1833,
           "money_twd": 366070224.0,
@@ -12915,11 +12919,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.0781,
           "money_twd": 203517785.0,
@@ -13441,11 +13445,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.4289,
           "money_twd": -173213429.0,
@@ -13692,11 +13696,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.082,
           "money_twd": 221178279.0,
@@ -14301,11 +14305,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.2957,
           "money_twd": 806419391.0,
@@ -15018,11 +15022,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.2064,
           "money_twd": -89792405.0,
@@ -16664,11 +16668,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.3019,
           "money_twd": 587145146.0,
@@ -18083,11 +18087,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.2378,
           "money_twd": 434282055.0,
@@ -19441,11 +19445,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.0748,
           "money_twd": 44300696.0,
@@ -20751,11 +20755,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.4009,
           "money_twd": -257976975.0,
@@ -21050,11 +21054,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.2509,
           "money_twd": -753103087.0,
@@ -21158,11 +21162,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.6387,
           "money_twd": -430013907.0,
@@ -21636,11 +21640,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.4647,
           "money_twd": -311945514.0,
@@ -22041,11 +22045,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.2138,
           "money_twd": -623515807.0,
@@ -22128,11 +22132,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -1.323,
           "money_twd": -894321274.0,
@@ -22626,11 +22630,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.2004,
           "money_twd": -586593180.0,
@@ -24531,11 +24535,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -0.3938,
           "money_twd": -1164813474.0,
@@ -26604,11 +26608,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.0906,
           "money_twd": 239360242.0,
@@ -26840,11 +26844,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.115,
           "money_twd": 189257364.0,
@@ -27359,11 +27363,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.0824,
           "money_twd": 133408537.0,
@@ -27582,11 +27586,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.1122,
           "money_twd": 173798619.0,
@@ -27906,11 +27910,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.0449,
           "money_twd": 112627989.0,
@@ -28151,11 +28155,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.134,
           "money_twd": 220198830.0,
@@ -28393,11 +28397,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.2184,
           "money_twd": 586450222.0,
@@ -28548,11 +28552,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 1.2299,
           "money_twd": 919568103.0,
@@ -28919,11 +28923,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.1113,
           "money_twd": 187980162.0,
@@ -29361,11 +29365,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.2413,
           "money_twd": 188047127.0,
@@ -29522,11 +29526,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.1338,
           "money_twd": 225601692.0,
@@ -29728,11 +29732,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.1208,
           "money_twd": 94026040.0,
@@ -31219,11 +31223,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.0471,
           "money_twd": 114819831.0,
@@ -31930,11 +31934,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.1652,
           "money_twd": 475883715.0,
@@ -32145,11 +32149,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.3793,
           "money_twd": 328098417.0,
@@ -33489,11 +33493,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": -1.718,
           "money_twd": -1478393522.0,
@@ -34481,11 +34485,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.3109,
           "money_twd": 961747122.0,
@@ -34786,11 +34790,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.1109,
           "money_twd": 331275573.0,
@@ -35116,11 +35120,11 @@
           "category": "電源供應器",
           "group": "電子中游",
           "concepts": [
-            "一帶一路",
-            "氣候變遷",
-            "3DIC聯盟",
+            "車用電子",
+            "Apple",
+            "智慧城市",
             "GB200",
-            "碳權"
+            "MWC"
           ],
           "flow": 0.2188,
           "money_twd": 661261448.0,
@@ -36997,6 +37001,841 @@
           "dshares": 360,
           "position_event": "increase",
           "percentile": 0.0,
+          "label": "加碼"
+        }
+      ]
+    },
+    {
+      "etf": "00403A",
+      "date": "2026-08-19",
+      "prev_date": "2026-08-18",
+      "fund_size": 170269619756.0,
+      "baseline": {
+        "n": 185,
+        "median": 0.1064,
+        "p80": 0.2179,
+        "p95": 0.5651
+      },
+      "stocks": [
+        {
+          "id": "2344",
+          "name": "華邦電子",
+          "category": "記憶體製造",
+          "group": "電子上游",
+          "concepts": [
+            "MIH概念股",
+            "車用電子",
+            "3D列印",
+            "ADAS",
+            "記憶體"
+          ],
+          "flow": -0.9889,
+          "money_twd": -1683777351.0,
+          "dshares": -10000000,
+          "position_event": "decrease",
+          "percentile": 98.9,
+          "label": "異常減碼"
+        },
+        {
+          "id": "2303",
+          "name": "聯華電子",
+          "category": "IC-代工",
+          "group": "電子上游",
+          "concepts": [
+            "無人機",
+            "CES",
+            "穿載式裝置",
+            "AMD",
+            "碳權"
+          ],
+          "flow": -0.6107,
+          "money_twd": -1039860892.0,
+          "dshares": -9000000,
+          "position_event": "decrease",
+          "percentile": 95.1,
+          "label": "異常減碼"
+        },
+        {
+          "id": "5274",
+          "name": "信驊科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "ChatGPT"
+          ],
+          "flow": -0.3256,
+          "money_twd": -554443414.0,
+          "dshares": -35000,
+          "position_event": "decrease",
+          "percentile": 89.7,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "3653",
+          "name": "健策精密",
+          "category": "散熱零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "連接器",
+            "PS5",
+            "AMD",
+            "ChatGPT"
+          ],
+          "flow": 0.1922,
+          "money_twd": 327296047.0,
+          "dshares": 60000,
+          "position_event": "increase",
+          "percentile": 76.8,
+          "label": "加碼"
+        },
+        {
+          "id": "1560",
+          "name": "中砂",
+          "category": "IC-代工",
+          "group": "電子上游",
+          "concepts": [
+            "CoWoS",
+            "次世代半導體"
+          ],
+          "flow": -0.145,
+          "money_twd": -246890949.0,
+          "dshares": -350000,
+          "position_event": "decrease",
+          "percentile": 66.5,
+          "label": "減碼"
+        },
+        {
+          "id": "3533",
+          "name": "嘉澤",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "GB300",
+            "美元升值",
+            "Type C",
+            "連接器",
+            "AMD"
+          ],
+          "flow": -0.081,
+          "money_twd": -137837311.0,
+          "dshares": -85000,
+          "position_event": "decrease",
+          "percentile": 35.1,
+          "label": "減碼"
+        },
+        {
+          "id": "3450",
+          "name": "聯鈞",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "光通訊",
+            "3D感測",
+            "CES",
+            "3D列印"
+          ],
+          "flow": 0.0667,
+          "money_twd": 113513080.0,
+          "dshares": 200000,
+          "position_event": "increase",
+          "percentile": 29.7,
+          "label": "加碼"
+        }
+      ]
+    },
+    {
+      "etf": "00981A",
+      "date": "2026-08-19",
+      "prev_date": "2026-08-18",
+      "fund_size": 286053153039.0,
+      "baseline": {
+        "n": 111,
+        "median": 0.0814,
+        "p80": 0.18,
+        "p95": 0.4255
+      },
+      "stocks": [
+        {
+          "id": "5274",
+          "name": "信驊科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "ChatGPT"
+          ],
+          "flow": -0.4088,
+          "money_twd": -1169413693.0,
+          "dshares": -74000,
+          "position_event": "decrease",
+          "percentile": 93.7,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "2368",
+          "name": "金像電子",
+          "category": "PCB-製造",
+          "group": "電子上游",
+          "concepts": [
+            "PCB",
+            "美元升值",
+            "Apple",
+            "TPU",
+            "AWS"
+          ],
+          "flow": -0.365,
+          "money_twd": -1044094009.0,
+          "dshares": -1000000,
+          "position_event": "decrease",
+          "percentile": 92.8,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "2360",
+          "name": "致茂電子",
+          "category": "儀器設備工程",
+          "group": "電子中游",
+          "concepts": [
+            "無人機",
+            "MIH概念股",
+            "Tesla",
+            "軍工",
+            "電動車"
+          ],
+          "flow": -0.2454,
+          "money_twd": -702095086.0,
+          "dshares": -328000,
+          "position_event": "decrease",
+          "percentile": 84.7,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "2330",
+          "name": "台灣積體",
+          "category": "IC-代工",
+          "group": "電子上游",
+          "concepts": [
+            "AI PC",
+            "PS5",
+            "Apple",
+            "CES",
+            "TPU"
+          ],
+          "flow": -0.2053,
+          "money_twd": -587318827.0,
+          "dshares": -250000,
+          "position_event": "decrease",
+          "percentile": 80.2,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "6187",
+          "name": "萬潤",
+          "category": "IC-半導體設備",
+          "group": "電子上游",
+          "concepts": [
+            "Apple",
+            "3DIC聯盟",
+            "CoWoS",
+            "指紋辨識"
+          ],
+          "flow": -0.1369,
+          "money_twd": -391477304.0,
+          "dshares": -300000,
+          "position_event": "decrease",
+          "percentile": 70.3,
+          "label": "減碼"
+        },
+        {
+          "id": "2454",
+          "name": "聯發科技",
+          "category": "IC-設計",
+          "group": "電子上游",
+          "concepts": [
+            "快速充電",
+            "Apple Pay",
+            "無線耳機",
+            "Wifi 7",
+            "ASIC"
+          ],
+          "flow": -0.1344,
+          "money_twd": -384577818.0,
+          "dshares": -100000,
+          "position_event": "decrease",
+          "percentile": 68.5,
+          "label": "減碼"
+        },
+        {
+          "id": "6669",
+          "name": "緯穎科技",
+          "category": "EMS",
+          "group": "電子中游",
+          "concepts": [
+            "GB300",
+            "美元升值",
+            "Oracle甲骨文",
+            "AWS",
+            "GB200"
+          ],
+          "flow": -0.0446,
+          "money_twd": -127477416.0,
+          "dshares": -20000,
+          "position_event": "decrease",
+          "percentile": 29.7,
+          "label": "減碼"
+        },
+        {
+          "id": "2383",
+          "name": "台光電子",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "軌道衛星",
+            "銅箔基板",
+            "低軌衛星",
+            "GB300",
+            "美元升值"
+          ],
+          "flow": -0.0411,
+          "money_twd": -117658039.0,
+          "dshares": -20000,
+          "position_event": "decrease",
+          "percentile": 28.8,
+          "label": "減碼"
+        },
+        {
+          "id": "2345",
+          "name": "智邦科技",
+          "category": "網通",
+          "group": "電子中游",
+          "concepts": [
+            "5G",
+            "美元升值",
+            "光通訊",
+            "遠距教學",
+            "AWS"
+          ],
+          "flow": -0.0223,
+          "money_twd": -63799789.0,
+          "dshares": -30000,
+          "position_event": "decrease",
+          "percentile": 8.1,
+          "label": "減碼"
+        },
+        {
+          "id": "2308",
+          "name": "台達電子",
+          "category": "電源供應器",
+          "group": "電子中游",
+          "concepts": [
+            "車用電子",
+            "Apple",
+            "智慧城市",
+            "GB200",
+            "MWC"
+          ],
+          "flow": -0.0185,
+          "money_twd": -52903580.0,
+          "dshares": -30000,
+          "position_event": "decrease",
+          "percentile": 6.3,
+          "label": "減碼"
+        },
+        {
+          "id": "3037",
+          "name": "欣興電子",
+          "category": "ABF",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "小米",
+            "玻璃基板",
+            "太陽能"
+          ],
+          "flow": -0.0119,
+          "money_twd": -33903640.0,
+          "dshares": -30000,
+          "position_event": "decrease",
+          "percentile": 1.8,
+          "label": "減碼"
+        },
+        {
+          "id": "3711",
+          "name": "日月光投",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "GB300",
+            "A股入摩",
+            "FOPLP扇出型封裝",
+            "AI PC",
+            "iPhone"
+          ],
+          "flow": -0.0103,
+          "money_twd": -29370415.0,
+          "dshares": -50000,
+          "position_event": "decrease",
+          "percentile": 0.9,
+          "label": "減碼"
+        },
+        {
+          "id": "2327",
+          "name": "國巨股份",
+          "category": "被動元件",
+          "group": "電子上游",
+          "concepts": [
+            "被動元件",
+            "電容",
+            "Apple",
+            "車聯網"
+          ],
+          "flow": -0.0101,
+          "money_twd": -28788979.0,
+          "dshares": -50000,
+          "position_event": "decrease",
+          "percentile": 0.9,
+          "label": "減碼"
+        },
+        {
+          "id": "2637",
+          "name": "慧洋-KY",
+          "category": "航運",
+          "group": "傳產",
+          "concepts": [],
+          "flow": 0.01,
+          "money_twd": 28605315.0,
+          "dshares": 200000,
+          "position_event": "new_position",
+          "percentile": 0.9,
+          "label": "加碼"
+        },
+        {
+          "id": "2303",
+          "name": "聯華電子",
+          "category": "IC-代工",
+          "group": "電子上游",
+          "concepts": [
+            "無人機",
+            "CES",
+            "穿載式裝置",
+            "AMD",
+            "碳權"
+          ],
+          "flow": -0.0081,
+          "money_twd": -23075656.0,
+          "dshares": -200000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "8210",
+          "name": "勤誠興業",
+          "category": "機殼",
+          "group": "電子中游",
+          "concepts": [
+            "GB300"
+          ],
+          "flow": -0.0069,
+          "money_twd": -19632231.0,
+          "dshares": -20000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "4958",
+          "name": "臻鼎-KY",
+          "category": "PCB-製造",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "MIH概念股",
+            "鴻海MIH電動車平台",
+            "Apple"
+          ],
+          "flow": -0.0058,
+          "money_twd": -16728458.0,
+          "dshares": -37000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "8046",
+          "name": "南亞電路",
+          "category": "ABF",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "玻璃基板",
+            "車用電子",
+            "ADAS"
+          ],
+          "flow": -0.0041,
+          "money_twd": -11799990.0,
+          "dshares": -10000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "6223",
+          "name": "旺矽科技",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "TPU",
+            "CoWoS"
+          ],
+          "flow": -0.0018,
+          "money_twd": -5259536.0,
+          "dshares": -1000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "2449",
+          "name": "京元電子",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "車用電子",
+            "Type C",
+            "人工智慧",
+            "穿載式裝置",
+            "NFC"
+          ],
+          "flow": -0.0016,
+          "money_twd": -4718737.0,
+          "dshares": -20000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "3017",
+          "name": "奇鋐科技",
+          "category": "NB與手機零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "GB300",
+            "美元升值",
+            "AI PC",
+            "AWS"
+          ],
+          "flow": -0.0011,
+          "money_twd": -3093777.0,
+          "dshares": -1000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "6510",
+          "name": "中華精測",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "TPU",
+            "ChatGPT"
+          ],
+          "flow": -0.0009,
+          "money_twd": -2638645.0,
+          "dshares": -1000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "3665",
+          "name": "貿聯-KY",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "MIH概念股",
+            "Tesla",
+            "太陽能",
+            "GB300",
+            "車用電子"
+          ],
+          "flow": -0.0008,
+          "money_twd": -2200005.0,
+          "dshares": -1000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "6805",
+          "name": "富世達股",
+          "category": "連接元件",
+          "group": "電子上游",
+          "concepts": [
+            "GB300"
+          ],
+          "flow": -0.0006,
+          "money_twd": -1794150.0,
+          "dshares": -1000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "6274",
+          "name": "台燿科技",
+          "category": "PCB-材料設備",
+          "group": "電子上游",
+          "concepts": [
+            "銅箔基板",
+            "GB300"
+          ],
+          "flow": -0.0005,
+          "money_twd": -1498423.0,
+          "dshares": -1000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "8996",
+          "name": "高力熱處",
+          "category": "電機",
+          "group": "傳產",
+          "concepts": [
+            "氫燃料電池",
+            "GB300",
+            "GB200"
+          ],
+          "flow": -0.0004,
+          "money_twd": -1143173.0,
+          "dshares": -1000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "3264",
+          "name": "欣銓",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "車用電子",
+            "ADAS",
+            "車聯網",
+            "NFC",
+            "行動支付"
+          ],
+          "flow": -0.0001,
+          "money_twd": -207880.0,
+          "dshares": -1000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "6278",
+          "name": "台表科",
+          "category": "PCB-製造",
+          "group": "電子上游",
+          "concepts": [
+            "PCB",
+            "Apple",
+            "Micro LED",
+            "MiniLED"
+          ],
+          "flow": -0.0001,
+          "money_twd": -176087.0,
+          "dshares": -1000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        },
+        {
+          "id": "6271",
+          "name": "同欣電",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "軌道衛星",
+            "PCB",
+            "車用電子",
+            "3D感測"
+          ],
+          "flow": -0.0001,
+          "money_twd": -193018.0,
+          "dshares": -1000,
+          "position_event": "decrease",
+          "percentile": 0.0,
+          "label": "減碼"
+        }
+      ]
+    },
+    {
+      "etf": "00991A",
+      "date": "2026-08-19",
+      "prev_date": "2026-08-18",
+      "fund_size": 86502513092.0,
+      "baseline": {
+        "n": 114,
+        "median": 0.2644,
+        "p80": 0.4805,
+        "p95": 1.3752
+      },
+      "stocks": [
+        {
+          "id": "2330",
+          "name": "台灣積體",
+          "category": "IC-代工",
+          "group": "電子上游",
+          "concepts": [
+            "AI PC",
+            "PS5",
+            "Apple",
+            "CES",
+            "TPU"
+          ],
+          "flow": -1.3583,
+          "money_twd": -1174992469.0,
+          "dshares": -500000,
+          "position_event": "decrease",
+          "percentile": 93.9,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "3711",
+          "name": "日月光投",
+          "category": "IC-封測",
+          "group": "電子上游",
+          "concepts": [
+            "GB300",
+            "A股入摩",
+            "FOPLP扇出型封裝",
+            "AI PC",
+            "iPhone"
+          ],
+          "flow": -0.952,
+          "money_twd": -823503925.0,
+          "dshares": -1400000,
+          "position_event": "decrease",
+          "percentile": 92.1,
+          "label": "明顯減碼"
+        },
+        {
+          "id": "3653",
+          "name": "健策精密",
+          "category": "散熱零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "連接器",
+            "PS5",
+            "AMD",
+            "ChatGPT"
+          ],
+          "flow": 0.6943,
+          "money_twd": 600581860.0,
+          "dshares": 110000,
+          "position_event": "increase",
+          "percentile": 88.6,
+          "label": "明顯加碼"
+        },
+        {
+          "id": "3189",
+          "name": "景碩科技",
+          "category": "ABF",
+          "group": "電子上游",
+          "concepts": [
+            "IC載板",
+            "PCB",
+            "玻璃基板",
+            "美元升值",
+            "AI PC"
+          ],
+          "flow": 0.3926,
+          "money_twd": 339608866.0,
+          "dshares": 400000,
+          "position_event": "increase",
+          "percentile": 71.1,
+          "label": "加碼"
+        },
+        {
+          "id": "8299",
+          "name": "群聯電子",
+          "category": "記憶體IC設計",
+          "group": "電子上游",
+          "concepts": [
+            "鴻海MIH電動車平台",
+            "Type C",
+            "記憶體",
+            "PS5",
+            "CES"
+          ],
+          "flow": -0.2726,
+          "money_twd": -235797987.0,
+          "dshares": -120000,
+          "position_event": "decrease",
+          "percentile": 53.5,
+          "label": "減碼"
+        },
+        {
+          "id": "3017",
+          "name": "奇鋐科技",
+          "category": "NB與手機零組件",
+          "group": "電子中游",
+          "concepts": [
+            "散熱模組",
+            "GB300",
+            "美元升值",
+            "AI PC",
+            "AWS"
+          ],
+          "flow": 0.1789,
+          "money_twd": 154735695.0,
+          "dshares": 50000,
+          "position_event": "increase",
+          "percentile": 33.3,
+          "label": "加碼"
+        },
+        {
+          "id": "2059",
+          "name": "川湖科技",
+          "category": "金屬製品",
+          "group": "電子中游",
+          "concepts": [
+            "GB300",
+            "CES",
+            "AWS"
+          ],
+          "flow": 0.1629,
+          "money_twd": 140948213.0,
+          "dshares": 10000,
+          "position_event": "increase",
+          "percentile": 31.6,
+          "label": "加碼"
+        },
+        {
+          "id": "3081",
+          "name": "聯亞光電",
+          "category": "半導體元件",
+          "group": "電子上游",
+          "concepts": [
+            "GB300",
+            "5G",
+            "光通訊",
+            "TPU",
+            "元宇宙"
+          ],
+          "flow": 0.1239,
+          "money_twd": 107213686.0,
+          "dshares": 40000,
+          "position_event": "increase",
+          "percentile": 23.7,
           "label": "加碼"
         }
       ]
