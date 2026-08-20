@@ -5848,7 +5848,7 @@
     },
     "2026-08-19": {
       "as_of": "2026-08-19",
-      "generated": "2026-08-19T10:33:41+00:00",
+      "generated": "2026-08-20T10:34:53+00:00",
       "signals": {
         "buying": [
           {
@@ -5996,6 +5996,181 @@
             "sell_days": 2,
             "progress_label": "恢復強勢續抱尚缺：再 2 個顯著買進日；再 1 檔 ETF 參與；10日淨買再 +0.20%",
             "evidence_expires_in": 1,
+            "qualification_label": "1/3 反轉2日",
+            "etf_label": "981"
+          }
+        ]
+      }
+    },
+    "2026-08-20": {
+      "as_of": "2026-08-20",
+      "generated": "2026-08-20T10:34:53+00:00",
+      "signals": {
+        "buying": [
+          {
+            "score": 0.1365,
+            "etfs": [
+              "00403A",
+              "00981A"
+            ],
+            "name": "創意",
+            "stock_id": "3443",
+            "category": "IP/ASIC",
+            "event_type": "restart_buy",
+            "event_label": "沉寂後開買",
+            "event_date": "2026-08-20",
+            "lifecycle_label": "今日觸發",
+            "current_confirmation_date": "2026-08-20",
+            "buy_days": 1,
+            "sell_days": 0,
+            "progress_label": "恢復強勢續抱尚缺：再 3 個顯著買進日；10日淨買再 +0.06%",
+            "evidence_expires_in": 10,
+            "qualification_label": "共識（2/3）",
+            "etf_label": "403・981"
+          },
+          {
+            "score": 0.0033,
+            "etfs": [
+              "00981A"
+            ],
+            "name": "慧洋-KY",
+            "stock_id": "2637",
+            "category": "航運",
+            "event_type": "trial_position",
+            "event_label": "試單建倉",
+            "event_date": "2026-08-19",
+            "lifecycle_label": "昨日觸發",
+            "buy_days": 1,
+            "sell_days": 0,
+            "progress_label": "恢復強勢續抱尚缺：再 3 個顯著買進日；再 1 檔 ETF 參與；10日淨買再 +0.20%",
+            "evidence_expires_in": 9,
+            "qualification_label": "1/3 建倉例外",
+            "etf_label": "981"
+          }
+        ],
+        "holding": [
+          {
+            "score": 0.3272,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "南亞電路",
+            "stock_id": "8046",
+            "category": "ABF",
+            "event_type": "conviction_buy",
+            "event_label": "升級續抱",
+            "event_date": "2026-08-20",
+            "current_confirmation_date": "2026-08-20",
+            "buy_days": 4,
+            "sell_days": 0,
+            "lifecycle_label": "今日升級為續抱",
+            "progress_label": "若無新買，4 個交易日後轉為降溫",
+            "evidence_expires_in": 4,
+            "quiet_sessions_to_downgrade": 4,
+            "qualification_label": "續抱（3檔）",
+            "etf_label": "403・981・991"
+          }
+        ],
+        "selling": [
+          {
+            "score": -0.3313,
+            "etfs": [
+              "00991A"
+            ],
+            "name": "日月光投控",
+            "stock_id": "3711",
+            "category": "IC-封測",
+            "event_type": "buy_to_sell",
+            "event_label": "買後轉賣",
+            "event_date": "2026-08-20",
+            "lifecycle_label": "無訊號→賣出警示",
+            "current_confirmation_date": "2026-08-20",
+            "buy_days": 1,
+            "sell_days": 4,
+            "progress_label": "恢復強勢續抱尚缺：再 5 個顯著買進日；10日淨買再 +1.03%",
+            "evidence_expires_in": 2,
+            "qualification_label": "1/3 反轉2日",
+            "etf_label": "991"
+          },
+          {
+            "score": -0.5212,
+            "etfs": [
+              "00981A",
+              "00991A"
+            ],
+            "name": "台積電",
+            "stock_id": "2330",
+            "category": "IC-代工",
+            "event_type": "buy_to_sell",
+            "event_label": "買後轉賣",
+            "event_date": "2026-08-19",
+            "lifecycle_label": "昨日觸發",
+            "buy_days": 0,
+            "sell_days": 3,
+            "progress_label": "恢復強勢續抱尚缺：再 5 個顯著買進日；再 2 檔 ETF 參與；10日淨買再 +1.21%",
+            "evidence_expires_in": null,
+            "qualification_label": "共識（2/3）",
+            "etf_label": "981・991"
+          },
+          {
+            "score": -0.2448,
+            "etfs": [
+              "00403A",
+              "00981A"
+            ],
+            "name": "信驊科技",
+            "stock_id": "5274",
+            "category": "IC-設計",
+            "event_type": "buy_to_sell",
+            "event_label": "買後轉賣",
+            "event_date": "2026-08-19",
+            "lifecycle_label": "昨日觸發",
+            "buy_days": 2,
+            "sell_days": 1,
+            "progress_label": "恢復強勢續抱尚缺：再 2 個顯著買進日；10日淨買再 +0.29%",
+            "evidence_expires_in": 2,
+            "qualification_label": "共識（2/3）",
+            "etf_label": "403・981"
+          },
+          {
+            "score": -0.0483,
+            "etfs": [
+              "00403A"
+            ],
+            "name": "中砂",
+            "stock_id": "1560",
+            "category": "IC-代工",
+            "event_type": "buy_to_sell",
+            "event_label": "買後轉賣",
+            "event_date": "2026-08-19",
+            "lifecycle_label": "昨日觸發・今日續賣",
+            "current_confirmation_date": "2026-08-20",
+            "buy_days": 0,
+            "sell_days": 3,
+            "progress_label": "恢復強勢續抱尚缺：再 5 個顯著買進日；再 2 檔 ETF 參與；10日淨買再 +0.35%",
+            "evidence_expires_in": null,
+            "qualification_label": "1/3 反轉2日",
+            "etf_label": "403"
+          },
+          {
+            "score": -0.0448,
+            "etfs": [
+              "00981A"
+            ],
+            "name": "聯發科技",
+            "stock_id": "2454",
+            "category": "IC-設計",
+            "event_type": "buy_to_sell",
+            "event_label": "買後轉賣",
+            "event_date": "2026-08-19",
+            "lifecycle_label": "昨日觸發・今日續賣",
+            "current_confirmation_date": "2026-08-20",
+            "buy_days": 1,
+            "sell_days": 3,
+            "progress_label": "恢復強勢續抱尚缺：再 4 個顯著買進日；再 1 檔 ETF 參與；10日淨買再 +0.49%",
+            "evidence_expires_in": 6,
             "qualification_label": "1/3 反轉2日",
             "etf_label": "981"
           }
