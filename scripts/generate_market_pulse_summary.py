@@ -7,6 +7,7 @@ standalone HTML report from the same data and screenshots that HTML to JPG.
 from __future__ import annotations
 
 import html
+import os
 import shutil
 import sqlite3
 import sys
@@ -24,7 +25,12 @@ if str(ROOT_DIR) not in sys.path:
 from scripts.etf_benchmark.step4_regimes import classify_leg, zigzag_pivots
 
 SUMMARY_DIR = ROOT_DIR / "data" / "summaries"
-DB_PATH = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
+DB_PATH = Path(
+    os.environ.get(
+        "STOCK_GLOBAL_MARKET_DB",
+        "/var/lib/stock/market/market.db",
+    )
+)
 
 CROSS_ASSET_INDICES: list[tuple[str, str]] = [
     ("^SOX", "費城半導體"),
@@ -52,12 +58,14 @@ COLORS = {
 
 
 def get_prices(ticker: str) -> pd.DataFrame:
-    with sqlite3.connect(DB_PATH) as conn:
+    db_uri = f"file:{DB_PATH.resolve().as_posix()}?mode=ro"
+    with sqlite3.connect(db_uri, uri=True) as conn:
+        conn.execute("PRAGMA query_only=ON")
         df = pd.read_sql_query(
             """
             SELECT date, close
-            FROM prices
-            WHERE ticker = ?
+            FROM daily_bars
+            WHERE symbol = ?
               AND close IS NOT NULL
             ORDER BY date
             """,
@@ -74,7 +82,7 @@ def get_prices(ticker: str) -> pd.DataFrame:
 def latest_taiex_date() -> str:
     df = get_prices("^TWII")
     if df.empty:
-        raise RuntimeError("No ^TWII price date found in etf_bench DB")
+        raise RuntimeError("No ^TWII price date found in ARM market.db")
     return df["date"].max().date().isoformat()
 
 

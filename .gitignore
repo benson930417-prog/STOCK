@@ -5,6 +5,17 @@ __pycache__/
 venv/
 .env
 
+# Private keys, certificates and credential exports must stay in
+# Documents/TradingInfraSecrets, never in this repository.
+*.pfx
+*.p12
+*.pem
+*.key
+*credentials*.json
+.stock_secrets
+id_rsa*
+id_ed25519*
+
 # Streamlit
 .streamlit/
 secrets.toml
@@ -47,15 +58,20 @@ data/summaries/*
 # Local design previews for the score chart (throwaway)
 data/_preview_*
 
-# etf_benchmark SQLite is built locally/on OCI, not tracked
-data/etf_bench/universe.csv
-data/etf_bench/*.sqlite
-data/etf_bench/*.sqlite-journal
-data/etf_bench/*.sqlite-wal
-data/etf_bench/*.sqlite-shm
+# A local ETF benchmark store is forbidden. Production uses only
+# /var/lib/stock/market/market.db; ignore any accidental legacy leftovers so
+# they cannot be committed while the runtime fail-closed checks reject them.
+data/etf_bench/
+data/score_history.csv
 
 # Atomic-write leftovers from OneDrive/editor races
 *.tmp.*
 
 # Local research/backtest sandboxes do not belong in the production repo
 strategy_experiment*/
+
+# Local TradingView Blue Line side project (scripts, reports, screenshots)
+/tradingview_blue_line_backtest/
+
+# Local TradingView TXF long/short research project
+/tradingview_txf_long_short_experiment/

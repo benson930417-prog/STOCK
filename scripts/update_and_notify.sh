@@ -1,25 +1,25 @@
 #!/bin/bash
-# Daily orchestrator: ETF fetchers + etf_benchmark refresh + git push +
-# LINE notify + admin email summary.
+# Post-import orchestrator: derived analytics + Git data push + LINE/admin notify.
 #
-# Triggered by stock-fetch-1830-tw.timer at 18:30 TPE (10:30 UTC).
+# The sealed issuer fetch and the market.db import are separate, authoritative
+# stages. This script intentionally cannot fetch holdings by itself.
 # Failure of any single step does NOT abort the rest — every step's status is
 # captured into a summary and emailed to ADMIN_EMAIL at the end.
 
 set -u
 
+if [ "${1:-}" != "--post-fetch" ]; then
+    echo "refusing: run sealed issuer fetch and market.db import before derived work" >&2
+    exit 64
+fi
+shift
+
 cd /home/ubuntu/STOCK || exit 1
 source venv/bin/activate
 
-# Keep the OCI server in sync with UI updates and code changes from GitHub.
-# step1_universe rewrites this generated snapshot; do not let it block deploy pulls.
-if ! git diff --quiet -- data/etf_bench/universe.csv || ! git diff --cached --quiet -- data/etf_bench/universe.csv; then
-    echo "Restoring generated data/etf_bench/universe.csv before pull."
-    git restore --staged --worktree data/etf_bench/universe.csv 2>/dev/null \
-        || git checkout -- data/etf_bench/universe.csv
-fi
-git pull origin main --rebase --autostash
-pip install -r requirements.txt -q
+# Deployment owns application code and dependencies. Scheduled data jobs never
+# mutate their own code or virtual environment. Canonical market data is never
+# stored in Git.
 
 SECRETS_FILE="/home/ubuntu/.stock_secrets"
 if [ -f "$SECRETS_FILE" ]; then
@@ -53,34 +53,6 @@ fail_count=0
     echo
 } > "$SUMMARY_FILE"
 
-fetch_summary_line() {
-    local label="$1"
-    LABEL="$label" python - <<'PY'
-import json
-import os
-import re
-from pathlib import Path
-
-label = os.environ["LABEL"]
-match = re.search(r"fetch\s+([0-9A-Z]+)", label)
-if not match:
-    raise SystemExit
-ticker = match.group(1)
-passive = ticker in {"0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"}
-prefix = "passive" if passive else "etf"
-log_path = Path(f"data/{prefix}_{ticker}_log.json")
-history_path = Path(f"data/{prefix}_{ticker}_history.json")
-
-try:
-    log = json.loads(log_path.read_text(encoding="utf-8"))
-except Exception:
-    log = {}
-
-status = log.get("status") or log.get("message") or "unknown"
-print(f"          status={status}")
-PY
-}
-
 # Record a successful step: append [OK] + step metrics to the summary.
 # Optional third arg is a note appended to the label (e.g. retry recovery).
 record_step_ok() {
@@ -92,12 +64,6 @@ record_step_ok() {
     # Pull useful metrics out of the daily production steps.
     local metrics=""
     case "$label" in
-            fetch*)
-                metrics=$(fetch_summary_line "$label")
-                ;;
-            step3*)
-                metrics=$(grep -E "^[[:space:]]*(OK|EMPTY|FAIL|rows:)" "$logfile" | sed 's/^/          /')
-                ;;
             step4*)
                 metrics=$(awk '
                     /^\[step4\]/ {print; next}
@@ -176,46 +142,8 @@ run_step() {
     fi
 }
 
-# Like run_step, but retries transient failures: up to $1 attempts with $2
-# seconds between them. Only the FINAL outcome is recorded in the summary, so
-# a step that recovers on retry stays [OK] and does not flip the run to
-# PARTIAL_FAIL (the recovery is noted on the [OK] line and in the journal).
-# Meant for fetchers hitting flaky external sources — e.g. Yuanta's page
-# rendering without the weight table at 18:30 (2026-07-16), which succeeded
-# on a later manual rerun.
-run_step_retry() {
-    local attempts="$1"
-    local delay="$2"
-    local label="$3"
-    shift 3
-    local try=1 rc logfile="$LOG_DIR/${label// /_}.log"
-    while true; do
-        echo "=== $label (attempt $try/$attempts) ==="
-        if "$@" > "$logfile" 2>&1; then
-            if [ "$try" -gt 1 ]; then
-                record_step_ok "$label" "$logfile" "recovered on attempt $try/$attempts"
-            else
-                record_step_ok "$label" "$logfile"
-            fi
-            return 0
-        else
-            rc=$?
-        fi
-        if [ "$try" -ge "$attempts" ]; then
-            record_step_fail "$label" "$logfile" "$rc"
-            return $rc
-        fi
-        # Keep the failed attempt's log for debugging before the retry
-        # overwrites it, and note the retry in the journal.
-        cp "$logfile" "$LOG_DIR/${label// /_}.attempt${try}.log" 2>/dev/null
-        echo "  [RETRY] $label failed (exit=$rc) — retrying in ${delay}s"
-        try=$((try + 1))
-        sleep "$delay"
-    done
-}
-
 # ──────────────────────────────────────────────────────────────────────────
-# 1. ETF fetchers (your existing per-ETF scripts)
+# 1. Bind derived work to today's CLEAN, sealed issuer fetch.
 # ──────────────────────────────────────────────────────────────────────────
 if [ "$#" -gt 0 ]; then
     ETFS=("$@")
@@ -224,37 +152,52 @@ else
 fi
 
 echo "ETF list: ${ETFS[*]}"
-{ echo "ETF Fetchers"; echo "──────────"; } >> "$SUMMARY_FILE"
+{ echo "Sealed issuer fetch"; echo "-------------------"; } >> "$SUMMARY_FILE"
 
-RUN_STARTED_UTC="$(python -c 'from datetime import datetime, timezone; print(datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))')"
-FAILED_ETFS=()
+RUN_STARTED_UTC="$(python - <<'PY'
+import json
+import hashlib
+import sqlite3
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
-# Fetchers scrape/query external issuer sources, which occasionally hiccup
-# for one run (Yuanta page missing its weight table, issuer API timeouts).
-# One retry after 90s absorbs those; a hard outage still fails after retry.
-FETCH_ATTEMPTS=2
-FETCH_RETRY_DELAY=90
-
-for ETF in "${ETFS[@]}"; do
-    case "$ETF" in
-        00403A|00981A|00988A|00991A)
-            run_step_retry "$FETCH_ATTEMPTS" "$FETCH_RETRY_DELAY" "fetch $ETF (active)" python "scripts/fetch_etf_${ETF}.py" || FAILED_ETFS+=("$ETF")
-            ;;
-        0050|0056|00830|00878|00891|00918|009805|009820)
-            run_step_retry "$FETCH_ATTEMPTS" "$FETCH_RETRY_DELAY" "fetch $ETF (passive)" python "scripts/fetch_passive_${ETF}.py" || FAILED_ETFS+=("$ETF")
-            ;;
-        *)
-            echo "Skipping unknown ETF: $ETF"
-            printf "  [SKIP] unknown ETF: %s\n" "$ETF" >> "$SUMMARY_FILE"
-            ;;
-    esac
-done
+manifest_path = Path("/var/lib/stock/market/holdings-fetch.json")
+manifest_bytes = manifest_path.read_bytes()
+manifest = json.loads(manifest_bytes.decode("utf-8"))
+today = datetime.now(ZoneInfo("Asia/Taipei")).date().isoformat()
+if manifest.get("status") != "CLEAN" or manifest.get("trading_date") != today:
+    raise SystemExit("today's CLEAN issuer fetch manifest is unavailable")
+with sqlite3.connect(
+    "file:/var/lib/stock/market/market.db?mode=ro", uri=True, timeout=30
+) as connection:
+    row = connection.execute(
+        """SELECT status,failure_count,report_json FROM ingest_runs
+             WHERE job='ETF_ISSUER_HOLDINGS' AND trading_date=?
+             ORDER BY finished_at_utc DESC LIMIT 1""",
+        (today,),
+    ).fetchone()
+if not row or row[0] != "CLEAN" or int(row[1]) != 0:
+    raise SystemExit("today's CLEAN issuer holdings import is unavailable")
+report = json.loads(row[2] or "{}")
+if report.get("source_run_id") != manifest.get("run_id"):
+    raise SystemExit("latest holdings import did not consume this fetch manifest")
+canonical_manifest = json.dumps(
+    manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+).encode("utf-8")
+manifest_sha256 = hashlib.sha256(canonical_manifest).hexdigest()
+if report.get("manifest_sha256") != manifest_sha256:
+    raise SystemExit("holdings import manifest checksum does not match current manifest")
+print(manifest["started_at_utc"])
+PY
+)" || exit 2
+printf "  [OK]   today's CLEAN issuer manifest and matching DB import started at %s\n" \
+    "$RUN_STARTED_UTC" >> "$SUMMARY_FILE"
 
 # ──────────────────────────────────────────────────────────────────────────
-# 2. etf_benchmark refresh (NEW)
+# 2. Derived analytics refresh from the sole market database.
 # ──────────────────────────────────────────────────────────────────────────
-{ echo; echo "etf_benchmark"; echo "──────────"; } >> "$SUMMARY_FILE"
-run_step "step3 backfill --incremental" python -m scripts.etf_benchmark.step3_backfill --incremental
+{ echo; echo "etf_benchmark"; echo "-------------"; } >> "$SUMMARY_FILE"
 run_step "step4 regime tagger"           python -m scripts.etf_benchmark.step4_regimes
 run_step "step5 score (append today)"    python -m scripts.etf_benchmark.step5_score
 run_step "market pulse volume cache"     python scripts/update_market_pulse_volume.py --months 4
@@ -350,35 +293,6 @@ for ETF in "${CHANGED_ETFS[@]}"; do
     esac
 done
 
-if [ "${#FAILED_ETFS[@]}" -gt 0 ]; then
-    echo "Fetch failed for: ${FAILED_ETFS[*]}"
-    FAILED_ETFS_STR="${FAILED_ETFS[*]}" RUN_STARTED_UTC="$RUN_STARTED_UTC" python - <<'PY'
-import json
-import os
-from datetime import datetime, timezone
-from pathlib import Path
-
-now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-run_started = os.environ.get("RUN_STARTED_UTC") or now
-for etf in os.environ.get("FAILED_ETFS_STR", "").split():
-    prefix = "passive" if etf in {"0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"} else "etf"
-    path = Path(f"data/{prefix}_{etf}_log.json")
-    try:
-        previous = json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        previous = {}
-    previous.update(
-        {
-            "last_checked_utc": now,
-            "status": "FETCH FAILED",
-            "error": f"{etf} fetch failed during daily job started at {run_started}",
-        }
-    )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(previous, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-PY
-fi
-
 # ──────────────────────────────────────────────────────────────────────────
 # 4. Git push + (if active ETF got new data) LINE broadcast
 # ──────────────────────────────────────────────────────────────────────────
@@ -394,7 +308,7 @@ if [ "${#CHANGED_ETFS[@]}" -gt 0 ]; then
         run_step "generate_etf_summary" python scripts/generate_etf_summary.py
     fi
 
-    git add data/*.json data/summaries/*.jpg data/etf_bench/score_history.csv 2>/dev/null
+    git add data/*.json data/summaries/*.jpg 2>/dev/null
     commit_output=$(git commit -m "Auto-update ETF data and summary images from OCI" 2>&1)
     if [ "$?" -eq 0 ]; then
         printf "  [OK]   git commit\n" >> "$SUMMARY_FILE"
@@ -446,7 +360,7 @@ PY
 else
     echo "No new ETF data found. Pushing log timestamps only."
     printf "  [INFO] no new ETF data\n" >> "$SUMMARY_FILE"
-    git add data/*.json data/summaries/*.jpg data/etf_bench/score_history.csv 2>/dev/null
+    git add data/*.json data/summaries/*.jpg 2>/dev/null
     commit_output=$(git commit -m "Auto-update ETF log timestamps and market pulse summary from OCI" 2>&1)
     if [ "$?" -eq 0 ]; then
         printf "  [OK]   git commit\n" >> "$SUMMARY_FILE"
@@ -497,3 +411,9 @@ else
 fi
 
 echo "Run complete: $overall_status ($fail_count failed steps, ${duration}s)"
+if [ "$fail_count" -gt 0 ]; then
+    # The email/report has already been attempted and all independent steps
+    # have had a chance to run.  Return failure so systemd and the status page
+    # cannot mistake PARTIAL_FAIL for a successful daily pipeline.
+    exit 1
+fi

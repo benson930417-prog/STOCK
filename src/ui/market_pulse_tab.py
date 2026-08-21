@@ -1392,7 +1392,7 @@ def render_market_pulse_tab(*, lang=None, T=None, DATA_DIR=None, **kwargs) -> No
 
     taiex_df = db.get_prices("^TWII")
     if taiex_df.empty:
-        st.error("資料庫無加權指數 (^TWII) 價格。請先執行 step3_backfill。")
+        st.error("ARM market.db 尚無加權指數 (^TWII) 日 K；請檢查 foreign ingest 狀態。")
         return
     taiex = taiex_df.set_index("date")["close"].dropna()
 

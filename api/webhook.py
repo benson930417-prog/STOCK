@@ -45,8 +45,11 @@ def get_secret(key):
     try:
         with open('/home/ubuntu/.stock_secrets', 'r') as f:
             for line in f:
+                line = line.strip()
+                if line.startswith('export '):
+                    line = line[7:].lstrip()
                 if "=" in line:
-                    k, v = line.strip().split('=', 1)
+                    k, v = line.split('=', 1)
                     v = v.strip('"\'')
                     if key == 'LINE_CHANNEL_ACCESS_TOKEN' and k == 'LINE_TOKEN': return v
                     if key == 'LINE_CHANNEL_SECRET' and k == 'LINE_CHANNEL_SECRET': return v
@@ -267,22 +270,28 @@ def latest_margin_risk_date():
     return latest
 
 def latest_market_pulse_date():
-    db_path = os.path.join(parent_dir, "data", "etf_bench", "etf_bench.sqlite")
-    with sqlite3.connect(db_path) as conn:
-        row = conn.execute("SELECT MAX(date) FROM prices WHERE ticker = '^TWII'").fetchone()
+    db_path = os.environ.get(
+        "STOCK_GLOBAL_MARKET_DB",
+        "/var/lib/stock/market/market.db",
+    )
+    db_uri = f"file:{Path(db_path).resolve().as_posix()}?mode=ro"
+    with sqlite3.connect(db_uri, uri=True) as conn:
+        conn.execute("PRAGMA query_only=ON")
+        row = conn.execute(
+            "SELECT MAX(date) FROM daily_bars WHERE symbol='^TWII'"
+        ).fetchone()
     if not row or not row[0]:
-        raise RuntimeError("No ^TWII price date found in etf_bench DB")
+        raise RuntimeError("No ^TWII price date found in market.db")
     return str(row[0])
 
 def _run_daily_update():
-    """Fire-and-forget re-run of the full daily orchestrator. The script is
-    self-contained (cd's to repo, activates venv, sources secrets, defaults to
-    all ETFs, and emails its own summary), so there is no LINE feedback here."""
+    """Run the sealed fetch -> market.db import -> derived pipeline."""
     try:
         subprocess.run(
-            ["bash", "scripts/update_and_notify.sh"],
+            ["bash", "scripts/run_market_pipeline_manual.sh"],
             cwd=parent_dir,
             timeout=1800,
+            check=True,
         )
     except Exception as e:
         print("Daily update run failed:", e)
@@ -318,35 +327,10 @@ def _read_fetch_log(ticker):
         return {}
 
 def _run_fetch_and_report(tickers):
-    lines = []
-    for ticker in tickers:
-        script = _fetcher_script_for(ticker)
-        try:
-            proc = subprocess.run(
-                [sys.executable, script],
-                cwd=parent_dir,
-                capture_output=True,
-                text=True,
-                timeout=180,
-            )
-            if proc.returncode == 0:
-                log = _read_fetch_log(ticker)
-                status = log.get("status", "UNKNOWN")
-                latest = log.get("latest_date", "----")
-                count = log.get("holdings_count", "?")
-                lines.append(
-                    f"✅ {ticker} {ETF_QUOTE_NAMES.get(ticker, '')}｜{status}｜{latest}｜{count}檔"
-                )
-            else:
-                tail = (proc.stderr or proc.stdout or "").strip().splitlines()
-                detail = tail[-1][:120] if tail else f"exit={proc.returncode}"
-                lines.append(f"❌ {ticker} 失敗：{detail}")
-        except subprocess.TimeoutExpired:
-            lines.append(f"❌ {ticker} 逾時（>180秒）")
-        except Exception as e:
-            lines.append(f"❌ {ticker} 失敗：{type(e).__name__}: {e}")
-    msg = "📥 重新抓取結果\n" + "\n".join(lines)
-    print(msg, flush=True)
+    # There is only one supported write path.  A manual request runs the same
+    # sealed issuer fetch -> market.db import -> derived pipeline as the timer.
+    print(f"canonical manual refresh requested for {sorted(set(tickers))}", flush=True)
+    _run_daily_update()
 
 def _line_access_token():
     return get_secret('LINE_CHANNEL_ACCESS_TOKEN') or get_secret('LINE_TOKEN')
@@ -1100,7 +1084,7 @@ def handle_message(event):
             tickers = [refetch_target]
         reply_line(
             event.reply_token,
-            TextSendMessage(text=f"⏳ 開始重新抓取：{'、'.join(tickers)}\n結果會寫入 stock_webhook.log（每檔約需數十秒）。")
+            TextSendMessage(text="⏳ 已啟動完整官方 holdings → market.db → 衍生資料管線。")
         )
         threading.Thread(
             target=_run_fetch_and_report,
@@ -1128,10 +1112,9 @@ def handle_message(event):
                 "📊 一般隱藏指令\n"
                 "• id — 查詢 LINE 使用者 ID 及群組 ID\n\n"
                 "🔁 每日更新（背景執行，結果寄 email）\n"
-                "• 每日更新 — 重新執行完整每日流程（抓取＋benchmark＋git＋廣播＋email）\n\n"
-                "🔄 重新抓取官方持股（完成後回報狀態）\n"
-                "• 抓取 891 — 重新抓取單一 ETF（403/981/988/0050/830/878/891/918/9805/9820）\n"
-                "• 抓取 全部 — 重新抓取所有 ETF\n"
+                "• 每日更新 — 密封抓取→market.db 匯入→分析／快取／通知\n\n"
+                "🔄 重新抓取官方持股（統一走完整密封管線）\n"
+                "• 抓取 891／抓取 全部 — 都會執行完整 holdings → market.db → 衍生流程\n"
                 "🥚 彩蛋\n"
                 "• 欸嘿 — ( ͡° ͜ʖ ͡°)\n\n"
                 "ℹ️ 以上指令均需手動輸入，不在選單中顯示。"
@@ -1205,4 +1188,4 @@ def handle_join(event):
 
 # Local deployment entrypoint
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="127.0.0.1", port=8080)

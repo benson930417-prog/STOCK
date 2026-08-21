@@ -1,13 +1,6 @@
-"""ETF benchmark sub-system.
+"""ETF analytics derived from the sole ARM market.db.
 
-Local-first build. Goal: a practical benchmark database for every TW-listed ETF
-since 2025-01-01, suitable for ETF comparison and regime analysis.
-
-Pipeline (run scripts in order):
-
-    step1_universe.py   ETF master list (TWSE + TPEx) -> data/etf_bench/universe.csv
-    step2_schema.py     Initialise SQLite (prices, dividends, splits, regimes, ingest_log)
-    step3_backfill.py   Yahoo Finance daily prices + corporate actions
-    step4_regimes.py    Market regime tags
-    step5_score.py      Fair-score history CSV
+The owner pipeline populates instruments, daily bars and corporate actions.
+This package only derives regime tags and fair-score history back into the same
+database; it never creates or refreshes another market store.
 """

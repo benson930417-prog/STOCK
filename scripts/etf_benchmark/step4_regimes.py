@@ -34,8 +34,10 @@ Run:
 from __future__ import annotations
 
 import argparse
+import os
 import sqlite3
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -45,7 +47,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-DB_PATH = ROOT_DIR / "data" / "etf_bench" / "etf_bench.sqlite"
+DB_PATH = Path(os.environ.get("STOCK_GLOBAL_MARKET_DB", "/var/lib/stock/market/market.db"))
 
 DEFAULT_REFERENCE      = "^TWII"
 DEFAULT_THRESHOLD_PCT  = 5.0        # ≥ this % reversal confirms a pivot
@@ -145,18 +147,30 @@ def classify_leg(magnitude_pct: float, threshold_pct: float) -> str:
 def run_regimes(reference: str = DEFAULT_REFERENCE,
                 threshold_pct: float = DEFAULT_THRESHOLD_PCT) -> int:
     if not DB_PATH.exists():
-        print(f"[step4] DB not found at {DB_PATH}. Run step2 + step3 first.")
+        print(f"[step4] DB not found at {DB_PATH}.")
         return 1
 
     with sqlite3.connect(DB_PATH) as conn:
+        market_row = conn.execute(
+            """SELECT market FROM instruments WHERE symbol=?
+                 ORDER BY active DESC,
+                   CASE market WHEN 'INDEX_TW' THEN 0 WHEN 'TWSE' THEN 1
+                     WHEN 'TPEX' THEN 2 ELSE 99 END,
+                   market LIMIT 1""",
+            (reference,),
+        ).fetchone()
+        if not market_row:
+            print(f"[step4] No canonical instrument found for {reference}.")
+            return 1
         df = pd.read_sql_query(
-            "SELECT date, close FROM prices WHERE ticker = ? AND close IS NOT NULL "
+            "SELECT date,close FROM daily_bars "
+            "WHERE market=? AND symbol=? AND close IS NOT NULL "
             "ORDER BY date",
-            conn, params=[reference],
+            conn, params=[str(market_row[0]), reference],
         )
 
     if df.empty or len(df) < 2:
-        print(f"[step4] No prices found for {reference}. Run step3 first.")
+        print(f"[step4] No prices found for {reference}.")
         return 1
 
     df["date"]   = pd.to_datetime(df["date"]).dt.date
@@ -185,22 +199,23 @@ def run_regimes(reference: str = DEFAULT_REFERENCE,
     # Write to DB — idempotent: clear existing auto_zigzag rows for this reference
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
-            "DELETE FROM regimes WHERE reference_index = ? AND source = ?",
+            "DELETE FROM market_regimes WHERE reference_symbol = ? AND source = ?",
             (reference, SOURCE_TAG),
         )
         for leg in legs:
             conn.execute(
-                "INSERT INTO regimes "
-                "(start_date, end_date, regime, severity, reference_index, notes, source) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO market_regimes "
+                "(reference_symbol,start_date,end_date,regime,severity,notes,source,updated_at_utc) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
+                    reference,
                     leg["start_date"].isoformat(),
                     leg["end_date"].isoformat(),
                     leg["regime"],
                     leg["severity"],
-                    reference,
                     f"{leg['n_days']} trading days",
                     SOURCE_TAG,
+                    datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 ),
             )
         conn.commit()

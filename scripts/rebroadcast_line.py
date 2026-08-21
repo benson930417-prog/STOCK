@@ -30,6 +30,7 @@ from scripts.line_active_report_payload import (  # noqa: E402
     ACTIVE_NAMES,
     build_active_report_messages,
 )
+from src.market_db import load_holding_history  # noqa: E402
 
 SECRETS_FILE = "/home/ubuntu/.stock_secrets"
 WEBHOOK_HOST = "https://linechatbot.duckdns.org"
@@ -103,8 +104,8 @@ def main() -> int:
         print(f"WARN: unknown active ETF tickers: {unknown} — will broadcast anyway",
               file=sys.stderr)
     for t in args.tickers:
-        if not (DATA_DIR / f"etf_{t}_history.json").exists():
-            print(f"ERROR: missing data/etf_{t}_history.json", file=sys.stderr)
+        if not load_holding_history(t):
+            print(f"ERROR: market.db has no complete holding history for {t}", file=sys.stderr)
             return 1
 
     if args.regen:

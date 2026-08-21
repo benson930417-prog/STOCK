@@ -14,6 +14,11 @@ from src.etf_consensus_backtest import (
     run_backtest,
 )
 from src.etf_981_follow_strategy import build_981_follow_signal
+from src.market_db import (
+    load_corporate_action_payload,
+    load_daily_ohlcv_payload,
+    load_holding_history,
+)
 
 MIN_MEANINGFUL_TRADES = 30
 
@@ -39,23 +44,40 @@ def _build_signal(name, consensus, history_981, tags, missed_limit):
     return build_981_follow_signal(history_981, tags, exit_after_missed_disclosures=missed_limit)
 
 
+def _backtest_symbols(consensus):
+    symbols = {"0050", "00981A"}
+    symbols.update(str(symbol) for symbol in (consensus or {}).get("state_history", {}))
+    for board in ((consensus or {}).get("boards") or {}).values():
+        for lane in ("buying", "selling", "watching"):
+            symbols.update(
+                str(card.get("stock_id"))
+                for card in (board.get(lane) or [])
+                if card.get("stock_id")
+            )
+    return symbols
+
+
 def render_etf_consensus_backtest_tab(*, DATA_DIR=None, **kwargs):
     st.subheader("ETF 策略回測")
     st.caption("共用無偷看回測工具｜訊號揭露後，最早於下一個可交易日開盤成交。")
     consensus = _load(DATA_DIR / "etf_consensus_v4.json")
-    history_981 = _load(DATA_DIR / "etf_00981A_history.json")
+    history_981 = load_holding_history("00981A")
     tag_payload = _load(DATA_DIR / "stock_tags.json") or {}
-    prices = _load(DATA_DIR / "yuanta_v4_daily_k.json")
-    corporate_actions = _load(DATA_DIR / "twse_corporate_actions.json")
+    signal_dates = sorted(str(day) for day in ((consensus or {}).get("dates") or []))
+    price_start = signal_dates[0] if signal_dates else None
+    backtest_symbols = _backtest_symbols(consensus)
+    prices = load_daily_ohlcv_payload(backtest_symbols, start=price_start)
+    corporate_actions = load_corporate_action_payload(
+        backtest_symbols, start=price_start
+    )
     disclosure_times = _load(DATA_DIR / "etf_00981A_disclosure_times.json")
     if not consensus or not history_981 or not prices:
-        st.warning("缺少 V4、00981A 歷史或元大日 K 回補檔，尚無法回測。")
+        st.warning("缺少 V4、00981A 歷史或 ARM market.db 日 K，尚無法回測。")
         return
     if not corporate_actions:
         st.error(
-            "找不到 data/twse_corporate_actions.json：元大日 K 是未還原原始價，"
-            "沒有這份除權息表，持股與 0050 都會少算配息。請先執行 "
-            "`python scripts/fetch_twse_corporate_actions.py`。"
+            "ARM market.db 尚無所需除權息資料。元大日 K 是未還原原始價；"
+            "在官方 actions 匯入完成前，回測不會假裝這段總報酬是完整的。"
         )
 
     tags = tag_payload.get("tags") or {}
@@ -97,7 +119,7 @@ def render_etf_consensus_backtest_tab(*, DATA_DIR=None, **kwargs):
     price_end = max(price_dates)
     st.caption(
         f"行情來源：{prices.get('source', 'Yuanta SPARK')}｜"
-        f"快照截止 {price_end}｜{prices.get('successful_symbols', len(prices.get('symbols') or {}))}/"
+        f"資料截止 {price_end}｜{prices.get('successful_symbols', len(prices.get('symbols') or {}))}/"
         f"{prices.get('symbol_count', len(prices.get('symbols') or {}))} 檔成功"
         + (
             f"｜除權息 {corporate_actions.get('event_count', 0)} 筆（{corporate_actions.get('source', '')}）"
@@ -106,7 +128,7 @@ def render_etf_consensus_backtest_tab(*, DATA_DIR=None, **kwargs):
         )
     )
     if str(signal.get("as_of") or "") > price_end:
-        st.info(f"策略訊號已更新至 {signal.get('as_of')}，本次單次行情快照只到 {price_end}；回測暫停在快照截止日。")
+        st.info(f"策略訊號已更新至 {signal.get('as_of')}，market.db 行情只到 {price_end}；回測暫停在資料截止日。")
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
@@ -153,9 +175,9 @@ def render_etf_consensus_backtest_tab(*, DATA_DIR=None, **kwargs):
         compound_position_size=compound,
     )
     closes_981 = {
-        str(day): (payload.get("meta") or {}).get("closing_price")
-        for day, payload in (history_981 or {}).items()
-        if (payload.get("meta") or {}).get("closing_price")
+        str(bar.get("date")): bar.get("close")
+        for bar in ((prices.get("symbols") or {}).get("00981A") or [])
+        if bar.get("date") and bar.get("close") is not None
     }
     buy_and_hold = {"symbol": "00981A", "label": "買進持有 00981A", "closes": closes_981}
     extra = {

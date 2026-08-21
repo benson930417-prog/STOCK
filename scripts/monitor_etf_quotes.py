@@ -434,21 +434,14 @@ def _select_tsmc_proxy(mode, previous_cache=None):
 
 
 def load_latest_holdings(ticker):
-    if ticker in PASSIVE_ETF_TICKERS:
-        history_path = DATA_DIR / f"passive_{ticker}_history.json"
-    else:
-        history_path = DATA_DIR / f"etf_{ticker}_history.json"
-    if not history_path.exists():
-        raise FileNotFoundError(f"Missing history file: {history_path}")
+    # Holdings have one canonical owner.  The quote cache remains deliberately
+    # short-lived and live, but its constituent list/weights come from the sole
+    # ARM market.db rather than a second history JSON store.
+    from src.market_db import latest_holding_payload
 
-    with history_path.open("r", encoding="utf-8") as fh:
-        history = json.load(fh)
-
-    if not history:
-        raise ValueError(f"No history data in {history_path}")
-
-    latest_date = max(history.keys())
-    latest_data = history[latest_date]
+    latest_date, latest_data = latest_holding_payload(str(ticker).upper())
+    if not latest_date or not latest_data:
+        raise ValueError(f"No sealed issuer holdings in market.db for {ticker}")
     holdings = latest_data.get("holdings", [])
     if not holdings:
         raise ValueError(f"No holdings for {ticker} on {latest_date}")

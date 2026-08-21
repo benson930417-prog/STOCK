@@ -272,8 +272,6 @@ def enrich_positions_with_quotes(positions):
             datetime.fromtimestamp(int(quote_time), timezone.utc).isoformat().replace("+00:00", "Z")
             if quote_time else quote.get("regularMarketTimeUtc")
         )
-        # Override Yahoo's session for US holidays — Yahoo would say PRE/REG/POST
-        # by time-of-day even on Memorial Day. _adjusted_market_session forces CLOSE.
         item["market_session"] = _adjusted_market_session(
             item.get("country"),
             quote.get("marketSession") or quote.get("market_session"),
@@ -298,22 +296,16 @@ def enrich_positions_with_quotes(positions):
 
 
 def _latest_history_payload(ticker):
-    path = DATA_DIR / (f"passive_{ticker}_history.json" if ticker in {"0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"} else f"etf_{ticker}_history.json")
-    if not path.exists():
-        return None, {}
-    history = json.loads(path.read_text(encoding="utf-8"))
-    date_key = max(history.keys())
-    return date_key, history[date_key]
+    from src.market_db import latest_holding_payload
+
+    return latest_holding_payload(str(ticker))
 
 
 def _latest_etf_close(ticker):
-    _, payload = _latest_history_payload(ticker)
-    meta = payload.get("meta", {})
-    price = meta.get("closing_price") or meta.get("price")
-    try:
-        return float(price) if price is not None else None
-    except (TypeError, ValueError):
-        return None
+    from src.market_db import latest_quote_map
+
+    quote = latest_quote_map([str(ticker)]).get(str(ticker).upper())
+    return float(quote["price"]) if quote else None
 
 
 def _quote_cache_by_holding(ticker):
@@ -742,14 +734,15 @@ def generate_master_quote_card(limit=50):
 
 
 def load_cached_master_quote_card():
+    from src.market_db import DB_PATH
+
     with MASTER_CACHE_PATH.open("r", encoding="utf-8") as fh:
         cache = json.load(fh)
     cache_mtime = MASTER_CACHE_PATH.stat().st_mtime
     source_paths = [
         Path(__file__),
         MASTER_PATH,
-        *DATA_DIR.glob("etf_*_history.json"),
-        *DATA_DIR.glob("passive_*_history.json"),
+        DB_PATH,
     ]
     newest_source_mtime = max(
         (path.stat().st_mtime for path in source_paths if path.exists()),

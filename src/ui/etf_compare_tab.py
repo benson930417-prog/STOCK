@@ -1,11 +1,10 @@
 """ETF 比較 tab — rebased % return comparison across ETFs (Chinese-only UI).
 
-Reads ENTIRELY from the local SQLite (scripts/etf_benchmark/db.py).
+Reads entirely from the sole ARM market.db through scripts/etf_benchmark/db.py.
 No Yahoo calls at request time → tab loads instantly.
 
-Refresh path:
-    python -m scripts.etf_benchmark.step3_backfill --incremental
-(or full rebuild with `--reset` on step2 + plain step3 run)
+Data path:
+    /var/lib/stock/market/market.db (read-only in the website)
 """
 from __future__ import annotations
 
@@ -561,8 +560,7 @@ def _build_score_table(
         if ann_ret is not None and max_dd < 0:
             rec["calmar"] = ann_ret / abs(max_dd)
 
-        # Asymmetry (benchmark-relative; gated on R²). Consistency is benchmark-free
-        # (volatility only), already set above as rec["ann_vol"].
+        # Asymmetry is benchmark-relative and gated on R².
         bench_idx = _score_benchmark_for(urow)
         rec["benchmark"] = bench_idx
         cap = _capture_stats(rets, _bench_returns(bench_idx)) if bench_idx else None
@@ -649,11 +647,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
 
     summary = db.db_summary()
     if not summary.get("db_exists"):
-        st.error(
-            "ETF 資料庫尚未建立。請執行：\n\n"
-            "```\npython -m scripts.etf_benchmark.step2_schema --reset\n"
-            "python -m scripts.etf_benchmark.step3_backfill\n```"
-        )
+        st.error("market.db 尚未建立或沒有 ETF 日 K；請檢查 stock-market timers。")
         return
 
     st.caption(
@@ -663,7 +657,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     )
 
     universe = db.get_universe()
-    # Yahoo names can carry HTML entities (e.g. "S&amp;P") — clean once for all displays
+    # Official names can carry HTML entities (e.g. "S&amp;P") — clean once for all displays
     universe["name"] = universe["name"].map(
         lambda s: html.unescape(s) if isinstance(s, str) else s)
     # ETFs only (exclude reference indices) for the picker
@@ -799,7 +793,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
                                        help="在圖上疊加多頭 / 小熊 / 中熊 / 大熊色塊（以加權指數擺動偵測計算）。")
             use_adj      = st.checkbox("配息還原 (adj close)", value=True,
                                        key="etfc_use_adj",
-                                       help="勾起：用 Yahoo 的 adj_close 算報酬率（公平比較高股息）。"
+                                       help="勾起：用 canonical 原始收盤價加除權息事件計算總報酬（公平比較高股息）。"
                                             "取消：用原始收盤價（高股息會被低估）。")
 
     # Fixed swing threshold for the bull/bear regime report (no longer user-tunable).
@@ -1374,7 +1368,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
         if gap_warnings:
             with st.container(border=True):
                 st.markdown("⚠️ **缺漏交易日警示**")
-                st.caption("可能原因：除權息暫停交易、分割暫停交易、Yahoo 資料缺失。"
+                st.caption("可能原因：除權息暫停交易、分割暫停交易、canonical 資料缺失。"
                            "Bull/Bear 壓力測試時這些缺漏期間會自動排除。")
                 for w in gap_warnings:
                     st.markdown(f"- {w}")
@@ -1383,7 +1377,7 @@ def render_etf_compare_tab(*, lang=None, T=None, DATA_DIR=None,
     st.markdown("**驗證表**")
     st.caption(
         "對照表：圖上每條線的最終值應等於下表「報酬率 %」。"
-        + ("報酬率使用 Yahoo adj_close（已自動配息還原）。"
+        + ("報酬率使用 canonical 原始日 K 加官方除權息事件（已自動還原總報酬）。"
            if use_adj else "報酬率使用原始收盤價（**未**配息還原，高股息 ETF 會被低估）。")
     )
     if line_rows:

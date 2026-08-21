@@ -1,6 +1,6 @@
-"""Step 7 — record every ETF's fair-score pillars per day into a tracked CSV.
+"""Record every ETF's fair-score pillars into the sole ARM market.db.
 
-The ETF 比較 tab's composite is built from three direction-neutral pillars
+The ETF 比較 tab's composite is built from two direction-neutral pillars
 (效率 / 不對稱). This step computes those pillars for *all* eligible ETFs
 and appends one row per ETF per trading day, so the website can plot each fund's
 score history and recombine the pillars live (custom weights + confidence).
@@ -16,8 +16,7 @@ Design choices that make a daily, all-ETF record well-defined:
   • We store the pillar percentile sub-scores (0-100) + n_days, NOT the weighted
     composite — the composite/weights/confidence stay interactive in the website.
 
-Persisted to data/etf_bench/score_history.csv (long format), tracked in git so it
-survives DB rebuilds and syncs to local checkouts.
+Persisted to the ``etf_score_history`` table. No CSV mirror is written.
 
 Run:
     python -m scripts.etf_benchmark.step5_score                      # append today only
@@ -29,7 +28,9 @@ from __future__ import annotations
 
 import argparse
 import logging
+import sqlite3
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -47,11 +48,11 @@ from scripts.etf_benchmark import db                       # noqa: E402
 from src.ui.etf_compare_tab import _build_score_table      # noqa: E402
 
 # ── knobs ────────────────────────────────────────────────────────────────────
-HIST_CSV       = ROOT_DIR / "data" / "etf_bench" / "score_history.csv"
+MODEL_VERSION  = "fair_score_v1"
 DEFAULT_YEARS  = 1                           # backfill this many years of history by default
 LOOKBACK       = pd.DateOffset(years=1)      # trailing window for the metrics
 MIN_DAYS       = 30                          # ≥ this many of the fund's OWN trading days
-WEIGHTS        = {"efficiency": 1.0, "asymmetry": 1.0, "consistency": 1.0}  # only pillars stored
+WEIGHTS        = {"efficiency": 1.0, "asymmetry": 1.0}
 REF_INDICES    = ("^TWII", "^IXIC", "^GSPC", "^DJI")  # benchmarks used by the asymmetry pillar
 
 # fund_type → asset class the fund is ranked within
@@ -99,17 +100,33 @@ def scores_as_of(universe: pd.DataFrame, eligible: pd.DataFrame, as_of: pd.Times
 
 
 def _upsert(df_new: pd.DataFrame) -> int:
-    """Replace any existing rows for the dates in df_new, keep the rest."""
-    HIST_CSV.parent.mkdir(parents=True, exist_ok=True)
-    if HIST_CSV.exists():
-        old = pd.read_csv(HIST_CSV)
-        old["date"] = old["date"].astype(str)
-        out = pd.concat([old[~old["date"].isin(set(df_new["date"]))], df_new], ignore_index=True)
-    else:
-        out = df_new
-    out = out.sort_values(["date", "asset_class", "ticker"]).reset_index(drop=True)
-    out.to_csv(HIST_CSV, index=False, encoding="utf-8-sig")
-    return len(out)
+    """Replace these dates in the sole market.db score table."""
+    if df_new.empty:
+        return 0
+    dates = sorted(set(df_new["date"].astype(str)))
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    with sqlite3.connect(db.DB_PATH, timeout=60) as conn:
+        conn.execute("PRAGMA busy_timeout=60000")
+        conn.executemany(
+            "DELETE FROM etf_score_history WHERE date=? AND model_version=?",
+            [(day, MODEL_VERSION) for day in dates],
+        )
+        conn.executemany(
+            """INSERT INTO etf_score_history
+               (date,ticker,asset_class,n_days,efficiency,asymmetry,composite,
+                model_version,updated_at_utc)
+               VALUES(?,?,?,?,?,?,NULL,?,?)""",
+            [
+                (
+                    str(row.date), str(row.ticker), str(row.asset_class), int(row.n_days),
+                    None if pd.isna(row.eff) else float(row.eff),
+                    None if pd.isna(row.asy) else float(row.asy),
+                    MODEL_VERSION, now,
+                )
+                for row in df_new.itertuples(index=False)
+            ],
+        )
+        return int(conn.execute("SELECT COUNT(*) FROM etf_score_history").fetchone()[0])
 
 
 def _trading_dates(start: pd.Timestamp, end: pd.Timestamp | None) -> list[pd.Timestamp]:
@@ -141,7 +158,14 @@ def _prefetch_cache(tickers: list[str], start: pd.Timestamp, end: pd.Timestamp):
     return cached, real
 
 
-def run(backfill: bool, start: str | None, end: str | None, years: int) -> int:
+def run(
+    backfill: bool,
+    start: str | None,
+    end: str | None,
+    years: int,
+    *,
+    dry_run: bool = False,
+) -> int:
     if not db.DB_PATH.exists():
         print(f"DB not found at {db.DB_PATH}. Build/backfill it first.")
         return 1
@@ -156,9 +180,12 @@ def run(backfill: bool, start: str | None, end: str | None, years: int) -> int:
 
     if not backfill:
         df_new = scores_as_of(universe, eligible, latest)
+        if dry_run:
+            print(f"[step5] dry-run would record {len(df_new)} ETFs for {latest.date()}")
+            return 0
         total = _upsert(df_new)
         print(f"[step5] recorded {len(df_new)} ETFs for {latest.date()}; "
-              f"store now has {total} rows → {HIST_CSV}")
+              f"market.db now has {total} score rows")
         return 0
 
     start_ts = pd.Timestamp(start) if start else (latest - pd.DateOffset(years=years))
@@ -181,9 +208,17 @@ def run(backfill: bool, start: str | None, end: str | None, years: int) -> int:
         db.get_prices = real
 
     df_new = pd.concat(frames, ignore_index=True)
+    if dry_run:
+        first = df_new["date"].min() if not df_new.empty else "none"
+        last = df_new["date"].max() if not df_new.empty else "none"
+        print(
+            f"[step5] dry-run would backfill {df_new['date'].nunique()} dates "
+            f"({len(df_new)} rows), range={first}..{last}; no database writes"
+        )
+        return 0
     total = _upsert(df_new)
     print(f"[step5] backfilled {df_new['date'].nunique()} dates ({len(df_new)} rows) "
-          f"from {start_ts.date()}; store now has {total} rows → {HIST_CSV}")
+          f"from {start_ts.date()}; market.db now has {total} score rows")
     return 0
 
 
@@ -195,8 +230,16 @@ def main() -> int:
                     help=f"backfill this many years of history (default {DEFAULT_YEARS})")
     ap.add_argument("--start", default=None, help="explicit backfill start date (overrides --years)")
     ap.add_argument("--end", default=None, help="as-of / backfill end date (default: latest in DB)")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="compute and report rows without writing market.db")
     args = ap.parse_args()
-    return run(backfill=args.backfill, start=args.start, end=args.end, years=args.years)
+    return run(
+        backfill=args.backfill,
+        start=args.start,
+        end=args.end,
+        years=args.years,
+        dry_run=args.dry_run,
+    )
 
 
 if __name__ == "__main__":

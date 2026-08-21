@@ -111,28 +111,13 @@ def fetch_and_update_00991A():
                     # Could be cash balances or other accounting lines
                     pass
                     
-            closing_price = nav
-            try:
-                rp = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/00991A.TW?range=14d&interval=1d", headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
-                if rp.status_code == 200:
-                    res = rp.json()['chart']['result'][0]
-                    ts_list = res.get('timestamp', [])
-                    close_list = res.get('indicators', {}).get('quote', [{}])[0].get('close', [])
-                    for idx in range(len(ts_list)-1, -1, -1):
-                        dt_str = datetime.fromtimestamp(ts_list[idx], timezone(timedelta(hours=8))).strftime('%Y-%m-%d')
-                        if dt_str == formatted_date and close_list[idx] is not None:
-                            closing_price = float(close_list[idx])
-                            break
-            except: pass
-
             if holdings:
                 history[formatted_date] = {
                     "date": formatted_date,
                     "meta": {
                         "fund_size": fund_size,
                         "outstanding_units": outstanding_units,
-                        "nav": nav,
-                        "closing_price": float(closing_price)
+                        "nav": nav
                     },
                     "holdings": holdings
                 }

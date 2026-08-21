@@ -28,19 +28,20 @@ import bisect
 import json
 import math
 import statistics
+import sys
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from src.market_db import load_holding_history  # noqa: E402
+
 DATA = ROOT / "data"
 OUT = DATA / "tag_flow.json"
 TAGS_FILE = DATA / "stock_tags.json"
 
-ETFS = {
-    "00403A": DATA / "etf_00403A_history.json",
-    "00981A": DATA / "etf_00981A_history.json",
-    "00991A": DATA / "etf_00991A_history.json",
-}
+ETFS = ("00403A", "00981A", "00991A")
 
 BASELINE_SESSIONS = 20
 MIN_BASELINE_TRADES = 20
@@ -240,11 +241,7 @@ def build_observations(etf: str, history: dict, tags: dict) -> list[dict]:
 
 def main() -> int:
     tags = load_json(TAGS_FILE).get("tags", {})
-    histories = {
-        etf: load_json(path)
-        for etf, path in ETFS.items()
-        if path.exists()
-    }
+    histories = {etf: load_holding_history(etf) for etf in ETFS}
     histories = {etf: hist for etf, hist in histories.items() if len(hist) >= 2}
     if not histories:
         print("no ETF histories found")

@@ -8,6 +8,29 @@ STOCK is a self-hosted ETF and market-monitoring system. It has three user-facin
 
 The production server path used by all service files is `/home/ubuntu/STOCK`.
 
+## Canonical market-data contract
+
+All production market readers use the single ARM database at
+`/var/lib/stock/market/market.db` through read-only SQLite connections.
+
+- Taiwan OHLCV: Yuanta Spark `GetKLine` only.
+- Foreign/index/FX/futures OHLCV: Yahoo Finance only.
+- Taiwan reference prices and corporate actions: official TWSE/TPEx only.
+- ETF holdings: issuer fetchers seal source files with a CLEAN manifest; only
+  the validated import in `market.db` is a product-readable holding snapshot.
+- Issuer history stores holdings, NAV, fund size and outstanding units only.
+  It never persists market prices or premium/discount values; historical UI
+  and reports join the canonical close from `market.db.daily_bars` instead.
+- `data/*_history.json` remains acquisition evidence for issuer fetchers. It is
+  not a second OHLCV or corporate-action store.
+- Never restore `data/yuanta_v4_daily_k.json`,
+  `data/twse_corporate_actions.json`, `data/etf_bench/etf_bench.sqlite`, or any
+  candidate/release market database.
+
+Production order is fetch issuer evidence → validate manifest/checksums →
+transactionally import into `market.db` → build derived website/LINE caches.
+The 18:30 fetch unit does not run analytics, Git, LINE, or email.
+
 ## Document Map
 
 | Section | Source of truth for |
@@ -88,7 +111,7 @@ The presentation hierarchy is:
 
 **Outputs:** `data/etf_consensus_v4.json`, the complete historical-replay dashboard, and a generated LINE manifest. Schema 4 includes date-keyed boards, compact transitions, full daily per-stock `state_history`, and per-ETF rows containing both standardized intent and raw exposure derivatives. The website keeps the complete valid yellow/red/green board; the replay selector changes the historical date only and never changes the fixed model.
 
-**Backtest surface:** The adjacent `ETF 策略回測` tab is a shared, long-only, strictly no-look-ahead portfolio engine backed by the tracked, one-time `data/yuanta_v4_daily_k.json` PROD snapshot. The strategy selector contains (1) V4 three-manager buy consensus, (2) the deliberately separate `00981A 續買特殊版（立即退出）`, and (3) `00981A 波段版（容許暫停續買）`. Both 981 variants replay all available 00981A disclosure pairs: actual shares must increase and the creation/redemption-adjusted active-allocation residual must also be positive; any such increase is actionable without a significance or consensus gate. The immediate variant exits after the first non-buy disclosure. The swing variant has an explicit two-to-five-disclosure tolerance; a renewed buy resets the miss counter, and the configured consecutive miss forms the exit signal. All variants enter and exit at the next available session open. The engine models finite equal-slot capital, commission with a per-ticket floor, 0.3% sell tax, base plus odd-lot slippage, a volume-participation cap, and open-position valuation at both mark and post-cost liquidation. Yuanta K lines are **raw, unadjusted** prices, so cash dividends and share adjustments are applied from the tracked `data/twse_corporate_actions.json` TWSE table; the 0050 comparison is shown as a dividend-reinvested total return alongside its price-only figure, and a buy-and-hold 00981A line marks the real opportunity cost of copying a manager. Three switches are deliberately exposed rather than hard-coded — requeue-when-full, dividends on/off, and equity-scaled position sizing — because the spread between their settings is the honest measure of how path-dependent a result is; a sweep table renders every strategy and tolerance at once so no single flattering curve can be presented alone. Historical Yuanta K lines contain OHLCV but no historical average price, so the engine must never label an invented VWAP as executable data. Each strategy audits its whole sample for coverage, OHLC sanity, benchmark-relative unexplained gaps, and disclosure timing (via `data/etf_00981A_disclosure_times.json`), with the latest three sessions still available in detail. Results with fewer than 30 closed trades are labelled statistically meaningless in the UI rather than presented as performance. Date controls stop at the snapshot boundary and visibly report when daily signals have advanced beyond it. This snapshot is intentionally not refreshed by the Linux daily job because the official Yuanta component runs on the authorized local Windows machine.
+**Backtest surface:** The adjacent `ETF 策略回測` tab is a shared, long-only, strictly no-look-ahead portfolio engine backed only by ARM `market.db`. Taiwan candles carry `YUANTA_SPARK_GETKLINE` provenance; official cash dividends and split ratios come from the same database. The strategy selector contains V4 consensus and the separate 00981A immediate/swing variants. All variants enter and exit at the next available session open, model finite equal-slot capital, fees, tax, slippage, participation limits, and keep the existing disclosure-time audit. Historical K lines contain OHLCV but no historical average price, so the engine must never label an invented VWAP as executable data. Results with fewer than 30 closed trades remain labelled statistically meaningless.
 
 **LINE role:** `ETF共識` and the compatibility alias `ETF意圖` return exactly two cached 720px single-column images with no text: red buy top five, then green sell top five. Cards read top-to-bottom `01 → 05`. Yellow and ranks below five remain website-only. A proportional black safe area protects the title from iPhone Dynamic Island.
 
@@ -117,7 +140,7 @@ V1–V3 remain intentionally available even though V4 is the final copy-the-mana
 
 ### ETF daily build architecture
 
-The 18:30 job fetches active/passive ETF disclosures, refreshes market pulse and financing risk, refreshes CMoney categories, builds normalized stock/category flow, and then builds V2, V3, and V4 caches and summaries before the sanctioned daily-report step.
+The 18:30 job fetches and seals active/passive ETF disclosures only. A successful fetch immediately starts the holdings importer through systemd `OnSuccess`; a successful import immediately starts the derived/report service. There are intentionally no independent 19:15/19:20 timers that can race the manifest or database state. The derived stage refreshes market pulse and financing risk, performs the CMoney canary, builds V2/V3/V4 caches and summaries, and runs the sanctioned report stage.
 
 - `scripts/build_stock_tags.py --probe 2308` re-fetches a stable CMoney canary instead of trusting cache. Coverage and canary status enter the admin email; missing categories remain retryable and must produce `PARTIAL_FAIL`.
 - Category refresh is incremental for new holdings and periodically refreshes known holdings. Cached concepts remain display-only.
@@ -176,16 +199,16 @@ For code changes, use the **Standard Deployment** command in this README and res
 
 An AI agent on the dev machine can run the whole loop end-to-end with no human in the middle: **edit → check → commit → push → SSH deploy → browser-verify**. This has been tested and works.
 
-**This repository is PUBLIC on GitHub. Never commit the SSH private key, or the dashboard session token, to any tracked file, commit message, or log output.** The machine-specific secrets live in the untracked, git-ignored `CLAUDE.local.md` at the repo root of the dev machine (Claude Code loads it automatically). It contains:
+**This repository is PUBLIC on GitHub. Never commit an SSH private key, dashboard admin credential, or service token to any tracked file, commit message, or log output.** Machine-specific connection details belong only in a local ignored file or the operator's credential store.
 
 - The exact SSH command (`ssh -i "<local key path>" ubuntu@80.225.204.45`) for the production server.
-- A permanent dashboard session URL (`http://80.225.204.45:8501/?session=<token>`) that skips the `VIEW_PASSWORD` gate, so the agent can open the dashboard in a browser tool and visually verify a deployed change.
+- The production SSH target and public HTTPS dashboard URL.
 
 ### AI sandbox and browser rules
 
 AI coding agents may run inside a restricted sandbox even though the repository, Chrome extension, SSH key, and production server exist on the host machine. Treat `EPERM`, `permission denied`, blocked network/DNS, unreadable host paths, or an SSH key rejected only because of sandbox ACLs as execution-boundary failures — not automatically as application bugs.
 
-1. **Use the connected Chrome extension first for live dashboard QA.** Open the permanent session URL from `CLAUDE.local.md` in the user's connected Chrome, navigate to the changed tab, interact with the real controls, read the rendered text, and take a screenshot. Do not begin by launching another local browser runtime or writing a remote Playwright workaround when the Chrome extension is available.
+1. **Use the connected Chrome extension first for live dashboard QA.** Open `https://linechatbot.duckdns.org/` in the user's connected Chrome, navigate to the changed tab, interact with the real controls, read the rendered text, and take a screenshot. Do not begin by launching another local browser runtime or writing a remote Playwright workaround when the Chrome extension is available.
 2. **Move required commands outside the sandbox when the sandbox blocks them.** Use the agent host's explicit approval/escalation mechanism to rerun necessary network, SSH, Git, service, or host-file commands outside the sandbox. Ask for approval when required; do not repeatedly retry the same command inside the sandbox.
 3. **Do not weaken host security to escape the sandbox.** Never broadly relax ACLs on the user's home directory, `AppData`, SSH key, or secret files. Prefer approved outside-sandbox execution. If a temporary restricted copy is genuinely unavoidable, keep it under a verified temp directory and remove it immediately.
 4. **Browser fallback order:** connected Chrome extension → in-app browser (if Chrome is unavailable) → server-side headless browser only when neither connected browser works. State the fallback reason briefly.
@@ -202,12 +225,12 @@ The loop:
    ```
 
    For README/doc-only changes, the `git pull` alone is enough — skip pip and restarts.
-4. Verify in the browser: open the permanent session URL from `CLAUDE.local.md` with the connected Chrome extension first, navigate to the affected tab, interact with the changed controls, and confirm the change actually renders (screenshot and rendered text). If `CLAUDE.local.md` is missing (fresh machine), ask the user for the session URL or `VIEW_PASSWORD` — do not guess.
+4. Verify in the browser: open `https://linechatbot.duckdns.org/` with the connected Chrome extension first, navigate to the affected tab, interact with the changed controls, and confirm the change actually renders (screenshot and rendered text). Admin mutations remain separately protected by `ADMIN_PASSWORD`.
 5. Report to the user what changed, what was deployed, and what was visually verified.
 
 Notes:
 
-- The server repo may be ahead of the local checkout because the 18:30 daily job auto-commits data. Run `git pull origin main --rebase --autostash` locally before committing.
+- The server repo may be ahead of the local checkout because the post-import derived/report job can auto-commit generated data. Inspect both histories and use a normal fast-forward/rebase workflow from a clean development checkout before committing.
 - The dashboard is Streamlit: after a `stock-dashboard.service` restart it needs a few seconds before the page responds; reload once if the first browser load looks broken.
 
 **Production working-tree safety.** The daily job legitimately leaves some tracked latest-data files modified between commits, commonly `data/stock_tags.json`, `data/tag_flow.json`, `data/etf_action_insight.json`, `data/etf_action_history.json`, and the tracked latest summary JPGs. Before every deploy, run `git status --short` on the server. Never use `git reset --hard`, `git clean`, or a whole-tree restore/stash just to make a pull succeed. If the incoming commit does not touch the dirty paths, use the explicit fast-forward command shown above; `-c pull.rebase=false` matters because the server's configured rebase mode otherwise rejects an unstaged working tree even with `--ff-only`. If an incoming commit does touch a dirty generated path, back up only that exact path under `/tmp`, restore only that path, fast-forward, then regenerate it with its documented producer. Preserve all unrelated live data.
@@ -219,7 +242,9 @@ Notes:
 | Streamlit dashboard | `app.py` | `stock-dashboard.service` | Browser UI for ETF data, master holdings, ETF comparison, and market pulse. |
 | LINE webhook | `api/webhook.py` | `stock-webhook.service` | Handles LINE messages, returns text/cards/images, and routes admin commands. |
 | TradingView chart API | `scripts/chart_service.py` | `stock-chart.service` | Keeps a browser alive and exposes `/market-text`, `/snapshot`, and `/market-debug` on `127.0.0.1:5005`. |
-| Daily fetch | `scripts/update_and_notify.sh` | `stock-fetch-1830-tw.timer` + `.service` | Pulls latest code, refreshes data, updates benchmark DB, commits/pushes, broadcasts reports, and emails admin summary. |
+| Issuer holdings fetch | `scripts/run_issuer_holdings_fetch.py` | `stock-fetch-1830-tw.timer` + `.service` | Fetches issuer disclosures only and seals a CLEAN manifest. The unit is owned by the host-orchestration repository. |
+| Holdings import | `market_data import-holdings` | `stock-market-holdings.service` | `OnSuccess` successor that verifies the sealed manifest and imports it into the sole `market.db`. |
+| Derived/report run | `scripts/update_and_notify.sh --post-fetch` | `stock-derived-1920-tw.service` | `OnSuccess` successor that builds derived caches after canonical imports, then performs the sanctioned Git/LINE/admin-report stage. |
 | ETF quote monitors | `scripts/monitor_etf_quotes.py` | `stock-quote-monitor-*.service` | Refreshes per-ETF quote caches used by the dashboard and LINE cards. |
 | Gold monitor | `scripts/monitor_gold_quote.py` | `stock-gold-monitor.service` | Refreshes TradingView GOLD quote cache. |
 | Master holdings monitor | `scripts/monitor_master_holding.py` | `stock-master-holding-monitor.service` | Refreshes the expanded portfolio/master-holding cache. |
@@ -235,7 +260,7 @@ Notes:
 │   └── webhook.py                 # LINE bot Flask webhook
 ├── data/                          # Tracked source/history state plus ignored generated caches
 ├── scripts/                       # Fetchers, monitors, renderers, chart API, daily orchestrator
-│   └── etf_benchmark/             # Local SQLite ETF benchmark pipeline
+│   └── etf_benchmark/             # Analytics over the sole ARM market.db
 ├── services/                      # systemd unit templates for the OCI server
 ├── src/tag_flow_rotation.py       # Shared window-independent category rotation engine
 └── src/ui/                        # Streamlit tab modules
@@ -252,7 +277,7 @@ Notes:
 
 ## Dashboard
 
-`app.py` renders the main dashboard and delegates major sections to `src/ui/`. It is served by `stock-dashboard.service` on port **8501** — publicly reachable at **http://80.225.204.45:8501/** (the OCI host's public IP). The page is password-gated (`VIEW_PASSWORD`); Streamlit auth is per browser session, so each new tab must re-enter the password.
+`app.py` renders the main dashboard and delegates major sections to `src/ui/`. Streamlit listens only on `127.0.0.1:8501`; Nginx exposes the read-only site at `https://linechatbot.duckdns.org/`. Direct public access to port 8501 is intentionally unavailable. The dashboard view is public by owner decision, while upload/admin mutations remain separately password-gated.
 
 | File | Purpose |
 |---|---|
@@ -267,7 +292,7 @@ Notes:
 | `src/etf_consensus_backtest.py` | Strategy-agnostic no-look-ahead portfolio simulator plus three-session and full-sample data audits. It pairs each signal into a hold episode up front, so a blocked entry stays queued exactly while its signal lives and an exit that cannot fill (halt, suspension, delisting) keeps the position and reports it as `blocked` instead of deleting the shares. It pays cash dividends and applies share multipliers to open positions, builds dividend-reinvested benchmark and buy-and-hold total-return indices, sizes slots off current equity, charges a commission floor and odd-lot slippage, caps fills by session volume, and values open positions net of exit costs. `_earliest_execution` will push a fill out an extra session when a recorded disclosure timestamp proves the snapshot was not available by the next open. |
 | `src/ui/__init__.py` | Marks UI helpers as an import package. |
 | `src/ui/etf_tab.py` | Active/passive ETF dashboard views and daily operation report UI. |
-| `src/ui/etf_compare_tab.py` | ETF comparison tab backed by the local `data/etf_bench/etf_bench.sqlite` database. |
+| `src/ui/etf_compare_tab.py` | ETF comparison tab backed by read-only ARM `market.db`. |
 | `src/ui/market_pulse_tab.py` | Market pulse tab using ETF benchmark/index history and regime calculations. |
 | `src/ui/margin_risk_tab.py` | 融資風險 tab: flexible 1m/3m/6m/1y/all/custom history, TAIEX overlay, financing-balance context, and a plain-language risk conclusion. Pure render of `data/margin_maintenance.csv` (no network). |
 | `src/ui/tag_flow_tab.py` | `類股輪動` tab: category context only—a concise three-lane category board plus a category ranking and trend drill-down. It must not display stock names, stock-source tables, stock filters, or individual actions; those belong exclusively to `ETF 動作`. The heading says `最新…截至 YYYY-MM-DD`, never `今日`, because lane assignment is a 3/10/20-half-life combined state. The selector sits directly above the category chart and changes only ranking/chart audit evidence, never the rotation phase. Visible presets omit 3 and 5 sessions; only supported 1/10/20/60/120/240 ranges appear. Ranking uses normalized 相對力道, with estimated 億元 as approximate context only. Taiwan colors: red = 加碼/買進, green = 減碼/賣出, amber = pending. Pure render of `data/tag_flow.json` (no network). |
@@ -296,15 +321,15 @@ All three active-ETF source workbooks disclose exact outstanding units. The fetc
 
 Each ETF/stock move is judged with no look-ahead against its preceding 20 common sessions. Only after those individual tests does V3 apply the copyability gate: at least two independent ETFs must be significant in the same direction on the same common session. There are no 1/3 exceptions for extreme size, entry, re-entry, reversal, or exit. The second ETF's arrival is the consensus trigger. Conflicting or single-manager actions remain silent. The backend keeps decaying buy/neutral/sell state to distinguish onset, reversal, restart, acceleration, and breadth expansion. The V3 surface contains only events formed today and previous-session events that again receive 2/3 confirmation today; an unconfirmed prior event is not carried forward.
 
-Dashboard authentication uses `VIEW_PASSWORD` and `ADMIN_PASSWORD` from Streamlit secrets, environment variables, or `/home/ubuntu/.stock_secrets` depending on the runtime.
+Dashboard viewing is public. Administrative mutations use `ADMIN_PASSWORD` from Streamlit secrets, environment variables, or `/home/ubuntu/.stock_secrets` depending on the runtime. The legacy view-password helpers remain migration compatibility only and are not called by the public render path.
 
-Market Pulse (`src/ui/market_pulse_tab.py`) is a dashboard view, not a live data fetcher. It reads the local ETF benchmark DB plus the server-local TWSE volume cache. Do not add slow network calls to the Streamlit render path; add a script/cache refresh step instead.
+Market Pulse (`src/ui/market_pulse_tab.py`) is a dashboard view, not a live data fetcher. It reads the sole ARM `market.db` plus the server-local TWSE volume cache. Do not add slow network calls to the Streamlit render path; add a script/cache refresh step instead.
 
 Margin Risk (`src/ui/margin_risk_tab.py`) follows the same cache-only rule. It must never be presented as an exchange-published daily "average account maintenance rate": the public TWSE/TPEx inputs omit client-level supplementary collateral. The feature is explicitly the transparent `全市場融資擔保估算率` documented below.
 
 ## LINE Webhook
 
-`api/webhook.py` is a Flask app listening on `0.0.0.0:8080` when executed directly. It requires LINE credentials and calls the chart service through `CHART_SERVICE_URL`, defaulting to `http://127.0.0.1:5005`.
+`api/webhook.py` is a Flask app listening on `127.0.0.1:8080`; Nginx exposes only `/api/webhook` and its cache routes over HTTPS. It requires LINE credentials and calls the chart service through `CHART_SERVICE_URL`, defaulting to `http://127.0.0.1:5005`.
 
 Common LINE commands:
 
@@ -366,6 +391,13 @@ All LINE market commands (`油價`, `匯率`, `債券`, `黃金`, `那斯達克`
 | Market cache refresh | `stock-market-chart-monitor.service` → `monitor_market_charts.py oil brent bond gold usdtwd usdjpy usdchf nasdaq --interval 60` | every **60s**, all 8 keys |
 | Market monitor caps | `stock-market-chart-monitor.service` | `MemoryMax=512M`, `CPUQuota=35%`, `RuntimeMaxSec=12h` |
 | Heavy lifting (Playwright) | `stock-chart.service` | `MemoryMax=2500M`, `RuntimeMaxSec=2h` (this is the real CPU/RAM governor; the monitor only makes HTTP calls) |
+
+On the shared two-CPU ARM host, every legacy `stock-*.service` runs in
+`stock-background.slice` (`AllowedCPUs=0`). CPU 1 is reserved for the intraday
+Observer slice so persistent TradingView/Playwright rendering cannot create
+hundreds-of-milliseconds WebSocket scheduling tails. New batch quote, dividend,
+split, cash-flow, and backtest services must also declare
+`Slice=stock-background.slice`.
 | Webhook cache freshness | `get_cached_market_chart(..., max_age_seconds=240)` | serve cache up to **240s** old, else explicit error |
 | ETF quote-card cache | `stock-quote-monitor-*.service` → `monitor_etf_quotes.py <TICKER> --interval 180 --max-workers 4 --jitter 150` | every **180s** (3 min), `MemoryMax=512M`, `CPUQuota=35%`, `RuntimeMaxSec=12h` |
 | Gold quote cache | `stock-gold-monitor.service` → `monitor_gold_quote.py --interval 60 --scanner-only` | every **60s**, `MemoryMax=512M` |
@@ -491,7 +523,10 @@ TSMC night-session handling: when a holding maps to `2330` / `2330.TW` during th
 
 ## ETF Benchmark Pipeline
 
-The ETF comparison tab reads a local SQLite database generated under `data/etf_bench/`. The database is intentionally ignored by Git and rebuilt on each host.
+The ETF comparison tab reads the sole production database at
+`/var/lib/stock/market/market.db` through read-only helpers in
+`scripts/etf_benchmark/db.py`.  There is no ETF-local SQLite database, CSV
+price store, or Yahoo fallback.
 
 The fair ETF score (綜合評分: ranking table + history) is specified in
 `scripts/etf_benchmark/SCORING.md` — read that for the ranking logic and the
@@ -500,26 +535,23 @@ final four-basket (股票/債券/商品/其他) design and rationale.
 | File | Purpose |
 |---|---|
 | `scripts/etf_benchmark/__init__.py` | Package marker. |
-| `scripts/etf_benchmark/db.py` | Streamlit-cached SQLite read helpers. |
-| `scripts/etf_benchmark/seed_tpex_etfs.csv` | Seed list for TPEx ETFs not covered by the TWSE source. |
-| `scripts/etf_benchmark/step1_universe.py` | Builds `data/etf_bench/universe.csv`. |
-| `scripts/etf_benchmark/step2_schema.py` | Creates/resets SQLite schema. |
-| `scripts/etf_benchmark/step3_backfill.py` | Downloads prices/dividends/splits through yfinance. Use `--incremental` for daily refresh. |
-| `scripts/etf_benchmark/step4_regimes.py` | Builds market regime tags used by market pulse/benchmark views. |
-| `scripts/etf_benchmark/step5_score.py` | Records each ETF's fair-score pillars (效率/不對稱/一致性) per day into `data/etf_bench/score_history.csv`, ranked within asset class. `--backfill` rebuilds history (default 1y); no args appends today. Powers the ETF compare tab's 綜合評分 ranking + history. |
-| `scripts/etf_benchmark/SCORING.md` | Authoritative spec for the 綜合評分 score: ranking logic, the four-basket method, the three pillars, methodology, and verification. |
+| `scripts/etf_benchmark/db.py` | Read-only `market.db` query helpers. |
+| `scripts/etf_benchmark/step4_regimes.py` | Writes derived market-regime rows to `market.db`. |
+| `scripts/etf_benchmark/step5_score.py` | Writes ETF score history to `market.db`; no CSV output. |
+| `scripts/etf_benchmark/SCORING.md` | Authoritative spec for the 綜合評分 score: ranking logic, the four-basket method, the two pillars, methodology, and verification. |
 
-First-time benchmark setup:
+Acquisition belongs to the two-host `market_data` pipeline.  After the sole DB
+has been populated, rebuild only the derived tables:
 
 ```bash
-cd /home/ubuntu/STOCK && source venv/bin/activate && python -m scripts.etf_benchmark.step1_universe && python -m scripts.etf_benchmark.step2_schema --reset && python -m scripts.etf_benchmark.step3_backfill && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score --backfill && python scripts/update_market_pulse_volume.py --backfill-years 5 && python scripts/update_margin_maintenance.py --backfill-years 1 && python scripts/generate_margin_maintenance_summary.py
+STOCK_GLOBAL_MARKET_DB=/var/lib/stock/market/market.db \
+  python -m scripts.etf_benchmark.step4_regimes
+STOCK_GLOBAL_MARKET_DB=/var/lib/stock/market/market.db \
+  python -m scripts.etf_benchmark.step5_score --backfill
 ```
 
-Daily refresh uses:
-
-```bash
-python -m scripts.etf_benchmark.step3_backfill --incremental && python -m scripts.etf_benchmark.step4_regimes && python -m scripts.etf_benchmark.step5_score && python scripts/update_market_pulse_volume.py --months 4 && python scripts/update_margin_maintenance.py --days 10 && python scripts/generate_margin_maintenance_summary.py
-```
+The scheduled derived job runs those steps only after sealed issuer holdings
+and daily market packages have been imported.
 
 ### Market Pulse Data Flow
 
@@ -528,7 +560,7 @@ Market Pulse has two separate outputs:
 - Dashboard tab: `src/ui/market_pulse_tab.py`, rendered live in Streamlit from local data.
 - LINE image: `scripts/generate_market_pulse_summary.py`, saved as `data/summaries/market_pulse_latest.jpg`.
 
-The dashboard's 價量健康 panel uses TWSE official `FMTQIK` daily stats for TAIEX close, turnover, and volume. That data is cached in ignored server-local `data/market_pulse_volume.csv`. The dashboard only reads the CSV via `_twse_daily_market()`; it must not call TWSE during page render. The cache is refreshed by `scripts/update_market_pulse_volume.py`, and the 18:30 daily job runs:
+The dashboard's 價量健康 panel uses TWSE official `FMTQIK` daily stats for TAIEX close, turnover, and volume. That data is cached in ignored server-local `data/market_pulse_volume.csv`. The dashboard only reads the CSV via `_twse_daily_market()`; it must not call TWSE during page render. The cache is refreshed by `scripts/update_market_pulse_volume.py`, and the post-import derived job runs:
 
 ```bash
 python scripts/update_market_pulse_volume.py --months 4
@@ -580,8 +612,7 @@ Tracked files in `data/` are source/history state that should move with the repo
 | `data/etf_action_history.json` | Date-keyed ETF-action lifecycle snapshots (up to 260 common sessions), upserted by `scripts/generate_etf_action_insight.py`. It records both yesterday and today when available so transitions can be audited without relying on screenshots. |
 | `data/etf_intent_v3.json` | V3 flow-adjusted consensus cache (schema 4): exact/estimated ETF-unit quality, strict 2/3 same-session signals split into new/confirmed phases, the complete historical consensus-event log, and hidden-regime audit rows. Rebuilt daily by `scripts/build_etf_intent_v3.py`. |
 | `data/etf_consensus_v4.json` | Final V4 schema-4 state/history cache: date-keyed yellow/red/green boards, the independent `core/tracking/watch` decision tier and reason, hard-gate methodology, transparent score components, full daily `state_history`, compact transitions, direction-specific baseline provenance, and both standardized-intent and raw-exposure 10-session derivatives. Production retains up to 260 complete-panel sessions; all available history can be rebuilt deterministically from the append-only ETF disclosure files with `history_sessions=None`. It contains signals, not stock returns. Rebuilt daily by `scripts/build_etf_consensus_v4.py`. |
-| `data/yuanta_v4_daily_k.json` | One-time read-only Yuanta SPARK PROD daily-OHLCV snapshot for the 102-stock V4 universe, four additional historical 00981A-only holdings, and 0050 (2026-03-01 through 2026-08-05 request; 107/107 symbols returned). It contains no account, password, certificate, order, or subscription data. Generated locally from the external `!YuantaAPIStuff` folder and tracked so the Linux dashboard can reproduce both backtest strategies without holding brokerage credentials. |
-| `data/twse_corporate_actions.json` | Public TWSE 除權除息計算結果表 (TWT49U) keyed by symbol. Yuanta K lines are unadjusted, and Taiwan's dividend season falls inside the backtest window (69 of the 107 universe symbols went ex-dividend between June and August 2026, along with 0050 on 2026-07-21 and 00981A on 2026-06-16), so without this every ex-dividend day is an uncompensated price drop for both the strategy and its benchmark. Pure 息 rows carry cash; rows containing 權 use the `prev_close / reference_price` share multiplier, which is exact in total-return terms. Refresh with `python scripts/fetch_twse_corporate_actions.py`. |
+| `/var/lib/stock/market/market.db` | Sole production source for instruments, OHLCV, Taiwan references/actions, imported issuer holdings, regimes and ETF score history. It is outside Git and all application readers open it read-only. |
 | `data/etf_00981A_disclosure_times.json` | Evidence, not assumption, that the backtest never trades on data it could not have had. Rebuilt by `scripts/rebuild_disclosure_times.py` from the first git commit containing each snapshot date — an upper bound on when we learned it. All 94 snapshots except 2026-03-24 first appeared after that day's 13:30 close, so next-open execution is legitimate. Going forward `fetch_etf_00981A.py` stamps `first_seen_utc` directly and preserves the earliest value on re-runs. |
 | `data/master_manual_positions.json` | Manual master portfolio positions. |
 | `data/master_meta.json` | Master portfolio metadata/state. |
@@ -602,16 +633,24 @@ Ignored generated data:
 | `data/market_pulse_volume.csv` | Server-local TWSE market turnover/volume cache from `scripts/update_market_pulse_volume.py`. |
 | `data/margin_maintenance.csv` | Server-local TWSE+TPEx financing-collateral estimate from `scripts/update_margin_maintenance.py`. |
 | `data/fonts/` | Local font assets if installed on the server. |
-| `data/etf_bench/*.sqlite` | ETF benchmark pipeline. |
+There is intentionally no `data/etf_bench/*.sqlite` store. ETF benchmark
+readers and derived writers use `/var/lib/stock/market/market.db` under the
+shared database lock.
 
 ## Services
 
-All service templates live in `services/` and assume:
+Web/monitor service templates live in `services/` and assume:
 
 - Linux user: `ubuntu`
 - Repository: `/home/ubuntu/STOCK`
 - Virtualenv: `/home/ubuntu/STOCK/venv`
 - Secrets: `/home/ubuntu/.stock_secrets`
+
+Cross-host market orchestration is deliberately not duplicated here. The owner
+workspace's `06_arm_server/` directory owns and installs
+`stock-fetch-1830-tw.{service,timer}`, `stock-market-holdings.service`, and
+`stock-derived-1920-tw.service`, including their `OnSuccess`, task-ledger, lock,
+alerting, and sandbox contracts.
 
 | File | Installed unit | Purpose |
 |---|---|---|
@@ -619,8 +658,6 @@ All service templates live in `services/` and assume:
 | `services/stock-webhook.service` | `stock-webhook.service` | LINE webhook on port 8080. |
 | `services/stock-chart.service` | `stock-chart.service` | TradingView Playwright API on `127.0.0.1:5005`. |
 | `services/oci-firewall.service` | `oci-firewall.service` | Boot-time iptables reset used on OCI so public services remain reachable after reboot. |
-| `services/stock-fetch-1830-tw.service` | `stock-fetch-1830-tw.service` | One-shot daily fetch/orchestration job. |
-| `services/stock-fetch-1830-tw.timer` | `stock-fetch-1830-tw.timer` | Runs the daily job at 10:30 UTC / 18:30 Taiwan time. |
 | `services/stock-gold-monitor.service` | `stock-gold-monitor.service` | GOLD quote monitor. |
 | `services/stock-market-chart-monitor.service` | `stock-market-chart-monitor.service` | TradingView market text/chart cache monitor for fast LINE chart replies. |
 | `services/stock-master-holding-monitor.service` | `stock-master-holding-monitor.service` | Master holdings monitor. |
@@ -640,7 +677,7 @@ All service templates live in `services/` and assume:
 Install/update service templates:
 
 ```bash
-cd /home/ubuntu/STOCK && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.service && sudo systemctl enable oci-firewall.service && sudo systemctl enable stock-fetch-1830-tw.timer && sudo systemctl enable stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service && sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service && sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service && sudo systemctl enable stock-quote-monitor-009805.service && sudo systemctl enable stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-00991a.service stock-quote-monitor-009820.service
+cd /home/ubuntu/STOCK && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.service && sudo systemctl enable oci-firewall.service && sudo systemctl enable stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service && sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service && sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service && sudo systemctl enable stock-quote-monitor-009805.service && sudo systemctl enable stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-00991a.service stock-quote-monitor-009820.service
 ```
 
 Restart common production services after code changes:
@@ -686,7 +723,7 @@ export GITHUB_REPO="benson930417-prog/STOCK"
 export GITHUB_BRANCH="main"
 ```
 
-`scripts/update_and_notify.sh` does not read `GITHUB_TOKEN`; it runs `git pull origin main --rebase --autostash` and `git push origin main`, so server Git authentication must already be configured through the Git remote/credential helper. `LINE_CHANNEL_ACCESS_TOKEN` is also optional because the webhook maps `LINE_TOKEN` to that name internally.
+`scripts/update_and_notify.sh` does not read `GITHUB_TOKEN` and never pulls or installs dependencies during a scheduled data run. It only commits sanctioned generated data and runs `git push origin main`, so server Git authentication must already be configured through the Git remote/credential helper. `LINE_CHANNEL_ACCESS_TOKEN` is also optional because the webhook maps `LINE_TOKEN` to that name internally.
 
 Secure it:
 
@@ -697,7 +734,7 @@ chmod 600 /home/ubuntu/.stock_secrets
 Deploy services:
 
 ```bash
-sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now oci-firewall.service && sudo systemctl enable --now stock-chart.service stock-webhook.service stock-dashboard.service && sudo systemctl enable --now stock-fetch-1830-tw.timer
+sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now oci-firewall.service && sudo systemctl enable --now stock-chart.service stock-webhook.service stock-dashboard.service
 ```
 
 ## Standard Deployment
@@ -716,26 +753,22 @@ sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemc
 
 ## Daily Job Flow
 
-`stock-fetch-1830-tw.timer` runs at 10:30 UTC, which is 18:30 Taiwan time.
+The production sequence is deliberately split:
 
-`scripts/update_and_notify.sh` performs:
+1. X64 seals Taiwan OHLCV after market close; ARM imports only a checksum-verified CLEAN package into `market.db`.
+2. `stock-fetch-1830-tw.timer` runs at 18:30 Taiwan time and fetches issuer holdings only. It does not update OHLCV, build analytics, pull code, install dependencies, or send LINE messages.
+3. Only after the fetch service succeeds, systemd starts `stock-market-holdings.service`; it verifies that day's sealed manifest and imports holdings.
+4. Only after the import succeeds, systemd starts `stock-derived-1920-tw.service`, which runs `update_and_notify.sh --post-fetch`. It reads canonical data, updates regimes/scores/local caches and summaries, performs the CMoney canary, then performs the sanctioned Git/LINE/admin-report stage.
 
-1. Load `/home/ubuntu/.stock_secrets`.
-2. Pull latest Git changes with rebase/autostash.
-3. Install dependencies from `requirements.txt`.
-4. Run all active/passive ETF fetchers requested by the service arguments. Each fetcher gets **one retry after 90s** (`run_step_retry`) because issuer sources occasionally hiccup for a single run (e.g. Yuanta's page rendering without its weight table, issuer API connect timeouts). A fetch that recovers on retry is reported `[OK] ... (recovered on attempt 2/2)` and does not flip the run to PARTIAL_FAIL; a hard outage still fails after the retry.
-5. Refresh ETF benchmark SQLite data, regime tags, and score history.
-6. Refresh the server-local Market Pulse TWSE volume cache.
-7. Generate the market pulse image.
-8. Run a live Cmoney category canary, validate category coverage, build the shared flow observations, generate the complete stock-level `ETF 動作` cache and three audit images, then build V3 and render its two mobile intent images.
-9. Commit and push changed tracked data.
-10. When new active ETF data exists, send one LINE broadcast containing exactly one combined report/action text object plus the four active-ETF images.
-11. Send the admin email summary with success/failure details plus the same cached `ETF 動作` text. The category-only `類股輪動` dashboard never creates a LINE image or message.
+The derived/report script continues independent steps long enough to assemble
+its admin summary, but exits nonzero whenever any required step ended in
+`PARTIAL_FAIL`; systemd therefore cannot report a partially failed run as
+successful.
 
-Manual run — admin-only (⚠️ **sends the paid LINE broadcast to ALL followers when active ETFs have new data** — see Invariant #11; agents must not run this to test code changes, only the admin triggers it deliberately):
+Manual run — admin-only (⚠️ **may send the paid LINE broadcast to ALL followers when active ETFs have new data**; agents must not run this merely to test code changes):
 
 ```bash
-cd /home/ubuntu/STOCK && source venv/bin/activate && bash scripts/update_and_notify.sh 00403A 00981A 00988A 0050 0056 00830 00878 00891 00918 009805 009820
+cd /home/ubuntu/STOCK && bash scripts/run_market_pipeline_manual.sh
 ```
 
 ## Rich Menu
@@ -752,7 +785,7 @@ The rich menu uses three LINE rich-menu aliases. Page 1 is fast market/macro: it
 
 Each of these is a trap that has already caused a wrong result or a missed step. Check them before and after any change.
 
-1. **The daily fetch list is the timer's `ExecStart` args, NOT the script default.** `services/stock-fetch-1830-tw.service` passes an explicit ticker list to `update_and_notify.sh`, which makes `ETFS=("$@")` override the default `ETFS=(...)` array. Editing only the default array does nothing for the scheduled run — you must edit the `ExecStart` line. (Only the manual webhook "每日更新" path, which passes no args, uses the default.) `0056` is intentionally/historically absent from the `ExecStart` args even though it is in the default array and has a quote monitor.
+1. **There is one holdings write path.** Scheduled and manual/admin refreshes both run `run_issuer_holdings_fetch.py` → sealed manifest → `market_data import-holdings` → `update_and_notify.sh --post-fetch`. Never call an individual fetcher and treat its JSON as product-readable state; readers use only the imported `market.db` snapshot.
 
 2. **One ETF ticker is hardcoded in ~16 places.** Adding/removing an ETF is a cross-file change. Before editing, list every occurrence:
    ```bash
@@ -779,9 +812,9 @@ Each of these is a trap that has already caused a wrong result or a missed step.
 
 9. **Asian markets with a midday break must stay in-session during lunch.** Tokyo (11:30–12:30), Hong Kong (12:00–13:00) and Shanghai/Shenzhen (11:30–13:00) pause for lunch but are NOT closed for the day. `_regular_session_bounds` (in `monitor_etf_quotes.py`) therefore spans open→close as ONE window for JP/HK/CN; do not split it back into morning/afternoon windows or the lunch gap is mis-detected as `CLOSE`, which freezes those holdings at the morning close and dumps them into the 已收盤 composite instead of 交易中. A holding showing 已收盤 with a stale ~morning timestamp while its own exchange is mid-day is the symptom.
 
-10. **Market Pulse volume is daily cached, never fetched on demand.** `src/ui/market_pulse_tab.py` must read `data/market_pulse_volume.csv` only. `scripts/update_market_pulse_volume.py` is the only place that should call TWSE `FMTQIK`; it runs at 18:30 through `scripts/update_and_notify.sh`. If the dashboard says the cache is missing, run `python scripts/update_market_pulse_volume.py --backfill-years 5` once on the server, then let the daily `--months 4` refresh maintain it. Do not add `requests` back into the Streamlit render path.
+10. **Market Pulse volume is daily cached, never fetched on demand.** `src/ui/market_pulse_tab.py` must read `data/market_pulse_volume.csv` only. `scripts/update_market_pulse_volume.py` is the only place that should call TWSE `FMTQIK`; the post-import derived job refreshes it after canonical imports. If the dashboard says the cache is missing, run `python scripts/update_market_pulse_volume.py --backfill-years 5` once on the server, then let the daily `--months 4` refresh maintain it. Do not add `requests` back into the Streamlit render path.
 
-11. **LINE push/broadcast is PAID — only the daily job or an explicit admin action may send.** Push/broadcast messages consume the paid LINE message quota (only replies to user-initiated webhook messages are free). Sanctioned senders: the 18:30 daily broadcast step inside `scripts/update_and_notify.sh`, an admin deliberately triggering that same run (manual server run or the webhook `每日更新` admin command), and `scripts/rebroadcast_line.py` when the admin explicitly asks. Agents must NEVER send on their own initiative: do NOT run `update_and_notify.sh` end-to-end to test code changes (its broadcast step pushes to ALL followers), do NOT call `api.line.me` push/broadcast endpoints manually, and do NOT "verify" LINE features by sending. Fetchers, quote/chart monitors, `chart_service.py`, cache checks, and the dashboard send nothing and are always safe to run.
+11. **LINE push/broadcast is PAID — only the scheduled post-import derived/report service or an explicit admin action may send.** Push/broadcast messages consume the paid LINE message quota (only replies to user-initiated webhook messages are free). Sanctioned senders: `stock-derived-1920-tw.service`, an admin deliberately triggering `run_market_pipeline_manual.sh` (including the webhook admin command), and `scripts/rebroadcast_line.py` when the admin explicitly asks. Agents must NEVER send on their own initiative: do not run either end-to-end pipeline merely to test code changes, do not call LINE push/broadcast endpoints manually, and do not "verify" LINE features by sending. Fetchers, quote/chart monitors, `chart_service.py`, cache checks, and the dashboard send nothing and are safe to run.
 
 12. **Cached TradingView charts use a 1-month window and full x-width except NASDAQ.** Generic market charts (`oil`, `brent`, `bond`, `gold`, `usdtwd`, `usdjpy`, `usdchf`) use `timeframe=1M`, while their LINE quote text retains the existing `1日` / `1週` / `1月` / `6月` rows. They should crop only vertically and must keep `clip.x=0`, `clip.width=window.innerWidth`; otherwise the right price axis/last-price marker gets cut off. NASDAQ is intentionally special: it uses IG-NASDAQ 24h, a fixed `1200x900` viewport, custom y/height, a 1-day click, and `overlay_market_sessions.py`. Do not share generic crop edits into NASDAQ unless reverified with a real screenshot.
 
@@ -842,7 +875,7 @@ Use consistent casing:
 |---|---|---|---|
 | 1 | `scripts/fetch_etf_<T>.py` or `scripts/fetch_passive_<T>.py` | new fetcher | both |
 | 2 | `data/etf_<T>_*.json` / `data/passive_<T>_*.json` | initial history + log (commit) | both |
-| 3 ★ | `services/stock-fetch-1830-tw.service` | **`ExecStart` ticker args** (the real daily list) + Description | both |
+| 3 ★ | `scripts/run_issuer_holdings_fetch.py` | `ACTIVE`, `PASSIVE`, and `DEFAULT_TICKERS` | both |
 | 4 | `scripts/update_and_notify.sh` | default `ETFS=(...)`, fetch `case`, active-new `case` (A), broadcast `names` (A) | both |
 | 5 | `api/webhook.py` | `ETF_QUOTE_NAMES`, `ETF_QUOTE_ALIASES`, `ACTIVE_ETF_TICKERS` (A), help text | both |
 | 6 ★ | `app.py` | `ETF_NAME_TO_TICKER`, `expandable` set, `missing_etfs` check set | both |
@@ -854,7 +887,7 @@ Use consistent casing:
 | 12 | `src/ui/etf_tab.py` | active selector list / passive selector | both |
 | 13 | `services/stock-quote-monitor-<t-lower>.service` | new quote-monitor unit | both |
 | 14 ★ | `scripts/setup_rich_menu.py` | a menu tile (fill the `預留` placeholder or add a slot) | both |
-| 15 | `scripts/etf_benchmark/step1_universe.py` | `required` list (only if it should appear in ETF compare) | both |
+| 15 | `/var/lib/stock/market/market.db` | automatically populated from official market and sealed issuer imports; never hand-edit | both |
 | 16 | `README.md` | Scripts table, Data Directory, Services table, enable/restart one-liners, Manual Fetch, Tracked File Inventory | both |
 
 After editing, re-run the grep from Invariant #2 and confirm the only remaining non-matches are intentional. Verify: `python -m py_compile` the touched `.py`, `bash -n scripts/update_and_notify.sh`.
@@ -874,10 +907,10 @@ After editing, re-run the grep from Invariant #2 and confirm the only remaining 
 3. Add tracked data files.
    - Commit the initial `data/etf_<TICKER>_history.json` and `data/etf_<TICKER>_log.json` for active ETFs.
    - Commit the initial `data/passive_<TICKER>_history.json` and `data/passive_<TICKER>_log.json` for passive ETFs.
-   - Do not commit `data/images/`, `data/summaries/`, `data/quote_cache/`, or `data/etf_bench/*.sqlite`.
+   - Do not commit `data/images/`, `data/summaries/`, or `data/quote_cache/`.
 
 4. Wire daily fetch orchestration.
-   - **`services/stock-fetch-1830-tw.service` — add the ticker to the `ExecStart` argument list AND the `Description`. This is the list the scheduled run actually uses (see Invariant #1); the default array alone is not enough.** Requires `sudo cp services/*.service /etc/systemd/system/ && sudo systemctl daemon-reload` to take effect.
+   - Add the ticker to `ACTIVE` or `PASSIVE` in `scripts/run_issuer_holdings_fetch.py`; `DEFAULT_TICKERS` is derived from those two tuples. The service intentionally has no duplicated ticker argument list.
    - In `scripts/update_and_notify.sh`: add the ticker to the default `ETFS=(...)` list (used by the manual "每日更新" path), the fetcher dispatch `case`, and the active-new `case` (active). Add the display name to `ACTIVE_NAMES` in `scripts/line_active_report_payload.py`.
    - Ensure failure details print the ETF fetch log clearly in the admin email.
    - Active ETFs broadcast 1 image each, but the single daily payload has room for only four because its first object is the combined report/action text. Do not add a fifth active image without redesigning the single-send product requirement (Invariant #7).
@@ -937,9 +970,9 @@ After editing, re-run the grep from Invariant #2 and confirm the only remaining 
     - Test that `全部成分股絕對權重` expands into underlying holdings and does not leave the ETF itself as a `直接持股` row.
 
 13. Wire ETF benchmark.
-    - Add the ticker to `scripts/etf_benchmark/step1_universe.py` required/seed logic when the ETF should appear in comparison/market-pulse data.
-    - If needed, add it to `scripts/etf_benchmark/seed_tpex_etfs.csv`.
-    - Rebuild or incrementally refresh benchmark data and run verification.
+    - Do not maintain a second ticker list. Confirm the ETF appears in
+      `market.db.etf_master` after the official universe and sealed issuer
+      imports, then rerun `step4_regimes` and `step5_score`.
 
 14. Update README.
     - Update Scripts table, Data Directory, Services table, enable/restart commands, Daily Job manual command, Manual Fetch commands, Tracked File Inventory, and any command/help examples.
@@ -966,10 +999,8 @@ After editing, re-run the grep from Invariant #2 and confirm the only remaining 
       ```bash
       ./venv/bin/python scripts/generate_etf_summary.py
       ```
-    - Benchmark if applicable:
-      ```bash
-      ./venv/bin/python -m scripts.etf_benchmark.step1_universe && ./venv/bin/python -m scripts.etf_benchmark.step3_backfill --incremental && ./venv/bin/python -m scripts.etf_benchmark.step4_regimes && ./venv/bin/python -m scripts.etf_benchmark.step5_score
-      ```
+    - Benchmark if applicable: run `step4_regimes` and `step5_score` against
+      `/var/lib/stock/market/market.db`; never create a per-ETF price store.
 
 16. Deployment commands after merging/pulling on the server.
     ```bash
@@ -984,7 +1015,7 @@ After editing, re-run the grep from Invariant #2 and confirm the only remaining 
 
 Work the **Add One ETF touch-point table in reverse** — remove the ticker from every one of those 16 rows (most easily found via the Invariant #2 grep). The rows most often missed on deletion are the same ones missed on add: the `ExecStart` args (row 3) and the rich-menu tile (row 14, leave a `預留` placeholder). The steps below are the detail.
 
-1. Remove it from daily orchestration (incl. the `ExecStart` args in `services/stock-fetch-1830-tw.service`).
+1. Remove it from `ACTIVE` or `PASSIVE` in `scripts/run_issuer_holdings_fetch.py` and from the derived/report ticker list where applicable.
    - Delete the ticker from `ETFS=(...)` in `scripts/update_and_notify.sh`.
    - Delete its fetcher dispatch branch.
    - Delete it from active summary/LINE broadcast lists and embedded name maps.
@@ -1025,9 +1056,9 @@ Work the **Add One ETF touch-point table in reverse** — remove the ticker from
    - Delete any generated summary references in webhook routes if present.
 
 8. Remove ETF benchmark references.
-   - Delete from `scripts/etf_benchmark/step1_universe.py`.
-   - Delete from `scripts/etf_benchmark/seed_tpex_etfs.csv` if it was manually seeded.
-   - Rebuild or refresh benchmark outputs on the server. The SQLite DB is ignored and can be regenerated.
+   - Do not edit a local universe or seed CSV. The ETF becomes inactive only
+     through a validated official universe/issuer import; then refresh the
+     derived regime and score tables in the sole database.
 
 9. Update README.
    - Remove the ticker from Scripts, Data Directory, Services, Daily Job manual command, Manual Fetch commands, Tracked File Inventory, and any special notes.
@@ -1161,7 +1192,6 @@ data/etf_00991A_log.json
 data/etf_00403A_history.json
 data/etf_00403A_log.json
 data/etf_consensus_v4.json
-data/yuanta_v4_daily_k.json
 data/master_manual_positions.json
 data/master_meta.json
 data/master_trades.csv
@@ -1212,17 +1242,11 @@ scripts/update_and_notify.sh
 scripts/update_market_pulse_volume.py
 scripts/etf_benchmark/__init__.py
 scripts/etf_benchmark/db.py
-scripts/etf_benchmark/seed_tpex_etfs.csv
-scripts/etf_benchmark/step1_universe.py
-scripts/etf_benchmark/step2_schema.py
-scripts/etf_benchmark/step3_backfill.py
 scripts/etf_benchmark/step4_regimes.py
 scripts/etf_benchmark/step5_score.py
 services/stock-chart.service
 services/stock-dashboard.service
 services/oci-firewall.service
-services/stock-fetch-1830-tw.service
-services/stock-fetch-1830-tw.timer
 services/stock-gold-monitor.service
 services/stock-master-holding-monitor.service
 services/stock-quote-monitor-00403a.service
@@ -1253,4 +1277,4 @@ tests/test_etf_981_follow_strategy.py
 
 ## Cleanup Policy
 
-Only production code, service templates, and tracked source/history data belong in this repo. Generated images, quote caches, benchmark SQLite files, local TradingView/TSIT captures, and one-off research experiments are ignored or removed. Local experiments should live outside the repo or in `strategy_experiment*/`, which is ignored.
+Only production code, service templates, and tracked source/history data belong in this repo. Generated images, quote caches, local TradingView/TSIT captures, and one-off research experiments are ignored or removed. Historical market data belongs only in ARM `market.db`; local experiments should live outside the repo or in `strategy_experiment*/`, which is ignored.

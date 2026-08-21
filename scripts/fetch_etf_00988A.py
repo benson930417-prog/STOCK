@@ -127,31 +127,11 @@ def fetch_and_update_holdings():
             save_log(log_data)
             return
 
-        closing_price = nav
-        try:
-            rp = requests.get(
-                f"https://query1.finance.yahoo.com/v8/finance/chart/{ETF_TICKER}.TW?range=14d&interval=1d",
-                headers={"User-Agent": "Mozilla/5.0"},
-                timeout=5,
-            )
-            if rp.status_code == 200:
-                res = rp.json()["chart"]["result"][0]
-                ts_list = res.get("timestamp", [])
-                close_list = res.get("indicators", {}).get("quote", [{}])[0].get("close", [])
-                for idx in range(len(ts_list) - 1, -1, -1):
-                    dt_str = datetime.fromtimestamp(ts_list[idx], timezone(timedelta(hours=8))).strftime("%Y-%m-%d")
-                    if dt_str == file_date_str and close_list[idx] is not None:
-                        closing_price = float(close_list[idx])
-                        break
-        except Exception:
-            pass
-
         day_data = {
             "date": file_date_str,
             "meta": {
                 "fund_size": fund_size,
                 "nav": nav,
-                "closing_price": float(closing_price) if closing_price is not None else None,
             },
             "holdings": clean_records,
         }
@@ -171,9 +151,6 @@ def fetch_and_update_holdings():
 
             curr_cmp = copy.deepcopy(day_data)
             prev_cmp = copy.deepcopy(existing_day_data)
-            curr_cmp["meta"].pop("closing_price", None)
-            prev_cmp["meta"].pop("closing_price", None)
-
             if json.dumps(curr_cmp, sort_keys=True) == json.dumps(prev_cmp, sort_keys=True):
                 is_changed = False
 

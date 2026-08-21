@@ -36,13 +36,13 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from src.market_db import load_holding_history  # noqa: E402
+
 DATA = ROOT / "data"
 OUT = DATA / "stock_tags.json"
-ACTIVE_HISTORIES = [
-    DATA / "etf_00403A_history.json",
-    DATA / "etf_00981A_history.json",
-    DATA / "etf_00991A_history.json",
-]
+ACTIVE_TICKERS = ("00403A", "00981A", "00991A")
 
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
@@ -60,10 +60,8 @@ KNOWN_GROUPS = [
 def load_universe() -> dict[str, str]:
     """Return {stock_id: name} across every date in the active-ETF histories."""
     uni: dict[str, str] = {}
-    for f in ACTIVE_HISTORIES:
-        if not f.exists():
-            continue
-        d = json.loads(f.read_text(encoding="utf-8"))
+    for ticker in ACTIVE_TICKERS:
+        d = load_holding_history(ticker)
         for day in d.values():
             for h in day.get("holdings", []):
                 sid = str(h.get("id", "")).strip()

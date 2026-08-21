@@ -12,16 +12,13 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.etf_intent_v3 import build_intent_payload  # noqa: E402
+from src.market_db import load_holding_history  # noqa: E402
 
 
 DATA = ROOT / "data"
 OUT = DATA / "etf_intent_v3.json"
 TAGS = DATA / "stock_tags.json"
-HISTORIES = {
-    "00403A": DATA / "etf_00403A_history.json",
-    "00981A": DATA / "etf_00981A_history.json",
-    "00991A": DATA / "etf_00991A_history.json",
-}
+HISTORY_TICKERS = ("00403A", "00981A", "00991A")
 
 
 def _load(path: Path) -> dict:
@@ -29,13 +26,9 @@ def _load(path: Path) -> dict:
 
 
 def generate(out: Path = OUT) -> dict:
-    histories = {
-        etf: _load(path)
-        for etf, path in HISTORIES.items()
-        if path.exists()
-    }
-    if set(histories) != set(HISTORIES):
-        missing = sorted(set(HISTORIES) - set(histories))
+    histories = {etf: load_holding_history(etf) for etf in HISTORY_TICKERS}
+    missing = sorted(etf for etf, history in histories.items() if not history)
+    if missing:
         raise RuntimeError(f"Missing active ETF histories: {', '.join(missing)}")
     tags = (_load(TAGS).get("tags") or {}) if TAGS.exists() else {}
     payload = build_intent_payload(histories, tags)

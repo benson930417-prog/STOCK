@@ -4,10 +4,10 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+Slice=stock-background.slice
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK
-EnvironmentFile=-/home/ubuntu/.stock_secrets
 ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py 00403A --interval 180 --max-workers 4 --jitter 150
 Restart=always
 RestartSec=10

@@ -186,14 +186,10 @@ def _extract_nav_history(page):
 
     rows = []
     for match in row_pattern.finditer(table_text):
-        premium = _num(match.group(4))
         rows.append(
             {
                 "date": _date_to_key(match.group(1)),
                 "nav": _num(match.group(2)),
-                "closing_price": _num(match.group(3)),
-                "premium_discount": premium,
-                "premium_discount_pct": _num(match.group(5)),
                 "fund_net_assets": int(_num(match.group(6))),
                 "outstanding_units": int(_num(match.group(7))),
             }
@@ -206,7 +202,6 @@ def _extract_nav_history(page):
     previous = rows[1]
     latest["deltas"] = {
         "nav_pct": _pct_change(latest["nav"], previous["nav"]),
-        "closing_price_pct": _pct_change(latest["closing_price"], previous["closing_price"]),
         "fund_net_assets_pct": _pct_change(latest["fund_net_assets"], previous["fund_net_assets"]),
         "outstanding_units_pct": _pct_change(latest["outstanding_units"], previous["outstanding_units"]),
     }
@@ -241,10 +236,7 @@ def fetch_and_update_0050():
         {
             "fund_size": latest_nav["fund_net_assets"],
             "nav": latest_nav["nav"],
-            "closing_price": latest_nav["closing_price"],
             "outstanding_units": latest_nav["outstanding_units"],
-            "premium_discount": latest_nav["premium_discount"],
-            "premium_discount_pct": latest_nav["premium_discount_pct"],
             "nav_history": nav_history,
         }
     )

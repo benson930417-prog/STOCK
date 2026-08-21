@@ -54,16 +54,16 @@ def fetch_and_update_009805():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     }
 
-    # Fetch main page to get NAV and Market Price from carousel
+    # Fetch the issuer page for the disclosure date and NAV.  Market prices
+    # are owned exclusively by canonical market.db daily_bars.
     r_main = requests.get("https://www.tsit.com.tw/ETF/", headers=headers, verify=False, timeout=15)
     r_main.raise_for_status()
     soup_main = BeautifulSoup(r_main.text, 'html.parser')
 
-    # 1. Extract Date, NAV, and Market Price from the carousel
+    # 1. Extract Date and NAV from the carousel
     # Look for the block containing "009805"
     date_key = None
     nav = None
-    closing_price = None
 
     carousel_items = soup_main.find_all("div", class_="index_carouse")
     for item in carousel_items:
@@ -83,18 +83,15 @@ def fetch_and_update_009805():
                         val1 = cols[1].text.strip()
                         if label1 == "淨值":
                             nav = _num(val1)
-                        elif label1 == "市價":
-                            closing_price = _num(val1)
             break
 
-    if not date_key or nav is None or closing_price is None:
-        raise ValueError("Failed to parse date, NAV, or closing price from the carousel.")
+    if not date_key or nav is None:
+        raise ValueError("Failed to parse date or NAV from the carousel.")
 
     meta = {
         "fund_size": None, # Optional as per user
         "nav": nav,
         "outstanding_units": None, # Optional as per user
-        "closing_price": closing_price,
         "source_url": URL,
     }
 

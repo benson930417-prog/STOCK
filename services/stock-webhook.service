@@ -4,10 +4,11 @@ After=network-online.target stock-chart.service
 Wants=network-online.target stock-chart.service
 
 [Service]
+Slice=stock-background.slice
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK
-EnvironmentFile=-/home/ubuntu/.stock_secrets
+Environment=STOCK_GLOBAL_MARKET_DB=/var/lib/stock/market/market.db
 ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/api/webhook.py
 Restart=always
 RestartSec=10

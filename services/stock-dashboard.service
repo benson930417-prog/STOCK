@@ -4,11 +4,12 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+Slice=stock-background.slice
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK
-EnvironmentFile=-/home/ubuntu/.stock_secrets
-ExecStart=/home/ubuntu/STOCK/venv/bin/streamlit run /home/ubuntu/STOCK/app.py --server.address 0.0.0.0 --server.port 8501
+Environment=STOCK_GLOBAL_MARKET_DB=/var/lib/stock/market/market.db
+ExecStart=/home/ubuntu/STOCK/venv/bin/streamlit run /home/ubuntu/STOCK/app.py --server.address 127.0.0.1 --server.port 8501
 Restart=always
 RestartSec=10
 StandardOutput=append:/home/ubuntu/STOCK/stock_dashboard.log

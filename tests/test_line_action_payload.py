@@ -51,10 +51,7 @@ class LineActionPayloadTests(unittest.TestCase):
         tickers = ACTIVE_TICKERS
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp)
-            for ticker in tickers:
-                (data_dir / f"etf_{ticker}_history.json").write_text(
-                    json.dumps({"2026-07-22": {}}), encoding="utf-8"
-                )
+            histories = {ticker: {"2026-07-22": {}} for ticker in tickers}
             cache = data_dir / "etf_action_insight.json"
             cache.write_text(
                 json.dumps({"line_text": "🔥 cached ETF action juice"}),
@@ -67,6 +64,7 @@ class LineActionPayloadTests(unittest.TestCase):
                 action_cache=cache,
                 webhook_host="https://example.test",
                 cache_buster=123,
+                history_loader=lambda ticker: histories[ticker],
             )
 
         self.assertEqual(5, len(messages))

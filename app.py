@@ -96,14 +96,21 @@ GITHUB_FILE_PATH = _get_secret("GITHUB_FILE_PATH", "data/master_trades.csv")
 
 # -------------------- auth --------------------
 import hashlib
+import hmac
 import time
 
+AUTH_TOKEN_TTL_SECONDS = 24 * 60 * 60
+
+
 def get_auth_token():
-    # Create a time-stamped secure hash of the password
     if not VIEW_PASSWORD:
         return ""
     ts = int(time.time())
-    sig = hashlib.sha256(f"{VIEW_PASSWORD}_stock_{ts}".encode()).hexdigest()[:16]
+    sig = hmac.new(
+        VIEW_PASSWORD.encode("utf-8"),
+        f"stock:{ts}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()[:32]
     return f"{ts}-{sig}"
 
 def verify_auth_token(token: str) -> bool:
@@ -112,10 +119,15 @@ def verify_auth_token(token: str) -> bool:
     try:
         ts_str, sig = token.split("-", 1)
         ts = int(ts_str)
-            
-        # Verify the signature hasn't been tampered with
-        expected_sig = hashlib.sha256(f"{VIEW_PASSWORD}_stock_{ts}".encode()).hexdigest()[:16]
-        return sig == expected_sig
+        now = int(time.time())
+        if ts > now + 60 or now - ts > AUTH_TOKEN_TTL_SECONDS:
+            return False
+        expected_sig = hmac.new(
+            VIEW_PASSWORD.encode("utf-8"),
+            f"stock:{ts}".encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()[:32]
+        return hmac.compare_digest(sig, expected_sig)
     except Exception:
         return False
 
@@ -342,18 +354,20 @@ def get_twd_to_eur_rate():
         return st.session_state["eur_rate_data"]
     
     try:
-        url = "https://api.exchangerate-api.com/v4/latest/TWD"
-        r = requests.get(url, timeout=3.0)
-        r.raise_for_status()
-        data = r.json()
-        rate = float(data["rates"]["EUR"])
-        
-        # also capture date/timestamp from API if available or use current
-        updated_date = data.get("date", "")
-        updated_ts = data.get("time_last_updated", 0)
-        
+        from src.market_db import load_daily_ohlcv_payload
+
+        payload = load_daily_ohlcv_payload(["EURTWD=X"], benchmark="EURTWD=X")
+        rows = (payload.get("symbols") or {}).get("EURTWD=X") or []
+        if not rows:
+            return None
+        latest = rows[-1]
+        eur_twd = float(latest["close"])
+        if eur_twd <= 0:
+            return None
+        updated_date = str(latest["date"])
+        updated_ts = int(pd.Timestamp(updated_date, tz="UTC").timestamp())
         res = {
-            "rate": rate,
+            "rate": 1.0 / eur_twd,
             "date": updated_date,
             "timestamp": updated_ts
         }
@@ -364,41 +378,35 @@ def get_twd_to_eur_rate():
 
 
 def get_market_data(symbol, days=365):
-    # Fetch Market data (e.g. ^TWII, ^DJI) from Yahoo Finance Chart API
-    # Cache in session
+    # Historical market data has one owner: the ARM market.db.
     cache_key = f"market_data_{symbol}_{days}"
     if cache_key in st.session_state:
         return st.session_state[cache_key]
 
     try:
-        # Range: roughly days -> 1y, 2y, 5y etc.
-        # Yahoo ranges: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
-        range_str = "1y"
-        if days > 365 * 2: range_str = "5y"
-        elif days > 365: range_str = "2y"
-        
-        # URL encode symbol if needed, but simple ones are safe
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range={range_str}"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        r = requests.get(url, headers=headers, timeout=5.0)
-        r.raise_for_status()
-        data = r.json()
-        
-        result = data["chart"]["result"][0]
-        timestamps = result["timestamp"]
-        closes = result["indicators"]["quote"][0]["close"]
-        
-        # Meta for last update time
-        meta = result.get("meta", {})
-        last_trade_ts = meta.get("regularMarketTime", 0)
-        
-        # Create DataFrame
-        df = pd.DataFrame({"ts": timestamps, "close": closes})
-        df["date"] = pd.to_datetime(df["ts"], unit="s").dt.normalize()
+        from src.market_db import load_daily_ohlcv_payload
+
+        db_symbol = str(symbol).strip().upper()
+        if db_symbol.endswith(".TWO"):
+            db_symbol = db_symbol[:-4]
+        elif db_symbol.endswith(".TW"):
+            db_symbol = db_symbol[:-3]
+        start = (
+            pd.Timestamp.now(tz="UTC").normalize()
+            - pd.Timedelta(days=max(int(days), 1) + 10)
+        ).date().isoformat()
+        payload = load_daily_ohlcv_payload(
+            [db_symbol], start=start, benchmark=db_symbol
+        )
+        rows = (payload.get("symbols") or {}).get(db_symbol) or []
+        if not rows:
+            return pd.DataFrame()
+        df = pd.DataFrame(rows)[["date", "close"]]
+        df["date"] = pd.to_datetime(df["date"]).dt.normalize()
         df = df.dropna().sort_values("date")
-        
-        # Store metadata
-        df.attrs["last_update"] = last_trade_ts
+        df.attrs["last_update"] = int(
+            pd.Timestamp(df["date"].iloc[-1], tz="UTC").timestamp()
+        )
 
         
         st.session_state[cache_key] = df
@@ -409,38 +417,14 @@ def get_market_data(symbol, days=365):
 
 @st.cache_data(ttl=86400)
 def get_tw_stock_options():
-    import requests
-    import urllib3
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    
+    from src.market_db import list_taiwan_instruments
+
     options = {}
-    
-    # 1. TWSE
-    try:
-        r1 = requests.get('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL', verify=False, timeout=5)
-        if r1.status_code == 200:
-            for item in r1.json():
-                code = str(item.get('Code', '')).strip()
-                name = str(item.get('Name', '')).strip()
-                if (len(code) == 4 and code.isdigit()) or code.startswith('00'):
-                    lbl = f"{code} {name}"
-                    options[lbl] = f"{code}.TW"
-    except Exception:
-        pass
-
-    # 2. TPEX
-    try:
-        r2 = requests.get('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes', verify=False, timeout=5)
-        if r2.status_code == 200:
-            for item in r2.json():
-                code = str(item.get('SecuritiesCompanyCode', '')).strip()
-                name = str(item.get('CompanyName', '')).strip()
-                if len(code) == 4 and code.isdigit() and not code.startswith('0'):
-                    lbl = f"{code} {name}"
-                    options[lbl] = f"{code}.TWO"
-    except Exception:
-        pass
-
+    for row in list_taiwan_instruments():
+        code = str(row["symbol"])
+        label = f"{code} {row['name']}"
+        suffix = ".TW" if row["market"] == "TWSE" else ".TWO"
+        options[label] = f"{code}{suffix}"
     return options
 
 
@@ -813,18 +797,9 @@ def enrich_positions_with_quotes(positions: pd.DataFrame) -> pd.DataFrame:
 
 
 def _latest_history_payload(ticker):
-    if ticker in {"0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"}:
-        path = DATA_DIR / f"passive_{ticker}_history.json"
-    else:
-        path = DATA_DIR / f"etf_{ticker}_history.json"
-    if not path.exists():
-        return None, {}
-    try:
-        history = json.loads(path.read_text(encoding="utf-8"))
-        date_key = max(history.keys())
-        return date_key, history[date_key]
-    except Exception:
-        return None, {}
+    from src.market_db import latest_holding_payload
+
+    return latest_holding_payload(str(ticker))
 
 
 def _quote_cache_by_holding(ticker):
@@ -985,8 +960,6 @@ def _github_debug_context():
         "branch": GITHUB_BRANCH or "",
         "master_path": GITHUB_FILE_PATH or "",
         "token_configured": bool(GITHUB_TOKEN),
-        "token_length": len(str(GITHUB_TOKEN or "")),
-        "token_prefix": str(GITHUB_TOKEN or "")[:4] if GITHUB_TOKEN else "",
     }
 
 
@@ -1975,7 +1948,8 @@ def plot_pnl_distribution(df: pd.DataFrame, lang: str, profit_color: str, loss_c
 
 # -------------------- APP --------------------
 try:
-    # Sidebar pre-auth: ONLY language switch
+    # Public read-only dashboard.  Destructive/admin controls retain their
+    # separate admin authentication below.
     with st.sidebar:
         lang = st.radio(
             "Language / 語言",
@@ -1983,10 +1957,7 @@ try:
             index=1,
             horizontal=True,
         )
-    # Gate everything else behind VIEW password
-    require_view_password_centered(lang)
-
-    # Sidebar post-auth: recent update + everything else
+    # Sidebar preferences + read-only views
     with st.sidebar:
         st.markdown(f"## {T(lang, 'Preferences', '設定')}")
         currency_opt = st.radio(
