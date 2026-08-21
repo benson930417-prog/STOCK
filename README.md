@@ -157,7 +157,7 @@ All LINE market charts are captured ahead of time by `stock-chart.service` and r
 - NASDAQ must click the visible TradingView `1 day` control and verify its selected class; a `?timeframe=1D` URL alone is insufficient. Failed verification preserves the last valid cache.
 - Generic oil/Brent/bond/gold/FX charts use a one-month window while their existing quote text remains unchanged.
 - Messages created before content-versioned URLs cannot be repaired retroactively; all newly generated replies must use immutable URLs.
-- `stock-chart.service` starts one browser without preloading pages. The sequential monitor keeps exactly one chart page resident and replaces it when the key changes. After restart, wait for `/docs`, regenerate all eight caches once, and confirm both chart and monitor services are active.
+- `stock-chart.service` starts one browser without preloading pages. The sequential monitor keeps exactly one chart page resident and navigates that same page when the key changes. After restart, wait for `/docs`, regenerate all eight caches once, and confirm both chart and monitor services are active.
 
 ### Architecture change checklist
 
@@ -403,6 +403,8 @@ split, cash-flow, and backtest services must also declare
 | Gold quote cache | `stock-gold-monitor.service` → `monitor_gold_quote.py --interval 60 --scanner-only` | every **60s**, `MemoryMax=512M` |
 
 **Same-moment price + chart.** `monitor_market_charts.refresh_key` makes a single `/snapshot` call per key. `chart_service.py` reads the price/% from the *same page render* that produced the screenshot and returns both, then the monitor stores that image's SHA-256 beside the text. The webhook retries instead of replying if the mutable source no longer matches that checksum. There is no separate `/market-text` pass and no per-key price buffer.
+
+**Shared-upstream backoff.** A TradingView 403 is returned by `chart_service.py` as an explicit 503. The monitor stops that cycle at the first blocked key and waits at least five minutes before trying again; it must not hammer the remaining seven keys and prolong an upstream block. Existing checksum-verified caches stay untouched during the outage.
 
 **NASDAQ timeframe is verified, not assumed.** TradingView may open `?timeframe=1D` while the actual range button still has `1 year` selected. The NASDAQ snapshot path must click the visible `1 day` control and verify its `selected-*` class before accepting the canvas. Missing/failed selection rejects that refresh and preserves the previous valid cache; a merely nonblank long-range chart is never sufficient.
 

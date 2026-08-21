@@ -47,17 +47,14 @@ class ChartPageLifecycleTests(unittest.IsolatedAsyncioTestCase):
         chart_service.pages.clear()
         chart_service.pages.update(self.original_pages)
 
-    async def test_switching_keys_closes_the_previous_page(self) -> None:
+    async def test_switching_keys_reuses_the_resident_page(self) -> None:
         old_page = Mock()
         old_page.is_closed.return_value = False
         old_page.close = AsyncMock()
-        new_page = Mock()
-        new_page.is_closed.return_value = False
-        new_page.goto = AsyncMock()
-        new_page.add_style_tag = AsyncMock()
-        new_page.close = AsyncMock()
+        old_page.goto = AsyncMock()
+        old_page.add_style_tag = AsyncMock()
         context = Mock()
-        context.new_page = AsyncMock(return_value=new_page)
+        context.new_page = AsyncMock()
         browser = Mock()
         browser.is_connected.return_value = True
         chart_service.browser_context = context
@@ -68,14 +65,15 @@ class ChartPageLifecycleTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(chart_service.asyncio, "sleep", new=AsyncMock()):
             selected = await chart_service._get_page_for_key("bond")
 
-        self.assertIs(selected, new_page)
-        old_page.close.assert_awaited_once()
-        new_page.goto.assert_awaited_once_with(
+        self.assertIs(selected, old_page)
+        old_page.close.assert_not_awaited()
+        context.new_page.assert_not_awaited()
+        old_page.goto.assert_awaited_once_with(
             chart_service.CHART_TABS["bond"],
             wait_until="networkidle",
             timeout=60000,
         )
-        self.assertEqual({"bond": new_page}, chart_service.pages)
+        self.assertEqual({"bond": old_page}, chart_service.pages)
 
     async def test_unknown_key_fails_before_browser_work(self) -> None:
         chart_service.browser_context = None

@@ -586,15 +586,12 @@ async def _get_page_for_key(key):
 
     # The cache monitor is deliberately sequential. Keeping eight live
     # TradingView renderers consumed ~1.9 GiB even though only one was touched
-    # at a time, so retain exactly the page serving the current key.
-    for resident in list(pages.values()):
-        try:
-            await resident.close()
-        except Exception as exc:
-            print(f"⚠️ Error closing retired chart page: {exc}")
+    # at a time. Re-navigate the single resident page so Chromium never has to
+    # overlap an exiting renderer with a newly-created one.
+    page = next(iter(pages.values()), None)
+    if page is None or page.is_closed():
+        page = await browser_context.new_page()
     pages.clear()
-
-    page = await browser_context.new_page()
     try:
         await page.goto(CHART_TABS[key], wait_until="networkidle", timeout=60000)
         await page.add_style_tag(content=HIDE_CSS)
@@ -709,7 +706,10 @@ async def take_snapshot(req: SnapshotRequest):
     try:
         page_text = (await _get_body_text(page))[:1000]
         if "403 ERROR" in page_text or "The request could not be satisfied" in page_text:
-            raise ValueError(f"TradingView page is blocked: {page_text[:300]}")
+            raise HTTPException(
+                status_code=503,
+                detail=f"TradingView upstream blocked: {page_text[:300]}",
+            )
 
         # Always scroll to top first — defends against the page being scrolled
         # to footer for any reason. Without this the viewport snapshot fallback
@@ -1018,6 +1018,8 @@ async def take_snapshot(req: SnapshotRequest):
             "text": text,
             **integrity,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"❌ Error during snapshot for {req.key}: {e}")
         raise HTTPException(status_code=500, detail=str(e))

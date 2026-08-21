@@ -19,6 +19,13 @@ from src.market_chart_cache import file_sha256  # noqa: E402
 
 QUOTE_CACHE_DIR = ROOT_DIR / "data" / "quote_cache"
 CHART_SERVICE_URL = "http://127.0.0.1:5005"
+UPSTREAM_BLOCKED_BACKOFF_SECONDS = 300
+
+
+class ChartServiceUnavailable(RuntimeError):
+    def __init__(self, message, retry_after_seconds=60):
+        super().__init__(message)
+        self.retry_after_seconds = retry_after_seconds
 
 
 def utc_now_iso():
@@ -41,6 +48,18 @@ def post_chart_service(endpoint, key, timeout):
         json={"key": key},
         timeout=timeout,
     )
+    if response.status_code == 503:
+        try:
+            detail = str(response.json().get("detail") or "")
+        except (TypeError, ValueError):
+            detail = response.text[:500]
+        blocked = "upstream blocked" in detail.lower()
+        raise ChartServiceUnavailable(
+            detail or f"chart service unavailable for {key}",
+            retry_after_seconds=(
+                UPSTREAM_BLOCKED_BACKOFF_SECONDS if blocked else 60
+            ),
+        )
     response.raise_for_status()
     return response.json()
 
@@ -92,6 +111,22 @@ def refresh_key(key, timeout):
     return payload
 
 
+def refresh_cycle(keys, timeout):
+    for key in keys:
+        try:
+            refresh_key(key, timeout)
+        except ChartServiceUnavailable as exc:
+            print(
+                f"{utc_now_iso()} chart service unavailable at {key}; "
+                f"stopping this cycle and backing off {exc.retry_after_seconds}s: {exc}",
+                flush=True,
+            )
+            return exc.retry_after_seconds
+        except Exception as exc:
+            print(f"{utc_now_iso()} error refreshing market chart cache {key}: {type(exc).__name__}: {exc}", flush=True)
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -104,14 +139,12 @@ def main():
     args = parser.parse_args()
 
     while True:
-        for key in args.keys:
-            try:
-                refresh_key(key, args.timeout)
-            except Exception as exc:
-                print(f"{utc_now_iso()} error refreshing market chart cache {key}: {type(exc).__name__}: {exc}", flush=True)
+        backoff_seconds = refresh_cycle(args.keys, args.timeout)
         if args.once:
+            if backoff_seconds:
+                raise SystemExit(1)
             return
-        time.sleep(max(10, args.interval))
+        time.sleep(backoff_seconds or max(10, args.interval))
 
 
 if __name__ == "__main__":

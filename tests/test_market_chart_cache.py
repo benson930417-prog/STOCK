@@ -4,7 +4,7 @@ import hashlib
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from scripts import monitor_market_charts
 from src.market_chart_cache import (
@@ -111,6 +111,48 @@ class MarketChartCacheTests(unittest.TestCase):
                     "changed before cache commit",
                 ):
                     monitor_market_charts.refresh_key("nasdaq", 10)
+
+    def test_upstream_block_stops_the_cycle_and_uses_long_backoff(self) -> None:
+        blocked = monitor_market_charts.ChartServiceUnavailable(
+            "TradingView upstream blocked",
+            retry_after_seconds=monitor_market_charts.UPSTREAM_BLOCKED_BACKOFF_SECONDS,
+        )
+        with patch.object(
+            monitor_market_charts,
+            "refresh_key",
+            side_effect=blocked,
+        ) as refresh:
+            backoff = monitor_market_charts.refresh_cycle(
+                ["oil", "brent", "bond"],
+                10,
+            )
+
+        self.assertEqual(
+            monitor_market_charts.UPSTREAM_BLOCKED_BACKOFF_SECONDS,
+            backoff,
+        )
+        refresh.assert_called_once_with("oil", 10)
+
+    def test_503_block_detail_is_classified_for_backoff(self) -> None:
+        response = Mock()
+        response.status_code = 503
+        response.json.return_value = {
+            "detail": "TradingView upstream blocked: 403 ERROR"
+        }
+        with patch.object(
+            monitor_market_charts.requests,
+            "post",
+            return_value=response,
+        ):
+            with self.assertRaises(
+                monitor_market_charts.ChartServiceUnavailable
+            ) as raised:
+                monitor_market_charts.post_chart_service("snapshot", "oil", 10)
+
+        self.assertEqual(
+            monitor_market_charts.UPSTREAM_BLOCKED_BACKOFF_SECONDS,
+            raised.exception.retry_after_seconds,
+        )
 
 
 if __name__ == "__main__":
