@@ -154,6 +154,29 @@ class MarketChartCacheTests(unittest.TestCase):
             raised.exception.retry_after_seconds,
         )
 
+    def test_shared_outage_backoff_is_exponential_and_bounded(self) -> None:
+        self.assertEqual(300, monitor_market_charts.upstream_blocked_backoff_seconds(1))
+        self.assertEqual(600, monitor_market_charts.upstream_blocked_backoff_seconds(2))
+        self.assertEqual(1200, monitor_market_charts.upstream_blocked_backoff_seconds(3))
+        self.assertEqual(1800, monitor_market_charts.upstream_blocked_backoff_seconds(4))
+        self.assertEqual(1800, monitor_market_charts.upstream_blocked_backoff_seconds(20))
+
+    def test_shared_outage_cooldown_survives_process_restart(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            state_path = Path(tmp) / "outage.json"
+            with patch.object(monitor_market_charts, "OUTAGE_STATE_PATH", state_path):
+                delay = monitor_market_charts.record_outage(3, now_epoch=1000)
+                state = monitor_market_charts.load_outage_state(now_epoch=1001)
+                self.assertEqual(1200, delay)
+                self.assertEqual(3, state["consecutive_outages"])
+                self.assertEqual(2200, state["next_retry_epoch"])
+                stale = monitor_market_charts.load_outage_state(
+                    now_epoch=1000 + monitor_market_charts.UPSTREAM_BLOCKED_STATE_MAX_AGE_SECONDS + 1
+                )
+                self.assertEqual(0, stale["consecutive_outages"])
+                monitor_market_charts.clear_outage_state()
+                self.assertFalse(state_path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

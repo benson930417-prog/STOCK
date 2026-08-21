@@ -20,6 +20,9 @@ from src.market_chart_cache import file_sha256  # noqa: E402
 QUOTE_CACHE_DIR = ROOT_DIR / "data" / "quote_cache"
 CHART_SERVICE_URL = "http://127.0.0.1:5005"
 UPSTREAM_BLOCKED_BACKOFF_SECONDS = 300
+UPSTREAM_BLOCKED_MAX_BACKOFF_SECONDS = 1800
+UPSTREAM_BLOCKED_STATE_MAX_AGE_SECONDS = 6 * 60 * 60
+OUTAGE_STATE_PATH = QUOTE_CACHE_DIR / "market_monitor_outage.json"
 
 
 class ChartServiceUnavailable(RuntimeError):
@@ -40,6 +43,50 @@ def atomic_write_json(path, payload):
         tmp_path = Path(tmp.name)
     tmp_path.chmod(0o644)
     tmp_path.replace(path)
+
+
+def upstream_blocked_backoff_seconds(consecutive_outages):
+    exponent = max(0, int(consecutive_outages) - 1)
+    return min(
+        UPSTREAM_BLOCKED_BACKOFF_SECONDS * (2 ** exponent),
+        UPSTREAM_BLOCKED_MAX_BACKOFF_SECONDS,
+    )
+
+
+def load_outage_state(now_epoch=None):
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    try:
+        payload = json.loads(OUTAGE_STATE_PATH.read_text(encoding="utf-8"))
+        updated_epoch = float(payload["updated_epoch"])
+        if now_epoch - updated_epoch > UPSTREAM_BLOCKED_STATE_MAX_AGE_SECONDS:
+            return {"consecutive_outages": 0, "next_retry_epoch": 0.0}
+        return {
+            "consecutive_outages": max(0, int(payload["consecutive_outages"])),
+            "next_retry_epoch": max(0.0, float(payload["next_retry_epoch"])),
+        }
+    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+        return {"consecutive_outages": 0, "next_retry_epoch": 0.0}
+
+
+def record_outage(consecutive_outages, now_epoch=None):
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    delay = upstream_blocked_backoff_seconds(consecutive_outages)
+    atomic_write_json(
+        OUTAGE_STATE_PATH,
+        {
+            "consecutive_outages": int(consecutive_outages),
+            "updated_epoch": now_epoch,
+            "next_retry_epoch": now_epoch + delay,
+        },
+    )
+    return delay
+
+
+def clear_outage_state():
+    try:
+        OUTAGE_STATE_PATH.unlink()
+    except FileNotFoundError:
+        pass
 
 
 def post_chart_service(endpoint, key, timeout):
@@ -138,8 +185,30 @@ def main():
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
 
+    outage_state = load_outage_state()
+    consecutive_outages = outage_state["consecutive_outages"]
+    startup_delay = max(0, int(outage_state["next_retry_epoch"] - time.time()))
+    if startup_delay and not args.once:
+        print(
+            f"{utc_now_iso()} preserving shared-upstream cooldown across restart: "
+            f"{startup_delay}s",
+            flush=True,
+        )
+        time.sleep(startup_delay)
+
     while True:
         backoff_seconds = refresh_cycle(args.keys, args.timeout)
+        if backoff_seconds == UPSTREAM_BLOCKED_BACKOFF_SECONDS:
+            consecutive_outages += 1
+            backoff_seconds = record_outage(consecutive_outages)
+            print(
+                f"{utc_now_iso()} shared-upstream outage streak={consecutive_outages}; "
+                f"next retry in {backoff_seconds}s",
+                flush=True,
+            )
+        else:
+            consecutive_outages = 0
+            clear_outage_state()
         if args.once:
             if backoff_seconds:
                 raise SystemExit(1)

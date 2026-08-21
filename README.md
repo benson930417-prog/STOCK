@@ -404,7 +404,7 @@ split, cash-flow, and backtest services must also declare
 
 **Same-moment price + chart.** `monitor_market_charts.refresh_key` makes a single `/snapshot` call per key. `chart_service.py` reads the price/% from the *same page render* that produced the screenshot and returns both, then the monitor stores that image's SHA-256 beside the text. The webhook retries instead of replying if the mutable source no longer matches that checksum. There is no separate `/market-text` pass and no per-key price buffer.
 
-**Shared-upstream backoff.** A TradingView 403 is returned by `chart_service.py` as an explicit 503. The monitor stops that cycle at the first blocked key and waits at least five minutes before trying again; it must not hammer the remaining seven keys and prolong an upstream block. Existing checksum-verified caches stay untouched during the outage.
+**Shared-upstream backoff.** A TradingView 403 is returned by `chart_service.py` as an explicit 503. The monitor stops that cycle at the first blocked key and uses persistent exponential cooldown (5, 10, 20, then at most 30 minutes). The cooldown survives service restarts and resets only after a non-blocked cycle, so a deploy cannot accidentally restart a request storm. Existing checksum-verified caches stay untouched during the outage.
 
 **NASDAQ timeframe is verified, not assumed.** TradingView may open `?timeframe=1D` while the actual range button still has `1 year` selected. The NASDAQ snapshot path must click the visible `1 day` control and verify its `selected-*` class before accepting the canvas. Missing/failed selection rejects that refresh and preserves the previous valid cache; a merely nonblank long-range chart is never sufficient.
 
