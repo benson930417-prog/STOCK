@@ -3,6 +3,7 @@ import asyncio
 import hashlib
 import urllib.request
 import re
+import sys
 from io import BytesIO
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -10,6 +11,13 @@ from playwright.async_api import async_playwright
 from PIL import Image, ImageDraw, ImageFont
 
 app = FastAPI()
+
+
+def _log(message):
+    """Write service logs even when the host console cannot encode Unicode."""
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    safe = str(message).encode(encoding, errors="backslashreplace").decode(encoding)
+    print(safe, flush=True)
 
 # Configuration
 CHART_TABS = {
@@ -94,9 +102,9 @@ def _ensure_cjk_font():
     try:
         url = 'https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/TraditionalChinese/NotoSansCJKtc-Regular.otf'
         urllib.request.urlretrieve(url, FONT_PATH)
-        print(f"✅ Downloaded CJK font to {FONT_PATH}")
+        _log(f"✅ Downloaded CJK font to {FONT_PATH}")
     except Exception as e:
-        print(f"⚠️ Failed to auto-download CJK font: {e}")
+        _log(f"⚠️ Failed to auto-download CJK font: {e}")
 
 # Global State
 playwright_instance = None
@@ -384,7 +392,7 @@ async def _fetch_tradingview_scanner_quote(page, key):
         }
     requested = ", ".join(f"{item['scanner']}/{item['symbol']}" for item in candidates)
     if config.get("allow_dom_fallback"):
-        print(f"⚠️ TradingView scanner unavailable for {requested}; falling back to page text: {'; '.join(errors)}")
+        _log(f"⚠️ TradingView scanner unavailable for {requested}; falling back to page text: {'; '.join(errors)}")
         return None
     raise ValueError(f"TradingView scanner failed for {requested}: {'; '.join(errors)}")
 
@@ -475,7 +483,7 @@ def _overlay_title(image_path, title):
     draw.line([(0, bar_height - 1), (w, bar_height - 1)], fill="#E5E5E5", width=1)
 
     new_img.save(image_path)
-    print(f"  🖌️ Title overlay added: {title}")
+    _log(f"  🖌️ Title overlay added: {title}")
 
 
 def _trim_bottom_whitespace(image_path, padding=18, min_trim=24, max_body_height=None):
@@ -502,7 +510,7 @@ def _trim_bottom_whitespace(image_path, padding=18, min_trim=24, max_body_height
         crop_bottom = min(crop_bottom, max_body_height)
     if height - crop_bottom >= min_trim:
         img.crop((0, 0, width, crop_bottom)).save(image_path)
-        print(f"  ✂️ Trimmed bottom whitespace: {height - crop_bottom}px")
+        _log(f"  ✂️ Trimmed bottom whitespace: {height - crop_bottom}px")
 
 
 def _chart_snapshot_has_content(image_path, min_colored_ratio=0.002):
@@ -524,20 +532,20 @@ def _chart_snapshot_has_content(image_path, min_colored_ratio=0.002):
 async def init_browser():
     global playwright_instance, browser_instance, browser_context, pages
 
-    print("🧹 Cleaning up old browser instances...")
+    _log("🧹 Cleaning up old browser instances...")
     if browser_instance:
         try:
             await browser_instance.close()
         except Exception as e:
-            print(f"⚠️ Error closing browser_instance: {e}")
+            _log(f"⚠️ Error closing browser_instance: {e}")
     if playwright_instance:
         try:
             await playwright_instance.stop()
         except Exception as e:
-            print(f"⚠️ Error stopping playwright_instance: {e}")
+            _log(f"⚠️ Error stopping playwright_instance: {e}")
     pages.clear()
 
-    print("🚀 Initializing Browser...")
+    _log("🚀 Initializing Browser...")
     playwright_instance = await async_playwright().start()
     browser_instance = await playwright_instance.chromium.launch(headless=True)
     browser_context = await browser_instance.new_context(
@@ -545,7 +553,7 @@ async def init_browser():
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         timezone_id="Asia/Taipei"
     )
-    print("✅ Browser ready; chart pages load on demand.")
+    _log("✅ Browser ready; chart pages load on demand.")
 
 @app.on_event("startup")
 async def startup_event():
@@ -629,7 +637,7 @@ async def _compute_market_quote(page, key):
         try:
             quote = await _extract_market_quote(page)
         except Exception as dom_error:
-            print(f"⚠️ DOM quote extraction failed for {key}: {dom_error}")
+            _log(f"⚠️ DOM quote extraction failed for {key}: {dom_error}")
             text = await _get_body_text(page)
             quote = _parse_market_text(text)
     elif not (TRADINGVIEW_SCANNER_QUOTES.get(key) or {}).get("skip_dom_performance_overlay"):
@@ -645,7 +653,7 @@ async def _compute_market_quote(page, key):
                 if dom_perf.get(k) is not None:
                     perf[k] = dom_perf[k]
         except Exception as e:
-            print(f"⚠️ Could not overlay DOM perf for {key}: {e}")
+            _log(f"⚠️ Could not overlay DOM perf for {key}: {e}")
     return quote
 
 
@@ -661,7 +669,7 @@ async def market_text(req: SnapshotRequest):
         quote = await _compute_market_quote(page, req.key)
         return _market_text_payload(req.key, quote)
     except Exception as e:
-        print(f"❌ Error parsing market text for {req.key}: {e}")
+        _log(f"❌ Error parsing market text for {req.key}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/market-debug")
@@ -762,7 +770,7 @@ async def take_snapshot(req: SnapshotRequest):
                 try:
                     await page.wait_for_load_state("networkidle", timeout=15000)
                 except Exception as wait_exc:
-                    print(f"  ⚠ NASDAQ networkidle wait after 1-day click skipped: "
+                    _log(f"  ⚠ NASDAQ networkidle wait after 1-day click skipped: "
                           f"{type(wait_exc).__name__}: {wait_exc}")
                 await asyncio.sleep(2)
                 selected = await page.evaluate("""() => {
@@ -817,7 +825,7 @@ async def take_snapshot(req: SnapshotRequest):
                             f"attempt {attempt + 1}: 1-day selection failed: "
                             f"{type(range_exc).__name__}: {range_exc}"
                         )
-                        print(f"  ⚠ NASDAQ {failures[-1]}, reloading")
+                        _log(f"  ⚠ NASDAQ {failures[-1]}, reloading")
                         continue
                     # Fixed against the IG symbol-page layout after pressing
                     # 1 day. Optional crop_* request fields let us tune this
@@ -825,7 +833,7 @@ async def take_snapshot(req: SnapshotRequest):
                     await page.screenshot(path=tmp_filepath, clip=clip)
                     if not _chart_snapshot_has_content(tmp_filepath):
                         failures.append(f"attempt {attempt + 1}: captured chart area is blank")
-                        print(f"  ⚠ NASDAQ {failures[-1]}, reloading")
+                        _log(f"  ⚠ NASDAQ {failures[-1]}, reloading")
                         continue
                     # Read the price/% from the SAME page render that produced
                     # the chart so the cached text matches the chart exactly.
@@ -835,7 +843,7 @@ async def take_snapshot(req: SnapshotRequest):
                     except Exception as quote_exc:
                         failures.append(f"attempt {attempt + 1}: same-moment quote failed: "
                                         f"{type(quote_exc).__name__}: {quote_exc}")
-                        print(f"  ⚠ NASDAQ {failures[-1]}, reloading")
+                        _log(f"  ⚠ NASDAQ {failures[-1]}, reloading")
                         continue
                     break
                 else:
@@ -852,14 +860,14 @@ async def take_snapshot(req: SnapshotRequest):
                 try:
                     from overlay_market_sessions import overlay_sessions_on_file
                     overlay_sessions_on_file(tmp_filepath)
-                    print("  🕒 Trading-session overlay added")
+                    _log("  🕒 Trading-session overlay added")
                 except Exception as overlay_exc:
-                    print(f"  ⚠ Session overlay skipped: {type(overlay_exc).__name__}: {overlay_exc}")
+                    _log(f"  ⚠ Session overlay skipped: {type(overlay_exc).__name__}: {overlay_exc}")
                 os.replace(tmp_filepath, filepath)
             finally:
                 if os.path.exists(tmp_filepath):
                     os.remove(tmp_filepath)
-            print(f"  ✅ NASDAQ IG page snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
+            _log(f"  ✅ NASDAQ IG page snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
             integrity = _snapshot_integrity(filepath)
             return {"status": "success", "url": filename, "path": filepath, "clip": clip,
                     "viewport": nasdaq_viewport, "quote": quote, "text": text,
@@ -978,7 +986,7 @@ async def take_snapshot(req: SnapshotRequest):
 
         if clip and clip["width"] >= 250 and clip["height"] >= 120:
             await page.screenshot(path=filepath, clip=clip)
-            print(f"  ✅ Snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
+            _log(f"  ✅ Snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
         else:
             # Last-resort: take only the UPPER part of the viewport. Bounded
             # rectangle avoids accidentally returning the footer/cookies area
@@ -988,7 +996,7 @@ async def take_snapshot(req: SnapshotRequest):
                 path=filepath,
                 clip={"x": 0, "y": 40, "width": GENERIC_SNAPSHOT_VIEWPORT["width"], "height": 540},
             )
-            print(f"  ⚠ Snapshot fallback to upper-viewport bounded clip: {filename}")
+            _log(f"  ⚠ Snapshot fallback to upper-viewport bounded clip: {filename}")
 
         # Read the quote from the SAME page state as the screenshot so the
         # cached text price matches the chart. Done right after the screenshot
@@ -999,7 +1007,7 @@ async def take_snapshot(req: SnapshotRequest):
             quote = await _compute_market_quote(page, req.key)
             text = _market_text_payload(req.key, quote)["text"]
         except Exception as quote_exc:
-            print(f"  ⚠ {req.key} same-moment quote failed: {type(quote_exc).__name__}: {quote_exc}")
+            _log(f"  ⚠ {req.key} same-moment quote failed: {type(quote_exc).__name__}: {quote_exc}")
 
         # --- Overlay Chinese title ---
         meta = CHART_META.get(req.key)
@@ -1021,7 +1029,7 @@ async def take_snapshot(req: SnapshotRequest):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error during snapshot for {req.key}: {e}")
+        _log(f"❌ Error during snapshot for {req.key}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

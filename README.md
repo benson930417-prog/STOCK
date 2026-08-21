@@ -245,7 +245,7 @@ Notes:
 | Issuer holdings fetch | `scripts/run_issuer_holdings_fetch.py` | `stock-fetch-1830-tw.timer` + `.service` | Fetches issuer disclosures only and seals a CLEAN manifest. The unit is owned by the host-orchestration repository. |
 | Holdings import | `market_data import-holdings` | `stock-market-holdings.service` | `OnSuccess` successor that verifies the sealed manifest and imports it into the sole `market.db`. |
 | Derived/report run | `scripts/update_and_notify.sh --post-fetch` | `stock-derived-1920-tw.service` | `OnSuccess` successor that builds derived caches after canonical imports, then performs the sanctioned Git/LINE/admin-report stage. |
-| ETF quote monitors | `scripts/monitor_etf_quotes.py` | `stock-quote-monitor-*.service` | Refreshes per-ETF quote caches used by the dashboard and LINE cards. |
+| ETF quote monitor | `scripts/monitor_etf_quotes.py` | `stock-quote-monitor.service` | Supervises all per-ETF quote-cache loops in one shared process. |
 | Gold monitor | `scripts/monitor_gold_quote.py` | `stock-gold-monitor.service` | Refreshes TradingView GOLD quote cache. |
 | Master holdings monitor | `scripts/monitor_master_holding.py` | `stock-master-holding-monitor.service` | Refreshes the expanded portfolio/master-holding cache. |
 | OCI boot firewall reset | system iptables | `oci-firewall.service` | Host boot helper that clears restrictive iptables rules so dashboard/webhook services are reachable after reboot. |
@@ -390,7 +390,7 @@ All LINE market commands (`油價`, `匯率`, `債券`, `黃金`, `那斯達克`
 |---|---|---|
 | Market cache refresh | `stock-market-chart-monitor.service` → `monitor_market_charts.py oil brent bond gold usdtwd usdjpy usdchf nasdaq --interval 60` | every **60s**, all 8 keys |
 | Market monitor caps | `stock-market-chart-monitor.service` | `MemoryMax=512M`, `CPUQuota=35%`, `RuntimeMaxSec=12h` |
-| Heavy lifting (Playwright) | `stock-chart.service` | one resident page, `MemoryMax=768M`, `TasksMax=200`, `RuntimeMaxSec=2h` (measured 8-key peak: 633 MB; the monitor only makes HTTP calls) |
+| Heavy lifting (Playwright) | `stock-chart.service` | one resident page, `MemoryMax=768M`, `TasksMax=200`, `RuntimeMaxSec=2h` (validated production 8-key peak: 643 MiB; the monitor only makes HTTP calls) |
 
 On the shared two-CPU ARM host, every legacy `stock-*.service` runs in
 `stock-background.slice` (`AllowedCPUs=0`). CPU 1 is reserved for the intraday
@@ -399,7 +399,7 @@ hundreds-of-milliseconds WebSocket scheduling tails. New batch quote, dividend,
 split, cash-flow, and backtest services must also declare
 `Slice=stock-background.slice`.
 | Webhook cache freshness | `get_cached_market_chart(..., max_age_seconds=240)` | serve cache up to **240s** old, else explicit error |
-| ETF quote-card cache | `stock-quote-monitor-*.service` → `monitor_etf_quotes.py <TICKER> --interval 180 --max-workers 4 --jitter 150` | every **180s** (3 min), `MemoryMax=512M`, `CPUQuota=35%`, `RuntimeMaxSec=12h` |
+| ETF quote-card cache | `stock-quote-monitor.service` → one `monitor_etf_quotes.py <TICKERS...>` process with independent jittered loops | every **180s** (3 min), combined `MemoryMax=768M`, `CPUQuota=100%`, `TasksMax=96`, `RuntimeMaxSec=12h` |
 | Gold quote cache | `stock-gold-monitor.service` → `monitor_gold_quote.py --interval 60 --scanner-only` | every **60s**, `MemoryMax=512M` |
 
 **Same-moment price + chart.** `monitor_market_charts.refresh_key` makes a single `/snapshot` call per key. `chart_service.py` reads the price/% from the *same page render* that produced the screenshot and returns both, then the monitor stores that image's SHA-256 beside the text. The webhook retries instead of replying if the mutable source no longer matches that checksum. There is no separate `/market-text` pass and no per-key price buffer.
@@ -410,7 +410,7 @@ split, cash-flow, and backtest services must also declare
 
 **Snapshot crop rules.** Generic 1-month charts (`oil`, `brent`, `bond`, `gold`, `usdtwd`, `usdjpy`, `usdchf`) may detect the chart's `y` and `height`, but they must use the full TradingView viewport width: `clip.x = 0` and `clip.width = window.innerWidth`. Their LINE quote text remains the same four performance rows (`1日`, `1週`, `1月`, `6月`); only the plotted chart window is one month. Do not crop or shift the x-axis for generic charts; the right price axis and last-price marker live at the far right edge. NASDAQ is the exception: it uses a separate IG-NASDAQ 24h branch with its own `1200x900` viewport, fixed `y`/`height`, 1-day button click, and trading-session overlay. Do not "simplify" NASDAQ into the generic crop path unless it is manually reverified.
 
-**Chart-service restart timing.** `stock-chart.service` now starts the browser without preloading eight tabs, so port `5005` normally becomes ready in a few seconds. The first request for each key pays its own navigation cost while the previous page is closed. Wait for `curl -fsS http://127.0.0.1:5005/docs`, regenerate all eight caches with `scripts/monitor_market_charts.py ... --once`, and finally confirm both services are `active`. Running the monitor or opening the cached public JPGs is safe and sends no LINE message.
+**Chart-service restart timing.** `stock-chart.service` now starts the browser without preloading eight tabs, so port `5005` normally becomes ready in a few seconds. Sequential keys navigate the same resident page, avoiding overlapping Chromium renderers. Wait for `curl -fsS http://127.0.0.1:5005/docs`, regenerate all eight caches with `scripts/monitor_market_charts.py ... --once`, and finally confirm both services are `active`. Running the monitor or opening the cached public JPGs is safe and sends no LINE message.
 
 The `/snapshot` response includes `clip` and `viewport`; `monitor_market_charts.py` stores those fields in `data/quote_cache/market_<key>.json`. If a chart image looks cropped, check those values first. For generic charts, `clip.x` should be `0`.
 
@@ -505,7 +505,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/generate_quote_card.py` | Shared quote-card image renderer for ETF/master-holding views. |
 | `scripts/master_holding_quote_card.py` | Expands ETF holdings into the configured master portfolio and renders/caches its quote card. |
 | `scripts/master_manual_positions.py` | Manual position data/helpers for the master portfolio. |
-| `scripts/monitor_etf_quotes.py` | Long-running quote cache daemon for one ETF ticker. |
+| `scripts/monitor_etf_quotes.py` | Long-running quote cache daemon for one or many independently staggered ETF tickers. |
 | `scripts/monitor_gold_quote.py` | Long-running GOLD quote monitor. |
 | `scripts/monitor_market_charts.py` | Long-running TradingView market text/chart cache monitor for LINE chart commands such as NASDAQ. |
 | `scripts/monitor_master_holding.py` | Long-running master-holding cache monitor. |
@@ -663,23 +663,12 @@ alerting, and sandbox contracts.
 | `services/stock-gold-monitor.service` | `stock-gold-monitor.service` | GOLD quote monitor. |
 | `services/stock-market-chart-monitor.service` | `stock-market-chart-monitor.service` | TradingView market text/chart cache monitor for fast LINE chart replies. |
 | `services/stock-master-holding-monitor.service` | `stock-master-holding-monitor.service` | Master holdings monitor. |
-| `services/stock-quote-monitor-00403a.service` | `stock-quote-monitor-00403a.service` | 00403A quote monitor. |
-| `services/stock-quote-monitor-0050.service` | `stock-quote-monitor-0050.service` | 0050 quote monitor. |
-| `services/stock-quote-monitor-0056.service` | `stock-quote-monitor-0056.service` | 0056 quote monitor. |
-| `services/stock-quote-monitor-00830.service` | `stock-quote-monitor-00830.service` | 00830 quote monitor. |
-| `services/stock-quote-monitor-00878.service` | `stock-quote-monitor-00878.service` | 00878 quote monitor. |
-| `services/stock-quote-monitor-00891.service` | `stock-quote-monitor-00891.service` | 00891 quote monitor. |
-| `services/stock-quote-monitor-00918.service` | `stock-quote-monitor-00918.service` | 00918 quote monitor. |
-| `services/stock-quote-monitor-009805.service` | `stock-quote-monitor-009805.service` | 009805 quote monitor. |
-| `services/stock-quote-monitor-00981a.service` | `stock-quote-monitor-00981a.service` | 00981A quote monitor. |
-| `services/stock-quote-monitor-00988a.service` | `stock-quote-monitor-00988a.service` | 00988A quote monitor. |
-| `services/stock-quote-monitor-00991a.service` | `stock-quote-monitor-00991a.service` | 00991A quote monitor. |
-| `services/stock-quote-monitor-009820.service` | `stock-quote-monitor-009820.service` | 009820 quote monitor. |
+| `services/stock-quote-monitor.service` | `stock-quote-monitor.service` | One bounded process supervising all ETF quote monitors. |
 
 Install/update service templates:
 
 ```bash
-cd /home/ubuntu/STOCK && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.service && sudo systemctl enable oci-firewall.service && sudo systemctl enable stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service && sudo systemctl enable stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service && sudo systemctl enable stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service && sudo systemctl enable stock-quote-monitor-009805.service && sudo systemctl enable stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-00991a.service stock-quote-monitor-009820.service
+cd /home/ubuntu/STOCK && sudo cp services/*.service services/*.timer /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable stock-dashboard.service stock-webhook.service stock-chart.service && sudo systemctl enable oci-firewall.service && sudo systemctl enable stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service stock-quote-monitor.service
 ```
 
 Restart common production services after code changes:
@@ -691,7 +680,7 @@ sudo systemctl restart stock-chart.service stock-webhook.service stock-dashboard
 Restart all monitors:
 
 ```bash
-sudo systemctl restart stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service && sudo systemctl restart stock-quote-monitor-0050.service stock-quote-monitor-0056.service stock-quote-monitor-00830.service && sudo systemctl restart stock-quote-monitor-00878.service stock-quote-monitor-00891.service stock-quote-monitor-00918.service && sudo systemctl restart stock-quote-monitor-009805.service && sudo systemctl restart stock-quote-monitor-00403a.service stock-quote-monitor-00981a.service stock-quote-monitor-00988a.service stock-quote-monitor-00991a.service stock-quote-monitor-009820.service
+sudo systemctl restart stock-gold-monitor.service stock-market-chart-monitor.service stock-master-holding-monitor.service stock-quote-monitor.service
 ```
 
 ## Server Setup
@@ -864,7 +853,7 @@ This section is written for future AI/code agents. Treat an ETF add/delete as a 
 Use consistent casing:
 
 - Ticker in user-facing text/data: uppercase, e.g. `00403A`, `00981A`, `009820`.
-- Quote-monitor service filename: lowercase suffix, e.g. `services/stock-quote-monitor-00403a.service`.
+- Quote-monitor membership: uppercase ticker in the single `services/stock-quote-monitor.service` `ExecStart` list.
 - LINE short command: compact numeric alias, e.g. `403`, `981`, `9820`.
 - Active ETF data files: `data/etf_<TICKER>_history.json` and `data/etf_<TICKER>_log.json`.
 - Passive ETF data files: `data/passive_<TICKER>_history.json` and `data/passive_<TICKER>_log.json`.
@@ -936,11 +925,9 @@ After editing, re-run the grep from Invariant #2 and confirm the only remaining 
    - Add/update the tap command to match webhook parsing.
    - Re-run `scripts/setup_rich_menu.py` on the server after deployment if the menu changed.
 
-8. Add a quote monitor service.
-   - Create `services/stock-quote-monitor-<ticker-lower>.service`.
-   - The service should run `/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py <TICKER> --interval 60`.
-   - Add it to README service tables, enable commands, restart commands, and Tracked File Inventory.
-   - After deployment, copy services and enable it with systemd.
+8. Add the ETF to the consolidated quote monitor.
+   - Add `<TICKER>` once to `ExecStart` in `services/stock-quote-monitor.service`.
+   - After deployment, copy and restart that one unit; do not create another resident Python service.
    - **Passive ETFs — update every passive-ticker set, or the monitor reads the
      wrong path.** A passive ETF's holdings live in `data/passive_<TICKER>_history.json`
      (not `etf_…`). The passive-ticker set is duplicated in several files and ALL of them
@@ -1039,12 +1026,11 @@ Work the **Add One ETF touch-point table in reverse** — remove the ticker from
    - Delete the ticker from ETF expansion allow-lists.
    - If the master trade ledger still contains the ETF, decide explicitly whether to keep it as a direct holding or remove/rename the trade data. Do not silently leave a deleted ETF in expansion logic.
 
-5. Remove quote monitor service.
-   - Delete `services/stock-quote-monitor-<ticker-lower>.service`.
-   - Remove it from README service table, enable commands, restart commands, and Tracked File Inventory.
-   - On the server:
+5. Remove the ETF from the consolidated quote monitor.
+   - Remove the ticker from `ExecStart` in `services/stock-quote-monitor.service`.
+   - On the server, copy the updated unit and restart it:
      ```bash
-     sudo systemctl disable --now stock-quote-monitor-<ticker-lower>.service && sudo rm -f /etc/systemd/system/stock-quote-monitor-<ticker-lower>.service && sudo systemctl daemon-reload
+     sudo cp services/stock-quote-monitor.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl restart stock-quote-monitor.service
      ```
 
 6. Remove fetcher and tracked data.
@@ -1251,18 +1237,7 @@ services/stock-dashboard.service
 services/oci-firewall.service
 services/stock-gold-monitor.service
 services/stock-master-holding-monitor.service
-services/stock-quote-monitor-00403a.service
-services/stock-quote-monitor-0050.service
-services/stock-quote-monitor-0056.service
-services/stock-quote-monitor-00830.service
-services/stock-quote-monitor-00878.service
-services/stock-quote-monitor-00891.service
-services/stock-quote-monitor-00918.service
-services/stock-quote-monitor-009805.service
-services/stock-quote-monitor-00981a.service
-services/stock-quote-monitor-00988a.service
-services/stock-quote-monitor-00991a.service
-services/stock-quote-monitor-009820.service
+services/stock-quote-monitor.service
 services/stock-webhook.service
 src/__init__.py
 src/etf_981_follow_strategy.py

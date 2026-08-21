@@ -1,0 +1,20 @@
+[Unit]
+Description=Consolidated ETF Holding Quote Monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Slice=stock-background.slice
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/STOCK
+ExecStart=/home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/monitor_etf_quotes.py 00403A 0050 0056 00830 00878 00891 00918 009805 00981A 009820 00988A 00991A --interval 180 --max-workers 4 --jitter 150
+Restart=always
+RestartSec=10
+RuntimeMaxSec=12h
+MemoryMax=768M
+CPUQuota=100%
+TasksMax=96
+
+[Install]
+WantedBy=multi-user.target
