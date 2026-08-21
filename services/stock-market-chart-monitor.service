@@ -4,6 +4,7 @@ After=network-online.target stock-chart.service
 Wants=network-online.target stock-chart.service
 
 [Service]
+Slice=stock-background.slice
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK
@@ -12,6 +13,7 @@ Restart=always
 RestartSec=10
 RuntimeMaxSec=12h
 MemoryMax=512M
+TasksMax=32
 CPUQuota=35%
 StandardOutput=append:/home/ubuntu/STOCK/market_chart_monitor.log
 StandardError=append:/home/ubuntu/STOCK/market_chart_monitor.log

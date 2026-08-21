@@ -3,16 +3,16 @@ Description=Stock Dashboard Persistent Chart Service (Playwright)
 After=network.target
 
 [Service]
+Slice=stock-background.slice
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK
-# Ensure dependencies are installed in the environment
 ExecStart=/home/ubuntu/STOCK/venv/bin/python3 /home/ubuntu/STOCK/scripts/chart_service.py
 Restart=always
 RestartSec=5
 RuntimeMaxSec=2h
-MemoryMax=2500M
-# Give playwright time to start
-TimeoutStartSec=60
+MemoryMax=768M
+TasksMax=200
+TimeoutStartSec=30
 
 [Install]
 WantedBy=multi-user.target

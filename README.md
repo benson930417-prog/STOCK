@@ -157,7 +157,7 @@ All LINE market charts are captured ahead of time by `stock-chart.service` and r
 - NASDAQ must click the visible TradingView `1 day` control and verify its selected class; a `?timeframe=1D` URL alone is insufficient. Failed verification preserves the last valid cache.
 - Generic oil/Brent/bond/gold/FX charts use a one-month window while their existing quote text remains unchanged.
 - Messages created before content-versioned URLs cannot be repaired retroactively; all newly generated replies must use immutable URLs.
-- `stock-chart.service` preloads eight Playwright tabs before port 5005 becomes ready. After restart, wait for `/docs`, regenerate all eight caches once, and confirm both chart and monitor services are active.
+- `stock-chart.service` starts one browser without preloading pages. The sequential monitor keeps exactly one chart page resident and replaces it when the key changes. After restart, wait for `/docs`, regenerate all eight caches once, and confirm both chart and monitor services are active.
 
 ### Architecture change checklist
 
@@ -353,7 +353,7 @@ Errors from TradingView are intentionally returned as explicit error messages. T
 
 ## TradingView Chart Service
 
-`scripts/chart_service.py` is a FastAPI service on `127.0.0.1:5005`. It launches Playwright Chromium once and reuses the browser for requests.
+`scripts/chart_service.py` is a FastAPI service on `127.0.0.1:5005`. It launches Playwright Chromium once and keeps only the current chart page resident; browser-backed requests are single-flight because the cache monitor is already sequential.
 
 Endpoints:
 
@@ -390,7 +390,7 @@ All LINE market commands (`油價`, `匯率`, `債券`, `黃金`, `那斯達克`
 |---|---|---|
 | Market cache refresh | `stock-market-chart-monitor.service` → `monitor_market_charts.py oil brent bond gold usdtwd usdjpy usdchf nasdaq --interval 60` | every **60s**, all 8 keys |
 | Market monitor caps | `stock-market-chart-monitor.service` | `MemoryMax=512M`, `CPUQuota=35%`, `RuntimeMaxSec=12h` |
-| Heavy lifting (Playwright) | `stock-chart.service` | `MemoryMax=2500M`, `RuntimeMaxSec=2h` (this is the real CPU/RAM governor; the monitor only makes HTTP calls) |
+| Heavy lifting (Playwright) | `stock-chart.service` | one resident page, `MemoryMax=768M`, `TasksMax=200`, `RuntimeMaxSec=2h` (measured 8-key peak: 633 MB; the monitor only makes HTTP calls) |
 
 On the shared two-CPU ARM host, every legacy `stock-*.service` runs in
 `stock-background.slice` (`AllowedCPUs=0`). CPU 1 is reserved for the intraday
@@ -408,7 +408,7 @@ split, cash-flow, and backtest services must also declare
 
 **Snapshot crop rules.** Generic 1-month charts (`oil`, `brent`, `bond`, `gold`, `usdtwd`, `usdjpy`, `usdchf`) may detect the chart's `y` and `height`, but they must use the full TradingView viewport width: `clip.x = 0` and `clip.width = window.innerWidth`. Their LINE quote text remains the same four performance rows (`1日`, `1週`, `1月`, `6月`); only the plotted chart window is one month. Do not crop or shift the x-axis for generic charts; the right price axis and last-price marker live at the far right edge. NASDAQ is the exception: it uses a separate IG-NASDAQ 24h branch with its own `1200x900` viewport, fixed `y`/`height`, 1-day button click, and trading-session overlay. Do not "simplify" NASDAQ into the generic crop path unless it is manually reverified.
 
-**Chart-service restart timing.** `stock-chart.service` preloads all eight TradingView pages before port `5005` becomes ready; a production restart can therefore take roughly 60–90 seconds. Early `curl: (7) Failed to connect` lines during that warm-up are expected. Wait for `curl -fsS http://127.0.0.1:5005/docs`, then regenerate the requested caches with `scripts/monitor_market_charts.py ... --once`, and finally confirm both `stock-chart.service` and `stock-market-chart-monitor.service` are `active`. Running the monitor or opening the cached public JPGs is safe and sends no LINE message.
+**Chart-service restart timing.** `stock-chart.service` now starts the browser without preloading eight tabs, so port `5005` normally becomes ready in a few seconds. The first request for each key pays its own navigation cost while the previous page is closed. Wait for `curl -fsS http://127.0.0.1:5005/docs`, regenerate all eight caches with `scripts/monitor_market_charts.py ... --once`, and finally confirm both services are `active`. Running the monitor or opening the cached public JPGs is safe and sends no LINE message.
 
 The `/snapshot` response includes `clip` and `viewport`; `monitor_market_charts.py` stores those fields in `data/quote_cache/market_<key>.json`. If a chart image looks cropped, check those values first. For generic charts, `clip.x` should be `0`.
 

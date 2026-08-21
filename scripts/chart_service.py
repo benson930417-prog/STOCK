@@ -87,7 +87,9 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'fonts')
 FONT_PATH = os.path.join(FONT_DIR, 'NotoSansTC-Regular.otf')
 
-if not os.path.exists(FONT_PATH):
+def _ensure_cjk_font():
+    if os.path.exists(FONT_PATH):
+        return
     os.makedirs(FONT_DIR, exist_ok=True)
     try:
         url = 'https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/TraditionalChinese/NotoSansCJKtc-Regular.otf'
@@ -101,6 +103,7 @@ playwright_instance = None
 browser_context = None
 browser_instance = None
 pages = {}
+browser_request_lock = asyncio.Lock()
 
 GENERIC_SNAPSHOT_VIEWPORT = {"width": 720, "height": 860}
 NASDAQ_SNAPSHOT_VIEWPORT = {"width": 1200, "height": 900}
@@ -445,6 +448,7 @@ def _debug_text_slice(text):
 
 def _overlay_title(image_path, title):
     """Draw a Chinese title bar on top of the chart screenshot."""
+    _ensure_cjk_font()
     img = Image.open(image_path).convert("RGB")
     w, h = img.size
 
@@ -541,19 +545,7 @@ async def init_browser():
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         timezone_id="Asia/Taipei"
     )
-    
-    for key, url in CHART_TABS.items():
-        print(f"  - Loading tab: {key}")
-        page = await browser_context.new_page()
-        try:
-            await page.goto(url, wait_until="networkidle", timeout=60000)
-            await page.add_style_tag(content=HIDE_CSS)
-            await asyncio.sleep(2)
-            pages[key] = page
-        except Exception as e:
-            print(f"❌ Failed to load {key}: {e}")
-
-    print("✅ All tabs ready.")
+    print("✅ Browser ready; chart pages load on demand.")
 
 @app.on_event("startup")
 async def startup_event():
@@ -576,11 +568,53 @@ class SnapshotRequest(BaseModel):
 
 
 async def _get_page_for_key(key):
-    if key not in pages:
+    global browser_context, browser_instance
+
+    if key not in CHART_TABS:
+        raise HTTPException(status_code=404, detail="Tab key not found")
+
+    existing = pages.get(key)
+    if existing is not None and not existing.is_closed():
+        return existing
+
+    if (
+        browser_context is None
+        or browser_instance is None
+        or not browser_instance.is_connected()
+    ):
         await init_browser()
-        if key not in pages:
-            raise HTTPException(status_code=404, detail="Tab key not found")
-    return pages[key]
+
+    # The cache monitor is deliberately sequential. Keeping eight live
+    # TradingView renderers consumed ~1.9 GiB even though only one was touched
+    # at a time, so retain exactly the page serving the current key.
+    for resident in list(pages.values()):
+        try:
+            await resident.close()
+        except Exception as exc:
+            print(f"⚠️ Error closing retired chart page: {exc}")
+    pages.clear()
+
+    page = await browser_context.new_page()
+    try:
+        await page.goto(CHART_TABS[key], wait_until="networkidle", timeout=60000)
+        await page.add_style_tag(content=HIDE_CSS)
+        await asyncio.sleep(2)
+    except Exception as exc:
+        await page.close()
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not load chart page {key}: {type(exc).__name__}: {exc}",
+        ) from exc
+    pages[key] = page
+    return page
+
+
+@app.middleware("http")
+async def serialize_browser_requests(request, call_next):
+    if request.url.path in {"/market-text", "/market-debug", "/snapshot"}:
+        async with browser_request_lock:
+            return await call_next(request)
+    return await call_next(request)
 
 
 async def _get_body_text(page):
@@ -623,7 +657,6 @@ async def market_text(req: SnapshotRequest):
     page = await _get_page_for_key(req.key)
     try:
         if req.key == "nasdaq":
-            await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
             await page.evaluate("window.scrollTo(0, 0)")
             await asyncio.sleep(0.8)
             quote = await _extract_ig_nasdaq_quote(page)
@@ -700,8 +733,6 @@ async def take_snapshot(req: SnapshotRequest):
             async def _load_ig_page_and_select_1d(reload_page):
                 if reload_page:
                     await page.reload(wait_until="networkidle", timeout=60000)
-                else:
-                    await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
                 await page.evaluate("window.scrollTo(0, 0)")
                 await asyncio.sleep(1)
                 selection = await page.evaluate("""() => {
