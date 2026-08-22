@@ -177,6 +177,60 @@ class MarketChartCacheTests(unittest.TestCase):
                 monitor_market_charts.clear_outage_state()
                 self.assertFalse(state_path.exists())
 
+    def test_shared_block_does_not_starve_independent_nasdaq(self) -> None:
+        with (
+            patch.object(
+                monitor_market_charts,
+                "refresh_cycle",
+                side_effect=[
+                    monitor_market_charts.UPSTREAM_BLOCKED_BACKOFF_SECONDS,
+                    0,
+                ],
+            ) as refresh,
+            patch.object(
+                monitor_market_charts,
+                "record_outage",
+                return_value=600,
+            ) as record,
+        ):
+            state = monitor_market_charts.refresh_iteration(
+                ["oil", "brent", "nasdaq"],
+                10,
+                consecutive_outages=0,
+                next_retry_epoch=0,
+                now_epoch=1000,
+            )
+
+        self.assertEqual(
+            [call.args[0] for call in refresh.call_args_list],
+            [["oil", "brent"], ["nasdaq"]],
+        )
+        record.assert_called_once_with(1, now_epoch=1000.0)
+        self.assertEqual(
+            state,
+            {"consecutive_outages": 1, "next_retry_epoch": 1600.0},
+        )
+
+    def test_persisted_shared_cooldown_refreshes_only_nasdaq(self) -> None:
+        with patch.object(
+            monitor_market_charts,
+            "refresh_cycle",
+            return_value=0,
+        ) as refresh:
+            state = monitor_market_charts.refresh_iteration(
+                ["oil", "brent", "nasdaq"],
+                10,
+                consecutive_outages=3,
+                next_retry_epoch=2200,
+                now_epoch=1001,
+            )
+
+        refresh.assert_called_once_with(["nasdaq"], 10)
+        self.assertEqual(
+            state,
+            {"consecutive_outages": 3, "next_retry_epoch": 2200},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
