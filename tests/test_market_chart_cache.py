@@ -4,11 +4,15 @@ import hashlib
 from pathlib import Path
 import tempfile
 import unittest
+from datetime import datetime
 from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
 from scripts import monitor_market_charts
 from src.market_chart_cache import (
+    effective_market_cache_max_age,
     MarketImageChecksumMismatch,
+    NASDAQ_CLOSED_CACHE_MAX_AGE_SECONDS,
     file_sha256,
     freeze_market_reply_image,
 )
@@ -58,6 +62,23 @@ class MarketChartCacheTests(unittest.TestCase):
             cache.pop("snapshot_sha256")
             with self.assertRaises(MarketImageChecksumMismatch):
                 freeze_market_reply_image(cache, images)
+
+    def test_nasdaq_weekend_cache_matches_the_real_closed_market(self) -> None:
+        london = ZoneInfo("Europe/London")
+        saturday = datetime(2026, 8, 22, 20, 55, tzinfo=london)
+        sunday_open = datetime(2026, 8, 23, 23, 1, tzinfo=london)
+        self.assertEqual(
+            NASDAQ_CLOSED_CACHE_MAX_AGE_SECONDS,
+            effective_market_cache_max_age("nasdaq", 240, now=saturday),
+        )
+        self.assertEqual(
+            240,
+            effective_market_cache_max_age("nasdaq", 240, now=sunday_open),
+        )
+        self.assertEqual(
+            240,
+            effective_market_cache_max_age("oil", 240, now=saturday),
+        )
 
     def test_monitor_commits_service_verified_checksum(self) -> None:
         data = b"same-moment chart"

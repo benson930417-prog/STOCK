@@ -6,10 +6,43 @@ import os
 from pathlib import Path
 import re
 from tempfile import NamedTemporaryFile
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 
 class MarketImageChecksumMismatch(RuntimeError):
     """The mutable chart file no longer matches its quote-cache metadata."""
+
+
+NASDAQ_CLOSED_CACHE_MAX_AGE_SECONDS = 72 * 60 * 60
+
+
+def nasdaq_ig_market_is_open(now: datetime | None = None) -> bool:
+    """Return IG's normal weekend state using its London dealing hours."""
+    current = (now or datetime.now(timezone.utc)).astimezone(
+        ZoneInfo("Europe/London")
+    )
+    weekday = current.weekday()
+    local_hour = current.hour + current.minute / 60
+    if weekday == 5:
+        return False
+    if weekday == 6:
+        return local_hour >= 23
+    if weekday == 4:
+        return local_hour < 22
+    return True
+
+
+def effective_market_cache_max_age(
+    key: str,
+    base_max_age_seconds: int,
+    *,
+    now: datetime | None = None,
+) -> int:
+    """Do not call a frozen, checksum-verified weekend chart stale."""
+    if key == "nasdaq" and not nasdaq_ig_market_is_open(now):
+        return max(base_max_age_seconds, NASDAQ_CLOSED_CACHE_MAX_AGE_SECONDS)
+    return base_max_age_seconds
 
 
 def file_sha256(path: Path) -> str:

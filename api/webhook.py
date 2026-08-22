@@ -33,6 +33,7 @@ if parent_dir not in sys.path:
     sys.path.append(parent_dir)
 
 from src.market_chart_cache import (  # noqa: E402
+    effective_market_cache_max_age,
     MarketImageChecksumMismatch,
     freeze_market_reply_image,
 )
@@ -777,8 +778,12 @@ def get_cached_market_chart(key, max_age_seconds=300):
     if not updated_at:
         raise RuntimeError(f"Cached TradingView market chart has no updated_at: {cache_path}")
     updated_dt = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
-    age = (datetime.now(timezone.utc) - updated_dt).total_seconds()
-    if age > max_age_seconds:
+    now = datetime.now(timezone.utc)
+    age = (now - updated_dt).total_seconds()
+    allowed_age = effective_market_cache_max_age(
+        key, max_age_seconds, now=now
+    )
+    if age > allowed_age:
         raise RuntimeError(f"Cached TradingView market chart is stale: {key} age={age:.0f}s")
 
     text = payload.get("text")
@@ -798,6 +803,8 @@ def get_cached_market_chart(key, max_age_seconds=300):
 # live anymore — it only reads cache so replies are fast and the text price
 # always matches the cached chart (same-moment capture in chart_service).
 # max_age 240s tolerates a couple of failed 60s refreshes before going stale.
+# A checksum-verified NASDAQ chart remains valid across the real IG weekend
+# closure; the normal 240s rule resumes as soon as IG should be open again.
 MARKET_CACHE_MAX_AGE = 240
 
 def _cached_market_text(key):
