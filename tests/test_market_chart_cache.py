@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
 from scripts import monitor_market_charts
 from api import webhook
+from src import market_chart_cache
 from src.market_chart_cache import (
     effective_market_cache_max_age,
     MARKET_CACHE_STALE_FALLBACK_SECONDS,
@@ -118,6 +120,40 @@ class MarketChartCacheTests(unittest.TestCase):
         self.assertIn("以下為 8 分鐘前快取", text)
         self.assertIn("台北 03:40", text)
         self.assertNotIn("RuntimeError", text)
+
+    def test_webhook_freezes_integrity_checked_image_during_short_outage(self) -> None:
+        data = b"last successful nasdaq chart"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            images = root / "data" / "images"
+            cache_dir = root / "data" / "quote_cache"
+            images.mkdir(parents=True)
+            cache_dir.mkdir(parents=True)
+            (images / "nasdaq_chart.png").write_bytes(data)
+            updated_at = (
+                datetime.now(timezone.utc) - timedelta(seconds=478)
+            ).isoformat().replace("+00:00", "Z")
+            (cache_dir / "market_nasdaq.json").write_text(
+                json.dumps({
+                    "key": "nasdaq",
+                    "updated_at": updated_at,
+                    "text": "NASDAQ quote",
+                    "snapshot_url": "nasdaq_chart.png",
+                    "snapshot_sha256": hashlib.sha256(data).hexdigest(),
+                }),
+                encoding="utf-8",
+            )
+            with (
+                patch.object(webhook, "parent_dir", str(root)),
+                patch.object(
+                    market_chart_cache,
+                    "nasdaq_ig_market_is_open",
+                    return_value=True,
+                ),
+            ):
+                cache, frozen_name = webhook._freeze_cached_market_reply("nasdaq")
+            self.assertTrue(cache["_cache_is_stale"])
+            self.assertEqual(data, (images / frozen_name).read_bytes())
 
     def test_monitor_commits_service_verified_checksum(self) -> None:
         data = b"same-moment chart"
