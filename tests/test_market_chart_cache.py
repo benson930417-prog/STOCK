@@ -4,17 +4,20 @@ import hashlib
 from pathlib import Path
 import tempfile
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
 from scripts import monitor_market_charts
+from api import webhook
 from src.market_chart_cache import (
     effective_market_cache_max_age,
+    MARKET_CACHE_STALE_FALLBACK_SECONDS,
     MarketImageChecksumMismatch,
     NASDAQ_CLOSED_CACHE_MAX_AGE_SECONDS,
     file_sha256,
     freeze_market_reply_image,
+    market_cache_freshness,
 )
 
 
@@ -79,6 +82,42 @@ class MarketChartCacheTests(unittest.TestCase):
             240,
             effective_market_cache_max_age("oil", 240, now=saturday),
         )
+
+    def test_short_upstream_outage_serves_explicitly_stale_cache(self) -> None:
+        now = datetime(2026, 8, 24, 19, 47, 58, tzinfo=timezone.utc)
+        status = market_cache_freshness(
+            "nasdaq",
+            "2026-08-24T19:40:00Z",
+            240,
+            stale_fallback_seconds=MARKET_CACHE_STALE_FALLBACK_SECONDS,
+            now=now,
+        )
+        self.assertTrue(status["is_stale"])
+        self.assertTrue(status["can_serve"])
+        self.assertEqual(478, status["age_seconds"])
+
+    def test_long_outage_rejects_cache_beyond_bounded_fallback(self) -> None:
+        now = datetime(2026, 8, 24, 20, 34, 1, tzinfo=timezone.utc)
+        status = market_cache_freshness(
+            "nasdaq",
+            "2026-08-24T20:00:00Z",
+            240,
+            stale_fallback_seconds=MARKET_CACHE_STALE_FALLBACK_SECONDS,
+            now=now,
+        )
+        self.assertTrue(status["is_stale"])
+        self.assertFalse(status["can_serve"])
+
+    def test_stale_line_reply_is_labeled_in_plain_language(self) -> None:
+        text = webhook._cached_market_reply_text({
+            "text": "那斯達克 NASDAQ\n最新報價：28,937.50 USD",
+            "updated_at": "2026-08-24T19:40:00Z",
+            "_cache_age_seconds": 478,
+            "_cache_is_stale": True,
+        })
+        self.assertIn("以下為 8 分鐘前快取", text)
+        self.assertIn("台北 03:40", text)
+        self.assertNotIn("RuntimeError", text)
 
     def test_monitor_commits_service_verified_checksum(self) -> None:
         data = b"same-moment chart"

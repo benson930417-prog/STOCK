@@ -26,6 +26,7 @@ import threading
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 # Ensure the root STOCK directory is in sys.path so 'scripts' can be imported dynamically
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,9 +34,10 @@ if parent_dir not in sys.path:
     sys.path.append(parent_dir)
 
 from src.market_chart_cache import (  # noqa: E402
-    effective_market_cache_max_age,
+    MARKET_CACHE_STALE_FALLBACK_SECONDS,
     MarketImageChecksumMismatch,
     freeze_market_reply_image,
+    market_cache_freshness,
 )
 
 app = Flask(__name__)
@@ -766,7 +768,7 @@ def get_chart_snapshot(key, timeout=30):
         raise RuntimeError(f"Chart service returned no snapshot URL for {key}: {payload}")
     return payload
 
-def get_cached_market_chart(key, max_age_seconds=300):
+def get_cached_market_chart(key, max_age_seconds=300, stale_fallback_seconds=0):
     cache_path = os.path.join(parent_dir, "data", "quote_cache", f"market_{key}.json")
     try:
         with open(cache_path, encoding="utf-8") as fh:
@@ -777,14 +779,19 @@ def get_cached_market_chart(key, max_age_seconds=300):
     updated_at = payload.get("updated_at")
     if not updated_at:
         raise RuntimeError(f"Cached TradingView market chart has no updated_at: {cache_path}")
-    updated_dt = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
     now = datetime.now(timezone.utc)
-    age = (now - updated_dt).total_seconds()
-    allowed_age = effective_market_cache_max_age(
-        key, max_age_seconds, now=now
+    freshness = market_cache_freshness(
+        key,
+        updated_at,
+        max_age_seconds,
+        stale_fallback_seconds=stale_fallback_seconds,
+        now=now,
     )
-    if age > allowed_age:
-        raise RuntimeError(f"Cached TradingView market chart is stale: {key} age={age:.0f}s")
+    if not freshness["can_serve"]:
+        raise RuntimeError(
+            f"Cached TradingView market chart is stale: {key} "
+            f"age={freshness['age_seconds']:.0f}s"
+        )
 
     text = payload.get("text")
     image_url = payload.get("snapshot_url")
@@ -796,7 +803,10 @@ def get_cached_market_chart(key, max_age_seconds=300):
     if not os.path.exists(image_path):
         raise RuntimeError(f"Cached TradingView market image is missing: {image_path}")
 
-    return payload
+    result = dict(payload)
+    result["_cache_age_seconds"] = freshness["age_seconds"]
+    result["_cache_is_stale"] = freshness["is_stale"]
+    return result
 
 # All market commands are served from the 1-minute cache written by
 # stock-market-chart-monitor.service. The webhook never renders TradingView
@@ -807,12 +817,35 @@ def get_cached_market_chart(key, max_age_seconds=300):
 # closure; the normal 240s rule resumes as soon as IG should be open again.
 MARKET_CACHE_MAX_AGE = 240
 
+def _cached_market_reply_text(cache):
+    text = cache["text"]
+    if not cache.get("_cache_is_stale"):
+        return text
+    age_minutes = max(1, int((float(cache["_cache_age_seconds"]) + 59) // 60))
+    updated_dt = datetime.fromisoformat(
+        str(cache["updated_at"]).replace("Z", "+00:00")
+    ).astimezone(ZoneInfo("Asia/Taipei"))
+    return (
+        "⚠️ 圖表來源暫時無法更新\n"
+        f"以下為 {age_minutes} 分鐘前快取（台北 {updated_dt:%H:%M}）\n\n"
+        f"{text}"
+    )
+
+def _market_cache_unavailable_text(key):
+    label = MARKET_TEXT_ERROR_LABELS.get(key, key)
+    return f"{label}\n──────────\n⚠️ 圖表來源暫時無法更新，請稍後再試。"
+
 def _cached_market_text(key):
     try:
-        return get_cached_market_chart(key, max_age_seconds=MARKET_CACHE_MAX_AGE)["text"]
+        cache = get_cached_market_chart(
+            key,
+            max_age_seconds=MARKET_CACHE_MAX_AGE,
+            stale_fallback_seconds=MARKET_CACHE_STALE_FALLBACK_SECONDS,
+        )
+        return _cached_market_reply_text(cache)
     except Exception as exc:
         print(f"Cached market text failed for {key}: {exc}")
-        return _tradingview_error_text(key, "快取報價", exc)
+        return _market_cache_unavailable_text(key)
 
 def _freeze_cached_market_reply(key, attempts=4):
     """Return quote metadata plus immutable bytes from the exact same cache."""
@@ -822,6 +855,7 @@ def _freeze_cached_market_reply(key, attempts=4):
         cache = get_cached_market_chart(
             key,
             max_age_seconds=MARKET_CACHE_MAX_AGE,
+            stale_fallback_seconds=MARKET_CACHE_STALE_FALLBACK_SECONDS,
         )
         try:
             frozen_name = freeze_market_reply_image(
@@ -854,7 +888,7 @@ def reply_cached_market(reply_token, keys):
     for key in keys:
         try:
             cache, frozen_name = _freeze_cached_market_reply(key)
-            texts.append(cache["text"])
+            texts.append(_cached_market_reply_text(cache))
             img_url = (
                 "https://linechatbot.duckdns.org/api/webhook/images/"
                 f"{frozen_name}"
@@ -862,7 +896,7 @@ def reply_cached_market(reply_token, keys):
             images.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
         except Exception as exc:
             print(f"Cached market reply failed for {key}: {exc}")
-            texts.append(_tradingview_error_text(key, "快取圖表", exc))
+            texts.append(_market_cache_unavailable_text(key))
     messages = [TextSendMessage(text="\n\n".join(texts))] + images
     reply_line(reply_token, messages)
 

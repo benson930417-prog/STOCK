@@ -15,6 +15,7 @@ class MarketImageChecksumMismatch(RuntimeError):
 
 
 NASDAQ_CLOSED_CACHE_MAX_AGE_SECONDS = 72 * 60 * 60
+MARKET_CACHE_STALE_FALLBACK_SECONDS = 30 * 60
 
 
 def nasdaq_ig_market_is_open(now: datetime | None = None) -> bool:
@@ -43,6 +44,35 @@ def effective_market_cache_max_age(
     if key == "nasdaq" and not nasdaq_ig_market_is_open(now):
         return max(base_max_age_seconds, NASDAQ_CLOSED_CACHE_MAX_AGE_SECONDS)
     return base_max_age_seconds
+
+
+def market_cache_freshness(
+    key: str,
+    updated_at: str,
+    base_max_age_seconds: int,
+    *,
+    stale_fallback_seconds: int = 0,
+    now: datetime | None = None,
+) -> dict:
+    """Classify a cache without silently presenting stale data as current."""
+    updated = datetime.fromisoformat(str(updated_at).replace("Z", "+00:00"))
+    if updated.tzinfo is None:
+        updated = updated.replace(tzinfo=timezone.utc)
+    current = now or datetime.now(timezone.utc)
+    age_seconds = max(0.0, (current - updated).total_seconds())
+    strict_max_age_seconds = effective_market_cache_max_age(
+        key,
+        base_max_age_seconds,
+        now=current,
+    )
+    is_stale = age_seconds > strict_max_age_seconds
+    return {
+        "age_seconds": age_seconds,
+        "strict_max_age_seconds": strict_max_age_seconds,
+        "is_stale": is_stale,
+        "can_serve": age_seconds
+        <= strict_max_age_seconds + max(0, int(stale_fallback_seconds)),
+    }
 
 
 def file_sha256(path: Path) -> str:
