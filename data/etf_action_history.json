@@ -6332,7 +6332,7 @@
     },
     "2026-08-25": {
       "as_of": "2026-08-25",
-      "generated": "2026-08-25T10:33:58+00:00",
+      "generated": "2026-08-26T10:33:21+00:00",
       "signals": {
         "buying": [],
         "holding": [
@@ -6403,6 +6403,83 @@
             "quiet_sessions_to_downgrade": 0,
             "qualification_label": "升級觀察（2檔）",
             "etf_label": "403・981"
+          }
+        ],
+        "selling": []
+      }
+    },
+    "2026-08-26": {
+      "as_of": "2026-08-26",
+      "generated": "2026-08-26T10:33:20+00:00",
+      "signals": {
+        "buying": [],
+        "holding": [
+          {
+            "score": 0.3246,
+            "etfs": [
+              "00403A",
+              "00981A"
+            ],
+            "name": "創意",
+            "stock_id": "3443",
+            "category": "IP/ASIC",
+            "event_type": "conviction_buy",
+            "event_label": "升級續抱",
+            "event_date": "2026-08-26",
+            "current_confirmation_date": "2026-08-26",
+            "buy_days": 4,
+            "sell_days": 0,
+            "lifecycle_label": "今日升級為續抱",
+            "progress_label": "若無新買，6 個交易日後轉為降溫",
+            "evidence_expires_in": 6,
+            "quiet_sessions_to_downgrade": 6,
+            "qualification_label": "續抱（2檔）",
+            "etf_label": "403・981"
+          },
+          {
+            "score": 0.4682,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "健策精密",
+            "stock_id": "3653",
+            "category": "散熱零組件",
+            "event_type": "conviction_watch",
+            "event_label": "接近續抱",
+            "event_date": "2026-08-26",
+            "current_confirmation_date": "2026-08-26",
+            "buy_days": 3,
+            "sell_days": 0,
+            "lifecycle_label": "尚未升級・接近門檻",
+            "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日",
+            "evidence_expires_in": 4,
+            "quiet_sessions_to_downgrade": 0,
+            "qualification_label": "升級觀察（3檔）",
+            "etf_label": "403・981・991"
+          },
+          {
+            "score": 0.3114,
+            "etfs": [
+              "00403A",
+              "00991A"
+            ],
+            "name": "南亞電路",
+            "stock_id": "8046",
+            "category": "ABF",
+            "event_type": "conviction_downgrade",
+            "event_label": "續抱降溫",
+            "event_date": "2026-08-26",
+            "current_confirmation_date": "2026-08-26",
+            "buy_days": 3,
+            "sell_days": 0,
+            "lifecycle_label": "加碼動能降溫・尚無顯著賣出",
+            "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日",
+            "evidence_expires_in": 1,
+            "quiet_sessions_to_downgrade": 0,
+            "qualification_label": "續抱降溫（2檔仍有證據）",
+            "etf_label": "403・991"
           }
         ],
         "selling": []
