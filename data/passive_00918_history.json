@@ -9655,5 +9655,200 @@
         "shares": 10000
       }
     ]
+  },
+  "2026-08-26": {
+    "date": "2026-08-26",
+    "meta": {
+      "fund_size": 115222362626,
+      "nav": 34.09,
+      "outstanding_units": 3380264000,
+      "creation_redemption_unit": 500000,
+      "estimated_cash_component": 17043397.0,
+      "basket_value": 17065440.0,
+      "source_url": "https://www.uobam.com.tw/fund/etf/88329556",
+      "pcf_excel_url": "https://www.uobam.com.tw/api/WebSite/pcfexcel/88329556/20260826"
+    },
+    "holdings": [
+      {
+        "id": "2357.TW",
+        "name": "華碩",
+        "weight_pct": 7.31,
+        "shares": 8699000
+      },
+      {
+        "id": "2887.TW",
+        "name": "台新新光金",
+        "weight_pct": 6.93,
+        "shares": 214035380
+      },
+      {
+        "id": "6669.TW",
+        "name": "緯穎",
+        "weight_pct": 6.62,
+        "shares": 1119000
+      },
+      {
+        "id": "2603.TW",
+        "name": "長榮",
+        "weight_pct": 6.28,
+        "shares": 31135000
+      },
+      {
+        "id": "2891.TW",
+        "name": "中信金",
+        "weight_pct": 5.2,
+        "shares": 93863000
+      },
+      {
+        "id": "2618.TW",
+        "name": "長榮航",
+        "weight_pct": 5.1,
+        "shares": 137437000
+      },
+      {
+        "id": "2382.TW",
+        "name": "廣達",
+        "weight_pct": 4.97,
+        "shares": 17162000
+      },
+      {
+        "id": "2884.TW",
+        "name": "玉山金",
+        "weight_pct": 4.88,
+        "shares": 145805000
+      },
+      {
+        "id": "2886.TW",
+        "name": "兆豐金",
+        "weight_pct": 4.8,
+        "shares": 119794000
+      },
+      {
+        "id": "3231.TW",
+        "name": "緯創",
+        "weight_pct": 4.69,
+        "shares": 30076000
+      },
+      {
+        "id": "2379.TW",
+        "name": "瑞昱",
+        "weight_pct": 4.3,
+        "shares": 6793000
+      },
+      {
+        "id": "2890.TW",
+        "name": "永豐金",
+        "weight_pct": 4.07,
+        "shares": 119185200
+      },
+      {
+        "id": "2610.TW",
+        "name": "華航",
+        "weight_pct": 3.64,
+        "shares": 201389000
+      },
+      {
+        "id": "3702.TW",
+        "name": "大聯大",
+        "weight_pct": 3.57,
+        "shares": 40557000
+      },
+      {
+        "id": "2892.TW",
+        "name": "第一金",
+        "weight_pct": 3.42,
+        "shares": 118001000
+      },
+      {
+        "id": "2801.TW",
+        "name": "彰銀",
+        "weight_pct": 2.94,
+        "shares": 137114500
+      },
+      {
+        "id": "2376.TW",
+        "name": "技嘉",
+        "weight_pct": 2.93,
+        "shares": 9802000
+      },
+      {
+        "id": "3293.TW",
+        "name": "鈊象",
+        "weight_pct": 2.49,
+        "shares": 4083000
+      },
+      {
+        "id": "2404.TW",
+        "name": "漢唐",
+        "weight_pct": 2.31,
+        "shares": 2478000
+      },
+      {
+        "id": "2027.TW",
+        "name": "大成鋼",
+        "weight_pct": 2.02,
+        "shares": 47777000
+      },
+      {
+        "id": "2474.TW",
+        "name": "可成",
+        "weight_pct": 1.87,
+        "shares": 10405000
+      },
+      {
+        "id": "2377.TW",
+        "name": "微星",
+        "weight_pct": 1.83,
+        "shares": 14568000
+      },
+      {
+        "id": "8069.TW",
+        "name": "元太",
+        "weight_pct": 1.47,
+        "shares": 10621000
+      },
+      {
+        "id": "5289.TW",
+        "name": "宜鼎",
+        "weight_pct": 1.29,
+        "shares": 995444
+      },
+      {
+        "id": "2353.TW",
+        "name": "宏碁",
+        "weight_pct": 1.24,
+        "shares": 45691000
+      },
+      {
+        "id": "1476.TW",
+        "name": "儒鴻",
+        "weight_pct": 0.9,
+        "shares": 3312000
+      },
+      {
+        "id": "3706.TW",
+        "name": "神達",
+        "weight_pct": 0.63,
+        "shares": 7985000
+      },
+      {
+        "id": "2542.TW",
+        "name": "興富發",
+        "weight_pct": 0.58,
+        "shares": 14034000
+      },
+      {
+        "id": "8464.TW",
+        "name": "億豐",
+        "weight_pct": 0.31,
+        "shares": 963000
+      },
+      {
+        "id": "5269.TW",
+        "name": "祥碩",
+        "weight_pct": 0.01,
+        "shares": 10000
+      }
+    ]
   }
 }
