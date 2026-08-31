@@ -152,6 +152,10 @@ def main() -> int:
             result["attempts"] = attempt
             with log_path.open("a", encoding="utf-8", newline="\n") as log:
                 log.write(f"=== attempt {attempt}/{args.attempts} at {_utc_now()} ===\n")
+                # The child inherits this descriptor. Flush the attempt header
+                # first so a traceback cannot appear above the attempt it
+                # belongs to in the incident log.
+                log.flush()
                 try:
                     completed = subprocess.run(
                         [sys.executable, str(fetcher)], cwd=root, stdout=log,
@@ -176,6 +180,13 @@ def main() -> int:
                     result["error"] = f"{type(exc).__name__}: {exc}"
             else:
                 result["error"] = f"fetcher exit={returncode}"
+                result["log"] = str(log_path)
+                try:
+                    result["error_tail"] = log_path.read_text(
+                        encoding="utf-8", errors="replace"
+                    )[-2000:]
+                except OSError:
+                    pass
             if attempt < args.attempts:
                 time.sleep(args.retry_delay)
         results.append(result)
