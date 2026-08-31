@@ -1,8 +1,10 @@
 """Manually re-fire the LINE broadcast for active ETF reports.
 
-Use this when the daily 18:30 job got interrupted AFTER fetching data
-but BEFORE pushing to LINE — re-running update_and_notify.sh would see
-"no new data" (logs already say checked) and skip the broadcast.
+This is an explicit admin override which bypasses the daily publication receipt.
+Normal recovery must re-run the sealed pipeline: ``daily_line_publish.py`` sends
+the first time the repaired day is complete even when fetch logs say NO CHANGE,
+then records SENT so later reruns cannot duplicate it.  Use this helper only
+when an administrator intentionally wants an additional paid broadcast.
 
 Images are served directly by the webhook via duckdns.org — NO git push
 needed (the daily flow was simplified to drop GitHub as middleman).

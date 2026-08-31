@@ -135,12 +135,15 @@ V1–V3 remain intentionally available even though V4 is the final copy-the-mana
 - Webhook replies are cache-only. A reply must never scrape CMoney, run an ETF engine, launch Playwright, or screenshot the dashboard on demand.
 - The V4 primary decision reply is exactly two images and no text. The V2 audit reply is exactly three images; its optional text remains disabled.
 - The scheduled active-ETF daily broadcast is a separate payload: exactly one combined text plus four active-ETF images. LINE allows five objects; never add a sixth object, split it into a second paid broadcast, or attach V1/V4 images.
+- Daily publication is date-state driven, never fetch-event driven. `NEW DATA FOUND` may choose a Git commit label, but it must not decide whether LINE sends. The publisher independently proves that the sealed fetch, matching canonical import, current action cache, and four freshly rendered report images are complete. An incomplete day remains `PENDING`; the first repaired complete run sends; a `SENT` receipt makes every later rerun a no-op.
+- Upstream certification and publication receipts live outside Git. `line-active-report-ready/<YYYY-MM-DD>.json` is written `READY` only after every required derived/cache/image/Git step succeeds for the same sealed fetch run; a partial run overwrites it as `BLOCKED`. `line-active-report/<YYYY-MM-DD>.json` contains the validation evidence, payload SHA-256, stable LINE retry key, attempt history, HTTP acceptance and final state. `READY`, `PENDING`, `RETRYABLE_REJECTED`, `RETRYABLE_UNCERTAIN`, and `UNCERTAIN_EXPIRED` are not publication success; only `SENT` completes the notification checkpoint.
+- Every first LINE request includes `X-Line-Retry-Key`. A timeout/5xx reuses the same request body and key, and HTTP 409 means LINE already accepted it. LINE retains retry keys for only 24 hours; after an uncertain attempt ages past that window, automation stops at `UNCERTAIN_EXPIRED` instead of risking a duplicate broadcast.
 - LINE push/broadcast is paid. Agents must not send proactive test messages. User-initiated webhook replies are free; builders, generators, dashboard QA, and cache checks send nothing.
 - Generated images must use computed content height and verify their card count. Fixed crops, clipped tails, repeated pages, or mutable source URLs are forbidden.
 
 ### ETF daily build architecture
 
-The 18:30 job fetches and seals active/passive ETF disclosures only. A successful fetch immediately starts the holdings importer through systemd `OnSuccess`; a successful import immediately starts the derived/report service. There are intentionally no independent 19:15/19:20 timers that can race the manifest or database state. The derived stage refreshes market pulse and financing risk, performs the CMoney canary, builds V2/V3/V4 caches and summaries, and runs the sanctioned report stage.
+The 18:30 job fetches and seals active/passive ETF disclosures only. A successful fetch immediately starts the holdings importer through systemd `OnSuccess`; a successful import immediately starts the derived/report service. There are intentionally no independent 19:15/19:20 timers that can race the manifest or database state. The derived stage refreshes market pulse and financing risk, performs the CMoney canary, builds V2/V3/V4 caches and summaries, regenerates all four active-operation images on every successful replay, archives generated data, and finally calls the independent daily publication gate.
 
 - `scripts/build_stock_tags.py --probe 2308` re-fetches a stable CMoney canary instead of trusting cache. Coverage and canary status enter the admin email; missing categories remain retryable and must produce `PARTIAL_FAIL`.
 - Category refresh is incremental for new holdings and periodically refreshes known holdings. Cached concepts remain display-only.
@@ -498,6 +501,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/build_etf_consensus_v4.py` | Builds the final date-keyed V4 state/history cache from the three active ETF histories and 類股 context. Pure local computation; no network and no LINE send. |
 | `scripts/generate_etf_consensus_v4_summary.py` | Renders exactly two 720px mobile-width LINE decision summaries: buy top five and sell top five. Cards form one long vertical list with explicit `01`–`05` badges, enlarged 20-session action charts, core/tracking labels, and a proportional black iPhone safe area. The complete yellow/red/green board is never truncated on the website; only LINE is intentionally filtered. |
 | `scripts/line_active_report_payload.py` | Single source of truth for the scheduled and manual active-ETF LINE payload: exactly one combined header/action text object followed by at most four active-ETF images. It hard-fails above the five-object LINE limit instead of chunking or starting a second broadcast. |
+| `scripts/daily_line_publish.py` | Completeness validator and exactly-once daily LINE publisher. It verifies the sealed issuer set, matching `market.db` import checksum, current action insight, DB/history dates, fresh non-empty images and five-object payload; persists the per-day receipt; and uses LINE's retry key for safe recovery. |
 | `scripts/generate_etf_summary.py` | Builds daily ETF summary images for LINE broadcast. |
 | `scripts/generate_market_pulse_summary.py` | Renders the market pulse summary image served by the LINE `市場脈動` command. |
 | `scripts/update_margin_maintenance.py` | Fetches official TWSE + TPEx daily margin balances/prices and writes the server-local `data/margin_maintenance.csv` public-data estimate cache. |
@@ -512,7 +516,7 @@ Use this procedure when adding a LINE market chart command that must reply fast 
 | `scripts/overlay_market_sessions.py` | Draws Taiwan/US session markers on the special NASDAQ 24h chart image. |
 | `scripts/rebroadcast_line.py` | Admin-only manual rebroadcast helper using the same one-text-plus-at-most-four-images payload builder as the scheduled daily send. |
 | `scripts/setup_rich_menu.py` | Creates/updates the LINE rich menu. |
-| `scripts/update_and_notify.sh` | Daily orchestrator for fetchers, benchmark refresh, market pulse image, Git update, LINE broadcast, and admin email. |
+| `scripts/update_and_notify.sh` | Post-import orchestrator for benchmark/cache/report rebuild, Git archival, the independent daily LINE publication gate, and admin email. Fetch `NEW DATA` state affects only the Git commit label. |
 | `scripts/update_market_pulse_volume.py` | Refreshes the server-local TWSE 成交量/成交金額 cache used by the 市場脈動 price-volume panel. |
 
 00988A global-holding quote handling: the holdings sheet uses global market suffixes such as `NVDA US`, `7203 JP`, or Hong Kong/Taiwan codes. `scripts/monitor_etf_quotes.py` normalizes those into Yahoo Finance symbols (`NVDA`, `7203.T`, `0005.HK`, `2330.TW`, etc.) and applies the existing exchange-session watcher logic.
@@ -749,14 +753,15 @@ The production sequence is deliberately split:
 1. X64 seals Taiwan OHLCV after market close; ARM imports only a checksum-verified CLEAN package into `market.db`.
 2. `stock-fetch-1830-tw.timer` runs at 18:30 Taiwan time and fetches issuer holdings only. It does not update OHLCV, build analytics, pull code, install dependencies, or send LINE messages.
 3. Only after the fetch service succeeds, systemd starts `stock-market-holdings.service`; it verifies that day's sealed manifest and imports holdings.
-4. Only after the import succeeds, systemd starts `stock-derived-1920-tw.service`, which runs `update_and_notify.sh --post-fetch`. It reads canonical data, updates regimes/scores/local caches and summaries, performs the CMoney canary, then performs the sanctioned Git/LINE/admin-report stage.
+4. Only after the import succeeds, systemd starts `stock-derived-1920-tw.service`, which runs `update_and_notify.sh --post-fetch`. It reads canonical data, updates regimes/scores/local caches and summaries, performs the CMoney canary, then archives generated data.
+5. If any required rebuild/archive step fails, the script records that day's LINE state as `PENDING` and sends nothing. If all upstream steps succeed, `daily_line_publish.py` independently revalidates every publication input. It sends only when the day has no `SENT` receipt; a repair run can therefore publish even when every fetch log says `NO CHANGE`, while an ordinary rerun cannot duplicate the paid broadcast.
 
 The derived/report script continues independent steps long enough to assemble
 its admin summary, but exits nonzero whenever any required step ended in
 `PARTIAL_FAIL`; systemd therefore cannot report a partially failed run as
 successful.
 
-Manual run — admin-only (⚠️ **may send the paid LINE broadcast to ALL followers when active ETFs have new data**; agents must not run this merely to test code changes):
+Manual run — admin-only (⚠️ **may send the paid LINE broadcast to ALL followers when that trading day is complete and has no `SENT` receipt**; agents must not run this merely to test code changes):
 
 ```bash
 cd /home/ubuntu/STOCK && bash scripts/run_market_pipeline_manual.sh
@@ -806,6 +811,8 @@ Each of these is a trap that has already caused a wrong result or a missed step.
 10. **Market Pulse volume is daily cached, never fetched on demand.** `src/ui/market_pulse_tab.py` must read `data/market_pulse_volume.csv` only. `scripts/update_market_pulse_volume.py` is the only place that should call TWSE `FMTQIK`; the post-import derived job refreshes it after canonical imports. If the dashboard says the cache is missing, run `python scripts/update_market_pulse_volume.py --backfill-years 5` once on the server, then let the daily `--months 4` refresh maintain it. Do not add `requests` back into the Streamlit render path.
 
 11. **LINE push/broadcast is PAID — only the scheduled post-import derived/report service or an explicit admin action may send.** Push/broadcast messages consume the paid LINE message quota (only replies to user-initiated webhook messages are free). Sanctioned senders: `stock-derived-1920-tw.service`, an admin deliberately triggering `run_market_pipeline_manual.sh` (including the webhook admin command), and `scripts/rebroadcast_line.py` when the admin explicitly asks. Agents must NEVER send on their own initiative: do not run either end-to-end pipeline merely to test code changes, do not call LINE push/broadcast endpoints manually, and do not "verify" LINE features by sending. Fetchers, quote/chart monitors, `chart_service.py`, cache checks, and the dashboard send nothing and are safe to run.
+
+    **The scheduled decision is receipt-based and exactly once per trading date.** Do not reconnect it to `NEW DATA FOUND`, changed-file lists, Git commit success alone, or a clock-only timer. `scripts/daily_line_publish.py` is the sole scheduled sender. It must see all required upstream steps succeed and must independently verify the day's sealed fetch/import/cache/images. Failed or incomplete work stays pending until a repaired full run succeeds. The task ledger's `publish_notifications` checkpoint is complete only when the daily receipt says `SENT`; generated content without LINE acceptance is not completion. Preserve the stable payload and `X-Line-Retry-Key` across uncertain retries. After LINE's 24-hour key window expires, stop for reconciliation—never gamble by silently generating a fresh key.
 
 12. **Cached TradingView charts use a 1-month window and full x-width except NASDAQ.** Generic market charts (`oil`, `brent`, `bond`, `gold`, `usdtwd`, `usdjpy`, `usdchf`) use `timeframe=1M`, while their LINE quote text retains the existing `1日` / `1週` / `1月` / `6月` rows. They should crop only vertically and must keep `clip.x=0`, `clip.width=window.innerWidth`; otherwise the right price axis/last-price marker gets cut off. NASDAQ is intentionally special: it uses IG-NASDAQ 24h, a `1200x900` viewport established before navigation, an accessible 1-day click, dynamically measured canvas Y/height, and the unchanged `overlay_market_sessions.py`. Its X/width must stay fixed because those are the overlay's measured scale.
 

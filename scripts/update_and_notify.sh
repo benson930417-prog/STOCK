@@ -89,7 +89,7 @@ record_step_ok() {
             "generate ETF action insight")
                 metrics=$(grep -E "^(\[etf-action\]|Saved data/etf_action_insight\.json)" "$logfile" | sed 's/^/          /')
                 ;;
-            "LINE broadcast active reports")
+            "daily LINE publication gate")
                 metrics=$(tail -n 5 "$logfile" | sed 's/^/          /')
                 ;;
             git\ push*)
@@ -191,6 +191,16 @@ if report.get("manifest_sha256") != manifest_sha256:
 print(manifest["started_at_utc"])
 PY
 )" || exit 2
+TRADING_DATE="$(python - <<'PY'
+import json
+from pathlib import Path
+
+manifest = json.loads(
+    Path("/var/lib/stock/market/holdings-fetch.json").read_text(encoding="utf-8")
+)
+print(manifest["trading_date"])
+PY
+)" || exit 2
 printf "  [OK]   today's CLEAN issuer manifest and matching DB import started at %s\n" \
     "$RUN_STARTED_UTC" >> "$SUMMARY_FILE"
 
@@ -256,11 +266,16 @@ else
     } >> "$SUMMARY_FILE"
 fi
 
+# The four active-operation images are publication inputs, not an optimization
+# conditional on this process seeing NEW DATA.  Repaired/replayed runs must
+# regenerate them before the independent daily publication gate evaluates
+# completeness.
+run_step "generate_etf_summary" python scripts/generate_etf_summary.py
+
 # ──────────────────────────────────────────────────────────────────────────
-# 3. Detect which ETFs got NEW DATA this run
+# 3. Detect which ETFs got NEW DATA this run for the Git commit label only
 # ──────────────────────────────────────────────────────────────────────────
 CHANGED_ETFS=()
-ACTIVE_NEW_ETFS=()
 while IFS= read -r ETF; do
     [ -n "$ETF" ] && CHANGED_ETFS+=("$ETF")
 done < <(RUN_STARTED_UTC="$RUN_STARTED_UTC" ETFS="${ETFS[*]}" python - <<'PY'
@@ -285,16 +300,9 @@ for etf in os.environ["ETFS"].split():
 PY
 )
 
-for ETF in "${CHANGED_ETFS[@]}"; do
-    case "$ETF" in
-        00403A|00981A|00988A|00991A)
-            ACTIVE_NEW_ETFS+=("$ETF")
-            ;;
-    esac
-done
-
 # ──────────────────────────────────────────────────────────────────────────
-# 4. Git push + (if active ETF got new data) LINE broadcast
+# 4. Git archival.  CHANGED_ETFS only selects the commit message; it must never
+#    decide whether LINE is published.
 # ──────────────────────────────────────────────────────────────────────────
 git config --global user.name "OCI Server Bot"
 git config --global user.email "oci-bot@localhost"
@@ -304,10 +312,6 @@ git config --global user.email "oci-bot@localhost"
 if [ "${#CHANGED_ETFS[@]}" -gt 0 ]; then
     echo "New data detected for: ${CHANGED_ETFS[*]}"
     printf "  [INFO] NEW DATA for: %s\n" "${CHANGED_ETFS[*]}" >> "$SUMMARY_FILE"
-    if [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ]; then
-        run_step "generate_etf_summary" python scripts/generate_etf_summary.py
-    fi
-
     git add data/*.json data/summaries/*.jpg 2>/dev/null
     commit_output=$(git commit -m "Auto-update ETF data and summary images from OCI" 2>&1)
     if [ "$?" -eq 0 ]; then
@@ -319,44 +323,6 @@ if [ "${#CHANGED_ETFS[@]}" -gt 0 ]; then
     fi
     run_step "git push origin main" git push origin main
 
-    if [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ] && [ -n "${LINE_TOKEN:-}" ]; then
-        export LINE_TOKEN
-        # Daily broadcast — images served directly by the webhook via duckdns.org,
-        # NOT GitHub raw URL. This avoids the git commit+push+CDN-wait dance and
-        # the gitignore-mismatch class of bug that broke the daily images.
-        run_step "LINE broadcast active reports" python - <<'PY'
-import json
-import os
-from urllib import request
-
-from scripts.line_active_report_payload import ACTIVE_TICKERS, build_active_report_messages
-
-token = os.environ["LINE_TOKEN"]
-messages = build_active_report_messages(ACTIVE_TICKERS)
-if len(messages) > 5:
-    raise RuntimeError(f"refusing LINE batch with {len(messages)} objects")
-
-def _broadcast(objs):
-    payload = json.dumps({"messages": objs}, ensure_ascii=False).encode("utf-8")
-    req = request.Request(
-        "https://api.line.me/v2/bot/message/broadcast",
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}",
-        },
-        method="POST",
-    )
-    with request.urlopen(req, timeout=20) as resp:
-        print(resp.status, resp.read().decode("utf-8", errors="replace"))
-
-_broadcast(messages)
-print(f"Daily LINE object count: {len(messages)} (1 text + {len(messages) - 1} images)")
-PY
-    elif [ "${#ACTIVE_NEW_ETFS[@]}" -gt 0 ]; then
-        printf "  [SKIP] LINE broadcast: LINE_TOKEN not set\n" >> "$SUMMARY_FILE"
-        echo "LINE_TOKEN is not set. Skipping LINE notification."
-    fi
 else
     echo "No new ETF data found. Pushing log timestamps only."
     printf "  [INFO] no new ETF data\n" >> "$SUMMARY_FILE"
@@ -373,7 +339,29 @@ else
 fi
 
 # ──────────────────────────────────────────────────────────────────────────
-# 5. Send admin email summary (always, even on full success)
+# 5. Independent daily LINE publication gate
+# ──────────────────────────────────────────────────────────────────────────
+# Publication requires every upstream step (including Git archival) to be
+# successful.  The Python gate then independently re-verifies the sealed fetch,
+# matching DB import, current action cache, all four fresh images and payload
+# shape.  A durable daily receipt makes retries idempotent: incomplete runs stay
+# PENDING; the first repaired CLEAN run sends; later reruns return already SENT.
+if [ "$fail_count" -eq 0 ]; then
+    run_step "daily LINE publication gate" \
+        python scripts/daily_line_publish.py \
+        --trading-date "$TRADING_DATE" \
+        --confirm-upstream-ready
+else
+    python scripts/daily_line_publish.py \
+        --trading-date "$TRADING_DATE" \
+        --defer "upstream derived run has ${fail_count} failed step(s)" \
+        >> "$SUMMARY_FILE" 2>&1 || true
+    printf "  [PENDING] daily LINE publication: upstream failures=%d\n" \
+        "$fail_count" >> "$SUMMARY_FILE"
+fi
+
+# ──────────────────────────────────────────────────────────────────────────
+# 6. Send admin email summary (always, even on full success)
 # ──────────────────────────────────────────────────────────────────────────
 run_end_epoch=$(date +%s)
 duration=$((run_end_epoch - run_start_epoch))
