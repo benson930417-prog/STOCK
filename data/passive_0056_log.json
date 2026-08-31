@@ -1,9 +1,9 @@
 {
-  "last_checked_utc": "2026-08-28T10:30:25.191917Z",
-  "last_updated_utc": "2026-08-28T10:30:25.191917Z",
-  "latest_date": "2026-08-28",
-  "status": "NEW DATA FOUND",
+  "last_checked_utc": "2026-08-31T13:08:14.024137Z",
+  "last_updated_utc": "2026-08-31T13:06:59.574200Z",
+  "latest_date": "2026-08-31",
+  "status": "NO CHANGE",
   "source": "https://www.yuantaetfs.com/product/detail/0056/ratio",
   "holdings_count": 50,
-  "payload_changed": true
+  "payload_changed": false
 }
