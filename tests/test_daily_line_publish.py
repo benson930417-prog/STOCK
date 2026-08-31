@@ -22,6 +22,19 @@ DAY = "2026-08-31"
 
 
 class DailyLinePublicationTests(unittest.TestCase):
+    def test_orchestrator_exports_sourced_line_token_to_python(self) -> None:
+        script = (
+            Path(__file__).resolve().parents[1] / "scripts" / "update_and_notify.sh"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn(
+            '[ -n "${LINE_TOKEN:-}" ] && export LINE_TOKEN', script
+        )
+        self.assertIn(
+            '[ -n "${LINE_CHANNEL_ACCESS_TOKEN:-}" ] && export LINE_CHANNEL_ACCESS_TOKEN',
+            script,
+        )
+
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)

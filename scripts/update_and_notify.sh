@@ -25,6 +25,12 @@ SECRETS_FILE="/home/ubuntu/.stock_secrets"
 if [ -f "$SECRETS_FILE" ]; then
     # shellcheck disable=SC1090
     source "$SECRETS_FILE"
+    # Secrets files historically contain plain shell assignments.  Child
+    # Python processes cannot see those unless the orchestrator exports them.
+    # Keep both supported names because webhook/rebroadcast deployments use
+    # either one.
+    [ -n "${LINE_TOKEN:-}" ] && export LINE_TOKEN
+    [ -n "${LINE_CHANNEL_ACCESS_TOKEN:-}" ] && export LINE_CHANNEL_ACCESS_TOKEN
 else
     echo "Warning: Secrets file $SECRETS_FILE not found. LINE/email will fail."
 fi
