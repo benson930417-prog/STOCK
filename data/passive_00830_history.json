@@ -14132,5 +14132,196 @@
         "shares": 76936
       }
     ]
+  },
+  "2026-08-31": {
+    "date": "2026-08-31",
+    "meta": {
+      "fund_size": 67982946141.0,
+      "nav": 81.13,
+      "outstanding_units": 837965000,
+      "source_url": "https://www.cathaysite.com.tw/ETF/detail/EBO?tab=etf3"
+    },
+    "holdings": [
+      {
+        "id": "NVDA.US",
+        "name": "NVIDIA CORPORATION",
+        "weight_pct": 14.09,
+        "shares": 1367503
+      },
+      {
+        "id": "AVGO.US",
+        "name": "BROADCOM INC",
+        "weight_pct": 9.31,
+        "shares": 538547
+      },
+      {
+        "id": "MU.US",
+        "name": "Micron Technology Inc",
+        "weight_pct": 8.87,
+        "shares": 198249
+      },
+      {
+        "id": "ASML.US",
+        "name": "ASML HLDG NY REG",
+        "weight_pct": 4.72,
+        "shares": 59680
+      },
+      {
+        "id": "MRVL.US",
+        "name": "MARVELL TECH GROUP",
+        "weight_pct": 4.64,
+        "shares": 469511
+      },
+      {
+        "id": "AMAT.US",
+        "name": "APPLIED MATERIALS INC",
+        "weight_pct": 4.58,
+        "shares": 213860
+      },
+      {
+        "id": "TSM.US",
+        "name": "TAIWAN SEMICOND ADS",
+        "weight_pct": 4.46,
+        "shares": 230015
+      },
+      {
+        "id": "LRCX.US",
+        "name": "LAM RESEARCH CORP",
+        "weight_pct": 4.26,
+        "shares": 302501
+      },
+      {
+        "id": "KLAC.US",
+        "name": "K L A-TENCOR CORP",
+        "weight_pct": 4.1,
+        "shares": 500855
+      },
+      {
+        "id": "AMD.US",
+        "name": "ADV MICRO DEVICES",
+        "weight_pct": 4.1,
+        "shares": 186494
+      },
+      {
+        "id": "ADI.US",
+        "name": "ANALOG DEVICES INC",
+        "weight_pct": 3.93,
+        "shares": 232572
+      },
+      {
+        "id": "TXN.US",
+        "name": "TEXAS INSTRUMENTS INC",
+        "weight_pct": 3.83,
+        "shares": 314871
+      },
+      {
+        "id": "INTC.US",
+        "name": "Intel Corp",
+        "weight_pct": 3.51,
+        "shares": 839290
+      },
+      {
+        "id": "QCOM.US",
+        "name": "QUALCOMM INC",
+        "weight_pct": 3.05,
+        "shares": 383435
+      },
+      {
+        "id": "MPWR.US",
+        "name": "MONOLITHIC POWER SYS",
+        "weight_pct": 2.66,
+        "shares": 44961
+      },
+      {
+        "id": "NXPI.US",
+        "name": "NXP SEMICONDUCTORS",
+        "weight_pct": 2.42,
+        "shares": 231048
+      },
+      {
+        "id": "TER.US",
+        "name": "TERADYNE INC",
+        "weight_pct": 2.34,
+        "shares": 143259
+      },
+      {
+        "id": "COHR.US",
+        "name": "COHERENT INC",
+        "weight_pct": 2.32,
+        "shares": 179038
+      },
+      {
+        "id": "ALAB.US",
+        "name": "ASTERA LABS INC",
+        "weight_pct": 2.17,
+        "shares": 156863
+      },
+      {
+        "id": "CRDO.US",
+        "name": "CREDO TECHNOLOGY GROUP HOLDI",
+        "weight_pct": 1.78,
+        "shares": 168799
+      },
+      {
+        "id": "MCHP.US",
+        "name": "MICROCHIP TECHNOLOGY INC",
+        "weight_pct": 1.7,
+        "shares": 496081
+      },
+      {
+        "id": "ARM.US",
+        "name": "ARM HOLDINGS PLC ADS",
+        "weight_pct": 1.46,
+        "shares": 129343
+      },
+      {
+        "id": "ON.US",
+        "name": "ON SEMICONDUCTOR",
+        "weight_pct": 1.24,
+        "shares": 358648
+      },
+      {
+        "id": "GFS.US",
+        "name": "GLOBALFOUNDRIES ORD",
+        "weight_pct": 1.05,
+        "shares": 502481
+      },
+      {
+        "id": "ENTG.US",
+        "name": "ENTEGRIS INC",
+        "weight_pct": 0.87,
+        "shares": 138313
+      },
+      {
+        "id": "MTSI.US",
+        "name": "MACOM TECHNOLOGY SOLUTIONS H",
+        "weight_pct": 0.85,
+        "shares": 69193
+      },
+      {
+        "id": "NVMI.US",
+        "name": "NOVA LTD ORD SHS",
+        "weight_pct": 0.45,
+        "shares": 27976
+      },
+      {
+        "id": "SWKS.US",
+        "name": "SKYWORKS SOLUTIONS INC",
+        "weight_pct": 0.41,
+        "shares": 132293
+      },
+      {
+        "id": "RMBS.US",
+        "name": "RAMBUS INC.",
+        "weight_pct": 0.38,
+        "shares": 95114
+      },
+      {
+        "id": "QRVO.US",
+        "name": "QORVO, INC. CMN",
+        "weight_pct": 0.35,
+        "shares": 77415
+      }
+    ]
   }
 }
