@@ -1,9 +1,9 @@
 {
-  "last_checked_utc": "2026-09-01T10:30:59.126895Z",
-  "last_updated_utc": "2026-09-01T10:30:59.126895Z",
-  "latest_date": "2026-09-01",
+  "last_checked_utc": "2026-09-02T10:30:54.633169Z",
+  "last_updated_utc": "2026-09-02T10:30:54.633169Z",
+  "latest_date": "2026-09-02",
   "status": "NEW DATA FOUND",
   "source": "https://www.cathaysite.com.tw/ETF/detail/ECN?tab=etf3",
-  "holdings_count": 30,
+  "holdings_count": 29,
   "payload_changed": true
 }

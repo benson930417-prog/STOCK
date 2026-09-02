@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-01 10:33:20",
+  "generated": "2026-09-02 10:32:52",
   "source": "cmoney.tw/forum/stock",
-  "count": 111,
+  "count": 112,
   "coverage": {
-    "covered": 111,
-    "universe": 111,
+    "covered": 112,
+    "universe": 112,
     "missing": 0
   },
   "tags": {
@@ -13,35 +13,35 @@
       "group": "電子中游",
       "concepts": [
         {
-          "id": "C50080",
-          "name": "物聯網",
-          "avg_pct": 4.9
+          "id": "C50270",
+          "name": "第三方支付",
+          "avg_pct": 1.4
         },
         {
-          "id": "C50878",
-          "name": "MIH概念股",
-          "avg_pct": 4.87
+          "id": "C50250",
+          "name": "一帶一路",
+          "avg_pct": 1.85
         },
         {
-          "id": "C50903",
-          "name": "鴻海MIH電動車平台",
-          "avg_pct": 4.58
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 2.05
         },
         {
           "id": "C50170",
           "name": "車用電子",
-          "avg_pct": 3.89
+          "avg_pct": 2.1
         },
         {
-          "id": "C50270",
-          "name": "第三方支付",
-          "avg_pct": 3.81
+          "id": "C50912",
+          "name": "AI PC",
+          "avg_pct": 2.15
         }
       ],
       "category_id": "C23170",
       "category_full": "電子中游-電源供應器",
       "name": "台達電子",
-      "checked_at_utc": "2026-09-01T10:33:19.365804Z"
+      "checked_at_utc": "2026-09-02T10:32:51.378436Z"
     },
     "6274": {
       "category": "PCB-材料設備",
@@ -3057,6 +3057,41 @@
       "category_full": "傳產-航運",
       "name": "慧洋-KY",
       "checked_at_utc": "2026-08-19T10:33:28.456037Z"
+    },
+    "2301": {
+      "category": "電源供應器",
+      "group": "電子中游",
+      "concepts": [
+        {
+          "id": "C50300",
+          "name": "CES",
+          "avg_pct": 2.05
+        },
+        {
+          "id": "C50170",
+          "name": "車用電子",
+          "avg_pct": 2.1
+        },
+        {
+          "id": "C50912",
+          "name": "AI PC",
+          "avg_pct": 2.15
+        },
+        {
+          "id": "C50030",
+          "name": "Apple",
+          "avg_pct": 2.16
+        },
+        {
+          "id": "C50850",
+          "name": "PS5",
+          "avg_pct": 2.27
+        }
+      ],
+      "category_id": "C23170",
+      "category_full": "電子中游-電源供應器",
+      "name": "光寶科",
+      "checked_at_utc": "2026-09-02T10:32:47.944965Z"
     }
   }
 }
