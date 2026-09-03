@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-02 10:32:52",
+  "generated": "2026-09-03 10:32:54",
   "source": "cmoney.tw/forum/stock",
   "count": 112,
   "coverage": {
@@ -13,35 +13,35 @@
       "group": "電子中游",
       "concepts": [
         {
+          "id": "C50856",
+          "name": "電感",
+          "avg_pct": 1.66
+        },
+        {
           "id": "C50270",
           "name": "第三方支付",
-          "avg_pct": 1.4
+          "avg_pct": 1.63
         },
         {
-          "id": "C50250",
-          "name": "一帶一路",
-          "avg_pct": 1.85
+          "id": "C50861",
+          "name": "變壓器",
+          "avg_pct": 1.42
         },
         {
-          "id": "C50300",
-          "name": "CES",
-          "avg_pct": 2.05
+          "id": "C50490",
+          "name": "氫燃料電池",
+          "avg_pct": 1.35
         },
         {
-          "id": "C50170",
-          "name": "車用電子",
-          "avg_pct": 2.1
-        },
-        {
-          "id": "C50912",
-          "name": "AI PC",
-          "avg_pct": 2.15
+          "id": "C50600",
+          "name": "挖礦技術",
+          "avg_pct": 1.09
         }
       ],
       "category_id": "C23170",
       "category_full": "電子中游-電源供應器",
       "name": "台達電子",
-      "checked_at_utc": "2026-09-02T10:32:51.378436Z"
+      "checked_at_utc": "2026-09-03T10:32:53.883623Z"
     },
     "6274": {
       "category": "PCB-材料設備",
