@@ -7109,7 +7109,7 @@
     },
     "2026-09-03": {
       "as_of": "2026-09-03",
-      "generated": "2026-09-03T10:32:57+00:00",
+      "generated": "2026-09-04T10:35:36+00:00",
       "signals": {
         "buying": [
           {
@@ -7236,6 +7236,81 @@
             "sell_days": 3,
             "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日；再 1 檔 ETF 參與；10日淨買再 +0.37%",
             "evidence_expires_in": 3,
+            "qualification_label": "1/3 反轉2日",
+            "etf_label": "403"
+          }
+        ]
+      }
+    },
+    "2026-09-04": {
+      "as_of": "2026-09-04",
+      "generated": "2026-09-04T10:35:36+00:00",
+      "signals": {
+        "buying": [],
+        "holding": [
+          {
+            "score": 3.3455,
+            "etfs": [
+              "00403A",
+              "00981A",
+              "00991A"
+            ],
+            "name": "緯穎科技",
+            "stock_id": "6669",
+            "category": "EMS",
+            "event_type": "conviction_watch",
+            "event_label": "接近續抱",
+            "event_date": "2026-09-04",
+            "current_confirmation_date": "2026-09-04",
+            "buy_days": 3,
+            "sell_days": 1,
+            "lifecycle_label": "尚未升級・接近門檻",
+            "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日",
+            "evidence_expires_in": 2,
+            "quiet_sessions_to_downgrade": 0,
+            "qualification_label": "升級觀察（3檔）",
+            "etf_label": "403・981・991"
+          },
+          {
+            "score": 0.1566,
+            "etfs": [
+              "00403A",
+              "00981A"
+            ],
+            "name": "創意",
+            "stock_id": "3443",
+            "category": "IP/ASIC",
+            "event_type": "conviction_downgrade",
+            "event_label": "續抱降溫",
+            "event_date": "2026-09-04",
+            "current_confirmation_date": "2026-09-04",
+            "buy_days": 3,
+            "sell_days": 0,
+            "lifecycle_label": "加碼動能降溫・尚無顯著賣出",
+            "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日；10日淨買再 +0.04%",
+            "evidence_expires_in": 1,
+            "quiet_sessions_to_downgrade": 0,
+            "qualification_label": "續抱降溫（2檔仍有證據）",
+            "etf_label": "403・981"
+          }
+        ],
+        "selling": [
+          {
+            "score": -0.0892,
+            "etfs": [
+              "00403A"
+            ],
+            "name": "富世達股",
+            "stock_id": "6805",
+            "category": "連接元件",
+            "event_type": "buy_to_sell",
+            "event_label": "買後轉賣",
+            "event_date": "2026-09-03",
+            "lifecycle_label": "昨日觸發",
+            "buy_days": 4,
+            "sell_days": 3,
+            "progress_label": "恢復強勢續抱尚缺：再 1 個顯著買進日；再 1 檔 ETF 參與；10日淨買再 +0.37%",
+            "evidence_expires_in": 2,
             "qualification_label": "1/3 反轉2日",
             "etf_label": "403"
           }
