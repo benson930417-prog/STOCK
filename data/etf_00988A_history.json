@@ -20770,5 +20770,278 @@
         "shares": 130000
       }
     ]
+  },
+  "2026-09-07": {
+    "date": "2026-09-07",
+    "meta": {
+      "fund_size": 52836279696.0,
+      "nav": 16.32
+    },
+    "holdings": [
+      {
+        "id": "LITE US",
+        "name": "LUMENTUM HOLDINGS INC",
+        "weight_pct": 6.15,
+        "shares": 117000
+      },
+      {
+        "id": "3037",
+        "name": "欣興",
+        "weight_pct": 4.67,
+        "shares": 2600000
+      },
+      {
+        "id": "009150 KS",
+        "name": "Samsung Electro-Mechanics co(009150 ks)",
+        "weight_pct": 4.52,
+        "shares": 70000
+      },
+      {
+        "id": "2383",
+        "name": "台光電",
+        "weight_pct": 4.37,
+        "shares": 420000
+      },
+      {
+        "id": "6981 JP",
+        "name": "MURATA MANUFACTURING CO LTD",
+        "weight_pct": 3.94,
+        "shares": 1350000
+      },
+      {
+        "id": "BE US",
+        "name": "BLOOM ENERGY CORP- A",
+        "weight_pct": 3.77,
+        "shares": 250000
+      },
+      {
+        "id": "MU US",
+        "name": "MICRON TECHNOLOGY INC",
+        "weight_pct": 3.64,
+        "shares": 60000
+      },
+      {
+        "id": "SPCX US",
+        "name": "SPACE EXPLORATION TECHN-CL A",
+        "weight_pct": 3.53,
+        "shares": 400000
+      },
+      {
+        "id": "STX US",
+        "name": "SEAGATE TECHNOLOGY",
+        "weight_pct": 3.04,
+        "shares": 60000
+      },
+      {
+        "id": "PANW US",
+        "name": "PALO ALTO NETWORKS INC",
+        "weight_pct": 2.98,
+        "shares": 150000
+      },
+      {
+        "id": "CRCL US",
+        "name": "CIRCLE INTERNET GROUP INC",
+        "weight_pct": 2.92,
+        "shares": 480000
+      },
+      {
+        "id": "TSEM US",
+        "name": "TOWER SEMICONDUCTOR LTD",
+        "weight_pct": 2.88,
+        "shares": 216825
+      },
+      {
+        "id": "3017",
+        "name": "奇鋐",
+        "weight_pct": 2.85,
+        "shares": 440000
+      },
+      {
+        "id": "MSFT US",
+        "name": "MICROSOFT CORP(微軟公司)",
+        "weight_pct": 2.74,
+        "shares": 92000
+      },
+      {
+        "id": "SNOW US",
+        "name": "SNOWFLAKE INC-CLASS A(Snowflake公司)",
+        "weight_pct": 2.62,
+        "shares": 130000
+      },
+      {
+        "id": "2308",
+        "name": "台達電",
+        "weight_pct": 2.52,
+        "shares": 720000
+      },
+      {
+        "id": "285A JP",
+        "name": "KIOXIA HOLDINGS CORP",
+        "weight_pct": 2.51,
+        "shares": 110000
+      },
+      {
+        "id": "NVDA US",
+        "name": "NVIDIA CORP(輝達公司)",
+        "weight_pct": 2.41,
+        "shares": 175000
+      },
+      {
+        "id": "PLTR US",
+        "name": "PALANTIR TECHNOLOGIES INC-A",
+        "weight_pct": 2.34,
+        "shares": 225000
+      },
+      {
+        "id": "2454",
+        "name": "聯發科",
+        "weight_pct": 2.25,
+        "shares": 250000
+      },
+      {
+        "id": "HOOD US",
+        "name": "ROBINHOOD MARKETS INC - A",
+        "weight_pct": 2.19,
+        "shares": 300120
+      },
+      {
+        "id": "AMD US",
+        "name": "ADVANCED MICRO DEVICES.amd us(超微半導體公司)",
+        "weight_pct": 2.14,
+        "shares": 75000
+      },
+      {
+        "id": "2330",
+        "name": "台積電",
+        "weight_pct": 2.1,
+        "shares": 450000
+      },
+      {
+        "id": "NOW US",
+        "name": "SERVICENOW INC",
+        "weight_pct": 1.94,
+        "shares": 230000
+      },
+      {
+        "id": "IFX GY",
+        "name": "INFINEON TECHNOLOGIES AG",
+        "weight_pct": 1.79,
+        "shares": 425000
+      },
+      {
+        "id": "3308 HK",
+        "name": "ZHONGJI INNOLIGHT CO LTD-H",
+        "weight_pct": 1.56,
+        "shares": 170000
+      },
+      {
+        "id": "4979",
+        "name": "華星光",
+        "weight_pct": 1.49,
+        "shares": 1330000
+      },
+      {
+        "id": "992 HK",
+        "name": "LENOVO GROUP LTD",
+        "weight_pct": 1.48,
+        "shares": 6000000
+      },
+      {
+        "id": "6997 JP",
+        "name": "NIPPON CHEMI-CON CORP",
+        "weight_pct": 1.4,
+        "shares": 1275100
+      },
+      {
+        "id": "SNDK US",
+        "name": "SANDISK CORP",
+        "weight_pct": 1.35,
+        "shares": 13000
+      },
+      {
+        "id": "6515",
+        "name": "穎崴",
+        "weight_pct": 1.32,
+        "shares": 100000
+      },
+      {
+        "id": "000660 KS",
+        "name": "SK HYNIX INC",
+        "weight_pct": 1.19,
+        "shares": 15000
+      },
+      {
+        "id": "TER US",
+        "name": "TERADYNE INC",
+        "weight_pct": 1.17,
+        "shares": 55000
+      },
+      {
+        "id": "NET US",
+        "name": "CLOUDFLARE INC - CLASS A",
+        "weight_pct": 1.17,
+        "shares": 70000
+      },
+      {
+        "id": "300757 CH",
+        "name": "ROBOTECHNIK INTELLIGENT TE-A",
+        "weight_pct": 1.01,
+        "shares": 179997
+      },
+      {
+        "id": "2303",
+        "name": "聯電",
+        "weight_pct": 0.95,
+        "shares": 3500000
+      },
+      {
+        "id": "TWLO US",
+        "name": "TWILIO INC - A",
+        "weight_pct": 0.76,
+        "shares": 55000
+      },
+      {
+        "id": "5801 JP",
+        "name": "FURUKAWA ELECTRIC CO LTD",
+        "weight_pct": 0.74,
+        "shares": 500000
+      },
+      {
+        "id": "AEM US",
+        "name": "AGNICO EAGLE MINES LTD",
+        "weight_pct": 0.73,
+        "shares": 60000
+      },
+      {
+        "id": "DASH US",
+        "name": "DOORDASH INC - A",
+        "weight_pct": 0.63,
+        "shares": 50000
+      },
+      {
+        "id": "AIXA GY",
+        "name": "AIXTRON SE",
+        "weight_pct": 0.54,
+        "shares": 200000
+      },
+      {
+        "id": "4180 JP",
+        "name": "APPIER GROUP INC",
+        "weight_pct": 0.53,
+        "shares": 950000
+      },
+      {
+        "id": "NTRA US",
+        "name": "NATERA INC",
+        "weight_pct": 0.49,
+        "shares": 25000
+      },
+      {
+        "id": "6274",
+        "name": "台燿",
+        "weight_pct": 0.34,
+        "shares": 130000
+      }
+    ]
   }
 }
