@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-08 10:36:54",
+  "generated": "2026-09-09 10:32:29",
   "source": "cmoney.tw/forum/stock",
   "count": 112,
   "coverage": {
@@ -13,35 +13,35 @@
       "group": "電子中游",
       "concepts": [
         {
-          "id": "C50921",
-          "name": "3DIC聯盟",
-          "avg_pct": 0.22
+          "id": "C50922",
+          "name": "GB300",
+          "avg_pct": 0.78
         },
         {
-          "id": "C50901",
-          "name": "氣候變遷",
-          "avg_pct": 0.19
+          "id": "C50908",
+          "name": "太陽能",
+          "avg_pct": 0.65
         },
         {
-          "id": "C50874",
-          "name": "虛擬貨幣",
-          "avg_pct": 0.15
+          "id": "C50510",
+          "name": "智慧城市",
+          "avg_pct": 0.5
         },
         {
-          "id": "C50900",
-          "name": "碳權",
-          "avg_pct": 0.06
+          "id": "C50070",
+          "name": "Tesla",
+          "avg_pct": 0.33
         },
         {
-          "id": "C50881",
-          "name": "元宇宙",
-          "avg_pct": 0.03
+          "id": "C50500",
+          "name": "電動車",
+          "avg_pct": 0.25
         }
       ],
       "category_id": "C23170",
       "category_full": "電子中游-電源供應器",
       "name": "台達電子",
-      "checked_at_utc": "2026-09-08T10:36:54.116681Z"
+      "checked_at_utc": "2026-09-09T10:32:28.319375Z"
     },
     "6274": {
       "category": "PCB-材料設備",
