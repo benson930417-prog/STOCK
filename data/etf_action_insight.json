@@ -1,9 +1,9 @@
 {
   "schema_version": 2,
-  "generated": "2026-09-09T10:32:31+00:00",
-  "source_generated": "2026-09-09 10:32:29",
-  "as_of": "2026-09-09",
-  "line_text": "主動 ETF 動作\n━━━━━━━━━━━━━━\n截至：9月9日\n判定規則\n逐股10日門檻\n一般：顯著＋2/3同向\n1/3：只留建倉・出清\n1/3：或反轉連續 2 日\n續抱：10日4買＋2ETF\n顯示升級／降溫距離\n\n🔴 買進觀察｜1 檔\n01. 旺矽科技｜6223\n  類股：IC-封測\n  動作：賣後轉買\n  ETF：991\n  判定：1/3 反轉2日\n  狀態：今日觸發\n  進度：\n    恢復強勢尚缺\n    再 2 次顯著買\n    淨買尚差 +0.34%\n  依據：\n    先前明顯減碼\n    現在轉為買進\n\n━━━━━━━━━━━━━━\n🟠 續抱參考｜0 檔\n本日無續抱確認\n\n━━━━━━━━━━━━━━\n🟢 賣出警示｜0 檔\n本日無新賣出訊號",
+  "generated": "2026-09-10T10:33:23+00:00",
+  "source_generated": "2026-09-10 10:33:21",
+  "as_of": "2026-09-10",
+  "line_text": "主動 ETF 動作\n━━━━━━━━━━━━━━\n截至：9月10日\n判定規則\n逐股10日門檻\n一般：顯著＋2/3同向\n1/3：只留建倉・出清\n1/3：或反轉連續 2 日\n續抱：10日4買＋2ETF\n顯示升級／降溫距離\n\n🔴 買進觀察｜1 檔\n01. 旺矽科技｜6223\n  類股：IC-封測\n  動作：賣後轉買\n  ETF：991\n  判定：1/3 反轉2日\n  狀態：昨日觸發\n  進度：\n    恢復強勢尚缺\n    再 2 次顯著買\n    淨買尚差 +0.14%\n  依據：\n    先前明顯減碼\n    現在轉為買進\n\n━━━━━━━━━━━━━━\n🟠 續抱參考｜0 檔\n本日無續抱確認\n\n━━━━━━━━━━━━━━\n🟢 賣出警示｜0 檔\n本日無新賣出訊號",
   "signals": {
     "buying": [
       {
@@ -40,21 +40,20 @@
         "event_type": "sell_to_buy",
         "event_label": "賣後轉買",
         "event_date": "2026-09-09",
-        "age_sessions": 0,
+        "age_sessions": 1,
         "prior_net": -0.5812,
         "prior_buy_days": 2,
         "prior_sell_days": 4,
         "confirmation_label": "同方向連續 2 個交易日",
         "reason": "991 剛轉為買進；08/18–08/28 曾明顯減碼",
-        "lifecycle_label": "今日觸發",
-        "current_confirmation_date": "2026-09-09",
-        "age_display": "current",
+        "lifecycle_label": "昨日觸發",
+        "age_display": "prior",
         "buy_days": 2,
-        "sell_days": 2,
+        "sell_days": 1,
         "conviction_qualified": false,
         "previous_conviction_qualified": false,
-        "progress_label": "恢復強勢續抱尚缺：再 2 個顯著買進日；10日淨買再 +0.34%",
-        "evidence_expires_in": 9,
+        "progress_label": "恢復強勢續抱尚缺：再 2 個顯著買進日；10日淨買再 +0.14%",
+        "evidence_expires_in": 8,
         "qualification_kind": "exception",
         "qualification_label": "1/3 反轉2日",
         "etf_label": "991",
@@ -64,11 +63,6 @@
         ],
         "significance_label": "各 ETF 均高於此股近10日慣常動作門檻",
         "flow_trend_20d": [
-          {
-            "date": "2026-08-13",
-            "flow": 0,
-            "breadth": 0
-          },
           {
             "date": "2026-08-14",
             "flow": 0,
@@ -163,6 +157,11 @@
             "date": "2026-09-09",
             "flow": 0.4934,
             "breadth": 1
+          },
+          {
+            "date": "2026-09-10",
+            "flow": 0,
+            "breadth": 0
           }
         ]
       }
