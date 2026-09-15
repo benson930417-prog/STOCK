@@ -1,27 +1,5 @@
-﻿#!/usr/bin/env python3
-"""
-Three-page LINE Bot Rich Menu setup.
-
-Page 1 top:    油價 | 黃金 | 匯率 | 債券 | 融資餘額
-Page 1 bottom: 市場脈動 | 吳大師 | ETF共識 | 那斯達克24h | ▶更多
-Page 2 top:    00878 | 00981A | 00988A | 00403A
-Page 2 bottom: ◀上一頁 | 00891 | 00830 | ▶更多
-Page 3 top:    009805 | 009820 | 0056 | 00918
-Page 3 bottom: ◀上一頁 | 0050 | 00991A | 首頁
-
-Colour convention
-  TW stocks  →  blue  (37, 99, 235)
-  US stocks  →  red   (220, 38, 38)
-  Oil        →  orange-red  (194, 65, 12)
-  FX         →  teal  (13, 148, 136)
-  Bond       →  green (21, 128, 61)
-  Gold       →  amber (202, 138, 4)
-  Nav        →  slate (71, 85, 105)
-
-Usage:
-    cd /home/ubuntu/STOCK && source venv/bin/activate
-    python scripts/setup_rich_menu.py
-"""
+#!/usr/bin/env python3
+"""Retained overseas markets and public ETF menus; replace only after verification."""
 import io
 import json
 import os
@@ -58,19 +36,14 @@ DIM_TEXT = (55,  70,  95)
 # tap:         text to send  | alias id           | None
 
 PAGE1 = [
-    # Row 1 — fast market
-    (0,    0, 500, 843, "油", "油價",     "輕原油／布蘭特", (194,  65,  12), "message", "油價",     False),
-    (500,  0, 500, 843, "金", "黃金",     "黃金現貨",       (202, 138,   4), "message", "黃金",     False),
-    (1000, 0, 500, 843, "匯", "匯率",     "美元／日圓／瑞郎", (13, 148, 136), "message", "匯率",     False),
-    (1500, 0, 500, 843, "債", "債券",     "美10年期公債",    (21, 128,  61), "message", "債券",     False),
-    (2000, 0, 500, 843, "資", "融資餘額", "槓桿風險",       (124,  58, 237), "message", "融資餘額", False),
-    # Row 2 — five direct actions; ETF 共識 returns 2 cached decision images.
-    (0,    843, 500, 843, "脈", "市場脈動", "加權狀態",       ( 99, 102, 241), "message",        "市場脈動", False),
-    (500,  843, 500, 843, "師", "吳大師",   "持股總覽",       (180,  83,   9), "message",        "吳大師", False),
-    (1000, 843, 500, 843, "共", "ETF 共識", "觀察・買・賣",    (239,  68,  68), "message",        "ETF共識", False),
-    (1500, 843, 500, 843, "納", "那斯達克", "24 小時",         (  8, 145, 178), "message",        "那斯達克", False),
-    (2000, 843, 500, 843, ">", "更多",     "ETF第二頁",      ( 71,  85, 105), "richmenuswitch", ALIAS_P2, True),
+    (0, 0, 833, 843, "油", "油價", "輕原油／布蘭特", (194,65,12), "message", "油價", False),
+    (833, 0, 833, 843, "金", "黃金", "黃金現貨", (202,138,4), "message", "黃金", False),
+    (1666, 0, 834, 843, "匯", "匯率", "美元／日圓／瑞郎", (13,148,136), "message", "匯率", False),
+    (0, 843, 833, 843, "債", "債券", "美10年期公債", (21,128,61), "message", "債券", False),
+    (833, 843, 833, 843, "納", "那斯達克", "24 小時", (8,145,178), "message", "那斯達克", False),
+    (1666, 843, 834, 843, ">", "ETF", "公開持股資料", (71,85,105), "richmenuswitch", ALIAS_P2, True),
 ]
+
 
 PAGE2 = [
     # Row 1 — primary ETF watchlist
@@ -239,33 +212,10 @@ def _headers(token):
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
-def delete_all_menus(token):
-    h = {"Authorization": f"Bearer {token}"}
-    r = requests.get("https://api.line.me/v2/bot/richmenu/list", headers=h, timeout=10)
-    if r.status_code != 200:
-        return
-    for menu in r.json().get("richmenus", []):
-        mid = menu["richMenuId"]
-        requests.delete(f"https://api.line.me/v2/bot/richmenu/{mid}", headers=h, timeout=10)
-        print(f"  Deleted menu: {mid}")
 
 
-def delete_alias(token, alias_id):
-    h = {"Authorization": f"Bearer {token}"}
-    requests.delete(f"https://api.line.me/v2/bot/richmenu/alias/{alias_id}", headers=h, timeout=10)
 
 
-def create_alias(token, alias_id, menu_id):
-    r = requests.post(
-        "https://api.line.me/v2/bot/richmenu/alias",
-        headers=_headers(token),
-        data=json.dumps({"richMenuAliasId": alias_id, "richMenuId": menu_id}).encode(),
-        timeout=10,
-    )
-    if r.status_code not in (200, 201):
-        print(f"  Alias warning: {r.status_code} {r.text[:80]}")
-    else:
-        print(f"  Alias created: {alias_id} → {menu_id}")
 
 
 def create_menu(token, cells, label, chat_bar_text):
@@ -327,44 +277,49 @@ def main():
     token = get_secret("LINE_CHANNEL_ACCESS_TOKEN")
     if not token:
         sys.exit("LINE_CHANNEL_ACCESS_TOKEN not found")
-
-    print("Building images...")
-    img1 = build_image(PAGE1)
-    img2 = build_image(PAGE2)
-    img3 = build_image(PAGE3)
-
+    base = "https://api.line.me/v2/bot"
+    headers = _headers(token)
+    response = requests.get(base + "/richmenu/list", headers=headers, timeout=15)
+    response.raise_for_status()
+    old_menus = response.json()["richmenus"]
+    labels = ["Stock Menu Page 1", "Stock Menu Page 2", "Stock Menu Page 3"]
+    aliases = [ALIAS_P1, ALIAS_P2, ALIAS_P3]
+    response = requests.get(base + "/richmenu/alias/list", headers=headers, timeout=15)
+    response.raise_for_status()
+    existing = {item["richMenuAliasId"] for item in response.json()["aliases"]}
+    created = []
     preview_dir = DATA_DIR / "images"
     preview_dir.mkdir(parents=True, exist_ok=True)
-    img1.save(preview_dir / "rich_menu_page1.jpg", format="JPEG", quality=93)
-    img2.save(preview_dir / "rich_menu_page2.jpg", format="JPEG", quality=93)
-    img3.save(preview_dir / "rich_menu_page3.jpg", format="JPEG", quality=93)
-    print("  Previews saved → data/images/rich_menu_page1.jpg + page2.jpg + page3.jpg")
-
-    print("Cleaning up old menus & aliases...")
-    delete_alias(token, ALIAS_P1)
-    delete_alias(token, ALIAS_P2)
-    delete_alias(token, ALIAS_P3)
-    delete_all_menus(token)
-
-    print("Creating menus...")
-    mid1 = create_menu(token, PAGE1, "Stock Menu Page 1", "查詢選單 ▲")
-    mid2 = create_menu(token, PAGE2, "Stock Menu Page 2", "查詢選單 ▲")
-    mid3 = create_menu(token, PAGE3, "Stock Menu Page 3", "查詢選單 ▲")
-
-    print("Uploading images...")
-    upload_image(token, mid1, img1)
-    upload_image(token, mid2, img2)
-    upload_image(token, mid3, img3)
-
-    print("Creating aliases...")
-    create_alias(token, ALIAS_P1, mid1)
-    create_alias(token, ALIAS_P2, mid2)
-    create_alias(token, ALIAS_P3, mid3)
-
-    print("Setting page 1 as default...")
-    set_default(token, mid1)
-
-    print(f"\nDone.\n  Page 1: {mid1}\n  Page 2: {mid2}\n  Page 3: {mid3}")
+    for index, cells in enumerate([PAGE1, PAGE2, PAGE3]):
+        img = build_image(cells)
+        img.save(preview_dir / f"rich_menu_page{index+1}.jpg", format="JPEG", quality=93)
+        menu = create_menu(token, cells, labels[index], "查詢選單 ▲")
+        upload_image(token, menu, img)
+        created.append(menu)
+    # LINE requires every new menu image to exist before its alias is updated.
+    # API contract: https://developers.line.biz/en/reference/messaging-api/#update-rich-menu-alias
+    for alias, menu in zip(aliases, created):
+        if alias in existing:
+            response = requests.post(base + "/richmenu/alias/" + alias, headers=headers,
+                                     json={"richMenuId": menu}, timeout=15)
+        else:
+            response = requests.post(base + "/richmenu/alias", headers=headers,
+                                     json={"richMenuAliasId": alias, "richMenuId": menu}, timeout=15)
+        response.raise_for_status()
+    set_default(token, created[0])
+    for alias, menu in zip(aliases, created):
+        response = requests.get(base + "/richmenu/alias/" + alias, headers=headers, timeout=15)
+        response.raise_for_status()
+        assert response.json()["richMenuId"] == menu
+    response = requests.get(base + "/user/all/richmenu", headers=headers, timeout=15)
+    response.raise_for_status()
+    assert response.json()["richMenuId"] == created[0]
+    # Delete only this application's replaced menus, after verified cutover.
+    for old in old_menus:
+        if old.get("name") in labels and old["richMenuId"] not in created:
+            response = requests.delete(base + "/richmenu/" + old["richMenuId"], headers=headers, timeout=15)
+            response.raise_for_status()
+    print("Three retained-feature menus published and aliases verified; no broadcast sent.")
 
 
 if __name__ == "__main__":

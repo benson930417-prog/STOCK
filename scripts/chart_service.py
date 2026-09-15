@@ -1,8 +1,10 @@
 import os
 import asyncio
+import time
 import hashlib
 import urllib.request
 import re
+import sys
 from io import BytesIO
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -10,6 +12,13 @@ from playwright.async_api import async_playwright
 from PIL import Image, ImageDraw, ImageFont
 
 app = FastAPI()
+
+
+def _log(message):
+    """Write service logs even when the host console cannot encode Unicode."""
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    safe = str(message).encode(encoding, errors="backslashreplace").decode(encoding)
+    print(safe, flush=True)
 
 # Configuration
 CHART_TABS = {
@@ -87,20 +96,29 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'fonts')
 FONT_PATH = os.path.join(FONT_DIR, 'NotoSansTC-Regular.otf')
 
-if not os.path.exists(FONT_PATH):
+def _ensure_cjk_font():
+    if os.path.exists(FONT_PATH):
+        return
     os.makedirs(FONT_DIR, exist_ok=True)
     try:
         url = 'https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/TraditionalChinese/NotoSansCJKtc-Regular.otf'
         urllib.request.urlretrieve(url, FONT_PATH)
-        print(f"✅ Downloaded CJK font to {FONT_PATH}")
+        _log(f"✅ Downloaded CJK font to {FONT_PATH}")
     except Exception as e:
-        print(f"⚠️ Failed to auto-download CJK font: {e}")
+        _log(f"⚠️ Failed to auto-download CJK font: {e}")
 
 # Global State
 playwright_instance = None
 browser_context = None
 browser_instance = None
 pages = {}
+browser_navigations = 0
+browser_started_at = 0.0
+# A single tab can still retain renderer/worker memory across navigations.
+# Recycle the whole browser between requests, never during a screenshot.
+BROWSER_MAX_NAVIGATIONS = 3
+BROWSER_MAX_AGE_SECONDS = 120
+browser_request_lock = asyncio.Lock()
 
 GENERIC_SNAPSHOT_VIEWPORT = {"width": 720, "height": 860}
 NASDAQ_SNAPSHOT_VIEWPORT = {"width": 1200, "height": 900}
@@ -381,7 +399,7 @@ async def _fetch_tradingview_scanner_quote(page, key):
         }
     requested = ", ".join(f"{item['scanner']}/{item['symbol']}" for item in candidates)
     if config.get("allow_dom_fallback"):
-        print(f"⚠️ TradingView scanner unavailable for {requested}; falling back to page text: {'; '.join(errors)}")
+        _log(f"⚠️ TradingView scanner unavailable for {requested}; falling back to page text: {'; '.join(errors)}")
         return None
     raise ValueError(f"TradingView scanner failed for {requested}: {'; '.join(errors)}")
 
@@ -445,6 +463,7 @@ def _debug_text_slice(text):
 
 def _overlay_title(image_path, title):
     """Draw a Chinese title bar on top of the chart screenshot."""
+    _ensure_cjk_font()
     img = Image.open(image_path).convert("RGB")
     w, h = img.size
 
@@ -471,7 +490,7 @@ def _overlay_title(image_path, title):
     draw.line([(0, bar_height - 1), (w, bar_height - 1)], fill="#E5E5E5", width=1)
 
     new_img.save(image_path)
-    print(f"  🖌️ Title overlay added: {title}")
+    _log(f"  🖌️ Title overlay added: {title}")
 
 
 def _trim_bottom_whitespace(image_path, padding=18, min_trim=24, max_body_height=None):
@@ -498,7 +517,7 @@ def _trim_bottom_whitespace(image_path, padding=18, min_trim=24, max_body_height
         crop_bottom = min(crop_bottom, max_body_height)
     if height - crop_bottom >= min_trim:
         img.crop((0, 0, width, crop_bottom)).save(image_path)
-        print(f"  ✂️ Trimmed bottom whitespace: {height - crop_bottom}px")
+        _log(f"  ✂️ Trimmed bottom whitespace: {height - crop_bottom}px")
 
 
 def _chart_snapshot_has_content(image_path, min_colored_ratio=0.002):
@@ -519,41 +538,37 @@ def _chart_snapshot_has_content(image_path, min_colored_ratio=0.002):
 
 async def init_browser():
     global playwright_instance, browser_instance, browser_context, pages
+    global browser_navigations, browser_started_at
 
-    print("🧹 Cleaning up old browser instances...")
+    _log("🧹 Cleaning up old browser instances...")
     if browser_instance:
         try:
             await browser_instance.close()
         except Exception as e:
-            print(f"⚠️ Error closing browser_instance: {e}")
+            _log(f"⚠️ Error closing browser_instance: {e}")
     if playwright_instance:
         try:
             await playwright_instance.stop()
         except Exception as e:
-            print(f"⚠️ Error stopping playwright_instance: {e}")
+            _log(f"⚠️ Error stopping playwright_instance: {e}")
     pages.clear()
+    browser_context = None
+    browser_instance = None
+    playwright_instance = None
+    browser_navigations = 0
+    browser_started_at = 0.0
 
-    print("🚀 Initializing Browser...")
+    _log("🚀 Initializing Browser...")
     playwright_instance = await async_playwright().start()
     browser_instance = await playwright_instance.chromium.launch(headless=True)
     browser_context = await browser_instance.new_context(
         viewport={'width': 600, 'height': 800},
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        timezone_id="Asia/Taipei"
+        timezone_id="Asia/Taipei",
+        locale="en-US",
     )
-    
-    for key, url in CHART_TABS.items():
-        print(f"  - Loading tab: {key}")
-        page = await browser_context.new_page()
-        try:
-            await page.goto(url, wait_until="networkidle", timeout=60000)
-            await page.add_style_tag(content=HIDE_CSS)
-            await asyncio.sleep(2)
-            pages[key] = page
-        except Exception as e:
-            print(f"❌ Failed to load {key}: {e}")
-
-    print("✅ All tabs ready.")
+    browser_started_at = time.monotonic()
+    _log("✅ Browser ready; chart pages load on demand.")
 
 @app.on_event("startup")
 async def startup_event():
@@ -576,15 +591,173 @@ class SnapshotRequest(BaseModel):
 
 
 async def _get_page_for_key(key):
-    if key not in pages:
+    global browser_context, browser_instance
+    global browser_navigations
+
+    if key not in CHART_TABS:
+        raise HTTPException(status_code=404, detail="Tab key not found")
+
+    if (
+        browser_context is None
+        or browser_instance is None
+        or not browser_instance.is_connected()
+        or browser_navigations >= BROWSER_MAX_NAVIGATIONS
+        or (browser_started_at and
+            time.monotonic() - browser_started_at >= BROWSER_MAX_AGE_SECONDS)
+    ):
         await init_browser()
-        if key not in pages:
-            raise HTTPException(status_code=404, detail="Tab key not found")
-    return pages[key]
+
+    existing = pages.get(key)
+    if existing is not None and not existing.is_closed():
+        return existing
+
+    # The cache monitor is deliberately sequential. Keeping eight live
+    # TradingView renderers consumed ~1.9 GiB even though only one was touched
+    # at a time. Re-navigate the single resident page so Chromium never has to
+    # overlap an exiting renderer with a newly-created one.
+    page = next(iter(pages.values()), None)
+    if page is None or page.is_closed():
+        page = await browser_context.new_page()
+    pages.clear()
+    try:
+        # TradingView chooses the mobile/desktop symbol-page structure during
+        # initial navigation.  Changing to 1200px only after the page loaded
+        # intermittently left NASDAQ without its range controls.  Size first,
+        # then navigate, so the original IG chart and overlay keep one layout.
+        await page.set_viewport_size(
+            NASDAQ_SNAPSHOT_VIEWPORT
+            if key == "nasdaq"
+            else GENERIC_SNAPSHOT_VIEWPORT
+        )
+        # Count attempts as well as successes; repeated failed navigations can
+        # retain resources too, and must not bypass browser recycling.
+        browser_navigations += 1
+        await page.goto(CHART_TABS[key], wait_until="networkidle", timeout=60000)
+        # NASDAQ must click the visible range control first.  Hiding its parent
+        # before the click made React sometimes omit/replace that control.
+        if key != "nasdaq":
+            await page.add_style_tag(content=HIDE_CSS)
+        await asyncio.sleep(2)
+    except Exception as exc:
+        await page.close()
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not load chart page {key}: {type(exc).__name__}: {exc}",
+        ) from exc
+    pages[key] = page
+    return page
+
+
+@app.middleware("http")
+async def serialize_browser_requests(request, call_next):
+    if request.url.path in {"/market-text", "/market-debug", "/snapshot"}:
+        async with browser_request_lock:
+            return await call_next(request)
+    return await call_next(request)
 
 
 async def _get_body_text(page):
     return await page.locator("body").evaluate("(body) => body.textContent || body.innerText || ''")
+
+
+async def _select_ig_nasdaq_one_day(page):
+    """Wait for the real IG range control, select it, then freeze the layout."""
+    page_text = (await _get_body_text(page))[:1000]
+    if "403 ERROR" in page_text or "The request could not be satisfied" in page_text:
+        raise HTTPException(
+            status_code=503,
+            detail=f"TradingView upstream blocked: {page_text[:300]}",
+        )
+
+    one_day = page.get_by_role("button", name="1 day", exact=True)
+    await one_day.wait_for(state="attached", timeout=20000)
+    await one_day.click(timeout=5000)
+
+    selected_class = ""
+    for _ in range(30):
+        selected_class = str(await one_day.get_attribute("class") or "")
+        aria_pressed = str(await one_day.get_attribute("aria-pressed") or "").lower()
+        aria_selected = str(await one_day.get_attribute("aria-selected") or "").lower()
+        if (
+            re.search(r"(^|\s)selected-[^\s]+", selected_class)
+            or aria_pressed == "true"
+            or aria_selected == "true"
+        ):
+            break
+        await asyncio.sleep(0.2)
+    else:
+        raise ValueError(
+            "IG 1 day control did not become selected: "
+            + (selected_class or "missing selected state")
+        )
+
+    # The click starts an intraday fetch and canvas repaint. Network-idle is a
+    # useful hint but not a gate because TradingView keeps background requests
+    # alive.  Pixel validation below remains the final proof.
+    try:
+        await page.wait_for_load_state("networkidle", timeout=10000)
+    except Exception as wait_exc:
+        _log(
+            "  ⚠ NASDAQ networkidle wait after 1-day click skipped: "
+            f"{type(wait_exc).__name__}: {wait_exc}"
+        )
+    await asyncio.sleep(1.5)
+
+    # Apply the original screenshot layout only after the control has done its
+    # work. Reloads discard injected CSS, so every attempt applies it again.
+    await page.add_style_tag(content=HIDE_CSS)
+    await page.evaluate("window.scrollTo(0, 0)")
+    await asyncio.sleep(0.4)
+    return {"selected": True, "className": selected_class}
+
+
+async def _ig_nasdaq_chart_clip(page, req):
+    """Measure the original TradingView canvas without changing overlay scale."""
+    measured = await page.evaluate("""() => {
+        const viewportWidth = window.innerWidth;
+        const charts = Array.from(document.querySelectorAll('canvas'))
+            .map(canvas => canvas.getBoundingClientRect())
+            .filter(rect =>
+                rect.width >= viewportWidth * 0.70
+                && rect.height >= 180
+                && rect.top >= 0
+                && rect.top < window.innerHeight
+            )
+            .sort((a, b) => a.top - b.top || b.width * b.height - a.width * a.height);
+        if (!charts.length) return null;
+        const chart = charts[0];
+        const axes = Array.from(document.querySelectorAll('canvas'))
+            .map(canvas => canvas.getBoundingClientRect())
+            .filter(rect =>
+                rect.width >= viewportWidth * 0.70
+                && rect.height >= 12
+                && rect.height <= 70
+                && rect.top >= chart.bottom - 4
+                && rect.top <= chart.bottom + 80
+            );
+        const axisBottom = axes.length
+            ? Math.max(...axes.map(rect => rect.bottom))
+            : chart.bottom;
+        const top = Math.max(0, chart.top + window.scrollY - 24);
+        const bottom = Math.max(chart.bottom, axisBottom) + window.scrollY + 18;
+        return {
+            x: 0,
+            y: top,
+            width: viewportWidth,
+            height: Math.max(280, Math.min(450, bottom - top)),
+        };
+    }""")
+    if not measured:
+        raise ValueError("IG NASDAQ chart canvas geometry is unavailable")
+    if req.crop_y is not None:
+        measured["y"] = float(req.crop_y)
+    if req.crop_height is not None:
+        measured["height"] = float(req.crop_height)
+    # The overlay was measured against the 1200-wide IG chart. Dynamic Y/height
+    # is safe; changing X/width would move every session marker.
+    measured["x"] = 0
+    measured["width"] = NASDAQ_SNAPSHOT_VIEWPORT["width"]
+    return measured
 
 
 async def _compute_market_quote(page, key):
@@ -598,7 +771,7 @@ async def _compute_market_quote(page, key):
         try:
             quote = await _extract_market_quote(page)
         except Exception as dom_error:
-            print(f"⚠️ DOM quote extraction failed for {key}: {dom_error}")
+            _log(f"⚠️ DOM quote extraction failed for {key}: {dom_error}")
             text = await _get_body_text(page)
             quote = _parse_market_text(text)
     elif not (TRADINGVIEW_SCANNER_QUOTES.get(key) or {}).get("skip_dom_performance_overlay"):
@@ -614,7 +787,7 @@ async def _compute_market_quote(page, key):
                 if dom_perf.get(k) is not None:
                     perf[k] = dom_perf[k]
         except Exception as e:
-            print(f"⚠️ Could not overlay DOM perf for {key}: {e}")
+            _log(f"⚠️ Could not overlay DOM perf for {key}: {e}")
     return quote
 
 
@@ -623,7 +796,6 @@ async def market_text(req: SnapshotRequest):
     page = await _get_page_for_key(req.key)
     try:
         if req.key == "nasdaq":
-            await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
             await page.evaluate("window.scrollTo(0, 0)")
             await asyncio.sleep(0.8)
             quote = await _extract_ig_nasdaq_quote(page)
@@ -631,7 +803,7 @@ async def market_text(req: SnapshotRequest):
         quote = await _compute_market_quote(page, req.key)
         return _market_text_payload(req.key, quote)
     except Exception as e:
-        print(f"❌ Error parsing market text for {req.key}: {e}")
+        _log(f"❌ Error parsing market text for {req.key}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/market-debug")
@@ -676,7 +848,10 @@ async def take_snapshot(req: SnapshotRequest):
     try:
         page_text = (await _get_body_text(page))[:1000]
         if "403 ERROR" in page_text or "The request could not be satisfied" in page_text:
-            raise ValueError(f"TradingView page is blocked: {page_text[:300]}")
+            raise HTTPException(
+                status_code=503,
+                detail=f"TradingView upstream blocked: {page_text[:300]}",
+            )
 
         # Always scroll to top first — defends against the page being scrolled
         # to footer for any reason. Without this the viewport snapshot fallback
@@ -688,75 +863,20 @@ async def take_snapshot(req: SnapshotRequest):
             # IG:NASDAQ; the image must come from the same symbol overview
             # chart, not TradingView's lower white performance widget.
             nasdaq_viewport = NASDAQ_SNAPSHOT_VIEWPORT
-            default_clip = {"x": 0, "y": 490, "width": nasdaq_viewport["width"], "height": 345}
-            clip = {
-                "x": 0,
-                "y": float(req.crop_y) if req.crop_y is not None else default_clip["y"],
-                "width": nasdaq_viewport["width"],
-                "height": float(req.crop_height) if req.crop_height is not None else default_clip["height"],
-            }
             await page.set_viewport_size(nasdaq_viewport)
 
             async def _load_ig_page_and_select_1d(reload_page):
                 if reload_page:
-                    await page.reload(wait_until="networkidle", timeout=60000)
-                else:
-                    await page.goto(CHART_TABS[req.key], wait_until="networkidle", timeout=60000)
-                await page.evaluate("window.scrollTo(0, 0)")
-                await asyncio.sleep(1)
-                selection = await page.evaluate("""() => {
-                    const controls = Array.from(document.querySelectorAll(
-                        'button[class*="rangeButton-"], button, a, [role="button"]'
-                    ));
-                    const oneDay = controls.find(
-                        el => (el.textContent || '').trim().toLowerCase() === '1 day'
-                    );
-                    if (!oneDay) {
-                        return {clicked: false, reason: '1 day control not found'};
-                    }
-                    oneDay.click();
-                    return {
-                        clicked: true,
-                        text: (oneDay.textContent || '').trim(),
-                        className: String(oneDay.className || ''),
-                    };
-                }""")
-                if not selection.get("clicked"):
-                    raise ValueError(
-                        selection.get("reason") or "1 day click failed"
+                    # A blank canvas means the current React document is not a
+                    # trustworthy recovery base. Navigate from the canonical
+                    # URL again, then wait for the actual range control. This
+                    # also re-checks a 403/skeleton response on every attempt.
+                    await page.goto(
+                        CHART_TABS["nasdaq"],
+                        wait_until="domcontentloaded",
+                        timeout=60000,
                     )
-                # Clicking "1 day" re-fetches the intraday series and repaints
-                # the chart canvas; wait for the fetch to go idle, then give the
-                # canvas a moment to finish painting.
-                try:
-                    await page.wait_for_load_state("networkidle", timeout=15000)
-                except Exception as wait_exc:
-                    print(f"  ⚠ NASDAQ networkidle wait after 1-day click skipped: "
-                          f"{type(wait_exc).__name__}: {wait_exc}")
-                await asyncio.sleep(2)
-                selected = await page.evaluate("""() => {
-                    const controls = Array.from(document.querySelectorAll(
-                        'button[class*="rangeButton-"], button'
-                    ));
-                    const oneDay = controls.find(
-                        el => (el.textContent || '').trim().toLowerCase() === '1 day'
-                    );
-                    if (!oneDay) {
-                        return {found: false, selected: false, className: ''};
-                    }
-                    const className = String(oneDay.className || '');
-                    return {
-                        found: true,
-                        selected: /(^|\\s)selected-[^\\s]+/.test(className),
-                        className,
-                    };
-                }""")
-                if not selected.get("found") or not selected.get("selected"):
-                    raise ValueError(
-                        "IG 1 day control did not become selected: "
-                        + str(selected.get("className") or "missing")
-                    )
-                return selected
+                return await _select_ig_nasdaq_one_day(page)
 
             # The IG-NASDAQ page sometimes loads in a transient
             # "Market closed / No trades" feed state: the quote block shows no
@@ -786,15 +906,24 @@ async def take_snapshot(req: SnapshotRequest):
                             f"attempt {attempt + 1}: 1-day selection failed: "
                             f"{type(range_exc).__name__}: {range_exc}"
                         )
-                        print(f"  ⚠ NASDAQ {failures[-1]}, reloading")
+                        _log(f"  ⚠ NASDAQ {failures[-1]}, reloading")
                         continue
-                    # Fixed against the IG symbol-page layout after pressing
-                    # 1 day. Optional crop_* request fields let us tune this
-                    # live with curl without restarting the Playwright service.
-                    await page.screenshot(path=tmp_filepath, clip=clip)
+                    # TradingView moves the chart when its header/CSS changes,
+                    # so measure Y/height from the actual 1-day canvas while
+                    # keeping the overlay's original 1200-wide X scale.
+                    try:
+                        clip = await _ig_nasdaq_chart_clip(page, req)
+                        await page.screenshot(path=tmp_filepath, clip=clip)
+                    except Exception as capture_exc:
+                        failures.append(
+                            f"attempt {attempt + 1}: chart capture failed: "
+                            f"{type(capture_exc).__name__}: {capture_exc}"
+                        )
+                        _log(f"  ⚠ NASDAQ {failures[-1]}, reloading")
+                        continue
                     if not _chart_snapshot_has_content(tmp_filepath):
                         failures.append(f"attempt {attempt + 1}: captured chart area is blank")
-                        print(f"  ⚠ NASDAQ {failures[-1]}, reloading")
+                        _log(f"  ⚠ NASDAQ {failures[-1]}, reloading")
                         continue
                     # Read the price/% from the SAME page render that produced
                     # the chart so the cached text matches the chart exactly.
@@ -804,7 +933,7 @@ async def take_snapshot(req: SnapshotRequest):
                     except Exception as quote_exc:
                         failures.append(f"attempt {attempt + 1}: same-moment quote failed: "
                                         f"{type(quote_exc).__name__}: {quote_exc}")
-                        print(f"  ⚠ NASDAQ {failures[-1]}, reloading")
+                        _log(f"  ⚠ NASDAQ {failures[-1]}, reloading")
                         continue
                     break
                 else:
@@ -821,14 +950,14 @@ async def take_snapshot(req: SnapshotRequest):
                 try:
                     from overlay_market_sessions import overlay_sessions_on_file
                     overlay_sessions_on_file(tmp_filepath)
-                    print("  🕒 Trading-session overlay added")
+                    _log("  🕒 Trading-session overlay added")
                 except Exception as overlay_exc:
-                    print(f"  ⚠ Session overlay skipped: {type(overlay_exc).__name__}: {overlay_exc}")
+                    _log(f"  ⚠ Session overlay skipped: {type(overlay_exc).__name__}: {overlay_exc}")
                 os.replace(tmp_filepath, filepath)
             finally:
                 if os.path.exists(tmp_filepath):
                     os.remove(tmp_filepath)
-            print(f"  ✅ NASDAQ IG page snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
+            _log(f"  ✅ NASDAQ IG page snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
             integrity = _snapshot_integrity(filepath)
             return {"status": "success", "url": filename, "path": filepath, "clip": clip,
                     "viewport": nasdaq_viewport, "quote": quote, "text": text,
@@ -947,7 +1076,7 @@ async def take_snapshot(req: SnapshotRequest):
 
         if clip and clip["width"] >= 250 and clip["height"] >= 120:
             await page.screenshot(path=filepath, clip=clip)
-            print(f"  ✅ Snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
+            _log(f"  ✅ Snapshot saved: {filename} (clip: y={clip['y']:.0f} h={clip['height']:.0f})")
         else:
             # Last-resort: take only the UPPER part of the viewport. Bounded
             # rectangle avoids accidentally returning the footer/cookies area
@@ -957,7 +1086,7 @@ async def take_snapshot(req: SnapshotRequest):
                 path=filepath,
                 clip={"x": 0, "y": 40, "width": GENERIC_SNAPSHOT_VIEWPORT["width"], "height": 540},
             )
-            print(f"  ⚠ Snapshot fallback to upper-viewport bounded clip: {filename}")
+            _log(f"  ⚠ Snapshot fallback to upper-viewport bounded clip: {filename}")
 
         # Read the quote from the SAME page state as the screenshot so the
         # cached text price matches the chart. Done right after the screenshot
@@ -968,7 +1097,7 @@ async def take_snapshot(req: SnapshotRequest):
             quote = await _compute_market_quote(page, req.key)
             text = _market_text_payload(req.key, quote)["text"]
         except Exception as quote_exc:
-            print(f"  ⚠ {req.key} same-moment quote failed: {type(quote_exc).__name__}: {quote_exc}")
+            _log(f"  ⚠ {req.key} same-moment quote failed: {type(quote_exc).__name__}: {quote_exc}")
 
         # --- Overlay Chinese title ---
         meta = CHART_META.get(req.key)
@@ -987,8 +1116,10 @@ async def take_snapshot(req: SnapshotRequest):
             "text": text,
             **integrity,
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"❌ Error during snapshot for {req.key}: {e}")
+        _log(f"❌ Error during snapshot for {req.key}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

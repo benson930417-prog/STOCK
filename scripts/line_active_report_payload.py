@@ -1,14 +1,18 @@
-"""Build the single safe LINE batch: one insight text plus active ETF images."""
+"""Build one LINE batch of holding dates and four basic active ETF reports."""
 from __future__ import annotations
 
-import json
 from pathlib import Path
+import sys
 import time
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.market_db import load_holding_history  # noqa: E402
+
 DATA_DIR = ROOT / "data"
-ACTION_CACHE = DATA_DIR / "etf_action_insight.json"
 WEBHOOK_HOST = "https://linechatbot.duckdns.org"
 LINE_MAX_OBJECTS = 5
 MAX_ACTIVE_IMAGES = LINE_MAX_OBJECTS - 1
@@ -35,10 +39,11 @@ ACTIVE_SHORT_NAMES = {
 }
 
 
-def _latest_history_date(ticker: str, data_dir: Path) -> str:
-    path = data_dir / f"etf_{ticker}_history.json"
-    with path.open(encoding="utf-8") as fh:
-        return max(json.load(fh).keys())
+def _latest_history_date(ticker: str, history_loader=load_holding_history) -> str:
+    history = history_loader(str(ticker))
+    if not history:
+        raise RuntimeError(f"market.db has no complete holding history for {ticker}")
+    return max(history)
 
 
 def _mobile_date(value: str) -> str:
@@ -49,21 +54,13 @@ def _mobile_date(value: str) -> str:
         return value
 
 
-def _action_text(cache_path: Path) -> str:
-    payload = json.loads(cache_path.read_text(encoding="utf-8"))
-    text = str(payload.get("line_text") or "").strip()
-    if not text:
-        raise RuntimeError(f"{cache_path} has no line_text")
-    return text
-
-
 def build_active_report_messages(
     tickers: list[str],
     *,
     data_dir: Path = DATA_DIR,
-    action_cache: Path = ACTION_CACHE,
     webhook_host: str = WEBHOOK_HOST,
     cache_buster: int | None = None,
+    history_loader=load_holding_history,
 ) -> list[dict]:
     if not tickers:
         raise ValueError("at least one active ETF is required")
@@ -79,10 +76,10 @@ def build_active_report_messages(
             [
                 f"{ETF_SHORT.get(ticker, ticker)}｜"
                 f"{ACTIVE_SHORT_NAMES.get(ticker, ACTIVE_NAMES.get(ticker, ticker))}",
-                f"　　日期：{_mobile_date(_latest_history_date(ticker, data_dir))}",
+                f"　　日期：{_mobile_date(_latest_history_date(ticker, history_loader))}",
             ]
         )
-    text = "\n".join(header_lines) + "\n\n" + _action_text(action_cache)
+    text = "\n".join(header_lines)
     messages = [{"type": "text", "text": text}]
     for ticker in tickers:
         img_url = (

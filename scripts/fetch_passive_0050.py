@@ -14,6 +14,31 @@ URL = "https://www.yuantaetfs.com/product/detail/0050/ratio"
 NAV_HISTORY_URL = "https://www.yuantaetfs.com/tradeInfo/comparison/0050/NAVhistory#table"
 
 
+HOLDINGS_TABLE_READY = r"""() => {
+    const headings = [...document.querySelectorAll('h3')];
+    const named = headings.find(node => {
+        const text = (node.innerText || '').replace(/\s+/g, '').toLowerCase();
+        return text.includes('\u57fa\u91d1\u6b0a\u91cd-\u80a1\u7968')
+            || text.includes('fundholding')
+            || text.includes('stockholding');
+    });
+    const structural = [...headings].reverse().find(node => {
+        const box = node.closest('.tt-list')?.parentElement;
+        if (!box || !box.querySelector('.moreBtn')) return false;
+        return [...box.querySelectorAll('.tbody .tr')].filter(row => {
+            const cells = [...row.children];
+            return cells.length >= 4 && /^\d{4,6}[a-z]?$/i.test(cells[0].innerText.trim());
+        }).length >= 5;
+    });
+    const heading = named || structural;
+    if (!heading) return false;
+    const box = heading.closest('.tt-list')?.parentElement;
+    return !!box && [...box.querySelectorAll('.tbody .tr')].filter(
+        row => row.children.length >= 4
+    ).length >= 5;
+}"""
+
+
 def _num(value):
     text = str(value or "").replace(",", "").replace("NTD", "").replace("$", "").strip()
     if not text:
@@ -45,12 +70,46 @@ def _write_json(path, payload):
         fh.write("\n")
 
 
+def _wait_for_holdings_table(page):
+    """Wait for Yuanta's client-rendered holdings table, not network-idle.
+
+    The issuer page can report network-idle while its Vue component is still
+    empty.  It also localizes the heading independently of the URL.  Waiting
+    for actual rows and reloading a stalled component prevents a transient
+    hydration miss from failing every Yuanta ticker in the nightly chain.
+    """
+
+    for attempt in range(6):
+        try:
+            page.wait_for_function(HOLDINGS_TABLE_READY, timeout=6000)
+            return
+        except Exception:
+            pass
+        page.wait_for_timeout(1200)
+        if attempt in {1, 3}:
+            try:
+                page.reload(wait_until="domcontentloaded", timeout=60000)
+            except Exception:
+                pass
+    raise ValueError(f"Missing hydrated {TICKER} stock weight table after retries")
+
+
 def _extract_page_data(page):
+    _wait_for_holdings_table(page)
     for _ in range(8):
         clicked = page.evaluate(
             """() => {
-                const tableTitle = [...document.querySelectorAll('h3')]
-                    .find(node => node.innerText.includes('\\u57fa\\u91d1\\u6b0a\\u91cd-\\u80a1\\u7968'));
+                const headings = [...document.querySelectorAll('h3')];
+                const tableTitle = headings.find(node => {
+                    const text = (node.innerText || '').replace(/\\s+/g, '').toLowerCase();
+                    return text.includes('\\u57fa\\u91d1\\u6b0a\\u91cd-\\u80a1\\u7968')
+                        || text.includes('fundholding')
+                        || text.includes('stockholding');
+                }) || [...headings].reverse().find(node => {
+                    const box = node.closest('.tt-list')?.parentElement;
+                    return !!box?.querySelector('.moreBtn')
+                        && box.querySelectorAll('.tbody .tr').length >= 5;
+                });
                 if (!tableTitle) return false;
                 const tableBox = tableTitle.closest('.tt-list')?.parentElement;
                 const more = [...tableBox.querySelectorAll('.moreBtn')]
@@ -67,8 +126,17 @@ def _extract_page_data(page):
     data = page.evaluate(
         """() => {
             const text = document.body.innerText;
-            const tableTitle = [...document.querySelectorAll('h3')]
-                .find(node => node.innerText.includes('\\u57fa\\u91d1\\u6b0a\\u91cd-\\u80a1\\u7968'));
+            const headings = [...document.querySelectorAll('h3')];
+            const tableTitle = headings.find(node => {
+                const value = (node.innerText || '').replace(/\\s+/g, '').toLowerCase();
+                return value.includes('\\u57fa\\u91d1\\u6b0a\\u91cd-\\u80a1\\u7968')
+                    || value.includes('fundholding')
+                    || value.includes('stockholding');
+            }) || [...headings].reverse().find(node => {
+                const box = node.closest('.tt-list')?.parentElement;
+                return !!box?.querySelector('.moreBtn')
+                    && box.querySelectorAll('.tbody .tr').length >= 5;
+            });
             if (!tableTitle) throw new Error('Missing stock weight table');
             const tableBox = tableTitle.closest('.tt-list')?.parentElement;
             const rows = [...tableBox.querySelectorAll('.tbody .tr')].map(row => {
@@ -186,14 +254,10 @@ def _extract_nav_history(page):
 
     rows = []
     for match in row_pattern.finditer(table_text):
-        premium = _num(match.group(4))
         rows.append(
             {
                 "date": _date_to_key(match.group(1)),
                 "nav": _num(match.group(2)),
-                "closing_price": _num(match.group(3)),
-                "premium_discount": premium,
-                "premium_discount_pct": _num(match.group(5)),
                 "fund_net_assets": int(_num(match.group(6))),
                 "outstanding_units": int(_num(match.group(7))),
             }
@@ -206,7 +270,6 @@ def _extract_nav_history(page):
     previous = rows[1]
     latest["deltas"] = {
         "nav_pct": _pct_change(latest["nav"], previous["nav"]),
-        "closing_price_pct": _pct_change(latest["closing_price"], previous["closing_price"]),
         "fund_net_assets_pct": _pct_change(latest["fund_net_assets"], previous["fund_net_assets"]),
         "outstanding_units_pct": _pct_change(latest["outstanding_units"], previous["outstanding_units"]),
     }
@@ -228,11 +291,13 @@ def fetch_and_update_0050():
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36"
-            )
+            ),
+            locale="zh-TW",
+            extra_http_headers={"Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8"},
         )
-        page.goto(URL, wait_until="networkidle", timeout=60000)
+        page.goto(URL, wait_until="domcontentloaded", timeout=60000)
         date_key, payload = _extract_page_data(page)
-        page.goto(NAV_HISTORY_URL, wait_until="networkidle", timeout=60000)
+        page.goto(NAV_HISTORY_URL, wait_until="domcontentloaded", timeout=60000)
         nav_history = _extract_nav_history(page)
         browser.close()
 
@@ -241,10 +306,7 @@ def fetch_and_update_0050():
         {
             "fund_size": latest_nav["fund_net_assets"],
             "nav": latest_nav["nav"],
-            "closing_price": latest_nav["closing_price"],
             "outstanding_units": latest_nav["outstanding_units"],
-            "premium_discount": latest_nav["premium_discount"],
-            "premium_discount_pct": latest_nav["premium_discount_pct"],
             "nav_history": nav_history,
         }
     )

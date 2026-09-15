@@ -1,16 +1,25 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from datetime import datetime, timedelta, timezone
+from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
 from scripts import monitor_market_charts
+from api import webhook
+from src import market_chart_cache
 from src.market_chart_cache import (
+    effective_market_cache_max_age,
+    MARKET_CACHE_STALE_FALLBACK_SECONDS,
     MarketImageChecksumMismatch,
+    NASDAQ_CLOSED_CACHE_MAX_AGE_SECONDS,
     file_sha256,
     freeze_market_reply_image,
+    market_cache_freshness,
 )
 
 
@@ -58,6 +67,93 @@ class MarketChartCacheTests(unittest.TestCase):
             cache.pop("snapshot_sha256")
             with self.assertRaises(MarketImageChecksumMismatch):
                 freeze_market_reply_image(cache, images)
+
+    def test_nasdaq_weekend_cache_matches_the_real_closed_market(self) -> None:
+        london = ZoneInfo("Europe/London")
+        saturday = datetime(2026, 8, 22, 20, 55, tzinfo=london)
+        sunday_open = datetime(2026, 8, 23, 23, 1, tzinfo=london)
+        self.assertEqual(
+            NASDAQ_CLOSED_CACHE_MAX_AGE_SECONDS,
+            effective_market_cache_max_age("nasdaq", 240, now=saturday),
+        )
+        self.assertEqual(
+            240,
+            effective_market_cache_max_age("nasdaq", 240, now=sunday_open),
+        )
+        self.assertEqual(
+            240,
+            effective_market_cache_max_age("oil", 240, now=saturday),
+        )
+
+    def test_short_upstream_outage_serves_explicitly_stale_cache(self) -> None:
+        now = datetime(2026, 8, 24, 19, 47, 58, tzinfo=timezone.utc)
+        status = market_cache_freshness(
+            "nasdaq",
+            "2026-08-24T19:40:00Z",
+            240,
+            stale_fallback_seconds=MARKET_CACHE_STALE_FALLBACK_SECONDS,
+            now=now,
+        )
+        self.assertTrue(status["is_stale"])
+        self.assertTrue(status["can_serve"])
+        self.assertEqual(478, status["age_seconds"])
+
+    def test_long_outage_rejects_cache_beyond_bounded_fallback(self) -> None:
+        now = datetime(2026, 8, 24, 20, 34, 1, tzinfo=timezone.utc)
+        status = market_cache_freshness(
+            "nasdaq",
+            "2026-08-24T20:00:00Z",
+            240,
+            stale_fallback_seconds=MARKET_CACHE_STALE_FALLBACK_SECONDS,
+            now=now,
+        )
+        self.assertTrue(status["is_stale"])
+        self.assertFalse(status["can_serve"])
+
+    def test_stale_line_reply_is_labeled_in_plain_language(self) -> None:
+        text = webhook._cached_market_reply_text({
+            "text": "那斯達克 NASDAQ\n最新報價：28,937.50 USD",
+            "updated_at": "2026-08-24T19:40:00Z",
+            "_cache_age_seconds": 478,
+            "_cache_is_stale": True,
+        })
+        self.assertIn("以下為 8 分鐘前快取", text)
+        self.assertIn("台北 03:40", text)
+        self.assertNotIn("RuntimeError", text)
+
+    def test_webhook_freezes_integrity_checked_image_during_short_outage(self) -> None:
+        data = b"last successful nasdaq chart"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            images = root / "data" / "images"
+            cache_dir = root / "data" / "quote_cache"
+            images.mkdir(parents=True)
+            cache_dir.mkdir(parents=True)
+            (images / "nasdaq_chart.png").write_bytes(data)
+            updated_at = (
+                datetime.now(timezone.utc) - timedelta(seconds=478)
+            ).isoformat().replace("+00:00", "Z")
+            (cache_dir / "market_nasdaq.json").write_text(
+                json.dumps({
+                    "key": "nasdaq",
+                    "updated_at": updated_at,
+                    "text": "NASDAQ quote",
+                    "snapshot_url": "nasdaq_chart.png",
+                    "snapshot_sha256": hashlib.sha256(data).hexdigest(),
+                }),
+                encoding="utf-8",
+            )
+            with (
+                patch.object(webhook, "parent_dir", str(root)),
+                patch.object(
+                    market_chart_cache,
+                    "nasdaq_ig_market_is_open",
+                    return_value=True,
+                ),
+            ):
+                cache, frozen_name = webhook._freeze_cached_market_reply("nasdaq")
+            self.assertTrue(cache["_cache_is_stale"])
+            self.assertEqual(data, (images / frozen_name).read_bytes())
 
     def test_monitor_commits_service_verified_checksum(self) -> None:
         data = b"same-moment chart"
@@ -111,6 +207,125 @@ class MarketChartCacheTests(unittest.TestCase):
                     "changed before cache commit",
                 ):
                     monitor_market_charts.refresh_key("nasdaq", 10)
+
+    def test_upstream_block_stops_the_cycle_and_uses_long_backoff(self) -> None:
+        blocked = monitor_market_charts.ChartServiceUnavailable(
+            "TradingView upstream blocked",
+            retry_after_seconds=monitor_market_charts.UPSTREAM_BLOCKED_BACKOFF_SECONDS,
+        )
+        with patch.object(
+            monitor_market_charts,
+            "refresh_key",
+            side_effect=blocked,
+        ) as refresh:
+            backoff = monitor_market_charts.refresh_cycle(
+                ["oil", "brent", "bond"],
+                10,
+            )
+
+        self.assertEqual(
+            monitor_market_charts.UPSTREAM_BLOCKED_BACKOFF_SECONDS,
+            backoff,
+        )
+        refresh.assert_called_once_with("oil", 10)
+
+    def test_503_block_detail_is_classified_for_backoff(self) -> None:
+        response = Mock()
+        response.status_code = 503
+        response.json.return_value = {
+            "detail": "TradingView upstream blocked: 403 ERROR"
+        }
+        with patch.object(
+            monitor_market_charts.requests,
+            "post",
+            return_value=response,
+        ):
+            with self.assertRaises(
+                monitor_market_charts.ChartServiceUnavailable
+            ) as raised:
+                monitor_market_charts.post_chart_service("snapshot", "oil", 10)
+
+        self.assertEqual(
+            monitor_market_charts.UPSTREAM_BLOCKED_BACKOFF_SECONDS,
+            raised.exception.retry_after_seconds,
+        )
+
+    def test_shared_outage_backoff_is_exponential_and_bounded(self) -> None:
+        self.assertEqual(300, monitor_market_charts.upstream_blocked_backoff_seconds(1))
+        self.assertEqual(600, monitor_market_charts.upstream_blocked_backoff_seconds(2))
+        self.assertEqual(1200, monitor_market_charts.upstream_blocked_backoff_seconds(3))
+        self.assertEqual(1800, monitor_market_charts.upstream_blocked_backoff_seconds(4))
+        self.assertEqual(1800, monitor_market_charts.upstream_blocked_backoff_seconds(20))
+
+    def test_shared_outage_cooldown_survives_process_restart(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            state_path = Path(tmp) / "outage.json"
+            with patch.object(monitor_market_charts, "OUTAGE_STATE_PATH", state_path):
+                delay = monitor_market_charts.record_outage(3, now_epoch=1000)
+                state = monitor_market_charts.load_outage_state(now_epoch=1001)
+                self.assertEqual(1200, delay)
+                self.assertEqual(3, state["consecutive_outages"])
+                self.assertEqual(2200, state["next_retry_epoch"])
+                stale = monitor_market_charts.load_outage_state(
+                    now_epoch=1000 + monitor_market_charts.UPSTREAM_BLOCKED_STATE_MAX_AGE_SECONDS + 1
+                )
+                self.assertEqual(0, stale["consecutive_outages"])
+                monitor_market_charts.clear_outage_state()
+                self.assertFalse(state_path.exists())
+
+    def test_shared_block_does_not_starve_independent_nasdaq(self) -> None:
+        with (
+            patch.object(
+                monitor_market_charts,
+                "refresh_cycle",
+                side_effect=[
+                    monitor_market_charts.UPSTREAM_BLOCKED_BACKOFF_SECONDS,
+                    0,
+                ],
+            ) as refresh,
+            patch.object(
+                monitor_market_charts,
+                "record_outage",
+                return_value=600,
+            ) as record,
+        ):
+            state = monitor_market_charts.refresh_iteration(
+                ["oil", "brent", "nasdaq"],
+                10,
+                consecutive_outages=0,
+                next_retry_epoch=0,
+                now_epoch=1000,
+            )
+
+        self.assertEqual(
+            [call.args[0] for call in refresh.call_args_list],
+            [["oil", "brent"], ["nasdaq"]],
+        )
+        record.assert_called_once_with(1, now_epoch=1000.0)
+        self.assertEqual(
+            state,
+            {"consecutive_outages": 1, "next_retry_epoch": 1600.0},
+        )
+
+    def test_persisted_shared_cooldown_refreshes_only_nasdaq(self) -> None:
+        with patch.object(
+            monitor_market_charts,
+            "refresh_cycle",
+            return_value=0,
+        ) as refresh:
+            state = monitor_market_charts.refresh_iteration(
+                ["oil", "brent", "nasdaq"],
+                10,
+                consecutive_outages=3,
+                next_retry_epoch=2200,
+                now_epoch=1001,
+            )
+
+        refresh.assert_called_once_with(["nasdaq"], 10)
+        self.assertEqual(
+            state,
+            {"consecutive_outages": 3, "next_retry_epoch": 2200},
+        )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,12 @@
+[Unit]
+Description=Run derived STOCK jobs at 19:20 Taiwan time
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 11:20:00 UTC
+AccuracySec=30s
+RandomizedDelaySec=0
+Persistent=false
+Unit=stock-derived-1920-tw.service
+
+[Install]
+WantedBy=timers.target

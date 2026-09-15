@@ -4,6 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+Slice=stock-background.slice
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/STOCK

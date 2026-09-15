@@ -1,15 +1,33 @@
 [Unit]
-Description=00403A/00981A/00988A/00991A/0050/00830/00878/00891/00918/009805/009820 ETF 18:30 Taiwan Fetch and Notify Service
+Description=Fetch and seal issuer ETF holdings only
 After=network-online.target
 Wants=network-online.target
+# Both hosts run unattended overnight and neither had any way to speak: a
+# failed unit ended the day in silence, and the first sign of it was the
+# next morning.  Written here rather than in a drop-in because a drop-in is
+# what hid the market.db bind and the whole chain wiring from this file.
+OnFailure=stock-alert@%n.service
+OnSuccess=stock-market-holdings.service
+
 
 [Service]
+Slice=stock-background.slice
 Type=oneshot
 User=ubuntu
+Group=ubuntu
+SupplementaryGroups=stock-tasks
 WorkingDirectory=/home/ubuntu/STOCK
-ExecStart=/usr/bin/bash /home/ubuntu/STOCK/scripts/update_and_notify.sh 00403A 00981A 00988A 00991A 0050 00830 00878 00891 00918 009805 009820
-StandardOutput=append:/home/ubuntu/STOCK/daily_fetch_1830_tw.log
-StandardError=append:/home/ubuntu/STOCK/daily_fetch_1830_tw.log
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStartPre=-/usr/local/sbin/stock-task-ledger start ARM_HOLDINGS_FETCH
+ExecStart=/usr/bin/flock -n /var/lib/stock/market/holdings-fetch.lock /home/ubuntu/STOCK/venv/bin/python /home/ubuntu/STOCK/scripts/run_issuer_holdings_fetch.py
+ExecStopPost=-/usr/local/sbin/stock-task-ledger finish-systemd ARM_HOLDINGS_FETCH
+TimeoutStartSec=50min
+UMask=0027
+Nice=5
+ReadWritePaths=/var/lib/stock-order/task-ledger
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=stock-issuer-holdings-fetch
 
 [Install]
 WantedBy=multi-user.target

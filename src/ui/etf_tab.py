@@ -3,8 +3,9 @@ from datetime import datetime, timezone
 
 import pandas as pd
 import plotly.express as px
-import requests
 import streamlit as st
+
+from src.market_db import daily_close_map, load_holding_history
 
 
 def render_etf_tab(
@@ -84,15 +85,8 @@ def render_etf_tab(
               pass
     # ----------------------
 
-    etf_file = DATA_DIR / f"etf_{etf_ticker}_history.json"
-
-    history_data = {}
-    if etf_file.exists():
-         try:
-              with open(etf_file, "r", encoding="utf-8") as fl:
-                   history_data = json.loads(fl.read())
-         except Exception:
-              pass
+    history_data = load_holding_history(etf_ticker)
+    market_closes = daily_close_map(etf_ticker)
               
     dates = sorted(list(history_data.keys()), reverse=True)
     if not dates:
@@ -173,22 +167,13 @@ def render_etf_tab(
                 fund_size = curr_meta.get("fund_size", 0)
                 nav = curr_meta.get("nav", 0)
                 
-                # Use EXACT daily closing price for accurate comparison
-                market_price = curr_meta.get("closing_price")
-                
-                if not market_price:
-                    # Fallback for live operations
-                    market_price = nav
-                    try:
-                        import requests
-                        res = requests.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{etf_ticker}.TW", headers={'User-Agent': 'Mozilla/5.0'}, timeout=2)
-                        if res.status_code == 200:
-                            market_price = res.json()['chart']['result'][0]['meta']['regularMarketPrice']
-                    except Exception:
-                        pass
-                
-                premium_pct = 0.0
-                if nav and nav > 0:
+                # Historical market price has exactly one source: canonical
+                # market.db daily_bars. Never fall back to issuer metadata or
+                # a second network quote in this historical panel.
+                market_price = market_closes.get(selected_date)
+
+                premium_pct = None
+                if nav and nav > 0 and market_price is not None:
                     premium_pct = ((market_price - nav) / nav) * 100
                 
                 # Top Metadata Cards
@@ -217,8 +202,17 @@ def render_etf_tab(
                     else:
                         st.metric(T(lang, "Fund Size", "基金規模"), "N/A")
                 with m2:
-                    st.metric(T(lang, "Premium/Discount", "折溢價"), f"{premium_pct:+.2f}%", 
-                              delta_color=delta_color_param, help=f"{T(lang, 'Market Price:', '股價:')} {market_price:.2f} | {T(lang, 'NAV:', '淨值:')} {nav:.2f}" if nav else "")
+                    premium_text = "N/A" if premium_pct is None else f"{premium_pct:+.2f}%"
+                    help_text = ""
+                    if nav and market_price is not None:
+                        help_text = (
+                            f"{T(lang, 'Market Price:', '股價:')} {market_price:.2f} | "
+                            f"{T(lang, 'NAV:', '淨值:')} {nav:.2f} | ARM market.db"
+                        )
+                    st.metric(
+                        T(lang, "Premium/Discount", "折溢價"), premium_text,
+                        delta_color=delta_color_param, help=help_text,
+                    )
                               
                 # Calculate Differences
                 prev_map = { h['id']: h for h in prev_data.get('holdings', []) }
@@ -497,14 +491,8 @@ def render_passive_etf_tab(
         except Exception:
             pass
 
-    etf_file = DATA_DIR / f"passive_{etf_ticker}_history.json"
-    history_data = {}
-    if etf_file.exists():
-        try:
-            with open(etf_file, "r", encoding="utf-8") as fl:
-                history_data = json.loads(fl.read())
-        except Exception:
-            pass
+    history_data = load_holding_history(etf_ticker)
+    market_closes = daily_close_map(etf_ticker)
 
     dates = sorted(list(history_data.keys()), reverse=True)
     if not dates:
@@ -542,10 +530,17 @@ def render_passive_etf_tab(
                 return None
             return (curr_v - prev_v) / prev_v * 100.0
 
-        deltas = dict(latest_nav.get("deltas") or {})
+        deltas = {
+            key: value
+            for key, value in dict(latest_nav.get("deltas") or {}).items()
+            if key != "closing_price_pct"
+        }
         deltas.setdefault("fund_net_assets_pct", _pct_change(meta.get("fund_size"), prev_meta.get("fund_size")))
         deltas.setdefault("nav_pct", _pct_change(meta.get("nav"), prev_meta.get("nav")))
-        deltas.setdefault("closing_price_pct", _pct_change(meta.get("closing_price"), prev_meta.get("closing_price")))
+        previous_date = dates[curr_idx + 1] if curr_idx + 1 < len(dates) else None
+        close_price = market_closes.get(selected_date)
+        previous_close = market_closes.get(previous_date) if previous_date else None
+        deltas["closing_price_pct"] = _pct_change(close_price, previous_close)
         deltas.setdefault("outstanding_units_pct", _pct_change(meta.get("outstanding_units"), prev_meta.get("outstanding_units")))
 
         def _fmt_pct(value):
@@ -560,15 +555,11 @@ def render_passive_etf_tab(
         if latest_nav or meta.get("fund_size") or meta.get("nav") or meta.get("outstanding_units"):
             fund_size = latest_nav.get("fund_net_assets", meta.get("fund_size"))
             nav = latest_nav.get("nav", meta.get("nav"))
-            close_price = latest_nav.get("closing_price", meta.get("closing_price"))
             premium = None
             premium_pct = None
             if nav and close_price:
                 premium = float(close_price) - float(nav)
                 premium_pct = premium / float(nav) * 100.0
-            else:
-                premium = latest_nav.get("premium_discount", meta.get("premium_discount"))
-                premium_pct = latest_nav.get("premium_discount_pct", meta.get("premium_discount_pct"))
             units = latest_nav.get("outstanding_units", meta.get("outstanding_units"))
 
             metric_cols = st.columns(5)

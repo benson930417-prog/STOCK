@@ -1,6 +1,16 @@
 import json
 import os
+import sys
+import hashlib
+from contextlib import contextmanager
+from pathlib import Path
 from playwright.sync_api import sync_playwright
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from src.market_db import daily_close_map, load_holding_history  # noqa: E402
+from src.summary_contract import canonical_sha256, market_revision
 
 SUMMARY_DIR = os.path.join("data", "summaries")
 ETFS = [
@@ -10,9 +20,8 @@ ETFS = [
     ("00991A", "主動復華未來50 (00991A)"),
 ]
 
-def load_data(json_path):
-    if not os.path.exists(json_path): return None, None, None, None
-    with open(json_path, 'r', encoding='utf-8') as f: history = json.load(f)
+def load_data(ticker):
+    history = load_holding_history(str(ticker))
     if not history: return None, None, None, None
     dates = sorted(history.keys(), reverse=True)
     if len(dates) < 2: return dates[0], history[dates[0]], None, None
@@ -49,7 +58,7 @@ def _holding_map(day):
         result[holding["id"]] = holding
     return result
 
-def render_html(title, data_curr, date_curr, data_prev, date_prev):
+def render_html(title, data_curr, date_curr, data_prev, date_prev, market_price=None):
     if not data_curr:
         return False
     first_snapshot = not data_prev or not date_prev
@@ -63,10 +72,10 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
     fs_c = meta_c.get('fund_size', 0)
     fs_p = meta_p.get('fund_size', 0)
     nav_c = meta_c.get('nav', 0)
-    price_c = meta_c.get('closing_price', 0)
+    price_c = market_price
     
     fs_diff_pct = ((fs_c - fs_p)/fs_p*100) if fs_p else 0.0
-    prem_pct = ((price_c - nav_c)/nav_c*100) if nav_c else 0.0
+    prem_pct = ((price_c - nav_c)/nav_c*100) if nav_c and price_c is not None else None
     fs_str = f"{fs_c/100000000:.0f}&nbsp;億" # Use &nbsp; to prevent wrapping
     
     if abs(fs_diff_pct) < 0.005:
@@ -76,7 +85,10 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
         fs_diff_str = f"{fs_diff_pct:+.2f}%"
         fs_color_class = "text-[#CC2400]" if fs_diff_pct > 0 else "text-[#258C18]"
         
-    if abs(prem_pct) < 0.005:
+    if prem_pct is None:
+        prem_str = "N/A"
+        prem_color_class = "text-gray-700 bg-gray-100"
+    elif abs(prem_pct) < 0.005:
         prem_str = "0.00%"
         prem_color_class = "text-gray-700 bg-gray-100"
     else:
@@ -236,19 +248,68 @@ def render_html(title, data_curr, date_curr, data_prev, date_prev):
     """
     return html
 
+@contextmanager
+def input_lock(market_dir):
+    import fcntl
+    import time
+    with (market_dir / "write.lock").open("a+b") as handle:
+        deadline = time.monotonic() + 1800
+        while True:
+            try:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("canonical summary input lock unavailable")
+                time.sleep(0.5)
+        yield
+
+
+def capture_inputs(tickers, market_dir):
+    from scripts.daily_line_publish import _validate_import
+    with input_lock(market_dir):
+        manifest = json.loads((market_dir / "holdings-fetch.json").read_text(encoding="utf-8"))
+        _validate_import(market_dir / "market.db", manifest["trading_date"], manifest)
+        evidence = {"schema_version": 1, "fetch_run_id": manifest["run_id"],
+                    "manifest_sha256": canonical_sha256(manifest),
+                    "market_revision": market_revision(market_dir / "market.db"), "histories": {}}
+        inputs = {}
+        for ticker, title in tickers:
+            date_curr, data_curr, date_prev, data_prev = load_data(ticker)
+            if not date_curr or not data_curr:
+                raise ValueError(f"missing canonical holding data for {ticker}")
+            prices = daily_close_map(ticker)
+            inputs[ticker] = (title, data_curr, date_curr, data_prev, date_prev, prices.get(date_curr))
+            evidence["histories"][ticker] = {date_curr: data_curr}
+            if date_prev and data_prev:
+                evidence["histories"][ticker][date_prev] = data_prev
+    return inputs, evidence
+
+
 def generate(selected_tickers=None):
     os.makedirs(SUMMARY_DIR, exist_ok=True)
     selected_tickers = set(selected_tickers or [])
+    tickers = [(ticker, title) for ticker, title in ETFS if not selected_tickers or ticker in selected_tickers]
+    market_dir = Path(os.environ.get("STOCK_GLOBAL_MARKET_DB", "/var/lib/stock/market/market.db")).parent
+    inputs, evidence = capture_inputs(tickers, market_dir)
+    # All database reads have finished. Browser/CDN/rendering never holds the
+    # market writer lock, and all four images describe the same captured inputs.
+    evidence["images"] = {}
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(device_scale_factor=2)
 
-        for ticker, title in ETFS:
-            if selected_tickers and ticker not in selected_tickers:
-                continue
-            date_curr, data_curr, date_prev, data_prev = load_data(f"data/etf_{ticker}_history.json")
-            html = render_html(title, data_curr, date_curr, data_prev, date_prev)
+        for ticker, _ in tickers:
+            title, data_curr, date_curr, data_prev, date_prev, market_price = inputs[ticker]
+            html = render_html(
+                title,
+                data_curr,
+                date_curr,
+                data_prev,
+                date_prev,
+                market_price=market_price,
+            )
             if html:
                 page.set_content(html, wait_until="domcontentloaded")
                 try:
@@ -263,8 +324,14 @@ def generate(selected_tickers=None):
                     quality=95,
                 )
                 print(f"Saved {ticker} latest image")
+                image = Path(SUMMARY_DIR) / f"etf_{ticker}_summary_latest.jpg"
+                evidence["images"][ticker] = hashlib.sha256(image.read_bytes()).hexdigest()
 
         browser.close()
+    if len(evidence["images"]) != len(tickers):
+        raise ValueError("summary image set is incomplete")
+    from scripts.daily_line_publish import atomic_write_json
+    atomic_write_json(Path(SUMMARY_DIR) / "summary-inputs.json", evidence)
 
 if __name__ == '__main__':
     generate()

@@ -26,6 +26,7 @@ import threading
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 # Ensure the root STOCK directory is in sys.path so 'scripts' can be imported dynamically
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,8 +34,10 @@ if parent_dir not in sys.path:
     sys.path.append(parent_dir)
 
 from src.market_chart_cache import (  # noqa: E402
+    MARKET_CACHE_STALE_FALLBACK_SECONDS,
     MarketImageChecksumMismatch,
     freeze_market_reply_image,
+    market_cache_freshness,
 )
 
 app = Flask(__name__)
@@ -45,8 +48,11 @@ def get_secret(key):
     try:
         with open('/home/ubuntu/.stock_secrets', 'r') as f:
             for line in f:
+                line = line.strip()
+                if line.startswith('export '):
+                    line = line[7:].lstrip()
                 if "=" in line:
-                    k, v = line.strip().split('=', 1)
+                    k, v = line.split('=', 1)
                     v = v.strip('"\'')
                     if key == 'LINE_CHANNEL_ACCESS_TOKEN' and k == 'LINE_TOKEN': return v
                     if key == 'LINE_CHANNEL_SECRET' and k == 'LINE_CHANNEL_SECRET': return v
@@ -122,109 +128,14 @@ ETF_QUOTE_ALIASES = {
 def parse_etf_quote_command(text):
     return ETF_QUOTE_ALIASES.get(unicodedata.normalize("NFKC", text).strip())
 
-def is_master_holding_command(text):
-    normalized = unicodedata.normalize("NFKC", text).strip()
-    return "吳大師" in normalized
 
-def is_etf_action_command(text):
-    normalized = unicodedata.normalize("NFKC", text).strip()
-    return normalized in {"ETF動作", "ETF 動作", "買抱賣", "主動ETF動作"}
 
-def is_etf_intent_command(text):
-    normalized = unicodedata.normalize("NFKC", text).strip()
-    return normalized in {
-        "ETF意圖",
-        "ETF 意圖",
-        "ETF共識",
-        "ETF 共識",
-        "主動ETF意圖",
-        "主動ETF共識",
-        "意圖轉折",
-        "買賣意圖",
-    }
 
-def master_insight_quick_reply():
-    return QuickReply(
-        items=[
-            QuickReplyButton(
-                action=MessageAction(label="🎯 ETF 共識", text="ETF共識")
-            ),
-            QuickReplyButton(
-                action=MessageAction(label="🔥 ETF 動作", text="ETF動作")
-            ),
-            QuickReplyButton(
-                action=MessageAction(label="⚠️ 融資餘額", text="融資餘額")
-            ),
-        ]
-    )
 
-def load_etf_action_payload():
-    path = os.path.join(parent_dir, "data", "etf_action_insight.json")
-    with open(path, encoding="utf-8") as fh:
-        return json.load(fh)
 
-def load_etf_action_text():
-    payload = load_etf_action_payload()
-    text = str(payload.get("line_text") or "").strip()
-    if not text:
-        raise RuntimeError("etf_action_insight.json has no line_text")
-    return text
 
-# Temporarily keep the cached text available without including it in the
-# on-demand LINE reply. Flip this to True when the text summary is wanted again.
-ETF_ACTION_INCLUDE_TEXT = False
 
-def load_etf_action_image_paths():
-    filenames = [
-        "etf_action_buy_latest.jpg",
-        "etf_action_hold_latest.jpg",
-        "etf_action_sell_latest.jpg",
-    ]
-    paths = [os.path.join(parent_dir, "data", "summaries", name) for name in filenames]
-    missing = [path for path in paths if not os.path.exists(path)]
-    if missing:
-        raise FileNotFoundError(f"Missing cached ETF action images: {missing}")
-    return paths
 
-def load_etf_intent_image_paths():
-    summary_dir = os.path.join(parent_dir, "data", "summaries")
-    manifest_path = os.path.join(
-        summary_dir, "etf_consensus_v4_manifest.json"
-    )
-    if os.path.exists(manifest_path):
-        with open(manifest_path, encoding="utf-8") as fh:
-            manifest = json.load(fh)
-        images = list(manifest.get("images") or [])
-        if len(images) != 2:
-            raise ValueError(
-                f"ETF consensus manifest must contain 2 images, got {len(images)}"
-            )
-        filenames = []
-        for item in images:
-            filename = str((item or {}).get("filename") or "")
-            if (
-                os.path.basename(filename) != filename
-                or not re.fullmatch(
-                    r"etf_consensus_v4_(buy|sell)_top5_latest\.jpg",
-                    filename,
-                )
-            ):
-                raise ValueError(
-                    f"Unsafe ETF consensus manifest filename: {filename!r}"
-                )
-            filenames.append(filename)
-    else:
-        # Transitional fallback for a server updated before the new generator
-        # has written its first manifest.
-        filenames = [
-            "etf_consensus_v4_buy_top5_latest.jpg",
-            "etf_consensus_v4_sell_top5_latest.jpg",
-        ]
-    paths = [os.path.join(summary_dir, name) for name in filenames]
-    missing = [path for path in paths if not os.path.exists(path)]
-    if missing:
-        raise FileNotFoundError(f"Missing cached ETF intent images: {missing}")
-    return paths
 
 def is_daily_update_command(text):
     # Admin command: exact match only (no aliases/fuzzy matching).
@@ -235,54 +146,18 @@ def is_gold_command(text):
     compact = re.sub(r"[^0-9a-z\u4e00-\u9fff]", "", normalized)
     return "黃金" in normalized or "黄金" in normalized or compact in {"gold", "xau", "xauusd"}
 
-def is_market_pulse_command(text):
-    normalized = unicodedata.normalize("NFKC", text).strip().lower()
-    compact = re.sub(r"[^0-9a-z\u4e00-\u9fff]", "", normalized)
-    return (
-        "市場脈動" in normalized
-        or "市场脉动" in normalized
-        or compact in {"marketpulse", "pulse", "markethealth"}
-    )
 
-def is_margin_risk_command(text):
-    normalized = unicodedata.normalize("NFKC", text).strip().lower()
-    compact = re.sub(r"[^0-9a-z\u4e00-\u9fff]", "", normalized)
-    return (
-        "融資維持率" in normalized
-        or "融資風險" in normalized
-        or "融資餘額" in normalized
-        or compact in {"marginrisk", "marginmaintenance", "全市場融資"}
-    )
 
-def latest_margin_risk_date():
-    path = os.path.join(parent_dir, "data", "margin_maintenance.csv")
-    latest = None
-    with open(path, encoding="utf-8-sig", newline="") as fh:
-        for row in csv.DictReader(fh):
-            value = str(row.get("date") or "").strip()
-            if value and (latest is None or value > latest):
-                latest = value
-    if not latest:
-        raise RuntimeError("No date in margin_maintenance.csv")
-    return latest
 
-def latest_market_pulse_date():
-    db_path = os.path.join(parent_dir, "data", "etf_bench", "etf_bench.sqlite")
-    with sqlite3.connect(db_path) as conn:
-        row = conn.execute("SELECT MAX(date) FROM prices WHERE ticker = '^TWII'").fetchone()
-    if not row or not row[0]:
-        raise RuntimeError("No ^TWII price date found in etf_bench DB")
-    return str(row[0])
 
 def _run_daily_update():
-    """Fire-and-forget re-run of the full daily orchestrator. The script is
-    self-contained (cd's to repo, activates venv, sources secrets, defaults to
-    all ETFs, and emails its own summary), so there is no LINE feedback here."""
+    """Run the sealed fetch -> market.db import -> derived pipeline."""
     try:
         subprocess.run(
-            ["bash", "scripts/update_and_notify.sh"],
+            ["bash", "scripts/run_market_pipeline_manual.sh"],
             cwd=parent_dir,
             timeout=1800,
+            check=True,
         )
     except Exception as e:
         print("Daily update run failed:", e)
@@ -318,35 +193,10 @@ def _read_fetch_log(ticker):
         return {}
 
 def _run_fetch_and_report(tickers):
-    lines = []
-    for ticker in tickers:
-        script = _fetcher_script_for(ticker)
-        try:
-            proc = subprocess.run(
-                [sys.executable, script],
-                cwd=parent_dir,
-                capture_output=True,
-                text=True,
-                timeout=180,
-            )
-            if proc.returncode == 0:
-                log = _read_fetch_log(ticker)
-                status = log.get("status", "UNKNOWN")
-                latest = log.get("latest_date", "----")
-                count = log.get("holdings_count", "?")
-                lines.append(
-                    f"✅ {ticker} {ETF_QUOTE_NAMES.get(ticker, '')}｜{status}｜{latest}｜{count}檔"
-                )
-            else:
-                tail = (proc.stderr or proc.stdout or "").strip().splitlines()
-                detail = tail[-1][:120] if tail else f"exit={proc.returncode}"
-                lines.append(f"❌ {ticker} 失敗：{detail}")
-        except subprocess.TimeoutExpired:
-            lines.append(f"❌ {ticker} 逾時（>180秒）")
-        except Exception as e:
-            lines.append(f"❌ {ticker} 失敗：{type(e).__name__}: {e}")
-    msg = "📥 重新抓取結果\n" + "\n".join(lines)
-    print(msg, flush=True)
+    # There is only one supported write path.  A manual request runs the same
+    # sealed issuer fetch -> market.db import -> derived pipeline as the timer.
+    print(f"canonical manual refresh requested for {sorted(set(tickers))}", flush=True)
+    _run_daily_update()
 
 def _line_access_token():
     return get_secret('LINE_CHANNEL_ACCESS_TOKEN') or get_secret('LINE_TOKEN')
@@ -781,7 +631,7 @@ def get_chart_snapshot(key, timeout=30):
         raise RuntimeError(f"Chart service returned no snapshot URL for {key}: {payload}")
     return payload
 
-def get_cached_market_chart(key, max_age_seconds=300):
+def get_cached_market_chart(key, max_age_seconds=300, stale_fallback_seconds=0):
     cache_path = os.path.join(parent_dir, "data", "quote_cache", f"market_{key}.json")
     try:
         with open(cache_path, encoding="utf-8") as fh:
@@ -792,10 +642,19 @@ def get_cached_market_chart(key, max_age_seconds=300):
     updated_at = payload.get("updated_at")
     if not updated_at:
         raise RuntimeError(f"Cached TradingView market chart has no updated_at: {cache_path}")
-    updated_dt = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
-    age = (datetime.now(timezone.utc) - updated_dt).total_seconds()
-    if age > max_age_seconds:
-        raise RuntimeError(f"Cached TradingView market chart is stale: {key} age={age:.0f}s")
+    now = datetime.now(timezone.utc)
+    freshness = market_cache_freshness(
+        key,
+        updated_at,
+        max_age_seconds,
+        stale_fallback_seconds=stale_fallback_seconds,
+        now=now,
+    )
+    if not freshness["can_serve"]:
+        raise RuntimeError(
+            f"Cached TradingView market chart is stale: {key} "
+            f"age={freshness['age_seconds']:.0f}s"
+        )
 
     text = payload.get("text")
     image_url = payload.get("snapshot_url")
@@ -807,21 +666,49 @@ def get_cached_market_chart(key, max_age_seconds=300):
     if not os.path.exists(image_path):
         raise RuntimeError(f"Cached TradingView market image is missing: {image_path}")
 
-    return payload
+    result = dict(payload)
+    result["_cache_age_seconds"] = freshness["age_seconds"]
+    result["_cache_is_stale"] = freshness["is_stale"]
+    return result
 
 # All market commands are served from the 1-minute cache written by
 # stock-market-chart-monitor.service. The webhook never renders TradingView
 # live anymore — it only reads cache so replies are fast and the text price
 # always matches the cached chart (same-moment capture in chart_service).
 # max_age 240s tolerates a couple of failed 60s refreshes before going stale.
+# A checksum-verified NASDAQ chart remains valid across the real IG weekend
+# closure; the normal 240s rule resumes as soon as IG should be open again.
 MARKET_CACHE_MAX_AGE = 240
+
+def _cached_market_reply_text(cache):
+    text = cache["text"]
+    if not cache.get("_cache_is_stale"):
+        return text
+    age_minutes = max(1, int((float(cache["_cache_age_seconds"]) + 59) // 60))
+    updated_dt = datetime.fromisoformat(
+        str(cache["updated_at"]).replace("Z", "+00:00")
+    ).astimezone(ZoneInfo("Asia/Taipei"))
+    return (
+        "⚠️ 圖表來源暫時無法更新\n"
+        f"以下為 {age_minutes} 分鐘前快取（台北 {updated_dt:%H:%M}）\n\n"
+        f"{text}"
+    )
+
+def _market_cache_unavailable_text(key):
+    label = MARKET_TEXT_ERROR_LABELS.get(key, key)
+    return f"{label}\n──────────\n⚠️ 圖表來源暫時無法更新，請稍後再試。"
 
 def _cached_market_text(key):
     try:
-        return get_cached_market_chart(key, max_age_seconds=MARKET_CACHE_MAX_AGE)["text"]
+        cache = get_cached_market_chart(
+            key,
+            max_age_seconds=MARKET_CACHE_MAX_AGE,
+            stale_fallback_seconds=MARKET_CACHE_STALE_FALLBACK_SECONDS,
+        )
+        return _cached_market_reply_text(cache)
     except Exception as exc:
         print(f"Cached market text failed for {key}: {exc}")
-        return _tradingview_error_text(key, "快取報價", exc)
+        return _market_cache_unavailable_text(key)
 
 def _freeze_cached_market_reply(key, attempts=4):
     """Return quote metadata plus immutable bytes from the exact same cache."""
@@ -831,6 +718,7 @@ def _freeze_cached_market_reply(key, attempts=4):
         cache = get_cached_market_chart(
             key,
             max_age_seconds=MARKET_CACHE_MAX_AGE,
+            stale_fallback_seconds=MARKET_CACHE_STALE_FALLBACK_SECONDS,
         )
         try:
             frozen_name = freeze_market_reply_image(
@@ -863,7 +751,7 @@ def reply_cached_market(reply_token, keys):
     for key in keys:
         try:
             cache, frozen_name = _freeze_cached_market_reply(key)
-            texts.append(cache["text"])
+            texts.append(_cached_market_reply_text(cache))
             img_url = (
                 "https://linechatbot.duckdns.org/api/webhook/images/"
                 f"{frozen_name}"
@@ -871,7 +759,7 @@ def reply_cached_market(reply_token, keys):
             images.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
         except Exception as exc:
             print(f"Cached market reply failed for {key}: {exc}")
-            texts.append(_tradingview_error_text(key, "快取圖表", exc))
+            texts.append(_market_cache_unavailable_text(key))
     messages = [TextSendMessage(text="\n\n".join(texts))] + images
     reply_line(reply_token, messages)
 
@@ -914,153 +802,18 @@ def webhook():
 @line_handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_msg = event.message.text.strip()
-    is_master_holding = is_master_holding_command(user_msg)
-    is_etf_action = is_etf_action_command(user_msg)
-    is_etf_intent = is_etf_intent_command(user_msg)
     is_daily_update = is_daily_update_command(user_msg)
     is_gold = is_gold_command(user_msg)
-    is_market_pulse = is_market_pulse_command(user_msg)
-    is_margin_risk = is_margin_risk_command(user_msg)
     refetch_target = parse_refetch_command(user_msg)
     etf_quote_ticker = (
         None
         if is_daily_update
-        or is_master_holding
-        or is_etf_action
-        or is_etf_intent
         or is_gold
-        or is_market_pulse
-        or is_margin_risk
         or refetch_target
         else parse_etf_quote_command(user_msg)
     )
     print(f"LINE text={user_msg!r} parsed_etf={etf_quote_ticker} refetch={refetch_target} daily_update={is_daily_update}", flush=True)
-    if is_master_holding:
-        try:
-            from scripts.master_holding_quote_card import load_cached_master_quote_card
-
-            text, output_paths, cache = load_cached_master_quote_card()
-            messages = [
-                TextSendMessage(
-                    text=text,
-                    quick_reply=master_insight_quick_reply(),
-                )
-            ]
-            for output_path in output_paths[:2]:
-                img_url = f"https://linechatbot.duckdns.org/api/webhook/images/{os.path.basename(output_path)}?t={int(time.time())}"
-                messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
-            reply_line(event.reply_token, messages)
-        except Exception as e:
-            print("Master holding card generation failed:", e)
-            reply_line(
-                event.reply_token,
-                TextSendMessage(text="吳大師持股暫時無法產生，請稍後再試。")
-            )
-
-    elif is_etf_intent:
-        try:
-            messages = []
-            for image_path in load_etf_intent_image_paths():
-                filename = os.path.basename(image_path)
-                img_url = (
-                    "https://linechatbot.duckdns.org/api/webhook/summaries/"
-                    f"{filename}?t={int(os.path.getmtime(image_path))}"
-                )
-                messages.append(ImageSendMessage(
-                    original_content_url=img_url,
-                    preview_image_url=img_url,
-                ))
-            if len(messages) != 2:
-                raise AssertionError(
-                    "ETF consensus reply must contain 2 images, "
-                    f"got {len(messages)}"
-                )
-            reply_line(event.reply_token, messages)
-        except Exception as e:
-            print("ETF intent image reply failed:", e)
-            reply_line(
-                event.reply_token,
-                TextSendMessage(text="ETF 共識追蹤圖卡尚未更新完成，請稍後再試。"),
-            )
-
-    elif is_etf_action:
-        try:
-            image_paths = load_etf_action_image_paths()
-            messages = []
-            if ETF_ACTION_INCLUDE_TEXT:
-                messages.append(TextSendMessage(text=load_etf_action_text()))
-            for image_path in image_paths:
-                filename = os.path.basename(image_path)
-                img_url = (
-                    "https://linechatbot.duckdns.org/api/webhook/summaries/"
-                    f"{filename}?t={int(os.path.getmtime(image_path))}"
-                )
-                messages.append(ImageSendMessage(
-                    original_content_url=img_url,
-                    preview_image_url=img_url,
-                ))
-            expected_count = 4 if ETF_ACTION_INCLUDE_TEXT else 3
-            if len(messages) != expected_count:
-                raise AssertionError(
-                    "ETF action reply must contain the configured text plus "
-                    f"3 images, got {len(messages)} objects"
-                )
-            reply_line(event.reply_token, messages)
-        except Exception as e:
-            print("ETF action image reply failed:", e)
-            reply_line(
-                event.reply_token,
-                TextSendMessage(text="ETF 買／抱／賣圖卡尚未更新完成，請稍後再試。"),
-            )
-
-    elif is_market_pulse:
-        try:
-            filename = "market_pulse_latest.jpg"
-            image_path = os.path.join(parent_dir, "data", "summaries", filename)
-            if not os.path.exists(image_path):
-                raise FileNotFoundError(f"Missing cached market pulse image: {image_path}")
-
-            latest_date = latest_market_pulse_date()
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/summaries/{filename}?t={int(time.time())}"
-            reply_line(
-                event.reply_token,
-                [
-                    TextSendMessage(text=f"市場脈動｜資料截至 {latest_date}"),
-                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
-                ],
-            )
-        except Exception as e:
-            print("Market pulse cached image reply failed:", e)
-            reply_line(
-                event.reply_token,
-                TextSendMessage(text="市場脈動截圖尚未更新完成，請稍後再試。")
-            )
-
-    elif is_margin_risk:
-        try:
-            filename = "margin_maintenance_latest.jpg"
-            image_path = os.path.join(parent_dir, "data", "summaries", filename)
-            if not os.path.exists(image_path):
-                raise FileNotFoundError(f"Missing cached margin-risk image: {image_path}")
-            latest_date = latest_margin_risk_date()
-            img_url = f"https://linechatbot.duckdns.org/api/webhook/summaries/{filename}?t={int(os.path.getmtime(image_path))}"
-            reply_line(
-                event.reply_token,
-                [
-                    TextSendMessage(
-                        text=f"融資餘額與風險｜資料截至 {latest_date}\n公開資料估算，不等同個別帳戶維持率"
-                    ),
-                    ImageSendMessage(original_content_url=img_url, preview_image_url=img_url),
-                ],
-            )
-        except Exception as e:
-            print("Margin-risk cached image reply failed:", e)
-            reply_line(
-                event.reply_token,
-                TextSendMessage(text="融資風險圖卡尚未更新完成，請稍後再試。")
-            )
-
-    elif is_gold:
+    if is_gold:
         reply_cached_market(event.reply_token, ["gold"])
 
     elif etf_quote_ticker:
@@ -1100,7 +853,7 @@ def handle_message(event):
             tickers = [refetch_target]
         reply_line(
             event.reply_token,
-            TextSendMessage(text=f"⏳ 開始重新抓取：{'、'.join(tickers)}\n結果會寫入 stock_webhook.log（每檔約需數十秒）。")
+            TextSendMessage(text="⏳ 已啟動完整官方 holdings → market.db → 衍生資料管線。")
         )
         threading.Thread(
             target=_run_fetch_and_report,
@@ -1128,10 +881,9 @@ def handle_message(event):
                 "📊 一般隱藏指令\n"
                 "• id — 查詢 LINE 使用者 ID 及群組 ID\n\n"
                 "🔁 每日更新（背景執行，結果寄 email）\n"
-                "• 每日更新 — 重新執行完整每日流程（抓取＋benchmark＋git＋廣播＋email）\n\n"
-                "🔄 重新抓取官方持股（完成後回報狀態）\n"
-                "• 抓取 891 — 重新抓取單一 ETF（403/981/988/0050/830/878/891/918/9805/9820）\n"
-                "• 抓取 全部 — 重新抓取所有 ETF\n"
+                "• 每日更新 — 密封抓取→market.db 匯入→分析／快取／通知\n\n"
+                "🔄 重新抓取官方持股（統一走完整密封管線）\n"
+                "• 抓取 891／抓取 全部 — 都會執行完整 holdings → market.db → 衍生流程\n"
                 "🥚 彩蛋\n"
                 "• 欸嘿 — ( ͡° ͜ʖ ͡°)\n\n"
                 "ℹ️ 以上指令均需手動輸入，不在選單中顯示。"
@@ -1177,9 +929,6 @@ def handle_message(event):
             "• 918 — 00918 持股即時表\n"
             "• 9805 — 009805 持股即時表\n"
             "• 9820 — 009820 持股即時表\n"
-            "• 吳大師 — 投資組合與展開持股\n"
-            "• ETF共識 — 單一觀察／買方共識／賣方共識\n"
-            "• ETF動作 — 主動 ETF 買進／續抱／賣出訊號\n"
             "• id — 取得使用者或群組 ID"
         ))
         )
@@ -1205,4 +954,4 @@ def handle_join(event):
 
 # Local deployment entrypoint
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="127.0.0.1", port=8080)

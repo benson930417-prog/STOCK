@@ -37,11 +37,15 @@ def fetch_and_update_00991A():
     dates_to_fetch = [(today - timedelta(days=i)).strftime("%Y%m%d") for i in range(14)]
     
     updated = False
+    verified = False
+    latest_cached = max(history) if history else None
     last_error = "No Change"
     for date_str in dates_to_fetch:
         formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
         
-        if formatted_date in history:
+        # Revalidate the newest cached disclosure online; cached files alone
+        # cannot prove a successful fetch on this run.
+        if formatted_date in history and formatted_date != latest_cached:
             print(f"Skipping {formatted_date} (Already cached)")
             continue
             
@@ -111,28 +115,14 @@ def fetch_and_update_00991A():
                     # Could be cash balances or other accounting lines
                     pass
                     
-            closing_price = nav
-            try:
-                rp = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/00991A.TW?range=14d&interval=1d", headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
-                if rp.status_code == 200:
-                    res = rp.json()['chart']['result'][0]
-                    ts_list = res.get('timestamp', [])
-                    close_list = res.get('indicators', {}).get('quote', [{}])[0].get('close', [])
-                    for idx in range(len(ts_list)-1, -1, -1):
-                        dt_str = datetime.fromtimestamp(ts_list[idx], timezone(timedelta(hours=8))).strftime('%Y-%m-%d')
-                        if dt_str == formatted_date and close_list[idx] is not None:
-                            closing_price = float(close_list[idx])
-                            break
-            except: pass
-
             if holdings:
+                verified = True
                 history[formatted_date] = {
                     "date": formatted_date,
                     "meta": {
                         "fund_size": fund_size,
                         "outstanding_units": outstanding_units,
-                        "nav": nav,
-                        "closing_price": float(closing_price)
+                        "nav": nav
                     },
                     "holdings": holdings
                 }
@@ -156,14 +146,16 @@ def fetch_and_update_00991A():
         log_data["last_updated_utc"] = now_utc
         log_data["status"] = "NEW DATA FOUND"
     else:
-        if "HTTP 200" in last_error or last_error == "No Change":
+        if verified:
             log_data["status"] = "No Change"
         else:
-            log_data["status"] = last_error
+            log_data["status"] = f"FAILED: {last_error}"
         
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         json.dump(log_data, f, ensure_ascii=False, indent=2)
+    if not verified:
+        raise RuntimeError(f"no valid issuer disclosure fetched: {last_error}")
             
 if __name__ == "__main__":
     fetch_and_update_00991A()

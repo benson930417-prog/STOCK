@@ -1,11 +1,11 @@
 [Unit]
-Description=Run 00403A/00981A/00988A/0050/00830/00878/00891/00918/009805/009820 ETF Fetch Daily at 18:30 Taiwan Time
+Description=Fetch issuer ETF holdings at 18:30 Taiwan time
 
 [Timer]
-# 18:30 Taiwan time = 10:30 UTC
-OnCalendar=*-*-* 10:30:00 UTC
+OnCalendar=Mon..Fri *-*-* 10:30:00 UTC
+AccuracySec=30s
 Persistent=true
-RandomizedDelaySec=30
+RandomizedDelaySec=0
 Unit=stock-fetch-1830-tw.service
 
 [Install]

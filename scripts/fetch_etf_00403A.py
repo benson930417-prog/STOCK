@@ -54,27 +54,6 @@ def _write_json(path, payload):
         fh.write("\n")
 
 
-def _latest_yahoo_close(date_key):
-    try:
-        response = requests.get(
-            f"https://query1.finance.yahoo.com/v8/finance/chart/{ETF_TICKER}.TW?range=14d&interval=1d",
-            headers={"User-Agent": "Mozilla/5.0"},
-            timeout=5,
-        )
-        if response.status_code != 200:
-            return None
-        result = response.json()["chart"]["result"][0]
-        timestamps = result.get("timestamp", [])
-        closes = result.get("indicators", {}).get("quote", [{}])[0].get("close", [])
-        for idx in range(len(timestamps) - 1, -1, -1):
-            dt_str = datetime.fromtimestamp(timestamps[idx], timezone(timedelta(hours=8))).strftime("%Y-%m-%d")
-            if dt_str == date_key and closes[idx] is not None:
-                return float(closes[idx])
-    except Exception:
-        return None
-    return None
-
-
 def fetch_and_update_holdings():
     now_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     print(f"[{now_utc}] Fetching {ETF_TICKER} ETF holdings...")
@@ -139,16 +118,12 @@ def fetch_and_update_holdings():
         if len(holdings) < 10:
             raise RuntimeError(f"Only parsed {len(holdings)} holdings for {ETF_TICKER}")
 
-        closing_price = _latest_yahoo_close(file_date)
-        if closing_price is None:
-            closing_price = nav
         day_data = {
             "date": file_date,
             "meta": {
                 "fund_size": fund_size,
                 "outstanding_units": outstanding_units,
                 "nav": nav,
-                "closing_price": float(closing_price) if closing_price is not None else None,
             },
             "holdings": holdings,
         }

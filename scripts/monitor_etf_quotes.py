@@ -2,8 +2,10 @@ import argparse
 import hashlib
 import json
 import os
+import queue
 import re
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
@@ -434,21 +436,14 @@ def _select_tsmc_proxy(mode, previous_cache=None):
 
 
 def load_latest_holdings(ticker):
-    if ticker in PASSIVE_ETF_TICKERS:
-        history_path = DATA_DIR / f"passive_{ticker}_history.json"
-    else:
-        history_path = DATA_DIR / f"etf_{ticker}_history.json"
-    if not history_path.exists():
-        raise FileNotFoundError(f"Missing history file: {history_path}")
+    # Holdings have one canonical owner.  The quote cache remains deliberately
+    # short-lived and live, but its constituent list/weights come from the sole
+    # ARM market.db rather than a second history JSON store.
+    from src.market_db import latest_holding_payload
 
-    with history_path.open("r", encoding="utf-8") as fh:
-        history = json.load(fh)
-
-    if not history:
-        raise ValueError(f"No history data in {history_path}")
-
-    latest_date = max(history.keys())
-    latest_data = history[latest_date]
+    latest_date, latest_data = latest_holding_payload(str(ticker).upper())
+    if not latest_date or not latest_data:
+        raise ValueError(f"No sealed issuer holdings in market.db for {ticker}")
     holdings = latest_data.get("holdings", [])
     if not holdings:
         raise ValueError(f"No holdings for {ticker} on {latest_date}")
@@ -1519,15 +1514,48 @@ def monitor(ticker, interval, max_workers=6, jitter_seconds=0):
         time.sleep(interval)
 
 
+def monitor_many(tickers, interval, max_workers=6, jitter_seconds=0):
+    """Run per-ticker loops in one process and fail the unit if any loop dies."""
+    normalized = list(dict.fromkeys(str(ticker).upper() for ticker in tickers))
+    if not normalized:
+        raise ValueError("at least one ticker is required")
+
+    failures = queue.SimpleQueue()
+
+    def run_one(ticker):
+        try:
+            monitor(ticker, interval, max_workers, jitter_seconds)
+        except BaseException as exc:
+            failures.put((ticker, exc))
+            return
+        failures.put((ticker, RuntimeError("monitor loop returned unexpectedly")))
+
+    for ticker in normalized:
+        threading.Thread(
+            target=run_one,
+            args=(ticker,),
+            name=f"quote-{ticker}",
+            daemon=True,
+        ).start()
+
+    ticker, exc = failures.get()
+    raise RuntimeError(f"{ticker} quote monitor stopped: {exc}") from exc
+
+
 def main():
     parser = argparse.ArgumentParser(description="Continuously monitor ETF holding quotes into a server-only cache.")
-    parser.add_argument("ticker", nargs="?", default="00988A")
+    parser.add_argument("tickers", nargs="*", default=["00988A"])
     parser.add_argument("--interval", type=int, default=60)
     parser.add_argument("--max-workers", type=int, default=6)
     parser.add_argument("--jitter", type=int, default=0, help="Deterministic initial start spread in seconds.")
     args = parser.parse_args()
 
-    monitor(args.ticker.upper(), max(args.interval, 10), max(1, args.max_workers), max(0, args.jitter))
+    tickers = [ticker.upper() for ticker in args.tickers] or ["00988A"]
+    monitor_args = (max(args.interval, 10), max(1, args.max_workers), max(0, args.jitter))
+    if len(tickers) == 1:
+        monitor(tickers[0], *monitor_args)
+    else:
+        monitor_many(tickers, *monitor_args)
 
 
 if __name__ == "__main__":

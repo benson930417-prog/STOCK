@@ -552,12 +552,6 @@ def cached_quote_card_paths(ticker="00988A", max_pages=2):
 def generate_quote_card(ticker="00988A", max_pages=2):
     ticker = ticker.upper()
     cache_path = QUOTE_CACHE_DIR / f"etf_{ticker}_quotes.json"
-    history_prefix = "passive" if ticker in PASSIVE_TICKERS else "etf"
-    history_path = DATA_DIR / f"{history_prefix}_{ticker}_history.json"
-    if not history_path.exists() and ticker == "009820":
-        from scripts.fetch_passive_009820 import yuanta
-
-        yuanta.fetch_and_update_0050()
     if not cache_path.exists():
         from scripts.monitor_etf_quotes import atomic_write_json, build_cache
 

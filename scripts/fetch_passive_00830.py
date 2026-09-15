@@ -37,22 +37,6 @@ def _write_json(path, payload):
         fh.write("\n")
 
 
-def _get_yahoo_closing_price(ticker, date_str):
-    try:
-        dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        period1 = int(dt.timestamp())
-        period2 = period1 + 86400
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&period1={period1}&period2={period2}"
-        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
-        data = r.json()
-        closes = data['chart']['result'][0]['indicators']['quote'][0]['close']
-        if closes and closes[0] is not None:
-            return round(float(closes[0]), 2)
-        return None
-    except Exception:
-        return None
-
-
 def _fetch_latest_assets(headers, today_str, lookback_days=10):
     for i in range(lookback_days + 1):
         search_date = (
@@ -113,15 +97,10 @@ def fetch_and_update_00830():
     fund_size = _num(result_assets.get("fundNav"))
     nav = _num(result_assets.get("fundPerNav"))
     outstanding_units = int(_num(result_assets.get("fundOutstandingShares")) or 0) or None
-    closing_price = _get_yahoo_closing_price("00830.TW", date_key)
-    if closing_price is None:
-        closing_price = (history.get(date_key, {}).get("meta") or {}).get("closing_price")
-
     meta = {
         "fund_size": fund_size,
         "nav": nav,
         "outstanding_units": outstanding_units,
-        "closing_price": closing_price,
         "source_url": URL,
     }
 

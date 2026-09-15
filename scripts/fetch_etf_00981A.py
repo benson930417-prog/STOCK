@@ -142,21 +142,6 @@ def fetch_and_update_holdings():
         
         clean_records = _parse_stock_holdings(df_raw, header_row)
              
-        closing_price = nav
-        try:
-            import requests as req
-            rp = req.get("https://query1.finance.yahoo.com/v8/finance/chart/00981A.TW?range=14d&interval=1d", headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
-            if rp.status_code == 200:
-                res = rp.json()['chart']['result'][0]
-                ts_list = res.get('timestamp', [])
-                close_list = res.get('indicators', {}).get('quote', [{}])[0].get('close', [])
-                for idx in range(len(ts_list)-1, -1, -1):
-                    dt_str = datetime.fromtimestamp(ts_list[idx], timezone(timedelta(hours=8))).strftime('%Y-%m-%d')
-                    if dt_str == file_date_str and close_list[idx] is not None:
-                        closing_price = float(close_list[idx])
-                        break
-        except: pass
-
         day_data = {
              "date": file_date_str,
              # Upper bound on when this snapshot became public. The backtest
@@ -165,8 +150,7 @@ def fetch_and_update_holdings():
              "meta": {
                  "fund_size": fund_size,
                  "outstanding_units": outstanding_units,
-                 "nav": nav,
-                 "closing_price": float(closing_price) if closing_price is not None else None
+                 "nav": nav
              },
              "holdings": clean_records
         }
@@ -189,12 +173,9 @@ def fetch_and_update_holdings():
              if existing_day_data.get("first_seen_utc"):
                   day_data["first_seen_utc"] = existing_day_data["first_seen_utc"]
 
-             # Deep compare the whole day_data EXCEPT closing_price which constantly floats during market open hours
              import copy
              curr_cmp = copy.deepcopy(day_data)
              prev_cmp = copy.deepcopy(existing_day_data)
-             curr_cmp["meta"].pop("closing_price", None)
-             prev_cmp["meta"].pop("closing_price", None)
              curr_cmp.pop("first_seen_utc", None)
              prev_cmp.pop("first_seen_utc", None)
 
@@ -230,4 +211,3 @@ def save_log(log_data):
 
 if __name__ == "__main__":
     fetch_and_update_holdings()
-

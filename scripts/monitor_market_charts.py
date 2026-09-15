@@ -19,6 +19,17 @@ from src.market_chart_cache import file_sha256  # noqa: E402
 
 QUOTE_CACHE_DIR = ROOT_DIR / "data" / "quote_cache"
 CHART_SERVICE_URL = "http://127.0.0.1:5005"
+UPSTREAM_BLOCKED_BACKOFF_SECONDS = 300
+UPSTREAM_BLOCKED_MAX_BACKOFF_SECONDS = 1800
+UPSTREAM_BLOCKED_STATE_MAX_AGE_SECONDS = 6 * 60 * 60
+OUTAGE_STATE_PATH = QUOTE_CACHE_DIR / "market_monitor_outage.json"
+INDEPENDENT_UPSTREAM_KEYS = frozenset({"nasdaq"})
+
+
+class ChartServiceUnavailable(RuntimeError):
+    def __init__(self, message, retry_after_seconds=60):
+        super().__init__(message)
+        self.retry_after_seconds = retry_after_seconds
 
 
 def utc_now_iso():
@@ -35,12 +46,68 @@ def atomic_write_json(path, payload):
     tmp_path.replace(path)
 
 
+def upstream_blocked_backoff_seconds(consecutive_outages):
+    exponent = max(0, int(consecutive_outages) - 1)
+    return min(
+        UPSTREAM_BLOCKED_BACKOFF_SECONDS * (2 ** exponent),
+        UPSTREAM_BLOCKED_MAX_BACKOFF_SECONDS,
+    )
+
+
+def load_outage_state(now_epoch=None):
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    try:
+        payload = json.loads(OUTAGE_STATE_PATH.read_text(encoding="utf-8"))
+        updated_epoch = float(payload["updated_epoch"])
+        if now_epoch - updated_epoch > UPSTREAM_BLOCKED_STATE_MAX_AGE_SECONDS:
+            return {"consecutive_outages": 0, "next_retry_epoch": 0.0}
+        return {
+            "consecutive_outages": max(0, int(payload["consecutive_outages"])),
+            "next_retry_epoch": max(0.0, float(payload["next_retry_epoch"])),
+        }
+    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+        return {"consecutive_outages": 0, "next_retry_epoch": 0.0}
+
+
+def record_outage(consecutive_outages, now_epoch=None):
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    delay = upstream_blocked_backoff_seconds(consecutive_outages)
+    atomic_write_json(
+        OUTAGE_STATE_PATH,
+        {
+            "consecutive_outages": int(consecutive_outages),
+            "updated_epoch": now_epoch,
+            "next_retry_epoch": now_epoch + delay,
+        },
+    )
+    return delay
+
+
+def clear_outage_state():
+    try:
+        OUTAGE_STATE_PATH.unlink()
+    except FileNotFoundError:
+        pass
+
+
 def post_chart_service(endpoint, key, timeout):
     response = requests.post(
         f"{CHART_SERVICE_URL}/{endpoint}",
         json={"key": key},
         timeout=timeout,
     )
+    if response.status_code == 503:
+        try:
+            detail = str(response.json().get("detail") or "")
+        except (TypeError, ValueError):
+            detail = response.text[:500]
+        blocked = "upstream blocked" in detail.lower()
+        raise ChartServiceUnavailable(
+            detail or f"chart service unavailable for {key}",
+            retry_after_seconds=(
+                UPSTREAM_BLOCKED_BACKOFF_SECONDS if blocked else 60
+            ),
+        )
     response.raise_for_status()
     return response.json()
 
@@ -92,6 +159,68 @@ def refresh_key(key, timeout):
     return payload
 
 
+def refresh_cycle(keys, timeout):
+    for key in keys:
+        try:
+            refresh_key(key, timeout)
+        except ChartServiceUnavailable as exc:
+            print(
+                f"{utc_now_iso()} chart service unavailable at {key}; "
+                f"stopping this cycle and backing off {exc.retry_after_seconds}s: {exc}",
+                flush=True,
+            )
+            return exc.retry_after_seconds
+        except Exception as exc:
+            print(f"{utc_now_iso()} error refreshing market chart cache {key}: {type(exc).__name__}: {exc}", flush=True)
+    return 0
+
+
+def refresh_iteration(
+    keys,
+    timeout,
+    *,
+    consecutive_outages,
+    next_retry_epoch,
+    now_epoch=None,
+):
+    """Refresh due shared charts and always refresh independent upstreams.
+
+    NASDAQ uses IG, while the other seven charts use TradingView. A
+    TradingView 403 therefore must postpone only the shared group; sleeping
+    the whole monitor made a healthy NASDAQ cache stale for up to 30 minutes.
+    """
+
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    shared_keys = [key for key in keys if key not in INDEPENDENT_UPSTREAM_KEYS]
+    independent_keys = [key for key in keys if key in INDEPENDENT_UPSTREAM_KEYS]
+
+    if shared_keys and now_epoch >= float(next_retry_epoch):
+        backoff_seconds = refresh_cycle(shared_keys, timeout)
+        if backoff_seconds == UPSTREAM_BLOCKED_BACKOFF_SECONDS:
+            consecutive_outages += 1
+            delay = record_outage(consecutive_outages, now_epoch=now_epoch)
+            next_retry_epoch = now_epoch + delay
+            print(
+                f"{utc_now_iso()} shared-upstream outage streak={consecutive_outages}; "
+                f"next retry in {delay}s; independent caches continue",
+                flush=True,
+            )
+        else:
+            consecutive_outages = 0
+            next_retry_epoch = 0.0
+            clear_outage_state()
+
+    if independent_keys:
+        # Its errors are logged by refresh_cycle but cannot alter or erase the
+        # TradingView cooldown state maintained above.
+        refresh_cycle(independent_keys, timeout)
+
+    return {
+        "consecutive_outages": consecutive_outages,
+        "next_retry_epoch": next_retry_epoch,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -103,14 +232,30 @@ def main():
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
 
+    outage_state = load_outage_state()
+    consecutive_outages = outage_state["consecutive_outages"]
+    startup_delay = max(0, int(outage_state["next_retry_epoch"] - time.time()))
+    if startup_delay and not args.once:
+        print(
+            f"{utc_now_iso()} preserving shared-upstream cooldown across restart: "
+            f"{startup_delay}s; independent caches continue",
+            flush=True,
+        )
+
+    if args.once:
+        backoff_seconds = refresh_cycle(args.keys, args.timeout)
+        if backoff_seconds:
+            raise SystemExit(1)
+        return
+
     while True:
-        for key in args.keys:
-            try:
-                refresh_key(key, args.timeout)
-            except Exception as exc:
-                print(f"{utc_now_iso()} error refreshing market chart cache {key}: {type(exc).__name__}: {exc}", flush=True)
-        if args.once:
-            return
+        outage_state = refresh_iteration(
+            args.keys,
+            args.timeout,
+            consecutive_outages=consecutive_outages,
+            next_retry_epoch=outage_state["next_retry_epoch"],
+        )
+        consecutive_outages = outage_state["consecutive_outages"]
         time.sleep(max(10, args.interval))
 
 

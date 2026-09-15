@@ -148,7 +148,6 @@ def fetch_and_update_00891():
         "fund_size": _num(assets.get("基金淨資產")),
         "nav": _num(assets.get("基金每單位淨值") or fund_nav.get("NAV")),
         "outstanding_units": int(_num(assets.get("基金在外流通單位數")) or 0) or None,
-        "closing_price": None,
         "source_url": URL,
         "provider": "CTBC Investments",
         "cno": CNO,
@@ -158,9 +157,6 @@ def fetch_and_update_00891():
             "latest": {
                 "date": _date_key(fund_nav.get("NAV_DT")) or date_key,
                 "nav": _num(fund_nav.get("NAV")),
-                "closing_price": None,
-                "premium_discount": None,
-                "premium_discount_pct": None,
                 "fund_net_assets": _num(assets.get("基金淨資產")),
                 "outstanding_units": int(_num(assets.get("基金在外流通單位數")) or 0) or None,
                 "deltas": {},

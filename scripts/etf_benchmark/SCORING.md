@@ -117,7 +117,7 @@ Rules:
 
 - **`step5_score.py`** computes the two pillar percentiles for **every eligible ETF**,
   ranked within its asset class, and writes one row per ETF per trading day to
-  **`data/etf_bench/score_history.csv`** (long format):
+  the **`etf_score_history` table in `/var/lib/stock/market/market.db`**:
 
   | column | meaning |
   |---|---|
@@ -130,8 +130,8 @@ Rules:
 - `--backfill` rebuilds history (default 1 year; `--years N` or `--start`); no args appends
   today. Idempotent (re-running a date replaces, never duplicates). A pre-fetch cache makes
   the full-universe backfill fast.
-- Wired into the daily job (`update_and_notify.sh`, after step4), which also `git add`s the
-  CSV so history accrues one point/day and syncs to checkouts.
+- Wired into the derived daily job after the sealed market and issuer-holdings
+  imports.  The database is server state and is never committed to Git.
 
 ---
 
@@ -180,5 +180,5 @@ scorer on controlled data. **Result:** every pillar matched exactly (diff 0.00).
 4. **Up/down classified per trading day** from the benchmark (not ZigZag regimes).
 5. **Trailing 1-year** window, **adj_close**, **30-day** per-fund listing gate, raw stored
    percentile with confidence shown via `n_days`.
-6. **One store, one standard** (`score_history.csv`) feeding both the ranking table and the
+6. **One store, one standard** (`market.db.etf_score_history`) feeding both the ranking table and the
    history line, recorded daily by `step5_score.py`.
