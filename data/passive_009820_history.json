@@ -17403,5 +17403,342 @@
         "shares": 2055
       }
     ]
+  },
+  "2026-09-21": {
+    "date": "2026-09-21",
+    "meta": {
+      "fund_size": 11371760147,
+      "nav": 10.48,
+      "outstanding_units": 1084702000,
+      "source_url": "https://www.yuantaetfs.com/product/detail/009820/ratio",
+      "nav_history": {
+        "source_url": "https://www.yuantaetfs.com/tradeInfo/comparison/009820/NAVhistory#table",
+        "latest": {
+          "date": "2026-09-21",
+          "nav": 10.48,
+          "fund_net_assets": 11371760147,
+          "outstanding_units": 1084702000,
+          "deltas": {
+            "nav_pct": 3.455083909180648,
+            "fund_net_assets_pct": 1.9440224036951947,
+            "outstanding_units_pct": -1.4536177821063285
+          }
+        },
+        "previous": {
+          "date": "2026-09-18",
+          "nav": 10.13,
+          "fund_net_assets": 11154906270,
+          "outstanding_units": 1100702000
+        }
+      }
+    },
+    "holdings": [
+      {
+        "id": "NVDA UQ",
+        "name": "NVIDIA CORP",
+        "weight_pct": 7.85,
+        "shares": 123582
+      },
+      {
+        "id": "AMZN UQ",
+        "name": "AMAZON.COM INC",
+        "weight_pct": 7.58,
+        "shares": 105033
+      },
+      {
+        "id": "MSFT UQ",
+        "name": "MICROSOFT CORP",
+        "weight_pct": 7.53,
+        "shares": 53785
+      },
+      {
+        "id": "AVGO UQ",
+        "name": "BROADCOM INC",
+        "weight_pct": 6.41,
+        "shares": 63279
+      },
+      {
+        "id": "META UQ",
+        "name": "META PLATFORMS INC-CLASS A",
+        "weight_pct": 6.07,
+        "shares": 29330
+      },
+      {
+        "id": "AMD UQ",
+        "name": "ADVANCED MICRO DEVICES",
+        "weight_pct": 5.26,
+        "shares": 30595
+      },
+      {
+        "id": "MU UQ",
+        "name": "MICRON TECHNOLOGY INC",
+        "weight_pct": 4.38,
+        "shares": 15022
+      },
+      {
+        "id": "GOOGL UQ",
+        "name": "ALPHABET INC-CL A",
+        "weight_pct": 4.13,
+        "shares": 41639
+      },
+      {
+        "id": "INTC UQ",
+        "name": "INTEL CORP",
+        "weight_pct": 4.01,
+        "shares": 117826
+      },
+      {
+        "id": "GOOG UQ",
+        "name": "ALPHABET INC-CL C",
+        "weight_pct": 3.84,
+        "shares": 39219
+      },
+      {
+        "id": "SPCX UQ",
+        "name": "SPACE EXPLORATION TECHN-CL A",
+        "weight_pct": 2.76,
+        "shares": 65148
+      },
+      {
+        "id": "CSCO UQ",
+        "name": "CISCO SYSTEMS INC",
+        "weight_pct": 2.75,
+        "shares": 88382
+      },
+      {
+        "id": "PLTR UQ",
+        "name": "PALANTIR TECHNOLOGIES INC-A",
+        "weight_pct": 2.64,
+        "shares": 51591
+      },
+      {
+        "id": "LRCX UQ",
+        "name": "LAM RESEARCH CORP",
+        "weight_pct": 2.37,
+        "shares": 28059
+      },
+      {
+        "id": "AMAT UQ",
+        "name": "APPLIED MATERIALS INC",
+        "weight_pct": 2.31,
+        "shares": 17795
+      },
+      {
+        "id": "PANW UQ",
+        "name": "PALO ALTO NETWORKS INC",
+        "weight_pct": 1.9,
+        "shares": 18275
+      },
+      {
+        "id": "SNDK UQ",
+        "name": "SANDISK CORP",
+        "weight_pct": 1.62,
+        "shares": 3283
+      },
+      {
+        "id": "CRWD UQ",
+        "name": "CROWDSTRIKE HOLDINGS INC - A",
+        "weight_pct": 1.6,
+        "shares": 22960
+      },
+      {
+        "id": "TXN UQ",
+        "name": "TEXAS INSTRUMENTS INC",
+        "weight_pct": 1.55,
+        "shares": 20478
+      },
+      {
+        "id": "KLAC UQ",
+        "name": "KLA CORP",
+        "weight_pct": 1.5,
+        "shares": 29298
+      },
+      {
+        "id": "MRVL UQ",
+        "name": "MARVELL TECHNOLOGY INC",
+        "weight_pct": 1.41,
+        "shares": 19663
+      },
+      {
+        "id": "AMGN UQ",
+        "name": "AMGEN INC",
+        "weight_pct": 1.33,
+        "shares": 12123
+      },
+      {
+        "id": "QCOM UQ",
+        "name": "QUALCOMM INC",
+        "weight_pct": 1.28,
+        "shares": 23550
+      },
+      {
+        "id": "STX UQ",
+        "name": "SEAGATE TECHNOLOGY HOLDINGS",
+        "weight_pct": 1.24,
+        "shares": 5082
+      },
+      {
+        "id": "GILD UQ",
+        "name": "GILEAD SCIENCES INC",
+        "weight_pct": 1.17,
+        "shares": 27804
+      },
+      {
+        "id": "SHOP UQ",
+        "name": "SHOPIFY INC - CLASS A",
+        "weight_pct": 1.04,
+        "shares": 27101
+      },
+      {
+        "id": "ASML UQ",
+        "name": "ASML HOLDING NV-NY REG SHS",
+        "weight_pct": 1.01,
+        "shares": 2108
+      },
+      {
+        "id": "ARM UQ",
+        "name": "ARM HOLDINGS PLC-ADR",
+        "weight_pct": 0.88,
+        "shares": 9779
+      },
+      {
+        "id": "FTNT UQ",
+        "name": "FORTINET INC",
+        "weight_pct": 0.81,
+        "shares": 16453
+      },
+      {
+        "id": "VRTX UQ",
+        "name": "VERTEX PHARMACEUTICALS INC",
+        "weight_pct": 0.81,
+        "shares": 5684
+      },
+      {
+        "id": "BKNG UQ",
+        "name": "BOOKING HOLDINGS INC",
+        "weight_pct": 0.79,
+        "shares": 16849
+      },
+      {
+        "id": "ADBE UQ",
+        "name": "ADOBE INC",
+        "weight_pct": 0.62,
+        "shares": 8913
+      },
+      {
+        "id": "ISRG UQ",
+        "name": "INTUITIVE SURGICAL INC",
+        "weight_pct": 0.62,
+        "shares": 5545
+      },
+      {
+        "id": "MELI UQ",
+        "name": "MERCADOLIBRE INC",
+        "weight_pct": 0.58,
+        "shares": 1137
+      },
+      {
+        "id": "CDNS UQ",
+        "name": "CADENCE DESIGN SYS INC",
+        "weight_pct": 0.51,
+        "shares": 6175
+      },
+      {
+        "id": "DDOG UQ",
+        "name": "DATADOG INC - CLASS A",
+        "weight_pct": 0.51,
+        "shares": 7510
+      },
+      {
+        "id": "REGN UQ",
+        "name": "REGENERON PHARMACEUTICALS",
+        "weight_pct": 0.51,
+        "shares": 2268
+      },
+      {
+        "id": "DASH UQ",
+        "name": "DOORDASH INC - A",
+        "weight_pct": 0.5,
+        "shares": 9173
+      },
+      {
+        "id": "SNPS UQ",
+        "name": "SYNOPSYS INC",
+        "weight_pct": 0.48,
+        "shares": 4297
+      },
+      {
+        "id": "ABNB UQ",
+        "name": "AIRBNB INC-CLASS A",
+        "weight_pct": 0.44,
+        "shares": 9407
+      },
+      {
+        "id": "APP UQ",
+        "name": "APPLOVIN CORP-CLASS A",
+        "weight_pct": 0.44,
+        "shares": 4779
+      },
+      {
+        "id": "MPWR UQ",
+        "name": "MONOLITHIC POWER SYSTEMS INC",
+        "weight_pct": 0.39,
+        "shares": 1102
+      },
+      {
+        "id": "ALAB UQ",
+        "name": "ASTERA LABS INC",
+        "weight_pct": 0.37,
+        "shares": 3890
+      },
+      {
+        "id": "TER UQ",
+        "name": "TERADYNE INC",
+        "weight_pct": 0.37,
+        "shares": 3506
+      },
+      {
+        "id": "INTU UQ",
+        "name": "INTUIT INC",
+        "weight_pct": 0.36,
+        "shares": 4294
+      },
+      {
+        "id": "WDAY UQ",
+        "name": "WORKDAY INC-CLASS A",
+        "weight_pct": 0.24,
+        "shares": 4395
+      },
+      {
+        "id": "AXON UQ",
+        "name": "AXON ENTERPRISE INC",
+        "weight_pct": 0.23,
+        "shares": 1822
+      },
+      {
+        "id": "PDD UQ",
+        "name": "PDD HOLDINGS INC",
+        "weight_pct": 0.23,
+        "shares": 10484
+      },
+      {
+        "id": "ADSK UQ",
+        "name": "AUTODESK INC",
+        "weight_pct": 0.2,
+        "shares": 3281
+      },
+      {
+        "id": "RKLB UQ",
+        "name": "ROCKET LAB CORP",
+        "weight_pct": 0.18,
+        "shares": 9394
+      },
+      {
+        "id": "ALNY UQ",
+        "name": "ALNYLAM PHARMACEUTICALS INC",
+        "weight_pct": 0.14,
+        "shares": 2100
+      }
+    ]
   }
 }
