@@ -13,6 +13,13 @@ latest published active ETF acquisition histories/logs and the persistent
 chart release. Production's existing retirement changes remain authoritative;
 retired accounting, market-pulse and V1–V4 products are not restored.
 
+After the user reported concurrent edits, the audit was repeated. Remote and
+production had advanced to `d588d4f` (the bedroom A static site). That commit
+was merged intact, including its README addition and deploy helper. Among
+the 84 production baseline paths, only README had changed. The full suite
+also passed in an isolated Linux copy using production's existing virtualenv:
+77 tests and 26 subtests. No production secrets were copied into that checkout.
+
 Issuer-fetch and derived-job systemd ownership belongs to the mother project
 (`06_arm_server`), including the trading-calendar gate and task ledger.
 Obsolete duplicate templates are removed here. The gold monitor template's
