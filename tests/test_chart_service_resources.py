@@ -41,10 +41,25 @@ class ChartPageLifecycleTests(unittest.IsolatedAsyncioTestCase):
         self.original_pages = chart_service.pages.copy()
         self.original_navigations = chart_service.browser_navigations
         self.original_started = chart_service.browser_started_at
+        self.memory_patch = patch.object(chart_service, 'service_memory_bytes', return_value=100)
+        self.memory_patch.start()
+        self.original_loaded = chart_service.page_loaded_at.copy()
+        self.original_used = chart_service.page_last_used.copy()
+        self.original_invalid = chart_service.invalid_pages.copy()
+        chart_service.page_loaded_at.clear()
+        chart_service.page_last_used.clear()
+        chart_service.invalid_pages.clear()
         chart_service.browser_navigations = 0
         chart_service.browser_started_at = 0.0
 
     def tearDown(self) -> None:
+        self.memory_patch.stop()
+        chart_service.page_loaded_at.clear()
+        chart_service.page_loaded_at.update(self.original_loaded)
+        chart_service.page_last_used.clear()
+        chart_service.page_last_used.update(self.original_used)
+        chart_service.invalid_pages.clear()
+        chart_service.invalid_pages.update(self.original_invalid)
         chart_service.playwright_instance = self.original_playwright
         chart_service.browser_context = self.original_context
         chart_service.browser_instance = self.original_browser
@@ -53,7 +68,7 @@ class ChartPageLifecycleTests(unittest.IsolatedAsyncioTestCase):
         chart_service.browser_navigations = self.original_navigations
         chart_service.browser_started_at = self.original_started
 
-    async def test_navigation_budget_recycles_before_returning_cached_page(self):
+    async def test_memory_pressure_recycles_before_returning_cached_page(self):
         stale = Mock()
         stale.is_closed.return_value = False
         fresh = Mock()
@@ -62,7 +77,7 @@ class ChartPageLifecycleTests(unittest.IsolatedAsyncioTestCase):
         chart_service.browser_context = Mock()
         chart_service.pages.clear()
         chart_service.pages['oil'] = stale
-        chart_service.browser_navigations = chart_service.BROWSER_MAX_NAVIGATIONS
+        chart_service.service_memory_bytes.return_value = chart_service.BROWSER_SOFT_MEMORY_BYTES
 
         async def recycle():
             chart_service.pages.clear()
@@ -73,21 +88,22 @@ class ChartPageLifecycleTests(unittest.IsolatedAsyncioTestCase):
             self.assertIs(await chart_service._get_page_for_key('oil'), fresh)
         init.assert_awaited_once()
 
-    async def test_old_browser_recycles_even_when_same_key_is_repeated(self):
+    async def test_healthy_browser_survives_age_and_navigation_count(self):
         chart_service.browser_instance = Mock()
         chart_service.browser_context = Mock()
         chart_service.browser_started_at = 1.0
+        chart_service.browser_navigations = 10000
         page = Mock()
         page.is_closed.return_value = False
         chart_service.pages.clear()
         chart_service.pages['oil'] = page
-        with patch.object(chart_service.time, 'monotonic', return_value=122.0), patch.object(
+        with patch.object(chart_service.time, 'monotonic', return_value=86400.0), patch.object(
             chart_service, 'init_browser', new=AsyncMock()
         ) as init:
             await chart_service._get_page_for_key('oil')
-        init.assert_awaited_once()
+        init.assert_not_awaited()
 
-    async def test_switching_keys_reuses_the_resident_page(self) -> None:
+    async def test_switching_keys_keeps_both_pages_resident(self) -> None:
         old_page = Mock()
         old_page.is_closed.return_value = False
         old_page.close = AsyncMock()
@@ -95,7 +111,11 @@ class ChartPageLifecycleTests(unittest.IsolatedAsyncioTestCase):
         old_page.goto = AsyncMock()
         old_page.add_style_tag = AsyncMock()
         context = Mock()
-        context.new_page = AsyncMock()
+        fresh_page = Mock()
+        fresh_page.set_viewport_size = AsyncMock()
+        fresh_page.goto = AsyncMock()
+        fresh_page.add_style_tag = AsyncMock()
+        context.new_page = AsyncMock(return_value=fresh_page)
         browser = Mock()
         browser.is_connected.return_value = True
         chart_service.browser_context = context
@@ -106,18 +126,18 @@ class ChartPageLifecycleTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(chart_service.asyncio, "sleep", new=AsyncMock()):
             selected = await chart_service._get_page_for_key("bond")
 
-        self.assertIs(selected, old_page)
+        self.assertIs(selected, fresh_page)
         old_page.close.assert_not_awaited()
-        context.new_page.assert_not_awaited()
-        old_page.set_viewport_size.assert_awaited_once_with(
+        context.new_page.assert_awaited_once()
+        fresh_page.set_viewport_size.assert_awaited_once_with(
             chart_service.GENERIC_SNAPSHOT_VIEWPORT
         )
-        old_page.goto.assert_awaited_once_with(
+        fresh_page.goto.assert_awaited_once_with(
             chart_service.CHART_TABS["bond"],
             wait_until="networkidle",
             timeout=60000,
         )
-        self.assertEqual({"bond": old_page}, chart_service.pages)
+        self.assertEqual({"oil": old_page, "bond": fresh_page}, chart_service.pages)
 
     async def test_nasdaq_layout_is_desktop_before_navigation(self) -> None:
         page = Mock()
@@ -129,8 +149,8 @@ class ChartPageLifecycleTests(unittest.IsolatedAsyncioTestCase):
         browser.is_connected.return_value = True
         chart_service.browser_instance = browser
         chart_service.browser_context = Mock()
+        chart_service.browser_context.new_page = AsyncMock(return_value=page)
         chart_service.pages.clear()
-        chart_service.pages["oil"] = page
 
         with patch.object(chart_service.asyncio, "sleep", new=AsyncMock()):
             selected = await chart_service._get_page_for_key("nasdaq")
@@ -145,6 +165,39 @@ class ChartPageLifecycleTests(unittest.IsolatedAsyncioTestCase):
             timeout=60000,
         )
         page.add_style_tag.assert_not_awaited()
+
+    async def test_retained_nasdaq_restores_controls_without_reloading(self):
+        page = Mock()
+        page.is_closed.return_value = False
+        page.evaluate = AsyncMock()
+        page.goto = AsyncMock()
+        chart_service.pages.clear()
+        chart_service.pages['nasdaq'] = page
+        chart_service.browser_instance = Mock()
+        chart_service.browser_context = Mock()
+        result = await chart_service._get_page_for_key('nasdaq')
+        self.assertIs(result, page)
+        page.goto.assert_not_awaited()
+        self.assertEqual(page.evaluate.await_args.args[1], chart_service.HIDE_CSS)
+
+    async def test_invalid_or_aged_page_refreshes_without_restarting_browser(self):
+        page=Mock()
+        page.is_closed.return_value=False
+        page.set_viewport_size=AsyncMock()
+        page.goto=AsyncMock()
+        page.add_style_tag=AsyncMock()
+        chart_service.pages.clear();chart_service.pages['oil']=page
+        chart_service.page_loaded_at['oil']=1
+        chart_service.browser_instance=Mock();chart_service.browser_context=Mock()
+        with patch.object(chart_service,'init_browser',new=AsyncMock()) as init, \
+             patch.object(chart_service.time,'monotonic',return_value=602), \
+             patch.object(chart_service.asyncio,'sleep',new=AsyncMock()):
+            await chart_service._get_page_for_key('oil')
+            chart_service.invalid_pages.add('oil')
+            await chart_service._get_page_for_key('oil')
+        self.assertEqual(page.goto.await_count,2)
+        init.assert_not_awaited()
+        self.assertNotIn('oil',chart_service.invalid_pages)
 
     async def test_nasdaq_selects_real_control_before_hiding_layout(self) -> None:
         body = Mock()
@@ -239,8 +292,10 @@ class ChartServiceUnitTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         unit = (root / "services" / "stock-chart.service").read_text(encoding="utf-8")
         self.assertIn("Slice=stock-background.slice", unit)
-        self.assertIn("MemoryMax=768M", unit)
-        self.assertIn("TasksMax=200", unit)
+        self.assertIn("MemoryMax=2560M", unit)
+        self.assertIn("KillMode=mixed", unit)
+        self.assertIn("RuntimeMaxSec=infinity", unit)
+        self.assertIn("TasksMax=512", unit)
         self.assertNotIn("MemoryMax=2500M", unit)
 
 

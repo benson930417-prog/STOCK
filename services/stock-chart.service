@@ -9,9 +9,12 @@ WorkingDirectory=/home/ubuntu/STOCK
 ExecStart=/home/ubuntu/STOCK/venv/bin/python3 /home/ubuntu/STOCK/scripts/chart_service.py
 Restart=always
 RestartSec=5
-RuntimeMaxSec=2h
-MemoryMax=768M
-TasksMax=200
+RuntimeMaxSec=infinity
+KillMode=mixed
+TimeoutStopSec=210
+MemoryHigh=2304M
+MemoryMax=2560M
+TasksMax=512
 TimeoutStartSec=30
 
 [Install]
