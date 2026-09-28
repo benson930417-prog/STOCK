@@ -33,6 +33,11 @@ STOCK is a self-hosted ETF and market-monitoring system. It has three user-facin
 
 The production server path used by all service files is `/home/ubuntu/STOCK`.
 
+## Other hosted pages
+
+- **臥室 A 房間設計檢視器**：[公開網站](https://linechatbot.duckdns.org/bedroom-a/)，無需登入或密碼。包含互動 3D、插座位置、施工剖面與現場照片核對；來源為 `sites/bedroom-a/`，由同台 ARM 伺服器的 Nginx 靜態提供。更新後執行 `sudo python3 scripts/deploy_bedroom_site.py`。
+
+
 ## Canonical market-data contract
 
 All production market readers use the single ARM database at
