@@ -104,9 +104,9 @@ for i,(xa,xb) in enumerate([(0,1.1),(2.6,4.45),(5.38,7.15)]):wallseg('front wall
 for name,xa,xb,sill,head in [('wide window',1.1,2.6,.65,2.15),('narrow window',4.45,5.38,.7,2.35)]:
     wallseg(name+' sill',(xa,0),(xb,0),sill,g='FrontWall')
     wallseg(name+' lintel',(xa,0),(xb,0),3.05-head,g='FrontWall',base=head)
-    for x in [xa,xb,(xa+xb)/2]:box(name+' jamb',(x,0,(sill+head)/2),(.045,.12,head-sill),frame,'FrontWall')
-    for z in [sill,head]:box(name+' rail',((xa+xb)/2,0,z),(xb-xa,.12,.045),frame,'FrontWall')
-    box(name+' glass',((xa+xb)/2,0,(sill+head)/2),(xb-xa-.05,.01,head-sill-.05),glass,'FrontWall')
+
+import runpy
+runpy.run_path(str(OUT/'window_frames.py'))['build_window_frames'](box, frame, glass)
 
 # Balcony opening: retain full-height glazed boundary as a schematic sliding assembly.
 wallseg('balcony header',(7.15,0),(7.15,3.4),.65,base=2.4)
