@@ -1,0 +1,220 @@
+{
+  "source": "原 PDF 第 64 頁，3F 水弱電配置圖，圖面日期 115.09.08",
+  "scope": "臥室 A、原閱讀／衣櫃區與陽台鄰接點；不含浴室內與其他房間。",
+  "siteCount": 10,
+  "powerSymbolCount": 12,
+  "mountingHeightsKnown": false,
+  "positionMethod": "平面位置由第 64 頁符號對照現有草模，僅為示意定位；3D 標記放在地板上方，不表示插座安裝高度。",
+  "versionNote": "第 39 頁為較早的 115.07.29 版，與第 64 頁點位不同，不合併計數。",
+  "items": [
+    {
+      "id": "P01",
+      "label": "原左側衣櫃內／後方，靠浴室端",
+      "pdfPoint": [
+        216.508,
+        358.288
+      ],
+      "position": [
+        0.09,
+        2.9,
+        null
+      ],
+      "symbolCount": 1,
+      "kind": "power",
+      "extraSymbol": null,
+      "note": "原衣櫃已取消；此點保留原圖位置，未隨新床移動。",
+      "heightStatus": "第 64 頁未標高度",
+      "sourcePage": 64
+    },
+    {
+      "id": "P02",
+      "label": "原左側上端書櫃",
+      "pdfPoint": [
+        263.257,
+        350.904
+      ],
+      "position": [
+        0.91,
+        3.03,
+        null
+      ],
+      "symbolCount": 1,
+      "kind": "power",
+      "extraSymbol": null,
+      "note": "符號落在原書櫃上；書櫃取消後的承載面待確認。",
+      "heightStatus": "第 64 頁未標高度",
+      "sourcePage": 64
+    },
+    {
+      "id": "P03",
+      "label": "浴室外側牆",
+      "pdfPoint": [
+        297.75,
+        336.246
+      ],
+      "position": [
+        1.53,
+        3.3,
+        null
+      ],
+      "symbolCount": 1,
+      "kind": "power",
+      "extraSymbol": null,
+      "note": "位於臥室內、浴室門左側牆段。",
+      "heightStatus": "第 64 頁未標高度",
+      "sourcePage": 64
+    },
+    {
+      "id": "P04",
+      "label": "原床頭左側",
+      "pdfPoint": [
+        450.726,
+        366.672
+      ],
+      "position": [
+        4.26,
+        2.75,
+        null
+      ],
+      "symbolCount": 2,
+      "kind": "power",
+      "extraSymbol": null,
+      "note": "原圖上下排列兩個插座符號；不代表已確認安裝高度或插孔數。",
+      "heightStatus": "第 64 頁未標高度",
+      "sourcePage": 64
+    },
+    {
+      "id": "P05",
+      "label": "原床頭右側",
+      "pdfPoint": [
+        561.771,
+        366.672
+      ],
+      "position": [
+        6.24,
+        2.75,
+        null
+      ],
+      "symbolCount": 2,
+      "kind": "power",
+      "extraSymbol": null,
+      "note": "原圖上下排列兩個插座符號；目前新衣櫃可能遮擋，需另行評估。",
+      "heightStatus": "第 64 頁未標高度",
+      "sourcePage": 64
+    },
+    {
+      "id": "P06",
+      "label": "靠陽台的北側短牆",
+      "pdfPoint": [
+        585.657,
+        336.246
+      ],
+      "position": [
+        6.67,
+        3.3,
+        null
+      ],
+      "symbolCount": 1,
+      "kind": "power",
+      "extraSymbol": null,
+      "note": "在陽台門旁，仍屬臥室內。",
+      "heightStatus": "第 64 頁未標高度",
+      "sourcePage": 64
+    },
+    {
+      "id": "P07",
+      "label": "窗邊牆，靠陽台端",
+      "pdfPoint": [
+        582.245,
+        516.359
+      ],
+      "position": [
+        6.61,
+        0.1,
+        null
+      ],
+      "symbolCount": 1,
+      "kind": "power",
+      "extraSymbol": null,
+      "note": "靠近新書桌這一側。",
+      "heightStatus": "第 64 頁未標高度",
+      "sourcePage": 64
+    },
+    {
+      "id": "P08",
+      "label": "兩扇窗之間的牆段",
+      "pdfPoint": [
+        377.077,
+        516.359
+      ],
+      "position": [
+        2.94,
+        0.1,
+        null
+      ],
+      "symbolCount": 1,
+      "kind": "power",
+      "extraSymbol": "C",
+      "note": "另有一個 C 符號；端點類型未找到圖例確認，不能直接當作網路孔。",
+      "heightStatus": "第 64 頁未標高度",
+      "sourcePage": 64
+    },
+    {
+      "id": "P09",
+      "label": "原左側下端書櫃",
+      "pdfPoint": [
+        263.257,
+        501.701
+      ],
+      "position": [
+        0.91,
+        0.34,
+        null
+      ],
+      "symbolCount": 1,
+      "kind": "power",
+      "extraSymbol": null,
+      "note": "符號落在原書櫃上；書櫃取消後的承載面待確認。",
+      "heightStatus": "第 64 頁未標高度",
+      "sourcePage": 64
+    },
+    {
+      "id": "P10",
+      "label": "原左側衣櫃內／後方，靠窗端",
+      "pdfPoint": [
+        216.508,
+        506.809
+      ],
+      "position": [
+        0.09,
+        0.25,
+        null
+      ],
+      "symbolCount": 1,
+      "kind": "power",
+      "extraSymbol": null,
+      "note": "原衣櫃已取消；此點保留原圖位置，未隨新床移動。",
+      "heightStatus": "第 64 頁未標高度",
+      "sourcePage": 64
+    },
+    {
+      "id": "U01",
+      "label": "陽台北側半黑圓符號",
+      "pdfPoint": [
+        658.806,
+        339.91
+      ],
+      "position": [
+        7.99,
+        3.24,
+        null
+      ],
+      "symbolCount": 0,
+      "kind": "unconfirmed",
+      "extraSymbol": null,
+      "note": "符號與室內插座不同，尚未確認用途；列出位置但不計入插座數。",
+      "heightStatus": "第 64 頁未標高度",
+      "sourcePage": 64
+    }
+  ]
+}

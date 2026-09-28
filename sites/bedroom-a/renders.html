@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>臥室 A · 配置草模 01</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#202523;color:#eef0eb;font:16px/1.6 system-ui,'Microsoft JhengHei',sans-serif}main{max-width:1320px;margin:auto;padding:28px}header{display:flex;justify-content:space-between;gap:20px;align-items:center}h1{font-size:25px;font-weight:500;margin:0}p{margin:8px 0;color:#bac3bd}.tag{color:#c8dac4;font-size:13px;letter-spacing:.12em}nav{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 16px}button{font:inherit;background:transparent;color:#cfd6d0;border:1px solid #657369;border-radius:7px;padding:8px 15px;cursor:pointer}button[aria-pressed=true]{background:#d7e2d3;color:#202523;border-color:#d7e2d3}button:focus-visible,a:focus-visible{outline:3px solid #f0d489;outline-offset:3px}figure{margin:0;background:#aaaead;border-radius:6px;overflow:hidden}img{display:block;width:100%;height:auto;max-height:74vh;object-fit:contain}figcaption{background:#2d3430;padding:13px 18px;color:#e2e6df}section{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:22px}h2{font-size:16px;font-weight:500;margin:0 0 6px}ul{padding-left:20px;margin:0;color:#bac3bd}a{color:#d1dfc9}footer{display:flex;flex-wrap:wrap;gap:20px;margin-top:22px;font-size:14px}@media(max-width:640px){main{padding:16px}header{display:block}h1{font-size:21px}section{grid-template-columns:1fr}img{max-height:none}}
+</style></head><body><main>
+<header><div><div class="tag">BEDROOM A / STUDY 01</div><h1>床頭靠左牆，床尾朝陽台</h1><p>先看空間與配置，再討論材質和風格。</p></div><span>素色示意 · 2026.09.28</span></header>
+<nav aria-label="選擇視角">
+<button data-view="02-overview.png" data-caption="整體剖開視角｜移除天花與兩面外牆，方便看配置；實際模型保留完整牆面。" aria-pressed="true">整體配置</button>
+<button data-view="01-top.png" data-caption="俯視｜左側是床頭牆，右側是陽台，上方凹口是入口區。" aria-pressed="false">俯視平面</button>
+<button data-view="03-bed-to-balcony.png" data-caption="從床上朝陽台看｜保留大致的天花高低、窗邊低帶和空調槽。" aria-pressed="false">床 → 陽台</button>
+<button data-view="04-entry.png" data-caption="進房後看床區｜原左側衣櫃已移除，改為床頭牆。" aria-pressed="false">入口看床</button>
+<button data-view="05-balcony-to-bed.png" data-caption="陽台側回看｜右側收納與窗邊書桌都是本版提案，可以移動或刪除。" aria-pressed="false">陽台 → 床</button>
+</nav>
+<figure><img id="view" src="02-overview.png" alt="臥室 A 整體配置示意"><figcaption id="caption" aria-live="polite">整體剖開視角｜移除天花與兩面外牆，方便看配置；實際模型保留完整牆面。</figcaption></figure>
+<section><div><h2>這一版的配置</h2><ul><li>床墊暫以 180 × 200 cm 示意，床頭在左，床尾朝陽台。</li><li>原左側衣櫃移除；新衣櫃暫放上側凹入牆前。</li><li>書桌暫放右下窗邊，保留中央到陽台的動線。</li></ul></div><div><h2>模型假設</h2><ul><li>主要室內約 7.15 × 3.40 m，依原圖比例估算。</li><li>天花採原 PDF 第 65 頁的高低分區，細部簡化。</li><li>門窗高度、窗框分割、陽台欄板和家具尺寸為示意。</li><li>這是配置底稿，不是現場丈量或施工圖。</li></ul></div></section>
+<footer><a href="bedroom-a-v1.blend">可編輯 Blender 模型</a><a href="README.md">尺寸與假設紀錄</a><a href="build_room.py">模型生成腳本</a></footer>
+</main><script>const view=document.getElementById('view'),caption=document.getElementById('caption');document.querySelectorAll('button[data-view]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('button[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'));button.setAttribute('aria-pressed','true');view.src=button.dataset.view;view.alt=button.textContent+'：臥室 A 配置示意';caption.textContent=button.dataset.caption;}));</script></body></html>
+
