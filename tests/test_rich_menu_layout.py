@@ -25,14 +25,12 @@ def test_page_one_text_stays_inside_each_tile() -> None:
 
 def test_phone_row_uses_short_labels() -> None:
     labels = {(cell[5], cell[6]) for cell in PAGE1 if cell[1] == 843}
-    assert ("ETF 共識", "觀察・買・賣") in labels
+    assert ("ETF", "公開持股資料") in labels
     assert ("那斯達克", "24 小時") in labels
 
 
-def test_page_one_has_financing_balance_action() -> None:
-    financing = [cell for cell in PAGE1 if cell[5] == "融資餘額"]
-    assert len(financing) == 1
-    cell = financing[0]
-    assert cell[1] == 0
-    assert cell[8] == "message"
-    assert cell[9] == "融資餘額"
+def test_page_one_keeps_market_actions_without_retired_products() -> None:
+    actions = {cell[9] for cell in PAGE1 if cell[8] == "message"}
+    assert actions == {"油價", "黃金", "匯率", "債券", "那斯達克"}
+    labels = {cell[5] for cell in PAGE1}
+    assert labels.isdisjoint({"融資餘額", "ETF 共識", "ETF 動作", "市場脈動"})

@@ -41,7 +41,7 @@ class IssuerHoldingsFetchTest(unittest.TestCase):
             manifest = root/"manifest.json"
             argv = ["fetch", "--root", str(root), "--manifest", str(manifest),
                     "--log-dir", str(root/"logs"), "--attempts", "1", "0050"]
-            with patch.object(sys, "argv", argv), patch.object(fetch_run.subprocess, "run", return_value=SimpleNamespace(returncode=0)), redirect_stdout(io.StringIO()):
+            with patch.object(sys, "argv", argv), patch.object(fetch_run.subprocess, "run", return_value=SimpleNamespace(returncode=0)), patch.object(fetch_run.os, "uname", return_value=SimpleNamespace(nodename="test-host"), create=True), redirect_stdout(io.StringIO()):
                 code = fetch_run.main()
             result = json.loads(manifest.read_text())
             self.assertEqual(2, code)

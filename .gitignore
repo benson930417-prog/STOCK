@@ -31,6 +31,9 @@ Thumbs.db
 
 # Claude Code
 .claude/
+# Machine-local Codex configuration and temporary audit/render artifacts
+.codex/
+/tmp/
 # Local agent credentials (SSH command, dashboard session URL) — repo is public
 CLAUDE.local.md
 
@@ -44,16 +47,8 @@ data/debug_00997A/
 data/test_*.html
 data/test_*.js
 data/etf_*_summary_*.jpg
-# Keep the latest daily/on-demand LINE cards tracked so they sync to production,
-# but still ignore dated copies and everything else under summaries/.
+# Summary images are generated on production. Legacy signal cards are retired.
 data/summaries/*
-!data/summaries/market_pulse_latest.jpg
-!data/summaries/margin_maintenance_latest.jpg
-!data/summaries/etf_action_buy_latest.jpg
-!data/summaries/etf_action_hold_latest.jpg
-!data/summaries/etf_action_sell_latest.jpg
-!data/summaries/etf_intent_v3_buy_latest.jpg
-!data/summaries/etf_intent_v3_sell_latest.jpg
 
 # Local design previews for the score chart (throwaway)
 data/_preview_*
