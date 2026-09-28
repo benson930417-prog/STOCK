@@ -1,5 +1,6 @@
 import os
 import asyncio
+import time
 import hashlib
 import urllib.request
 import re
@@ -9,6 +10,10 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from playwright.async_api import async_playwright
 from PIL import Image, ImageDraw, ImageFont
+try:
+    from .chart_runtime import BrowserRequestGuard, service_memory_bytes
+except ImportError:  # direct production script entry
+    from chart_runtime import BrowserRequestGuard, service_memory_bytes
 
 app = FastAPI()
 
@@ -111,6 +116,17 @@ playwright_instance = None
 browser_context = None
 browser_instance = None
 pages = {}
+browser_navigations = 0
+browser_started_at = 0.0
+# Persistent per-symbol pages; soft pressure is handled only between requests.
+BROWSER_SOFT_MEMORY_BYTES = 2048 * 1024 * 1024
+BROWSER_MAX_PAGES = 8
+PAGE_REFRESH_SECONDS = 600
+page_loaded_at = {}
+page_last_used = {}
+invalid_pages = set()
+active_page_key = None
+browser_recycles = 0
 browser_request_lock = asyncio.Lock()
 
 GENERIC_SNAPSHOT_VIEWPORT = {"width": 720, "height": 860}
@@ -531,7 +547,9 @@ def _chart_snapshot_has_content(image_path, min_colored_ratio=0.002):
 
 async def init_browser():
     global playwright_instance, browser_instance, browser_context, pages
+    global browser_navigations, browser_started_at, browser_recycles
 
+    browser_recycles += 1
     _log("🧹 Cleaning up old browser instances...")
     if browser_instance:
         try:
@@ -544,6 +562,14 @@ async def init_browser():
         except Exception as e:
             _log(f"⚠️ Error stopping playwright_instance: {e}")
     pages.clear()
+    page_loaded_at.clear()
+    page_last_used.clear()
+    invalid_pages.clear()
+    browser_context = None
+    browser_instance = None
+    playwright_instance = None
+    browser_navigations = 0
+    browser_started_at = 0.0
 
     _log("🚀 Initializing Browser...")
     playwright_instance = await async_playwright().start()
@@ -554,6 +580,7 @@ async def init_browser():
         timezone_id="Asia/Taipei",
         locale="en-US",
     )
+    browser_started_at = time.monotonic()
     _log("✅ Browser ready; chart pages load on demand.")
 
 @app.on_event("startup")
@@ -577,62 +604,92 @@ class SnapshotRequest(BaseModel):
 
 
 async def _get_page_for_key(key):
-    global browser_context, browser_instance
-
+    global browser_navigations, active_page_key
     if key not in CHART_TABS:
         raise HTTPException(status_code=404, detail="Tab key not found")
-
-    existing = pages.get(key)
-    if existing is not None and not existing.is_closed():
-        return existing
-
-    if (
-        browser_context is None
-        or browser_instance is None
-        or not browser_instance.is_connected()
-    ):
+    active_page_key = key
+    memory = service_memory_bytes()
+    if (browser_context is None or browser_instance is None
+            or not browser_instance.is_connected()
+            or (memory is not None and memory >= BROWSER_SOFT_MEMORY_BYTES)):
         await init_browser()
 
-    # The cache monitor is deliberately sequential. Keeping eight live
-    # TradingView renderers consumed ~1.9 GiB even though only one was touched
-    # at a time. Re-navigate the single resident page so Chromium never has to
-    # overlap an exiting renderer with a newly-created one.
-    page = next(iter(pages.values()), None)
-    if page is None or page.is_closed():
+    # Invalid/aged pages are refreshed by the same canonical navigation below.
+    now = time.monotonic()
+    page = pages.get(key)
+    if page is not None and page.is_closed():
+        pages.pop(key, None)
+        page_loaded_at.pop(key, None)
+        page = None
+    refresh = key in invalid_pages or now - page_loaded_at.get(key, now) >= PAGE_REFRESH_SECONDS
+    if page is not None and not refresh:
+        if key == 'nasdaq':
+            # A retained page still has our previous capture's injected styles.
+            # Restore its controls before the UNCHANGED 1-day capture routine
+            # clicks/verifies them and reapplies exactly the same screenshot CSS.
+            await page.evaluate("""css => {
+                for (const style of document.querySelectorAll('style')) {
+                    if (style.textContent === css) style.remove();
+                }
+            }""", HIDE_CSS)
+        page_last_used[key] = now
+        return page
+    if page is None:
+        if len(pages) >= BROWSER_MAX_PAGES:
+            oldest = min(pages, key=lambda k: page_last_used.get(k, 0))
+            await pages.pop(oldest).close()
+            page_loaded_at.pop(oldest, None)
+            page_last_used.pop(oldest, None)
         page = await browser_context.new_page()
-    pages.clear()
     try:
-        # TradingView chooses the mobile/desktop symbol-page structure during
-        # initial navigation.  Changing to 1200px only after the page loaded
-        # intermittently left NASDAQ without its range controls.  Size first,
-        # then navigate, so the original IG chart and overlay keep one layout.
+        # Preserve the exact source, viewport, wait and style rules.
         await page.set_viewport_size(
-            NASDAQ_SNAPSHOT_VIEWPORT
-            if key == "nasdaq"
-            else GENERIC_SNAPSHOT_VIEWPORT
+            NASDAQ_SNAPSHOT_VIEWPORT if key == "nasdaq" else GENERIC_SNAPSHOT_VIEWPORT
         )
+        browser_navigations += 1
         await page.goto(CHART_TABS[key], wait_until="networkidle", timeout=60000)
-        # NASDAQ must click the visible range control first.  Hiding its parent
-        # before the click made React sometimes omit/replace that control.
         if key != "nasdaq":
             await page.add_style_tag(content=HIDE_CSS)
         await asyncio.sleep(2)
-    except Exception as exc:
+    except (Exception, asyncio.CancelledError) as exc:
+        pages.pop(key, None)
+        page_loaded_at.pop(key, None)
         await page.close()
+        if isinstance(exc, asyncio.CancelledError):
+            raise
         raise HTTPException(
             status_code=503,
             detail=f"Could not load chart page {key}: {type(exc).__name__}: {exc}",
         ) from exc
     pages[key] = page
+    page_loaded_at[key] = page_last_used[key] = time.monotonic()
+    invalid_pages.discard(key)
     return page
 
 
-@app.middleware("http")
-async def serialize_browser_requests(request, call_next):
-    if request.url.path in {"/market-text", "/market-debug", "/snapshot"}:
-        async with browser_request_lock:
-            return await call_next(request)
-    return await call_next(request)
+def invalidate_active_page():
+    if active_page_key is not None:
+        invalid_pages.add(active_page_key)
+
+
+app.add_middleware(BrowserRequestGuard, lock=browser_request_lock,
+                   on_failure=invalidate_active_page)
+
+
+@app.get("/healthz")
+async def healthz():
+    return {
+        "status": "ok" if browser_instance and browser_instance.is_connected() else "recovering",
+        "browser_connected": bool(browser_instance and browser_instance.is_connected()),
+        "resident_pages": sorted(pages),
+        "page_limit": BROWSER_MAX_PAGES,
+        "memory_bytes": service_memory_bytes(),
+        "soft_memory_bytes": BROWSER_SOFT_MEMORY_BYTES,
+        "browser_generations": browser_recycles,
+        "browser_age_seconds": round(time.monotonic() - browser_started_at, 1) if browser_started_at else None,
+        "navigations": browser_navigations,
+        "busy": browser_request_lock.locked(),
+    }
 
 
 async def _get_body_text(page):
@@ -1104,4 +1161,4 @@ async def take_snapshot(req: SnapshotRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=5005)
+    uvicorn.run(app, host="127.0.0.1", port=5005, timeout_graceful_shutdown=190)

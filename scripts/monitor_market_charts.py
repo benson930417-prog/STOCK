@@ -23,7 +23,7 @@ UPSTREAM_BLOCKED_BACKOFF_SECONDS = 300
 UPSTREAM_BLOCKED_MAX_BACKOFF_SECONDS = 1800
 UPSTREAM_BLOCKED_STATE_MAX_AGE_SECONDS = 6 * 60 * 60
 OUTAGE_STATE_PATH = QUOTE_CACHE_DIR / "market_monitor_outage.json"
-INDEPENDENT_UPSTREAM_KEYS = frozenset({"nasdaq"})
+SCHEDULE_STATE_PATH = QUOTE_CACHE_DIR / "market_monitor_schedule.json"
 
 
 class ChartServiceUnavailable(RuntimeError):
@@ -175,50 +175,75 @@ def refresh_cycle(keys, timeout):
     return 0
 
 
-def refresh_iteration(
-    keys,
-    timeout,
-    *,
-    consecutive_outages,
-    next_retry_epoch,
-    now_epoch=None,
-):
-    """Refresh due shared charts and always refresh independent upstreams.
+def load_schedule(keys, now_epoch=None):
+    now = time.time() if now_epoch is None else float(now_epoch)
+    try:
+        state = json.loads(SCHEDULE_STATE_PATH.read_text(encoding="utf-8"))
+        if state.get("version") != 1 or now - float(state["updated_epoch"]) > 21600:
+            raise ValueError("expired schedule")
+        entries = {}
+        for key in keys:
+            item = state.get("keys", {}).get(key, {})
+            entries[key] = {
+                "next_due": max(0, min(now + 1800, float(item.get("next_due", 0)))),
+                "failures": max(0, min(20, int(item.get("failures", 0)))),
+                "status": str(item.get("status", "pending")),
+            }
+        return {"version": 1, "updated_epoch": now, "keys": entries,
+                "provider_until": max(0, min(now + 1800, float(state.get("provider_until", 0))))}
+    except (OSError, ValueError, TypeError, KeyError):
+        # Preserve an existing upstream cooldown across the first deployment.
+        previous = load_outage_state(now_epoch=now)
+        return {"version": 1, "updated_epoch": now, "provider_until": previous["next_retry_epoch"],
+                "keys": {key: {"next_due": 0, "failures": 0, "status": "pending"} for key in keys}}
 
-    NASDAQ uses IG, while the other seven charts use TradingView. A
-    TradingView 403 therefore must postpone only the shared group; sleeping
-    the whole monitor made a healthy NASDAQ cache stale for up to 30 minutes.
+
+def run_due_refreshes(keys, state, *, interval=60, timeout=200, clock=time.time):
+    """One serial worker, independent due times, no catch-up bursts.
+
+    All current symbol URLs, including IG:NASDAQ, are TradingView pages.
+    A single failed page cools down alone; two blocked pages in this pass
+    also open a provider circuit. No alternate source is ever substituted.
     """
-
-    now_epoch = time.time() if now_epoch is None else float(now_epoch)
-    shared_keys = [key for key in keys if key not in INDEPENDENT_UPSTREAM_KEYS]
-    independent_keys = [key for key in keys if key in INDEPENDENT_UPSTREAM_KEYS]
-
-    if shared_keys and now_epoch >= float(next_retry_epoch):
-        backoff_seconds = refresh_cycle(shared_keys, timeout)
-        if backoff_seconds == UPSTREAM_BLOCKED_BACKOFF_SECONDS:
-            consecutive_outages += 1
-            delay = record_outage(consecutive_outages, now_epoch=now_epoch)
-            next_retry_epoch = now_epoch + delay
-            print(
-                f"{utc_now_iso()} shared-upstream outage streak={consecutive_outages}; "
-                f"next retry in {delay}s; independent caches continue",
-                flush=True,
-            )
+    now = clock()
+    if now < state.get("provider_until", 0):
+        return
+    blocked = 0
+    due = sorted((key for key in keys if state['keys'][key]['next_due'] <= now),
+                 key=lambda key: state['keys'][key]['next_due'])
+    for key in due:
+        started = clock()
+        item = state['keys'][key]
+        try:
+            refresh_key(key, timeout)
+        except Exception as exc:
+            item['failures'] = min(20, item['failures'] + 1)
+            is_blocked = (isinstance(exc, ChartServiceUnavailable)
+                          and exc.retry_after_seconds == UPSTREAM_BLOCKED_BACKOFF_SECONDS)
+            if is_blocked:
+                blocked += 1
+                delay = upstream_blocked_backoff_seconds(item['failures'])
+                item['status'] = 'upstream_blocked'
+            else:
+                delay = max(60, interval)
+                item['status'] = 'unavailable'
+            item['next_due'] = clock() + delay
+            print(f"{utc_now_iso()} {key} refresh failed: {type(exc).__name__}: {exc}; retry in {delay}s", flush=True)
         else:
-            consecutive_outages = 0
-            next_retry_epoch = 0.0
-            clear_outage_state()
+            item.update(failures=0, status='ok', next_due=max(started + interval, clock() + 1))
+        if blocked >= 2:
+            state['provider_until'] = clock() + UPSTREAM_BLOCKED_BACKOFF_SECONDS
+        state['updated_epoch'] = clock()
+        atomic_write_json(SCHEDULE_STATE_PATH, state)
+        if blocked >= 2:
+            break
 
-    if independent_keys:
-        # Its errors are logged by refresh_cycle but cannot alter or erase the
-        # TradingView cooldown state maintained above.
-        refresh_cycle(independent_keys, timeout)
 
-    return {
-        "consecutive_outages": consecutive_outages,
-        "next_retry_epoch": next_retry_epoch,
-    }
+def next_schedule_delay(keys, state, *, now_epoch=None):
+    now = time.time() if now_epoch is None else float(now_epoch)
+    earliest = min(state['keys'][key]['next_due'] for key in keys)
+    earliest = max(earliest, state.get('provider_until', 0))
+    return max(1, min(60, earliest - now))
 
 
 def main():
@@ -228,35 +253,18 @@ def main():
         default=["oil", "brent", "bond", "gold", "usdtwd", "usdjpy", "usdchf", "nasdaq"],
     )
     parser.add_argument("--interval", type=int, default=60)
-    parser.add_argument("--timeout", type=int, default=45)
+    parser.add_argument("--timeout", type=int, default=200)
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
 
-    outage_state = load_outage_state()
-    consecutive_outages = outage_state["consecutive_outages"]
-    startup_delay = max(0, int(outage_state["next_retry_epoch"] - time.time()))
-    if startup_delay and not args.once:
-        print(
-            f"{utc_now_iso()} preserving shared-upstream cooldown across restart: "
-            f"{startup_delay}s; independent caches continue",
-            flush=True,
-        )
-
-    if args.once:
-        backoff_seconds = refresh_cycle(args.keys, args.timeout)
-        if backoff_seconds:
-            raise SystemExit(1)
-        return
-
+    if args.interval < 10 or args.timeout < 1:
+        parser.error("interval must be >=10s and timeout positive")
+    state = load_schedule(args.keys)
     while True:
-        outage_state = refresh_iteration(
-            args.keys,
-            args.timeout,
-            consecutive_outages=consecutive_outages,
-            next_retry_epoch=outage_state["next_retry_epoch"],
-        )
-        consecutive_outages = outage_state["consecutive_outages"]
-        time.sleep(max(10, args.interval))
+        run_due_refreshes(args.keys, state, interval=args.interval, timeout=args.timeout)
+        if args.once:
+            raise SystemExit(0 if all(state['keys'][key]['status'] == 'ok' for key in args.keys) else 1)
+        time.sleep(next_schedule_delay(args.keys, state))
 
 
 if __name__ == "__main__":
