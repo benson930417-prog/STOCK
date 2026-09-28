@@ -1,0 +1,1289 @@
+[
+  {
+    "name": "room floor - traced finished boundary",
+    "group": "Shell",
+    "bounds_m": [
+      0.0,
+      0.0,
+      -0.15,
+      7.155,
+      4.171,
+      0.0
+    ],
+    "basis": "Drawing footprint, context/hidden closure thickness not surveyed"
+  },
+  {
+    "name": "bath wall solid",
+    "group": "Shell",
+    "bounds_m": [
+      -0.0,
+      3.4,
+      0.0,
+      1.9,
+      3.504,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "bath wall pier",
+    "group": "Shell",
+    "bounds_m": [
+      2.65,
+      3.4,
+      0.0,
+      2.804,
+      3.504,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "bath door lintel",
+    "group": "Shell",
+    "bounds_m": [
+      1.9,
+      3.4,
+      2.4,
+      2.65,
+      3.504,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "vestibule west bathroom boundary",
+    "group": "Shell",
+    "bounds_m": [
+      2.7,
+      3.4,
+      0.0,
+      2.804,
+      4.171,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "entry opening lintel",
+    "group": "Shell",
+    "bounds_m": [
+      2.804,
+      4.171,
+      2.4,
+      3.804,
+      4.275,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "entry right pier",
+    "group": "Shell",
+    "bounds_m": [
+      3.804,
+      4.171,
+      0.0,
+      4.02,
+      4.275,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "northeast edge",
+    "group": "Shell",
+    "bounds_m": [
+      6.573,
+      3.4,
+      0.0,
+      7.155,
+      3.55,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "balcony header",
+    "group": "Shell",
+    "bounds_m": [
+      7.155,
+      -0.0,
+      2.4,
+      7.305,
+      3.4,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "front wall pier 0",
+    "group": "FrontWall",
+    "bounds_m": [
+      0.0,
+      -0.15,
+      0.0,
+      1.07,
+      0.0,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "front wall pier 1",
+    "group": "FrontWall",
+    "bounds_m": [
+      2.57,
+      -0.15,
+      0.0,
+      4.44,
+      0.0,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "front wall pier 2",
+    "group": "FrontWall",
+    "bounds_m": [
+      5.37,
+      -0.15,
+      0.0,
+      7.155,
+      0.0,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "wide window sill",
+    "group": "FrontWall",
+    "bounds_m": [
+      1.07,
+      -0.15,
+      0.0,
+      2.57,
+      0.0,
+      0.5
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "wide window lintel",
+    "group": "FrontWall",
+    "bounds_m": [
+      1.07,
+      -0.15,
+      2.3,
+      2.57,
+      0.0,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "narrow window sill",
+    "group": "FrontWall",
+    "bounds_m": [
+      4.44,
+      -0.15,
+      0.0,
+      5.37,
+      0.0,
+      0.5
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "narrow window lintel",
+    "group": "FrontWall",
+    "bounds_m": [
+      4.44,
+      -0.15,
+      2.5,
+      5.37,
+      0.0,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "wide window left jamb",
+    "group": "FrontWall",
+    "bounds_m": [
+      1.07,
+      -0.135,
+      0.5,
+      1.12,
+      -0.015,
+      2.3
+    ],
+    "basis": "p61/p69 opening geometry; simplified frame cross-section"
+  },
+  {
+    "name": "wide window right jamb",
+    "group": "FrontWall",
+    "bounds_m": [
+      2.52,
+      -0.135,
+      0.5,
+      2.57,
+      -0.015,
+      2.3
+    ],
+    "basis": "p61/p69 opening geometry; simplified frame cross-section"
+  },
+  {
+    "name": "wide window bottom rail",
+    "group": "FrontWall",
+    "bounds_m": [
+      1.07,
+      -0.135,
+      0.5,
+      2.57,
+      -0.015,
+      0.55
+    ],
+    "basis": "p61/p69 opening geometry; simplified frame cross-section"
+  },
+  {
+    "name": "wide window top rail",
+    "group": "FrontWall",
+    "bounds_m": [
+      1.07,
+      -0.135,
+      2.25,
+      2.57,
+      -0.015,
+      2.3
+    ],
+    "basis": "p61/p69 opening geometry; simplified frame cross-section"
+  },
+  {
+    "name": "wide window transom",
+    "group": "FrontWall",
+    "bounds_m": [
+      1.07,
+      -0.135,
+      1.0,
+      2.57,
+      -0.015,
+      1.05
+    ],
+    "basis": "p61/p69 opening geometry; simplified frame cross-section"
+  },
+  {
+    "name": "wide window upper mullion",
+    "group": "FrontWall",
+    "bounds_m": [
+      1.795,
+      -0.135,
+      1.05,
+      1.845,
+      -0.015,
+      2.25
+    ],
+    "basis": "p61/p69 opening geometry; simplified frame cross-section"
+  },
+  {
+    "name": "wide window lower single glass",
+    "group": "FrontWall",
+    "bounds_m": [
+      1.12,
+      -0.08,
+      0.55,
+      2.52,
+      -0.07,
+      1.0
+    ],
+    "basis": "p69 traced dimensions; upper pair / lower single confirmed by owner; overall opening width checked in p61 and p69 plan."
+  },
+  {
+    "name": "wide window upper left glass",
+    "group": "FrontWall",
+    "bounds_m": [
+      1.12,
+      -0.08,
+      1.05,
+      1.795,
+      -0.07,
+      2.25
+    ],
+    "basis": "p69 traced dimensions; upper pair / lower single confirmed by owner; overall opening width checked in p61 and p69 plan."
+  },
+  {
+    "name": "wide window upper right glass",
+    "group": "FrontWall",
+    "bounds_m": [
+      1.845,
+      -0.08,
+      1.05,
+      2.52,
+      -0.07,
+      2.25
+    ],
+    "basis": "p69 traced dimensions; upper pair / lower single confirmed by owner; overall opening width checked in p61 and p69 plan."
+  },
+  {
+    "name": "narrow window left jamb",
+    "group": "FrontWall",
+    "bounds_m": [
+      4.44,
+      -0.135,
+      0.5,
+      4.49,
+      -0.015,
+      2.5
+    ],
+    "basis": "p61/p69 opening geometry; simplified frame cross-section"
+  },
+  {
+    "name": "narrow window right jamb",
+    "group": "FrontWall",
+    "bounds_m": [
+      5.32,
+      -0.135,
+      0.5,
+      5.37,
+      -0.015,
+      2.5
+    ],
+    "basis": "p61/p69 opening geometry; simplified frame cross-section"
+  },
+  {
+    "name": "narrow window bottom rail",
+    "group": "FrontWall",
+    "bounds_m": [
+      4.44,
+      -0.135,
+      0.5,
+      5.37,
+      -0.015,
+      0.55
+    ],
+    "basis": "p61/p69 opening geometry; simplified frame cross-section"
+  },
+  {
+    "name": "narrow window top rail",
+    "group": "FrontWall",
+    "bounds_m": [
+      4.44,
+      -0.135,
+      2.45,
+      5.37,
+      -0.015,
+      2.5
+    ],
+    "basis": "p61/p69 opening geometry; simplified frame cross-section"
+  },
+  {
+    "name": "narrow window single glass",
+    "group": "FrontWall",
+    "bounds_m": [
+      4.49,
+      -0.08,
+      0.55,
+      5.32,
+      -0.07,
+      2.45
+    ],
+    "basis": "p69 visible portion ends at H250 ceiling; true concealed head height is not given. Model shows visible opening only."
+  },
+  {
+    "name": "left headboard wall",
+    "group": "LeftWall",
+    "bounds_m": [
+      -0.15,
+      -0.0,
+      0.0,
+      0.0,
+      3.4,
+      3.15
+    ],
+    "basis": "Traced interior face; thickness outside; hidden top not structural"
+  },
+  {
+    "name": "P69 traced ceiling including projecting shelves and lips",
+    "group": "Ceiling",
+    "bounds_m": [
+      0.0,
+      0.47,
+      2.5,
+      7.15499,
+      2.93,
+      3.15
+    ],
+    "basis": "p69 traced visible ceiling / p65 transverse band"
+  },
+  {
+    "name": "front curtain recess roof",
+    "group": "Ceiling",
+    "bounds_m": [
+      0.0,
+      0.0,
+      2.6,
+      7.155,
+      0.12,
+      3.15
+    ],
+    "basis": "p69 traced visible ceiling / p65 transverse band"
+  },
+  {
+    "name": "front perimeter low band",
+    "group": "Ceiling",
+    "bounds_m": [
+      0.0,
+      0.12,
+      2.5,
+      7.155,
+      0.47,
+      3.15
+    ],
+    "basis": "p69 traced visible ceiling / p65 transverse band"
+  },
+  {
+    "name": "north low strip left",
+    "group": "Ceiling",
+    "bounds_m": [
+      0.0,
+      2.93,
+      2.5,
+      2.804,
+      3.4,
+      3.15
+    ],
+    "basis": "p69 traced visible ceiling / p65 transverse band"
+  },
+  {
+    "name": "vestibule ceiling",
+    "group": "Ceiling",
+    "bounds_m": [
+      2.804,
+      2.93,
+      2.5,
+      4.02,
+      4.171,
+      3.15
+    ],
+    "basis": "p69 traced visible ceiling / p65 transverse band"
+  },
+  {
+    "name": "northeast ceiling",
+    "group": "Ceiling",
+    "bounds_m": [
+      6.573,
+      2.93,
+      2.6,
+      7.155,
+      3.4,
+      3.15
+    ],
+    "basis": "p69 traced visible ceiling / p65 transverse band"
+  },
+  {
+    "name": "original cabinet coverage - not structural",
+    "group": "Ceiling",
+    "bounds_m": [
+      4.02,
+      2.93,
+      2.5,
+      6.573,
+      4.171,
+      3.15
+    ],
+    "basis": "p69 traced visible ceiling / p65 transverse band"
+  },
+  {
+    "name": "central VERTICAL AC grille recessed backing",
+    "group": "Ceiling",
+    "bounds_m": [
+      3.104,
+      0.77,
+      2.695,
+      3.11,
+      2.67,
+      2.795
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "central VERTICAL AC grille long frame -1",
+    "group": "Ceiling",
+    "bounds_m": [
+      3.083,
+      0.77,
+      2.695,
+      3.095,
+      2.67,
+      2.703
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "central VERTICAL AC grille end frame -1",
+    "group": "Ceiling",
+    "bounds_m": [
+      3.083,
+      0.77,
+      2.695,
+      3.095,
+      0.778,
+      2.795
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "central VERTICAL AC grille long frame 1",
+    "group": "Ceiling",
+    "bounds_m": [
+      3.083,
+      0.77,
+      2.787,
+      3.095,
+      2.67,
+      2.795
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "central VERTICAL AC grille end frame 1",
+    "group": "Ceiling",
+    "bounds_m": [
+      3.083,
+      2.662,
+      2.695,
+      3.095,
+      2.67,
+      2.795
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "central VERTICAL AC grille longitudinal blade 1",
+    "group": "Ceiling",
+    "bounds_m": [
+      3.08,
+      0.778,
+      2.713,
+      3.09,
+      2.662,
+      2.721
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "central VERTICAL AC grille longitudinal blade 2",
+    "group": "Ceiling",
+    "bounds_m": [
+      3.08,
+      0.778,
+      2.741,
+      3.09,
+      2.662,
+      2.749
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "central VERTICAL AC grille longitudinal blade 3",
+    "group": "Ceiling",
+    "bounds_m": [
+      3.08,
+      0.778,
+      2.769,
+      3.09,
+      2.662,
+      2.777
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "balcony HORIZONTAL AC grille recessed backing",
+    "group": "Ceiling",
+    "bounds_m": [
+      6.69,
+      0.575,
+      2.85,
+      6.78,
+      2.825,
+      2.856
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "balcony HORIZONTAL AC grille long frame -1",
+    "group": "Ceiling",
+    "bounds_m": [
+      6.69,
+      0.575,
+      2.829,
+      6.698,
+      2.825,
+      2.841
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "balcony HORIZONTAL AC grille end frame -1",
+    "group": "Ceiling",
+    "bounds_m": [
+      6.69,
+      0.575,
+      2.829,
+      6.78,
+      0.583,
+      2.841
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "balcony HORIZONTAL AC grille long frame 1",
+    "group": "Ceiling",
+    "bounds_m": [
+      6.772,
+      0.575,
+      2.829,
+      6.78,
+      2.825,
+      2.841
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "balcony HORIZONTAL AC grille end frame 1",
+    "group": "Ceiling",
+    "bounds_m": [
+      6.69,
+      2.817,
+      2.829,
+      6.78,
+      2.825,
+      2.841
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "balcony HORIZONTAL AC grille longitudinal blade 1",
+    "group": "Ceiling",
+    "bounds_m": [
+      6.70633,
+      0.583,
+      2.826,
+      6.71433,
+      2.817,
+      2.836
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "balcony HORIZONTAL AC grille longitudinal blade 2",
+    "group": "Ceiling",
+    "bounds_m": [
+      6.731,
+      0.583,
+      2.826,
+      6.739,
+      2.817,
+      2.836
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "balcony HORIZONTAL AC grille longitudinal blade 3",
+    "group": "Ceiling",
+    "bounds_m": [
+      6.75567,
+      0.583,
+      2.826,
+      6.76367,
+      2.817,
+      2.836
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "LED diffuser central concealed",
+    "group": "Ceiling",
+    "bounds_m": [
+      3.0315,
+      0.595,
+      2.632,
+      3.0505,
+      2.845,
+      2.638
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "LED diffuser balcony concealed",
+    "group": "Ceiling",
+    "bounds_m": [
+      6.4395,
+      0.595,
+      2.632,
+      6.4585,
+      2.845,
+      2.638
+    ],
+    "basis": "Illustrative grille/LED hardware; recess position from p69"
+  },
+  {
+    "name": "bathroom door left frame",
+    "group": "Openings",
+    "bounds_m": [
+      1.9,
+      3.375,
+      0.0,
+      1.95,
+      3.475,
+      2.4
+    ],
+    "basis": "p61/p67/p69 opening, simplified frame/hardware; entrance conflict recorded"
+  },
+  {
+    "name": "bathroom door right frame",
+    "group": "Openings",
+    "bounds_m": [
+      2.6,
+      3.375,
+      0.0,
+      2.65,
+      3.475,
+      2.4
+    ],
+    "basis": "p61/p67/p69 opening, simplified frame/hardware; entrance conflict recorded"
+  },
+  {
+    "name": "bathroom door head frame",
+    "group": "Openings",
+    "bounds_m": [
+      1.9,
+      3.375,
+      2.35,
+      2.65,
+      3.475,
+      2.4
+    ],
+    "basis": "p61/p67/p69 opening, simplified frame/hardware; entrance conflict recorded"
+  },
+  {
+    "name": "bathroom door closed",
+    "group": "Openings",
+    "bounds_m": [
+      1.95,
+      3.4015,
+      0.01,
+      2.6,
+      3.4485,
+      2.35
+    ],
+    "basis": "p61 75 cm plan opening; p67 75 cm outer frame and 240 cm head agree."
+  },
+  {
+    "name": "bathroom door lever",
+    "group": "Openings",
+    "bounds_m": [
+      2.44,
+      3.3525,
+      1.04,
+      2.56,
+      3.3975,
+      1.06
+    ],
+    "basis": "Hardware and handle height illustrative"
+  },
+  {
+    "name": "entrance door left frame",
+    "group": "Openings",
+    "bounds_m": [
+      2.804,
+      4.146,
+      0.0,
+      2.834,
+      4.246,
+      2.4
+    ],
+    "basis": "p61/p67/p69 opening, simplified frame/hardware; entrance conflict recorded"
+  },
+  {
+    "name": "entrance door right frame",
+    "group": "Openings",
+    "bounds_m": [
+      3.774,
+      4.146,
+      0.0,
+      3.804,
+      4.246,
+      2.4
+    ],
+    "basis": "p61/p67/p69 opening, simplified frame/hardware; entrance conflict recorded"
+  },
+  {
+    "name": "entrance door head frame",
+    "group": "Openings",
+    "bounds_m": [
+      2.804,
+      4.146,
+      2.37,
+      3.804,
+      4.246,
+      2.4
+    ],
+    "basis": "p61/p67/p69 opening, simplified frame/hardware; entrance conflict recorded"
+  },
+  {
+    "name": "entrance door closed",
+    "group": "Openings",
+    "bounds_m": [
+      2.834,
+      4.1725,
+      0.01,
+      3.774,
+      4.2195,
+      2.37
+    ],
+    "basis": "CONFLICT: p61 plan and p67 S1 show 100 cm; p68 S2 shows 90 cm. Use p61 footprint temporarily; do not claim site confirmation."
+  },
+  {
+    "name": "entrance door lever",
+    "group": "Openings",
+    "bounds_m": [
+      3.614,
+      4.1235,
+      1.04,
+      3.734,
+      4.1685,
+      1.06
+    ],
+    "basis": "Hardware and handle height illustrative"
+  },
+  {
+    "name": "balcony door threshold",
+    "group": "Openings",
+    "bounds_m": [
+      7.155,
+      0.0,
+      0.0,
+      7.305,
+      3.4,
+      0.07
+    ],
+    "basis": "p61/p67/p69 opening, simplified frame/hardware; entrance conflict recorded"
+  },
+  {
+    "name": "balcony left outer frame",
+    "group": "Openings",
+    "bounds_m": [
+      7.155,
+      0.0,
+      0.07,
+      7.305,
+      0.05,
+      2.4
+    ],
+    "basis": "p61/p67/p69 opening, simplified frame/hardware; entrance conflict recorded"
+  },
+  {
+    "name": "balcony right outer frame",
+    "group": "Openings",
+    "bounds_m": [
+      7.155,
+      3.35,
+      0.07,
+      7.305,
+      3.4,
+      2.4
+    ],
+    "basis": "p61/p67/p69 opening, simplified frame/hardware; entrance conflict recorded"
+  },
+  {
+    "name": "balcony bottom outer rail",
+    "group": "Openings",
+    "bounds_m": [
+      7.155,
+      0.0,
+      0.07,
+      7.305,
+      3.4,
+      0.12
+    ],
+    "basis": "p61/p67/p69 opening, simplified frame/hardware; entrance conflict recorded"
+  },
+  {
+    "name": "balcony top outer rail",
+    "group": "Openings",
+    "bounds_m": [
+      7.155,
+      0.0,
+      2.35,
+      7.305,
+      3.4,
+      2.4
+    ],
+    "basis": "p61/p67/p69 opening, simplified frame/hardware; entrance conflict recorded"
+  },
+  {
+    "name": "balcony glazing - internal division unconfirmed",
+    "group": "Openings",
+    "bounds_m": [
+      7.224,
+      0.05,
+      0.12,
+      7.236,
+      3.35,
+      2.35
+    ],
+    "basis": "p61 plan width; p67/p69 side section H7 to H240. Internal sash division not established; outer frame only."
+  },
+  {
+    "name": "upholstered bed base",
+    "group": "Furniture",
+    "bounds_m": [
+      0.155,
+      0.72,
+      0.06,
+      2.305,
+      2.64,
+      0.38
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "mattress 180 x 200",
+    "group": "Furniture",
+    "bounds_m": [
+      0.23,
+      0.78,
+      0.34,
+      2.23,
+      2.58,
+      0.62
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "headboard left wall",
+    "group": "Furniture",
+    "bounds_m": [
+      0.02,
+      0.62,
+      0.05,
+      0.2,
+      2.74,
+      1.37
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "pillow",
+    "group": "Furniture",
+    "bounds_m": [
+      0.255,
+      0.87,
+      0.605,
+      0.825,
+      1.59,
+      0.775
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "pillow.001",
+    "group": "Furniture",
+    "bounds_m": [
+      0.255,
+      1.77,
+      0.605,
+      0.825,
+      2.49,
+      0.775
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "folded neutral blanket",
+    "group": "Furniture",
+    "bounds_m": [
+      1.605,
+      0.775,
+      0.605,
+      2.155,
+      2.585,
+      0.685
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "bedside table",
+    "group": "Furniture",
+    "bounds_m": [
+      0.18,
+      0.18,
+      0.0,
+      0.74,
+      0.62,
+      0.49
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "bedside tray",
+    "group": "Furniture",
+    "bounds_m": [
+      0.27,
+      0.26,
+      0.4925,
+      0.65,
+      0.54,
+      0.5175
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "bedside table.001",
+    "group": "Furniture",
+    "bounds_m": [
+      0.18,
+      2.76,
+      0.0,
+      0.74,
+      3.2,
+      0.49
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "bedside tray.001",
+    "group": "Furniture",
+    "bounds_m": [
+      0.27,
+      2.84,
+      0.4925,
+      0.65,
+      3.12,
+      0.5175
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "proposed wardrobe north",
+    "group": "Furniture",
+    "bounds_m": [
+      4.08,
+      2.325,
+      0.0,
+      6.42,
+      2.925,
+      2.32
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "wardrobe door reveal",
+    "group": "Furniture",
+    "bounds_m": [
+      4.6655,
+      2.313,
+      0.04,
+      4.6745,
+      2.319,
+      2.28
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "wardrobe door reveal.001",
+    "group": "Furniture",
+    "bounds_m": [
+      5.2455,
+      2.313,
+      0.04,
+      5.2545,
+      2.319,
+      2.28
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "wardrobe door reveal.002",
+    "group": "Furniture",
+    "bounds_m": [
+      5.8255,
+      2.313,
+      0.04,
+      5.8345,
+      2.319,
+      2.28
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "desk proposal",
+    "group": "Furniture",
+    "bounds_m": [
+      5.145,
+      0.075,
+      0.7125,
+      6.695,
+      0.725,
+      0.7675
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "desk support",
+    "group": "Furniture",
+    "bounds_m": [
+      5.2125,
+      0.13,
+      0.01,
+      5.2675,
+      0.67,
+      0.71
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "desk support.001",
+    "group": "Furniture",
+    "bounds_m": [
+      6.5725,
+      0.13,
+      0.01,
+      6.6275,
+      0.67,
+      0.71
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "chair seat",
+    "group": "Furniture",
+    "bounds_m": [
+      5.67,
+      0.775,
+      0.42,
+      6.17,
+      1.245,
+      0.5
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "chair back",
+    "group": "Furniture",
+    "bounds_m": [
+      5.67,
+      1.21,
+      0.495,
+      6.17,
+      1.27,
+      1.025
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "chair leg",
+    "group": "Furniture",
+    "bounds_m": [
+      5.704,
+      0.834,
+      0.015,
+      5.736,
+      0.866,
+      0.445
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "chair leg.001",
+    "group": "Furniture",
+    "bounds_m": [
+      5.704,
+      1.154,
+      0.015,
+      5.736,
+      1.186,
+      0.445
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "chair leg.002",
+    "group": "Furniture",
+    "bounds_m": [
+      6.104,
+      0.834,
+      0.015,
+      6.136,
+      0.866,
+      0.445
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "chair leg.003",
+    "group": "Furniture",
+    "bounds_m": [
+      6.104,
+      1.154,
+      0.015,
+      6.136,
+      1.186,
+      0.445
+    ],
+    "basis": "Design proposal; not measured existing furniture"
+  },
+  {
+    "name": "original cabinet boundary - west side",
+    "group": "OriginalJoinery",
+    "bounds_m": [
+      4.02,
+      2.93,
+      0.0,
+      4.045,
+      4.171,
+      2.5
+    ],
+    "basis": "p61 cabinet frontage, NOT verified building wall; backing unresolved; sheet thickness illustrative"
+  },
+  {
+    "name": "original cabinet boundary - front",
+    "group": "OriginalJoinery",
+    "bounds_m": [
+      4.02,
+      2.93,
+      0.0,
+      6.573,
+      2.955,
+      2.5
+    ],
+    "basis": "p61 cabinet frontage, NOT verified building wall; backing unresolved; sheet thickness illustrative"
+  },
+  {
+    "name": "original cabinet boundary - east return",
+    "group": "OriginalJoinery",
+    "bounds_m": [
+      6.548,
+      2.93,
+      0.0,
+      6.573,
+      3.4,
+      2.5
+    ],
+    "basis": "p61 cabinet frontage, NOT verified building wall; backing unresolved; sheet thickness illustrative"
+  },
+  {
+    "name": "balcony context floor - level unconfirmed",
+    "group": "Balcony",
+    "bounds_m": [
+      7.155,
+      0.0,
+      -0.08,
+      8.67,
+      3.4,
+      0.0
+    ],
+    "basis": "p61 extent; floor level and railing elevation unconfirmed"
+  }
+]

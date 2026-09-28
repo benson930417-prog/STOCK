@@ -1,5 +1,5 @@
 """Bedroom A v1. Run with Blender 4.5: blender -b --python build_room.py
-Concept geometry, meters. Source: PDF pp.61,65,67-70; dimensions approximate.
+Audited drawing geometry, meters. Source: dimension-audit.json; not a site survey.
 X points from original left wardrobe wall toward balcony. Y points up source plan.
 """
 import bpy, math, json
@@ -48,7 +48,7 @@ grillemat=material('11 satin grey vent grille',(.48,.49,.47),.48,.12)
 glass=material('10 glass',(.85,.92,.94),.08)
 pg=glass.node_tree.nodes['Principled BSDF'];pg.inputs['Transmission Weight'].default_value=1;pg.inputs['IOR'].default_value=1.45
 groups={}
-for name in ['Shell','FrontWall','LeftWall','Ceiling','Openings','Furniture','Balcony','Lights','Cameras']:
+for name in ['Shell','FrontWall','LeftWall','Ceiling','Openings','Furniture','OriginalJoinery','Balcony','Lights','Cameras']:
     c=bpy.data.collections.new(name);scene.collection.children.link(c);groups[name]=c
 def group(o,g):
     for c in list(o.users_collection):c.objects.unlink(o)
@@ -79,44 +79,10 @@ def camera(name,loc,target,lens=24,ortho=None):
     if ortho:d.type='ORTHO';d.ortho_scale=ortho
     return o
 
-# Main outline estimated by calibrating p.61 proportions against readable p.67 dimensions.
-outline=[(0,0),(7.15,0),(7.15,3.4),(6.55,3.4),(6.55,2.95),(4.03,2.95),(4.03,4.25),(2.82,4.25),(2.82,3.4),(0,3.4)]
-slab('room floor, approximate outline',outline,-.15,.15,floor,'Shell')
-wallseg('left headboard wall',(0,0),(0,3.4),g='LeftWall')
-wallseg('bath wall solid',(0,3.4),(1.86,3.4))
-wallseg('bath wall pier',(2.7,3.4),(2.82,3.4))
-wallseg('bath door lintel',(1.86,3.4),(2.7,3.4),.85,base=2.2)
-box('bathroom door placeholder',(2.28,3.42,1.07),(.80,.055,2.14),joinery,'Openings',.012)
-box('bathroom door lever',(2.55,3.365,1.02),(.14,.055,.025),frame,'Openings',.01)
-# PDF p61: entrance is in the north end of the vestibule, hinged at its west jamb.
-wallseg('vestibule west bathroom boundary',(2.82,3.4),(2.82,4.25))
-wallseg('entry opening lintel',(2.82,4.25),(3.80,4.25),.85,base=2.2)
-wallseg('entry right pier',(3.80,4.25),(4.03,4.25))
-box('room entrance door closed',(3.31,4.25,1.07),(.94,.055,2.14),joinery,'Openings',.012)
-box('room entrance door lever',(3.65,4.195,1.02),(.14,.055,.025),frame,'Openings',.01)
-wallseg('neighbor boundary',(4.03,4.25),(4.03,2.95))
-wallseg('north stepped boundary',(4.03,2.95),(6.55,2.95))
-wallseg('north short return',(6.55,2.95),(6.55,3.4))
-wallseg('northeast edge',(6.55,3.4),(7.15,3.4))
-
-# Two exterior windows, positions from plan; vertical sizes from elevation proportions only.
-for i,(xa,xb) in enumerate([(0,1.1),(2.6,4.45),(5.38,7.15)]):wallseg('front wall pier '+str(i),(xa,0),(xb,0),g='FrontWall')
-for name,xa,xb,sill,head in [('wide window',1.1,2.6,.65,2.15),('narrow window',4.45,5.38,.7,2.35)]:
-    wallseg(name+' sill',(xa,0),(xb,0),sill,g='FrontWall')
-    wallseg(name+' lintel',(xa,0),(xb,0),3.05-head,g='FrontWall',base=head)
-
+# Room enclosure and windows use the audited source-coordinate manifest.
 import runpy
-runpy.run_path(str(OUT/'window_frames.py'))['build_window_frames'](box, frame, glass)
-
-# Balcony opening: retain full-height glazed boundary as a schematic sliding assembly.
-wallseg('balcony header',(7.15,0),(7.15,3.4),.65,base=2.4)
-for y in [0,1.13,2.26,3.4]:box('balcony vertical frame',(7.15,y,1.2),(.1,.045,2.4),frame,'Openings')
-for z in [.035,2.4]:box('balcony horizontal frame',(7.15,1.7,z),(.1,3.4,.05),frame,'Openings')
-for y in [.565,1.695,2.83]:box('balcony glass',(7.15,y,1.22),(.012,1.085,2.3),glass,'Openings')
-slab('balcony floor',[(7.15,0),(8.65,0),(8.65,3.4),(7.15,3.4)],-.08,.08,balcony,'Balcony')
-for y in [0,3.4]:wallseg('balcony side return',(7.2,y),(8.65,y),1.1,g='Balcony')
-box('balcony parapet',(8.65,1.7,.55),(.14,3.4,1.1),wall,'Balcony')
-for x in [7.4,7.8,8.2]:box('balcony floor joint',(x,1.7,.004),(.006,3.35,.004),dark,'Balcony')
+D=runpy.run_path(str(OUT/'audited_shell.py'))['build_shell'](box,slab,wall,floor,frame,glass,joinery,balcony)
+runpy.run_path(str(OUT/'window_frames.py'))['build_window_frames'](box,frame,glass)
 
 # Bed axis +X, head at original left wall. Mattress is an assumed 1.8 x 2.0 m.
 box('upholstered bed base',(1.23,1.68,.22),(2.15,1.92,.32),cloth,'Furniture',.075)
@@ -141,8 +107,8 @@ for x in [5.72,6.12]:
 # Visible S3 ceiling contour traced from repaired vector PDF p69.
 # Scale uses explicit 105 cm dimension; Z uses explicit H250 plus 20 / 10 cm steps.
 # X is reversed because the drawing shows the balcony on the left.
-P69_SCALE=97.163/1.05
-P69_RIGHT=833.050
+P69_SCALE=92.53650483630952
+P69_RIGHT=833.0501098632812
 P69_H250_Y=410.571
 profile_pdf=[
  (833.050,350.422),(833.050,410.571),(735.887,410.571),(735.887,382.810),
@@ -152,7 +118,7 @@ profile_pdf=[
  (229.250,398.541),(237.578,398.541),(237.578,382.810),(214.444,382.810),
  (214.444,376.564),(205.190,376.564),(205.190,410.571),(182.056,410.571),
  (182.056,401.317),(170.952,401.317),(170.952,350.422)]
-profile_xz=[(max(0,min(7.15,(P69_RIGHT-x)/P69_SCALE)),2.5+(P69_H250_Y-y)/P69_SCALE) for x,y in profile_pdf]
+profile_xz=[(max(0,min(7.155,(P69_RIGHT-x)/P69_SCALE)),2.5+(P69_H250_Y-y)/P69_SCALE) for x,y in profile_pdf]
 def extruded_ceiling_profile(name,profile,y0,y1):
     import bmesh
     n=len(profile);verts=[(x,y0,z) for x,z in profile]+[(x,y1,z) for x,z in profile]
@@ -160,16 +126,17 @@ def extruded_ceiling_profile(name,profile,y0,y1):
     mesh=bpy.data.meshes.new(name);mesh.from_pydata(verts,[],faces);mesh.update()
     bm=bmesh.new();bm.from_mesh(mesh);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces));bm.to_mesh(mesh);bm.free()
     o=bpy.data.objects.new(name,mesh);groups['Ceiling'].objects.link(o);o.data.materials.append(wall);return o
-extruded_ceiling_profile('P69 traced ceiling including projecting shelves and lips',profile_xz,.47,2.95)
+extruded_ceiling_profile('P69 traced ceiling including projecting shelves and lips',profile_xz,.47,2.93)
 def ceiling_zone(name,xa,xb,ya,yb,bottom):
     top=3.15
     return box(name,((xa+xb)/2,(ya+yb)/2,(bottom+top)/2),(xb-xa,yb-ya,top-bottom),wall,'Ceiling')
 # Front window wall: explicit 12 cm recess and adjacent 35 cm band.
-ceiling_zone('front curtain recess roof',0,7.15,0,.12,2.6)
-ceiling_zone('front perimeter low band',0,7.15,.12,.47,2.5)
-ceiling_zone('north low strip left',0,2.82,2.95,3.4,2.5)
-ceiling_zone('vestibule ceiling',2.82,4.03,2.95,4.25,2.5)
-ceiling_zone('northeast ceiling',6.55,7.15,2.95,3.4,2.6)
+ceiling_zone('front curtain recess roof',0,7.155,0,.12,2.6)
+ceiling_zone('front perimeter low band',0,7.155,.12,.47,2.5)
+ceiling_zone('north low strip left',0,2.804,2.93,3.4,2.5)
+ceiling_zone('vestibule ceiling',2.804,4.02,2.93,4.171,2.5)
+ceiling_zone('northeast ceiling',6.573,7.155,2.93,3.4,2.6)
+ceiling_zone('original cabinet coverage - not structural',4.02,6.573,2.93,4.171,2.5)
 def grille(name,center,length,width,vertical=False):
     # local A is the grille cross-axis; local B is its longitudinal Y direction.
     # depth positive goes inside the housing. All blades follow the long edge.
@@ -200,10 +167,10 @@ for name,loc,target in [
     strip.data.shape='RECTANGLE';strip.data.size=2.25;strip.data.size_y=.025
 (OUT/'ceiling-profile-p69.json').write_text(json.dumps({
  'source':'original PDF p69, repaired PDF page9',
- 'scale_anchor_cm':105,'scale_anchor_pdf_points':97.163,
+ 'scale_anchor_cm':105,'scale_anchor_pdf_points':97.163330078125,
  'height_anchor_cm':250,'height_anchor_pdf_y':P69_H250_Y,
  'x_origin_pdf':P69_RIGHT,'profile_pdf_xy':profile_pdf,'profile_model_xz_m':profile_xz,
- 'note':'Contour copied from vector drawing; unlabelled details inferred by scale. The last wall coordinate is clipped by 5 mm to match existing schematic room width.'
+ 'note':'Contour copied from vector drawing; unlabelled details inferred by scale. Horizontal extent now matches the traced 7.155 m inner-face span; closure above visible finish is not structural.'
 },ensure_ascii=False,indent=2),encoding='utf-8')
 
 area('daylight balcony',(10,1.7,4.2),(3,1.7,1),1250,5,(.86,.92,1))
@@ -217,7 +184,7 @@ c_over=camera('02 OVERVIEW cutaway',(-4,-7.2,8.2),(3.7,1.8,1.15),ortho=11.8)
 c_bed=camera('03 BED toward balcony',(.70,1.7,1.35),(7.6,1.70,1.35),lens=19)
 c_entry=camera('04 ENTRY toward bed',(3.45,2.88,1.60),(.8,1.60,1.1),lens=22)
 c_rev=camera('05 BALCONY toward bed',(6.94,1.35,1.60),(1.2,1.68,1.1),lens=22)
-scene['concept_notes']='Estimated geometry, not a measured survey. Original left cabinetry removed. Bed head left, feet toward balcony. Ceiling scheme chosen from PDF p65. New desk and wardrobe are movable proposals.'
+scene['concept_notes']='Audited p61/p69 inner-face geometry. See dimension-audit.json for all conflicts and unknowns. P69 controls ceiling. Original north cabinet boundary is not a verified building wall. Furniture is a proposal.'
 scene['source_pdf_pages']='61,65,67,68,69,70'
 scene.camera=c_over
 for a in bpy.context.screen.areas:
@@ -237,6 +204,11 @@ visibility([])
 bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'bedroom-a-v1.blend'))
 jobs=[(c_top,'01-top.png',['Ceiling']),(c_over,'02-overview.png',['Ceiling','FrontWall','LeftWall']),
       (c_bed,'03-bed-to-balcony.png',[]),(c_entry,'04-entry.png',[]),(c_rev,'05-balcony-to-bed.png',[])]
+import os
+if os.environ.get('BEDROOM_AUDIT_FAST')=='1':
+    jobs=[(c_bed,'03-bed-to-balcony.png',[])]
+    scene.cycles.samples=24
+    scene.render.resolution_x=1200;scene.render.resolution_y=800
 for cam,filename,hidden in jobs:
     visibility(hidden);scene.camera=cam;scene.render.filepath=str(OUT/filename)
     print('RENDERING',filename,flush=True);bpy.ops.render.render(write_still=True)

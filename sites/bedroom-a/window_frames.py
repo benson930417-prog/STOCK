@@ -1,34 +1,23 @@
-"""Static window frames: photo + owner's clarification, 2026-09-29.
-
-Opening bounds retain the schematic model dimensions. The wide window's
-transom is approximately one third above the sill, not a measured height.
-No sliding tracks, overlapping sashes or opening animation are modeled.
-"""
+"""Static p61/p69 window frames; frame edges stay inside traced openings."""
+from pathlib import Path
+import json
 
 def build_window_frames(box, frame, glass):
-    for name, xa, xb, sill, head in [
-        ('wide window', 1.1, 2.6, .65, 2.15),
-        ('narrow window', 4.45, 5.38, .7, 2.35),
-    ]:
-        mid = (xa + xb) / 2
-        thickness = .045
-        for side, x in [('left', xa), ('right', xb)]:
-            box(name+' '+side+' jamb', (x, 0, (sill+head)/2),
-                (thickness, .12, head-sill), frame, 'FrontWall')
-        for side, z in [('bottom', sill), ('top', head)]:
-            box(name+' '+side+' rail', (mid, 0, z),
-                (xb-xa, .12, thickness), frame, 'FrontWall')
-        if name == 'wide window':
-            transom = sill + (head-sill)/3
-            box(name+' transom', (mid, 0, transom),
-                (xb-xa, .12, thickness), frame, 'FrontWall')
-            box(name+' upper mullion', (mid, 0, (transom+head)/2),
-                (thickness, .12, head-transom), frame, 'FrontWall')
-            panes = [('lower single', xa, xb, sill, transom),
-                     ('upper left', xa, mid, transom, head),
-                     ('upper right', mid, xb, transom, head)]
+    windows=json.loads((Path(__file__).parent/'dimension-audit.json').read_text(encoding='utf-8'))['windows']
+    for d in windows:
+        name,xa,xb,sill,head=d['name'],d['x0'],d['x1'],d['sill'],d['head']
+        t=d['frame']; mid=(xa+xb)/2; y=-.075
+        for side,x in [('left',xa+t/2),('right',xb-t/2)]:
+            box(name+' '+side+' jamb',(x,y,(sill+head)/2),(t,.12,head-sill),frame,'FrontWall')
+        for side,z in [('bottom',sill+t/2),('top',head-t/2)]:
+            box(name+' '+side+' rail',(mid,y,z),(xb-xa,.12,t),frame,'FrontWall')
+        if 'transom_bottom' in d:
+            a,b=d['transom_bottom'],d['transom_top']
+            box(name+' transom',(mid,y,(a+b)/2),(xb-xa,.12,b-a),frame,'FrontWall')
+            box(name+' upper mullion',(mid,y,(b+head-t)/2),(t,.12,head-t-b),frame,'FrontWall')
+            panes=[('lower single',xa+t,xb-t,sill+t,a),('upper left',xa+t,mid-t/2,b,head-t),('upper right',mid+t/2,xb-t,b,head-t)]
         else:
-            panes = [('single', xa, xb, sill, head)]
-        for label, x0, x1, z0, z1 in panes:
-            box(name+' '+label+' glass', ((x0+x1)/2, 0, (z0+z1)/2),
-                (x1-x0-thickness, .01, z1-z0-thickness), glass, 'FrontWall')
+            panes=[('single',xa+t,xb-t,sill+t,head-t)]
+        for label,x0,x1,z0,z1 in panes:
+            o=box(name+' '+label+' glass',((x0+x1)/2,y,(z0+z1)/2),(x1-x0,.01,z1-z0),glass,'FrontWall')
+            o['dimension_basis']=d['status']

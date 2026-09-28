@@ -99,7 +99,7 @@ document.querySelector('#fullscreen').addEventListener('click',async()=>{
 });
 document.addEventListener('fullscreenchange',()=>{document.querySelector('#fullscreen').textContent=document.fullscreenElement?'退出放大':'放大';});
 new ResizeObserver(()=>{const w=viewport.clientWidth,h=viewport.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(active&&!interiorMode)preset(active);}).observe(viewport);
-new GLTFLoader().load('./bedroom-a-v1.glb?v=window-frames-3',async gltf=>{
+new GLTFLoader().load('./bedroom-a-v1.glb?v=dimension-audit-4',async gltf=>{
  model=gltf.scene;
  model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m.transmission>0){m.transmission=0;m.transparent=true;m.opacity=.14;m.depthWrite=false;o.castShadow=false;}});}});
  scene.add(model);
