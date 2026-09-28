@@ -53,3 +53,29 @@ request cancellation/queue handling, independent cooldowns, source/rendering
 contract, weekend axes and existing cache/LINE image consistency. Tests do not
 send LINE messages or call market websites. An upstream 403 can still prevent
 a fresh chart; persistence is not an access-block bypass.
+
+## Production acceptance
+
+Deployed commit `918e53f` via fast-forward pull after backing up only the dirty
+chart source that overlapped the release; all unrelated production changes were
+hash-checked and preserved. Both chart units were updated, with mixed termination
+loaded before stopping the old chart service. Backup/evidence:
+`/var/backups/stock-chart-persistent-20260929/`.
+
+All 35 tests also passed on the production Python environment. An isolated
+systemd/Uvicorn test proved that stopping a mixed-kill service during a request
+lets the request finish while its child remains alive, then cleans up the child.
+It did not stop any production trading process or send a LINE message.
+
+At 2026-09-29 01:13 Taipei, the real service had eight resident pages, one browser
+generation, eight navigations, and age 186s (beyond the former 120s reset). Cgroup
+memory was about 1.44 GB, with NRestarts=0. All eight symbol caches refreshed;
+NASDAQ succeeded at 01:12:05 and 01:12:50 using the retained page. The checksum-
+verified produced NASDAQ image was visually inspected: the intraday frame,
+Chinese title, Taiwan/US session bands and arrows remain present. Friday/weekend
+and DST preservation is additionally established by unchanged overlay source and
+axis tests, not by pretending today's Monday frame is a live Friday capture.
+
+Trading/owner-control services and timers were not restarted; signed strategy
+decision and public ledger hashes did not change. This is short-run acceptance,
+not a guarantee of indefinite memory stability or immunity to upstream 403s.
