@@ -10,13 +10,24 @@ def deploy():
     if os.geteuid()!=0:raise SystemExit('Run with sudo python3 scripts/deploy_bedroom_site.py')
     repo=Path(__file__).resolve().parents[1]
     source=repo/'sites/bedroom-a'
-    files=sorted(p for p in source.rglob('*') if p.is_file())
+    # The designer-facing site contains one page and its runtime assets only.
+    # Evidence pages, sources and editable downloads stay in the project archive.
+    public_names=['review.html','viewer.js','outlet-viewer.js','outlets.json',
+                  'bedroom-a-v1.glb','architectural-edges.json',
+                  '03-bed-to-balcony.png','site-photo.png']
+    files=sorted([source/name for name in public_names]+[p for p in (source/'vendor').rglob('*') if p.is_file()])
+    missing=[str(p) for p in files if not p.is_file()]
+    if missing:raise SystemExit('Missing public assets: '+str(missing))
     if not (source/'review.html').is_file() or not (source/'bedroom-a-v1.glb').is_file():raise SystemExit('Missing site payload')
     digest=hashlib.sha256()
     for p in files:digest.update(p.relative_to(source).as_posix().encode());digest.update(p.read_bytes())
     release_id=digest.hexdigest()[:16]
     base=Path('/var/www/bedroom-a');release=base/'releases'/release_id
-    if not release.exists():shutil.copytree(source,release)
+    if not release.exists():
+        for p in files:
+            target=release/p.relative_to(source)
+            target.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copy2(p,target)
     for p in release.rglob('*'):p.chmod(0o755 if p.is_dir() else 0o644)
     release.chmod(0o755)
     site=Path('/etc/nginx/sites-enabled/line-bot')

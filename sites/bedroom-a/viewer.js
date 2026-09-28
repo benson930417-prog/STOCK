@@ -12,7 +12,7 @@ const edgeToggle=document.getElementById('edges'), edgeLines=[], architecturalEd
 edgeToggle.addEventListener('change',()=>edgeLines.forEach(line=>line.visible=edgeToggle.checked));
 let renderer;
 try { renderer=new THREE.WebGLRenderer({antialias:true}); }
-catch(error){loading.textContent='瀏覽器無法啟用 3D 顯示，請先開啟下方的「五張渲染圖」。';throw error;}
+catch(error){document.getElementById('fallback').hidden=false;loading.hidden=true;status.textContent='目前顯示靜態預覽，請使用支援 3D 的瀏覽器。';throw error;}
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
@@ -44,7 +44,7 @@ function updateLED(){
 }
 ledToggle.addEventListener('change',updateLED);
 const presets={
- outlets:{p:[3.8,-4.6,9.5],t:[3.8,1.8,0],label:'第 64 頁插座平面位置 · 高度未標',fov:45},
+ outlets:{p:[3.8,-4.6,9.5],t:[3.8,1.8,0],label:'插座位置示意 · 安裝高度待確認',fov:45},
  overview:{p:[-4,-7.2,8.2],t:[3.7,1.8,1.15],label:'整體配置 · 剖開檢視',fov:45},
  top:{p:[4.2,1.84,13],t:[4.2,1.85,0],label:'俯視平面 · 左為床頭，右為陽台',fov:45},
  bed:{p:[.70,1.7,1.35],t:[7.6,1.7,1.35],label:'床上朝陽台看',fov:78},
@@ -62,7 +62,7 @@ architecturalEdgeParents.forEach(o=>{
  o.visible=g==='Ceiling'?toggles.ceiling.checked:['FrontWall','LeftWall'].includes(g)?toggles.walls.checked:g==='Furniture'?toggles.furniture.checked:true;
 });updateLED();}
 function preset(key){
- if(key==='outlets'){document.getElementById('outlets').checked=true;document.getElementById('outlets').dispatchEvent(new Event('change'));}
+ document.getElementById('outlets').checked=key==='outlets';document.getElementById('outlets').dispatchEvent(new Event('change'));
  document.getElementById('quickview').value=key;active=key;interiorMode=['bed','entry','balcony'].includes(key);
  const v=presets[key];camera.fov=v.fov;camera.updateProjectionMatrix();
  const target=fromBlender(v.t),pos=fromBlender(v.p);
@@ -97,7 +97,7 @@ document.querySelector('#fullscreen').addEventListener('click',async()=>{
  try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector('#viewer').requestFullscreen();}
  catch{status.textContent='也可以拉寬瀏覽器面板，放大檢視。';}
 });
-document.addEventListener('fullscreenchange',()=>{document.querySelector('#fullscreen').textContent=document.fullscreenElement?'退出放大':'放大檢視';});
+document.addEventListener('fullscreenchange',()=>{document.querySelector('#fullscreen').textContent=document.fullscreenElement?'退出放大':'放大';});
 new ResizeObserver(()=>{const w=viewport.clientWidth,h=viewport.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(active&&!interiorMode)preset(active);}).observe(viewport);
 new GLTFLoader().load('./bedroom-a-v1.glb?v=p69-traced-profile-2',async gltf=>{
  model=gltf.scene;
@@ -140,9 +140,9 @@ new GLTFLoader().load('./bedroom-a-v1.glb?v=p69-traced-profile-2',async gltf=>{
   lines.visible=edgeToggle.checked;lines.renderOrder=2;
   parent.add(lines);scene.add(parent);edgeLines.push(lines);architecturalEdgeParents.push(parent);
  }
- try{updateOutletViewer=await addOutletViewer({scene,camera,renderer,fromBlender});}catch(error){console.error(error);document.getElementById('outlet-detail').textContent='點位資料未載入，請開啟完整平面對照。';}
+ try{updateOutletViewer=await addOutletViewer({scene,camera,renderer,fromBlender});}catch(error){console.error(error);document.getElementById('outlet-detail').textContent='插座資料暫時無法載入，請重新整理。';}
  preset(new URLSearchParams(location.search).get('view')==='outlets'?'outlets':'bed');loading.hidden=true;
-},undefined,error=>{console.error(error);loading.textContent='模型載入失敗。請重新整理，或開啟下方「五張渲染圖」。';});
+},undefined,error=>{console.error(error);document.getElementById('fallback').hidden=false;loading.hidden=true;status.textContent='目前顯示靜態預覽，重新整理可重試 3D。';});
 renderer.setAnimationLoop(()=>{if(!interiorMode)controls.update();updateOutletViewer();renderer.render(scene,camera);});
 
 

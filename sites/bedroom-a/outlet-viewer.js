@@ -19,7 +19,8 @@ export async function addOutletViewer({scene,camera,renderer,fromBlender}){
  const show=()=>{group.visible=toggle.checked;info.hidden=!toggle.checked;};toggle.addEventListener('change',show);show();
  function choose(id){
   const item=data.items.find(i=>i.id===id);select.value=id||'';
-  detail.textContent=item?`${item.id}｜${item.symbolCount?item.symbolCount+' 個插座符號':'用途未確認'}${item.extraSymbol?' ＋ C':''}。${item.note} 高度未標。`:'圓點是第 64 頁的平面投影，不是落地插座；高度未標，未隨新家具移位。';
+  const notes={P01:'原衣櫃區，需配合新床位確認。',P02:'原書櫃區，需確認移除櫃體後的位置。',P03:'浴室外側牆，位於房間內。',P04:'原床頭位置，需配合新床位調整。',P05:'原床頭位置，需確認新衣櫃是否遮擋。',P06:'陽台門旁的室內牆面。',P07:'靠近新書桌的一側。',P08:'含一個用途待確認的端點。',P09:'原書櫃區，需確認移除櫃體後的位置。',P10:'原衣櫃區，需配合新床位確認。',U01:'陽台預留點，用途待確認。'};
+  detail.textContent=item?`${item.id} · ${item.label}。${notes[item.id]} 安裝高度待確認。`:'標記表示原規劃的平面位置，不代表落地插座；需配合新配置確認位置與高度。';
   sprites.forEach(s=>s.userData.selected=s.userData.outlet.id===id);
  }
  select.addEventListener('change',()=>choose(select.value));choose('');
