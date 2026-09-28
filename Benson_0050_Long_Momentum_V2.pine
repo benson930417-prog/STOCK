@@ -1,0 +1,341 @@
+//@version=6
+strategy(
+     "Benson 0050 Long Momentum V2",
+     overlay = true,
+     initial_capital = 1000000,
+     currency = currency.NONE,
+     default_qty_type = strategy.fixed,
+     default_qty_value = 1,
+     pyramiding = 100,
+     margin_long = 100,
+     max_bars_back = 5000,
+     max_labels_count = 500,
+     calc_on_order_fills = false,
+     calc_on_every_tick = false,
+     process_orders_on_close = false,
+     use_bar_magnifier = true,
+     fill_orders_on_standard_ohlc = true)
+
+// 0050 專用、只做多 V2：持倉只會是多單或現金，不會送出任何空單。
+// 動能負責 0 / 防守 / 核心 / 完整四檔曝險；波動與策略回撤只會再降低曝險。
+// 手續費與滑價刻意不寫在 strategy()；請到「設定 → Properties」依券商條件設定。
+
+clamp(float value, float lowBound, float highBound) =>
+    math.max(lowBound, math.min(value, highBound))
+
+barsFromMinutes(simple float minutes) =>
+    int(math.max(1.0, math.round(minutes * 60.0 / math.max(float(timeframe.in_seconds()), 1.0))))
+
+roundDownToStep(float value, float stepSize) =>
+    math.floor(math.max(value, 0.0) / stepSize) * stepSize
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 0050 時間框架自適應
+// 0050 日盤 270 分鐘。15 分鐘圖預設還原 ATR 20、慣性 8、錨線 96、波動基準 120。
+// ─────────────────────────────────────────────────────────────────────────────
+string groupAuto = "0050 自適應"
+bool autoLengths = input.bool(true, "依時間框架自動換算 bars", group = groupAuto)
+float horizonScale = input.float(1.0, "訊號時間尺度倍率", minval = 0.25, maxval = 4.0, step = 0.05, group = groupAuto)
+int qtyStepShares = input.int(1, "最小下單單位（零股=1；整張=1000）", minval = 1, maxval = 1000, group = groupAuto)
+float qtyStep = float(qtyStepShares)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 回測視窗
+// ─────────────────────────────────────────────────────────────────────────────
+string groupWindow = "回測視窗"
+bool useManualWindow = input.bool(false, "使用固定日期", group = groupWindow)
+int manualStart = input.time(1577836800000, "起始（UTC）", group = groupWindow)
+int manualEnd = input.time(2082758399000, "結束（UTC，預設 2035-12-31）", group = groupWindow)
+bool inWindow = not useManualWindow or (time >= manualStart and time <= manualEnd)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 低延遲藍線與動能分數
+// ─────────────────────────────────────────────────────────────────────────────
+string groupTracker = "動能引擎"
+float observed = input.source(hlc3, "觀測價格", group = groupTracker)
+float alpha = input.float(0.38, "價格修正 alpha", minval = 0.05, maxval = 0.95, step = 0.01, group = groupTracker)
+float beta = input.float(0.035, "速度修正 beta", minval = 0.001, maxval = 0.50, step = 0.001, group = groupTracker)
+float accelerationWeight = input.float(0.10, "加速度權重", minval = 0.0, maxval = 2.0, step = 0.05, group = groupTracker)
+
+int manualAtrLength = input.int(20, "ATR 長度（手動 bars）", minval = 5, maxval = 500, group = groupTracker)
+int manualInertiaLookback = input.int(8, "慣性回看（手動 bars）", minval = 2, maxval = 500, group = groupTracker)
+int manualInertiaSmooth = input.int(8, "慣性平滑（手動 bars）", minval = 2, maxval = 500, group = groupTracker)
+int manualAnchorLength = input.int(96, "趨勢錨（手動 bars）", minval = 16, maxval = 2000, group = groupTracker)
+int manualRocLength = input.int(24, "ROC 回看（手動 bars）", minval = 3, maxval = 1000, group = groupTracker)
+
+simple int atrLength = autoLengths ? math.min(500, math.max(5, barsFromMinutes(300.0 * horizonScale))) : manualAtrLength
+simple int inertiaLookback = autoLengths ? math.min(500, math.max(2, barsFromMinutes(120.0 * horizonScale))) : manualInertiaLookback
+simple int inertiaSmooth = autoLengths ? math.min(500, math.max(2, barsFromMinutes(120.0 * horizonScale))) : manualInertiaSmooth
+simple int anchorLength = autoLengths ? math.min(2000, math.max(16, barsFromMinutes(1440.0 * horizonScale))) : manualAnchorLength
+simple int rocLength = autoLengths ? math.min(1000, math.max(3, barsFromMinutes(360.0 * horizonScale))) : manualRocLength
+
+float inertiaUnit = input.float(0.040, "慣性標準化單位", minval = 0.005, maxval = 0.50, step = 0.005, group = groupTracker)
+float trendAtrUnit = input.float(2.0, "趨勢距離標準化（ATR）", minval = 0.5, maxval = 8.0, step = 0.25, group = groupTracker)
+float priceAtrUnit = input.float(1.5, "價格位置標準化（ATR）", minval = 0.5, maxval = 5.0, step = 0.25, group = groupTracker)
+float rocAtrUnit = input.float(2.5, "ROC 標準化（ATR）", minval = 0.5, maxval = 10.0, step = 0.25, group = groupTracker)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 四檔智慧曝險與遲滯：加碼較慢、減碼較快，避免盤整區頻繁追價。
+// ─────────────────────────────────────────────────────────────────────────────
+string groupExposure = "智慧加減碼"
+float fullExposure = input.float(100.0, "完整曝險（% equity）", minval = 10.0, maxval = 100.0, step = 1.0, group = groupExposure) / 100.0
+float coreExposure = input.float(85.0, "核心曝險（% equity）", minval = 5.0, maxval = 95.0, step = 1.0, group = groupExposure) / 100.0
+float defensiveExposure = input.float(45.0, "防守曝險（% equity）", minval = 0.0, maxval = 80.0, step = 1.0, group = groupExposure) / 100.0
+
+float strongScore = input.float(0.28, "完整曝險分數", minval = -0.5, maxval = 1.0, step = 0.01, group = groupExposure)
+float coreScore = input.float(0.05, "核心曝險分數", minval = -0.8, maxval = 0.8, step = 0.01, group = groupExposure)
+float defensiveScore = input.float(-0.12, "防守曝險分數", minval = -1.0, maxval = 0.5, step = 0.01, group = groupExposure)
+float correctionScore = input.float(-0.18, "修正清倉分數", minval = -1.0, maxval = 0.0, step = 0.01, group = groupExposure)
+float exitScore = input.float(-0.34, "空頭清倉分數", minval = -1.0, maxval = 0.0, step = 0.01, group = groupExposure)
+
+int manualAddConfirm = input.int(2, "加碼確認（手動 bars）", minval = 1, maxval = 30, group = groupExposure)
+int manualReduceConfirm = input.int(1, "減碼確認（手動 bars）", minval = 1, maxval = 30, group = groupExposure)
+int manualCorrectionConfirm = input.int(2, "修正清倉確認（手動 bars）", minval = 1, maxval = 30, group = groupExposure)
+int manualExitConfirm = input.int(2, "清倉確認（手動 bars）", minval = 1, maxval = 30, group = groupExposure)
+simple int addConfirmBars = autoLengths ? math.min(30, math.max(1, barsFromMinutes(30.0 * horizonScale))) : manualAddConfirm
+simple int reduceConfirmBars = autoLengths ? math.min(30, math.max(1, barsFromMinutes(15.0 * horizonScale))) : manualReduceConfirm
+simple int correctionConfirmBars = autoLengths ? math.min(30, math.max(1, barsFromMinutes(30.0 * horizonScale))) : manualCorrectionConfirm
+simple int exitConfirmBars = autoLengths ? math.min(30, math.max(1, barsFromMinutes(30.0 * horizonScale))) : manualExitConfirm
+
+float anchorEntryBufferAtr = input.float(0.05, "進場高於錨線（ATR）", minval = 0.0, maxval = 3.0, step = 0.05, group = groupExposure)
+float anchorExitBufferAtr = input.float(0.55, "清倉低於錨線（ATR）", minval = 0.0, maxval = 5.0, step = 0.05, group = groupExposure)
+float minAdjustPct = input.float(5.0, "最小調倉差距（% equity）", minval = 1.0, maxval = 40.0, step = 0.5, group = groupExposure) / 100.0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 波動與策略回撤縮放：只能降曝險，不會產生槓桿。
+// ─────────────────────────────────────────────────────────────────────────────
+string groupAdaptive = "區間 DD 控制"
+int manualVolBaseline = input.int(120, "ATR 基準（手動 bars）", minval = 20, maxval = 2000, group = groupAdaptive)
+simple int volBaselineLength = autoLengths ? math.min(2000, math.max(20, barsFromMinutes(1800.0 * horizonScale))) : manualVolBaseline
+float highVolThreshold = input.float(1.25, "開始縮曝險的波動比", minval = 0.8, maxval = 3.0, step = 0.05, group = groupAdaptive)
+float volSensitivity = input.float(0.55, "高波動縮放敏感度", minval = 0.0, maxval = 2.0, step = 0.05, group = groupAdaptive)
+float minimumVolScale = input.float(0.65, "高波動最低曝險倍率", minval = 0.1, maxval = 1.0, step = 0.05, group = groupAdaptive)
+
+float ddLevelOne = input.float(5.0, "策略回撤第一級（%）", minval = 1.0, maxval = 30.0, step = 0.5, group = groupAdaptive) / 100.0
+float ddLevelTwo = input.float(9.0, "策略回撤第二級（%）", minval = 2.0, maxval = 40.0, step = 0.5, group = groupAdaptive) / 100.0
+float ddScaleOne = input.float(0.80, "第一級曝險倍率", minval = 0.1, maxval = 1.0, step = 0.05, group = groupAdaptive)
+float ddScaleTwo = input.float(0.55, "第二級曝險倍率", minval = 0.0, maxval = 1.0, step = 0.05, group = groupAdaptive)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 單筆風控
+// ─────────────────────────────────────────────────────────────────────────────
+string groupRisk = "多單風控"
+float stopAtrMultiple = input.float(3.0, "硬停損 ATR 倍數", minval = 0.5, maxval = 10.0, step = 0.25, group = groupRisk)
+float minimumStopPct = input.float(0.8, "最小硬停損（%）", minval = 0.2, maxval = 8.0, step = 0.1, group = groupRisk) / 100.0
+float maximumStopPct = input.float(3.5, "最大硬停損（%）", minval = 0.5, maxval = 15.0, step = 0.1, group = groupRisk) / 100.0
+float trailActivationAtr = input.float(2.0, "啟動移動停損 MFE（ATR）", minval = 0.5, maxval = 10.0, step = 0.25, group = groupRisk)
+float trailAtrMultiple = input.float(3.0, "移動停損回吐（ATR）", minval = 0.5, maxval = 10.0, step = 0.25, group = groupRisk)
+float emergencyBreakAtr = input.float(1.50, "錨線緊急破位（ATR）", minval = 0.5, maxval = 8.0, step = 0.25, group = groupRisk)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 指標計算
+// ─────────────────────────────────────────────────────────────────────────────
+var float blueLine = na
+var float velocity = 0.0
+
+float priorBlue = nz(blueLine[1], observed)
+float priorVelocity = nz(velocity[1], 0.0)
+float predictedPrice = priorBlue + priorVelocity
+float innovation = observed - predictedPrice
+blueLine := predictedPrice + alpha * innovation
+velocity := priorVelocity + beta * innovation
+
+float acceleration = velocity - priorVelocity
+float atr = ta.atr(atrLength)
+float noise = math.max(nz(atr, high - low), syminfo.mintick)
+float atrBaseline = ta.ema(atr, volBaselineLength)
+float volRatio = atrBaseline > 0 ? clamp(atr / atrBaseline, 0.25, 4.0) : 1.0
+float regimeAnchor = ta.ema(blueLine, anchorLength)
+
+float rawInertia = ((blueLine - nz(blueLine[inertiaLookback], blueLine)) / inertiaLookback + accelerationWeight * acceleration) / noise
+float inertia = ta.ema(rawInertia, inertiaSmooth)
+float inertiaComponent = clamp(inertia / inertiaUnit, -1.0, 1.0)
+float trendComponent = clamp((blueLine - regimeAnchor) / (noise * trendAtrUnit), -1.0, 1.0)
+float priceComponent = clamp((close - blueLine) / (noise * priceAtrUnit), -1.0, 1.0)
+float rocComponent = clamp((close - nz(close[rocLength], close)) / (noise * rocAtrUnit), -1.0, 1.0)
+float momentumScore = 0.40 * inertiaComponent + 0.30 * trendComponent + 0.15 * priceComponent + 0.15 * rocComponent
+
+bool ready = not na(atr) and not na(atrBaseline) and not na(inertia) and not na(regimeAnchor)
+bool strongEvidence = ready and momentumScore >= strongScore and close > blueLine and blueLine > regimeAnchor + anchorEntryBufferAtr * noise
+bool coreEvidence = ready and momentumScore >= coreScore and close > regimeAnchor
+bool belowCoreEvidence = ready and (momentumScore < coreScore or close < blueLine)
+bool belowDefensiveEvidence = ready and (momentumScore < defensiveScore or close < regimeAnchor)
+bool correctionEvidence = ready and momentumScore <= correctionScore and close < blueLine and blueLine < blueLine[1] and inertia < 0
+bool exitEvidence = ready and momentumScore <= exitScore and close < regimeAnchor - anchorExitBufferAtr * noise
+bool emergencyExit = ready and close < regimeAnchor - emergencyBreakAtr * noise and inertia < 0
+
+var int strongBars = 0
+var int coreBars = 0
+var int belowCoreBars = 0
+var int belowDefensiveBars = 0
+var int correctionBars = 0
+var int exitBars = 0
+strongBars := strongEvidence ? nz(strongBars[1]) + 1 : 0
+coreBars := coreEvidence ? nz(coreBars[1]) + 1 : 0
+belowCoreBars := belowCoreEvidence ? nz(belowCoreBars[1]) + 1 : 0
+belowDefensiveBars := belowDefensiveEvidence ? nz(belowDefensiveBars[1]) + 1 : 0
+correctionBars := correctionEvidence ? nz(correctionBars[1]) + 1 : 0
+exitBars := exitEvidence ? nz(exitBars[1]) + 1 : 0
+
+bool confirmedCorrection = correctionBars >= correctionConfirmBars
+bool confirmedBear = exitBars >= exitConfirmBars
+
+// momentumState: 0=現金、1=防守、2=核心、3=完整。
+var int momentumState = 0
+if not inWindow or not ready
+    momentumState := 0
+else if emergencyExit or confirmedCorrection or confirmedBear
+    momentumState := 0
+else
+    if momentumState == 0
+        if strongBars >= addConfirmBars
+            momentumState := 3
+        else if coreBars >= addConfirmBars
+            momentumState := 2
+    else if momentumState == 1
+        if strongBars >= addConfirmBars
+            momentumState := 3
+        else if coreBars >= addConfirmBars
+            momentumState := 2
+        else if belowDefensiveBars >= reduceConfirmBars
+            momentumState := 0
+    else if momentumState == 2
+        if strongBars >= addConfirmBars
+            momentumState := 3
+        else if belowDefensiveBars >= reduceConfirmBars
+            momentumState := 1
+    else if momentumState == 3
+        if belowDefensiveBars >= reduceConfirmBars
+            momentumState := 1
+        else if belowCoreBars >= reduceConfirmBars
+            momentumState := 2
+
+float rawExposure = momentumState == 3 ? fullExposure : momentumState == 2 ? coreExposure : momentumState == 1 ? defensiveExposure : 0.0
+float volScale = clamp(1.0 - volSensitivity * math.max(volRatio - highVolThreshold, 0.0), minimumVolScale, 1.0)
+
+// 以策略權益高水位計算回撤；只降低風險，不會因回撤而加碼。
+var float strategyPeakEquity = 1000000.0
+strategyPeakEquity := inWindow ? math.max(nz(strategyPeakEquity[1], 1000000.0), strategy.equity) : nz(strategyPeakEquity[1], 1000000.0)
+float strategyDrawdown = strategyPeakEquity > 0 ? math.max((strategyPeakEquity - strategy.equity) / strategyPeakEquity, 0.0) : 0.0
+float drawdownScale = strategyDrawdown >= ddLevelTwo ? ddScaleTwo : strategyDrawdown >= ddLevelOne ? ddScaleOne : 1.0
+float targetExposure = inWindow ? clamp(rawExposure * volScale * drawdownScale, 0.0, 1.0) : 0.0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 停損：只使用 strategy.exit 平多，不存在反手空單。
+// ─────────────────────────────────────────────────────────────────────────────
+bool hasLong = strategy.position_size > 0
+bool newLongFill = hasLong and strategy.position_size[1] <= 0
+bool justFlat = strategy.position_size == 0 and strategy.position_size[1] > 0
+var float highestSinceEntry = na
+var float activeLongStop = na
+
+if newLongFill
+    highestSinceEntry := high
+    activeLongStop := na
+else if hasLong
+    highestSinceEntry := math.max(nz(highestSinceEntry[1], high), high)
+else
+    highestSinceEntry := na
+    activeLongStop := na
+
+if hasLong
+    float averagePrice = strategy.position_avg_price
+    float stopDistancePct = clamp(stopAtrMultiple * noise / averagePrice, minimumStopPct, maximumStopPct)
+    float hardStop = averagePrice * (1.0 - stopDistancePct)
+    float mfeAtr = (highestSinceEntry - averagePrice) / noise
+    float trailingCandidate = highestSinceEntry - trailAtrMultiple * noise
+    float desiredStop = mfeAtr >= trailActivationAtr ? math.max(hardStop, trailingCandidate) : hardStop
+    activeLongStop := math.max(nz(activeLongStop[1], desiredStop), desiredStop)
+    strategy.exit("Long Risk", from_entry = "Long", stop = activeLongStop, comment = "多單風控")
+else
+    strategy.cancel("Long Risk")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 智慧調倉：加碼只買進，減碼只平掉既有多單，絕不建立負部位。
+// ─────────────────────────────────────────────────────────────────────────────
+float pointValue = math.max(syminfo.pointvalue, 0.000001)
+float equityForSizing = math.max(strategy.equity, 0.0)
+float targetQty = roundDownToStep(equityForSizing * targetExposure / (close * pointValue), qtyStep)
+float currentLongQty = math.max(strategy.position_size, 0.0)
+float minAdjustQty = math.max(qtyStep, roundDownToStep(equityForSizing * minAdjustPct / (close * pointValue), qtyStep))
+bool forceCash = not inWindow or emergencyExit or confirmedCorrection or confirmedBear or momentumState == 0
+
+if forceCash and hasLong
+    string exitComment = emergencyExit ? "緊急破位" : confirmedBear ? "空頭清倉" : confirmedCorrection ? "修正清倉" : "動能清倉"
+    strategy.close_all(comment = exitComment)
+else if inWindow and ready and not emergencyExit
+    float qtyDifference = targetQty - currentLongQty
+    if qtyDifference >= minAdjustQty
+        strategy.order("Long", strategy.long, qty = roundDownToStep(qtyDifference, qtyStep), comment = currentLongQty > 0 ? "動能加碼" : "動能進場")
+    else if qtyDifference <= -minAdjustQty and currentLongQty > 0
+        float reductionQty = math.min(currentLongQty, roundDownToStep(math.abs(qtyDifference), qtyStep))
+        if reductionQty >= qtyStep
+            strategy.close("Long", qty = reductionQty, comment = "動能減碼")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// B&H 對照與最大回撤儀表板
+// ─────────────────────────────────────────────────────────────────────────────
+var float benchmarkStartPrice = na
+if inWindow and na(benchmarkStartPrice)
+    benchmarkStartPrice := close
+
+float benchmarkEquity = not na(benchmarkStartPrice) ? 1000000.0 * close / benchmarkStartPrice : 1000000.0
+var float benchmarkPeakEquity = 1000000.0
+benchmarkPeakEquity := inWindow ? math.max(nz(benchmarkPeakEquity[1], 1000000.0), benchmarkEquity) : nz(benchmarkPeakEquity[1], 1000000.0)
+float benchmarkDrawdown = benchmarkPeakEquity > 0 ? math.max((benchmarkPeakEquity - benchmarkEquity) / benchmarkPeakEquity, 0.0) : 0.0
+
+var float maxStrategyDrawdown = 0.0
+var float maxBenchmarkDrawdown = 0.0
+maxStrategyDrawdown := inWindow ? math.max(nz(maxStrategyDrawdown[1]), strategyDrawdown) : nz(maxStrategyDrawdown[1])
+maxBenchmarkDrawdown := inWindow ? math.max(nz(maxBenchmarkDrawdown[1]), benchmarkDrawdown) : nz(maxBenchmarkDrawdown[1])
+
+float strategyReturn = strategy.equity / 1000000.0 - 1.0
+float benchmarkReturn = benchmarkEquity / 1000000.0 - 1.0
+float relativeReturn = strategyReturn - benchmarkReturn
+float actualExposure = equityForSizing > 0 ? currentLongQty * close * pointValue / equityForSizing : 0.0
+
+string stateText = momentumState == 3 ? "完整" : momentumState == 2 ? "核心" : momentumState == 1 ? "防守" : "現金"
+color stateColor = momentumState == 3 ? color.lime : momentumState == 2 ? color.aqua : momentumState == 1 ? color.orange : color.gray
+
+var table dashboard = table.new(position.top_right, 2, 9, border_width = 1)
+if barstate.islast
+    table.cell(dashboard, 0, 0, "V2 狀態", text_color = color.white, bgcolor = color.rgb(30, 30, 30))
+    table.cell(dashboard, 1, 0, stateText, text_color = stateColor, bgcolor = color.rgb(30, 30, 30))
+    table.cell(dashboard, 0, 1, "動能分數")
+    table.cell(dashboard, 1, 1, str.tostring(momentumScore, "#.###"))
+    table.cell(dashboard, 0, 2, "目標 / 實際曝險")
+    table.cell(dashboard, 1, 2, str.tostring(targetExposure * 100.0, "#.0") + "% / " + str.tostring(actualExposure * 100.0, "#.0") + "%")
+    table.cell(dashboard, 0, 3, "波動比 / 倍率")
+    table.cell(dashboard, 1, 3, str.tostring(volRatio, "#.##") + " / " + str.tostring(volScale, "#.##"))
+    table.cell(dashboard, 0, 4, "策略報酬")
+    table.cell(dashboard, 1, 4, str.tostring(strategyReturn * 100.0, "#.##") + "%")
+    table.cell(dashboard, 0, 5, "B&H 報酬")
+    table.cell(dashboard, 1, 5, str.tostring(benchmarkReturn * 100.0, "#.##") + "%")
+    table.cell(dashboard, 0, 6, "超額報酬")
+    table.cell(dashboard, 1, 6, str.tostring(relativeReturn * 100.0, "#.##") + "%", text_color = relativeReturn >= 0 ? color.lime : color.red)
+    table.cell(dashboard, 0, 7, "策略最大 DD")
+    table.cell(dashboard, 1, 7, str.tostring(maxStrategyDrawdown * 100.0, "#.##") + "%")
+    table.cell(dashboard, 0, 8, "B&H 最大 DD")
+    table.cell(dashboard, 1, 8, str.tostring(maxBenchmarkDrawdown * 100.0, "#.##") + "%")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 主圖呈現
+// ─────────────────────────────────────────────────────────────────────────────
+plot(blueLine, "動能藍線", color = color.rgb(36, 126, 255), linewidth = 3)
+plot(regimeAnchor, "趨勢錨", color = color.new(color.orange, 25), linewidth = 1)
+plot(hasLong ? activeLongStop : na, "多單停損", color = color.red, linewidth = 2, style = plot.style_linebr)
+
+bool buyFill = strategy.position_size > 0 and strategy.position_size[1] <= 0
+bool addFill = strategy.position_size > strategy.position_size[1] and strategy.position_size[1] > 0
+bool reduceFill = strategy.position_size < strategy.position_size[1] and strategy.position_size > 0
+bool exitFill = strategy.position_size == 0 and strategy.position_size[1] > 0
+plotshape(buyFill, title = "BUY", text = "BUY", style = shape.labelup, location = location.belowbar, color = color.lime, textcolor = color.black, size = size.tiny)
+plotshape(addFill, title = "ADD", text = "ADD", style = shape.labelup, location = location.belowbar, color = color.aqua, textcolor = color.black, size = size.tiny)
+plotshape(reduceFill, title = "RED", text = "RED", style = shape.labeldown, location = location.abovebar, color = color.orange, textcolor = color.black, size = size.tiny)
+plotshape(exitFill, title = "EXIT", text = "EXIT", style = shape.labeldown, location = location.abovebar, color = color.red, textcolor = color.white, size = size.tiny)
+bgcolor(momentumState == 0 ? color.new(color.gray, 94) : momentumState == 1 ? color.new(color.orange, 94) : momentumState == 3 ? color.new(color.green, 95) : na)
+
+alertcondition(buyFill, "0050 V2 進場", "0050 Long Momentum V2 進場")
+alertcondition(addFill, "0050 V2 加碼", "0050 Long Momentum V2 加碼")
+alertcondition(reduceFill, "0050 V2 減碼", "0050 Long Momentum V2 減碼")
+alertcondition(exitFill, "0050 V2 清倉", "0050 Long Momentum V2 清倉")

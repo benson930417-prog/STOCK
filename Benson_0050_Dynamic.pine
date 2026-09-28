@@ -1,0 +1,429 @@
+//@version=6
+strategy(
+     "Benson 0050 Dynamic",
+     overlay = true,
+     initial_capital = 1000000,
+     currency = currency.NONE,
+     default_qty_type = strategy.fixed,
+     default_qty_value = 1,
+     pyramiding = 100,
+     margin_long = 100,
+     margin_short = 100,
+     max_bars_back = 5000,
+     max_labels_count = 500,
+     calc_on_order_fills = false,
+     calc_on_every_tick = false,
+     process_orders_on_close = false,
+     use_bar_magnifier = true,
+     fill_orders_on_standard_ohlc = true)
+
+// 0050 專用多空版本：保留 Benson NDQ V1 的三段多頭曝險與 tactical-short 狀態機。
+// 刻意不在 strategy() 內設定手續費與滑價；請在「設定 → Properties」依券商條件調整。
+// 訊號在 bar 收盤確認，市價單在下一個可成交 tick（歷史回測通常是下一根 bar 開盤）模擬成交。
+
+clamp(float value, float lowBound, float highBound) =>
+    math.max(lowBound, math.min(value, highBound))
+
+barsFromMinutes(simple float minutes) =>
+    int(math.max(1.0, math.round(minutes * 60.0 / math.max(float(timeframe.in_seconds()), 1.0))))
+
+roundDownToStep(float value, float stepSize) =>
+    math.floor(value / stepSize) * stepSize
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 0050 與時間框架自適應
+// 0050 日盤 09:00–13:30，共 270 分鐘。Auto 會把「分鐘」換算為目前圖表的 bars。
+// 在 15 分鐘圖上，預設值會還原成 ATR 20、慣性 8、錨線 96、波動基準 120。
+// ─────────────────────────────────────────────────────────────────────────────
+string groupAuto = "0050 自適應"
+bool autoLengths = input.bool(true, "依時間框架自動換算 bars", group = groupAuto)
+float horizonScale = input.float(1.0, "訊號時間尺度倍率", minval = 0.25, maxval = 4.0, step = 0.05, group = groupAuto)
+int qtyStepShares = input.int(1, "最小下單單位（零股=1；整張=1000）", minval = 1, maxval = 1000, group = groupAuto)
+
+simple int barsPerSession = math.max(1, barsFromMinutes(270.0))
+simple int autoWeekBars = math.min(5000, barsPerSession * 5)
+simple int autoMonthBars = math.min(5000, barsPerSession * 20)
+float qtyStep = float(qtyStepShares)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 回測視窗：預設關閉固定日期，避免策略因日期到期而自動歸零。
+// ─────────────────────────────────────────────────────────────────────────────
+string groupWindow = "回測視窗"
+bool useManualWindow = input.bool(false, "使用固定日期", group = groupWindow)
+int manualStart = input.time(1577836800000, "起始（UTC）", group = groupWindow)
+int manualEnd = input.time(2082758399000, "結束（UTC，預設 2035-12-31）", group = groupWindow)
+bool inWindow = not useManualWindow or (time >= manualStart and time <= manualEnd)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 藍線：低延遲 alpha-beta tracker
+// ─────────────────────────────────────────────────────────────────────────────
+string groupBlue = "藍線：低延遲 tracker"
+float observed = input.source(hlc3, "觀測價格", group = groupBlue)
+float alpha = input.float(0.38, "價格修正 alpha", minval = 0.05, maxval = 0.95, step = 0.01, group = groupBlue)
+float beta = input.float(0.035, "速度修正 beta", minval = 0.001, maxval = 0.50, step = 0.001, group = groupBlue)
+float accelerationWeight = input.float(0.10, "加速度權重", minval = 0.0, maxval = 2.0, step = 0.05, group = groupBlue)
+
+int manualAtrLength = input.int(20, "ATR 長度（手動 bars）", minval = 5, maxval = 500, group = groupBlue)
+int manualInertiaLookback = input.int(8, "慣性回看（手動 bars）", minval = 2, maxval = 500, group = groupBlue)
+int manualInertiaSmooth = input.int(8, "慣性平滑（手動 bars）", minval = 2, maxval = 500, group = groupBlue)
+int manualAnchorLength = input.int(96, "趨勢錨（手動 bars）", minval = 16, maxval = 2000, group = groupBlue)
+
+simple int atrLength = autoLengths ? math.min(500, math.max(5, barsFromMinutes(300.0 * horizonScale))) : manualAtrLength
+simple int inertiaLookback = autoLengths ? math.min(500, math.max(2, barsFromMinutes(120.0 * horizonScale))) : manualInertiaLookback
+simple int inertiaSmooth = autoLengths ? math.min(500, math.max(2, barsFromMinutes(120.0 * horizonScale))) : manualInertiaSmooth
+simple int anchorLength = autoLengths ? math.min(2000, math.max(16, barsFromMinutes(1440.0 * horizonScale))) : manualAnchorLength
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 三段曝險狀態：0% 現金、核心部位、完整部位。
+// ─────────────────────────────────────────────────────────────────────────────
+string groupSignal = "三段曝險狀態"
+float bullThreshold = input.float(0.005, "轉強門檻（ATR）", minval = 0.0, maxval = 0.50, step = 0.005, group = groupSignal)
+float bearThreshold = input.float(-0.010, "轉弱門檻（ATR）", minval = -0.50, maxval = 0.0, step = 0.005, group = groupSignal)
+float entryBufferAtr = input.float(0.05, "買入距錨線緩衝（ATR）", minval = 0.0, maxval = 2.0, step = 0.05, group = groupSignal)
+float exitBufferAtr = input.float(0.35, "完全離場破位（ATR）", minval = 0.0, maxval = 3.0, step = 0.05, group = groupSignal)
+
+int manualBullConfirm = input.int(2, "轉強確認（手動 bars）", minval = 1, maxval = 20, group = groupSignal)
+int manualFadeConfirm = input.int(3, "減碼確認（手動 bars）", minval = 1, maxval = 20, group = groupSignal)
+int manualBearConfirm = input.int(2, "離場確認（手動 bars）", minval = 1, maxval = 20, group = groupSignal)
+int manualCooldown = input.int(2, "停損後冷卻（手動 bars）", minval = 0, maxval = 100, group = groupSignal)
+
+simple int bullConfirmBars = autoLengths ? math.min(20, barsFromMinutes(30.0 * horizonScale)) : manualBullConfirm
+simple int fadeConfirmBars = autoLengths ? math.min(20, barsFromMinutes(45.0 * horizonScale)) : manualFadeConfirm
+simple int bearConfirmBars = autoLengths ? math.min(20, barsFromMinutes(30.0 * horizonScale)) : manualBearConfirm
+simple int reentryCooldown = autoLengths ? math.min(100, barsFromMinutes(30.0 * horizonScale)) : manualCooldown
+
+float fullExposurePct = input.float(98.0, "完整曝險（% equity）", minval = 10.0, maxval = 100.0, step = 1.0, group = groupSignal) / 100.0
+float coreExposurePct = input.float(82.0, "核心曝險（% equity）", minval = 0.0, maxval = 95.0, step = 1.0, group = groupSignal) / 100.0
+float leverageFactor = input.float(1.00, "測試槓桿（1 = 關閉）", minval = 1.0, maxval = 2.0, step = 0.05, group = groupSignal)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 風控與調倉
+// ─────────────────────────────────────────────────────────────────────────────
+string groupRisk = "0050 風控"
+float longStopAtrMultiple = input.float(3.00, "硬停損 ATR 倍數", minval = 0.5, maxval = 8.0, step = 0.25, group = groupRisk)
+float longMinimumStopPct = input.float(0.75, "最小硬停損（%）", minval = 0.20, maxval = 5.0, step = 0.05, group = groupRisk) / 100.0
+float longMaximumStopPct = input.float(3.00, "最大硬停損（%）", minval = 0.50, maxval = 8.0, step = 0.10, group = groupRisk) / 100.0
+float hardBreakAtr = input.float(1.50, "緊急破位（ATR）", minval = 0.5, maxval = 8.0, step = 0.25, group = groupRisk)
+float minAdjustPct = input.float(10.0, "最小調倉幅度（% equity）", minval = 1.0, maxval = 50.0, step = 1.0, group = groupRisk) / 100.0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 波動 regime：依 0050 自己近期 ATR 動態放寬條件。
+// ─────────────────────────────────────────────────────────────────────────────
+string groupVol = "波動自適應"
+int manualVolBaseline = input.int(120, "ATR 基準（手動 bars）", minval = 20, maxval = 2000, group = groupVol)
+float volRatioFloor = input.float(0.6, "波動比下限", minval = 0.1, maxval = 1.0, step = 0.05, group = groupVol)
+float volRatioCap = input.float(2.5, "波動比上限", minval = 1.0, maxval = 5.0, step = 0.1, group = groupVol)
+float highVolThreshold = input.float(1.4, "波動放大門檻", minval = 1.0, maxval = 3.0, step = 0.05, group = groupVol)
+int extraConfirmBarsHighVol = input.int(1, "高波動額外確認 bars", minval = 0, maxval = 5, group = groupVol)
+float bufferVolSensitivity = input.float(0.4, "緩衝隨波動放大係數", minval = 0.0, maxval = 2.0, step = 0.1, group = groupVol)
+
+simple int volBaselineLength = autoLengths ? math.min(2000, math.max(20, barsFromMinutes(1800.0 * horizonScale))) : manualVolBaseline
+
+// 原版 Benson NDQ V1 的 tactical-short 模組；0050 仍使用相同狀態機與風控。
+string groupShort = "局部空頭"
+bool enableTacticalShort = input.bool(true, "啟用局部空頭模組", group = groupShort)
+int tacticalRearmBars = input.int(0, "空單結束後重新武裝 bars（0=僅多頭重置）", minval = 0, maxval = 200, group = groupShort)
+float tacticalShortExposurePct = input.float(0.35, "局部空頭 gross exposure", minval = 0.10, maxval = 0.70, step = 0.05, group = groupShort)
+int manualTacticalConfirm = input.int(6, "局部空頭確認（手動 bars）", minval = 2, maxval = 30, group = groupShort)
+simple int tacticalConfirmBars = autoLengths ? math.min(30, math.max(2, barsFromMinutes(90.0 * horizonScale))) : manualTacticalConfirm
+float shortMinimumStopPct = input.float(1.25, "空頭最小硬停損%", minval = 0.30, maxval = 5.0, step = 0.05, group = groupShort) / 100.0
+float shortMaximumStopPct = input.float(2.75, "空頭最大硬停損%", minval = 0.50, maxval = 8.0, step = 0.05, group = groupShort) / 100.0
+float shortStopAtrMultiple = input.float(3.00, "空頭硬停損 ATR 倍數", minval = 0.50, maxval = 8.0, step = 0.25, group = groupShort)
+float tacticalEarlyMfe = input.float(1.00, "局部空早期鎖利 MFE%", minval = 0.50, maxval = 4.0, step = 0.05, group = groupShort)
+float tacticalEarlyGiveback = input.float(0.50, "局部空早期允許回吐%", minval = 0.20, maxval = 2.0, step = 0.05, group = groupShort) / 100.0
+float shortTrailAtrMultiple = input.float(3.00, "空頭鎖利最少 ATR 回吐", minval = 0.50, maxval = 10.0, step = 0.25, group = groupShort)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 訊號計算
+// ─────────────────────────────────────────────────────────────────────────────
+var float blueLine = na
+var float velocity = 0.0
+
+float priorBlue = nz(blueLine[1], observed)
+float priorVelocity = nz(velocity[1], 0.0)
+float predictedPrice = priorBlue + priorVelocity
+float innovation = observed - predictedPrice
+
+blueLine := predictedPrice + alpha * innovation
+velocity := priorVelocity + beta * innovation
+
+float acceleration = velocity - priorVelocity
+float atr = ta.atr(atrLength)
+float noise = math.max(nz(atr, high - low), syminfo.mintick)
+float atrBaseline = ta.ema(atr, volBaselineLength)
+float volRatio = atrBaseline > 0 ? clamp(atr / atrBaseline, volRatioFloor, volRatioCap) : 1.0
+bool volExpanding = volRatio >= highVolThreshold
+
+float rawInertia = ((blueLine - nz(blueLine[inertiaLookback], blueLine)) / inertiaLookback + accelerationWeight * acceleration) / noise
+float inertia = ta.ema(rawInertia, inertiaSmooth)
+float regimeAnchor = ta.ema(blueLine, anchorLength)
+
+float dynamicBufferMultiple = 1.0 + bufferVolSensitivity * math.max(volRatio - 1.0, 0.0)
+float minimumTickBufferAtr = syminfo.mintick / noise
+float effectiveEntryBufferAtr = math.max(entryBufferAtr * dynamicBufferMultiple, minimumTickBufferAtr)
+float effectiveExitBufferAtr = math.max(exitBufferAtr * dynamicBufferMultiple, minimumTickBufferAtr)
+
+bool bullEvidence = inertia > bullThreshold and blueLine > regimeAnchor + effectiveEntryBufferAtr * noise and close > blueLine
+bool fadeEvidence = inertia < 0 and close < blueLine
+bool bearEvidence = inertia < bearThreshold and blueLine < regimeAnchor - effectiveExitBufferAtr * noise
+bool emergencyBreak = close < regimeAnchor - hardBreakAtr * noise and inertia < bearThreshold
+
+var int bullBars = 0
+var int fadeBars = 0
+var int bearBars = 0
+bullBars := bullEvidence ? nz(bullBars[1]) + 1 : 0
+fadeBars := fadeEvidence ? nz(fadeBars[1]) + 1 : 0
+bearBars := bearEvidence ? nz(bearBars[1]) + 1 : 0
+
+int requiredBullConfirm = bullConfirmBars + (volExpanding ? extraConfirmBarsHighVol : 0)
+int requiredFadeConfirm = fadeConfirmBars + (volExpanding ? extraConfirmBarsHighVol : 0)
+int requiredBearConfirm = bearConfirmBars + (volExpanding ? extraConfirmBarsHighVol : 0)
+
+var int flatBars = 100000
+flatBars := strategy.position_size == 0 ? math.min(nz(flatBars[1], 100000) + 1, 100000) : 0
+
+bool ready = not na(atr) and not na(inertia) and not na(regimeAnchor)
+bool justClosedLong = strategy.position_size == 0 and strategy.position_size[1] > 0
+bool justClosedShort = strategy.position_size == 0 and strategy.position_size[1] < 0
+bool justClosed = justClosedLong or justClosedShort
+var int barsSinceShortClose = 100000
+barsSinceShortClose := justClosedShort ? 0 : math.min(nz(barsSinceShortClose[1], 100000) + 1, 100000)
+bool bullTrigger = bullBars >= requiredBullConfirm
+bool recoveryTrigger = ta.crossover(close, blueLine + effectiveEntryBufferAtr * noise) and inertia > 0 and blueLine > regimeAnchor
+bool reclaimTrigger = ta.crossover(close, blueLine + effectiveEntryBufferAtr * noise) and inertia > 0 and velocity > 0 and close > regimeAnchor and blueLine <= regimeAnchor
+
+var int exposureState = 0
+if justClosed
+    exposureState := 0
+else if not inWindow
+    exposureState := 0
+else if ready
+    if exposureState == 0
+        if flatBars >= reentryCooldown and (bullTrigger or recoveryTrigger)
+            exposureState := 2
+        else if flatBars >= reentryCooldown and reclaimTrigger
+            exposureState := 1
+    else if bearBars >= requiredBearConfirm or emergencyBreak
+        exposureState := 0
+    else if exposureState == 2 and fadeBars >= requiredFadeConfirm
+        exposureState := 1
+    else if exposureState == 1 and (bullTrigger or recoveryTrigger)
+        exposureState := 2
+
+int requiredTacticalConfirm = tacticalConfirmBars + (volExpanding ? extraConfirmBarsHighVol : 0)
+
+var bool tacticalBearLatched = false
+var bool tacticalArmed = true
+if not inWindow
+    tacticalBearLatched := false
+    tacticalArmed := true
+else if justClosedShort
+    tacticalBearLatched := false
+else if tacticalBearLatched
+    if bullBars >= requiredBullConfirm or recoveryTrigger or exposureState > 0
+        tacticalBearLatched := false
+else if enableTacticalShort and tacticalArmed and exposureState == 0 and bearBars >= requiredTacticalConfirm
+    tacticalBearLatched := true
+    tacticalArmed := false
+
+// 多頭復甦會重新武裝；也可選擇空單結束 N bars 後重新武裝。
+if not tacticalArmed and (bullBars >= requiredBullConfirm or recoveryTrigger or (tacticalRearmBars > 0 and barsSinceShortClose >= tacticalRearmBars))
+    tacticalArmed := true
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 0050 股數換算：point value 與帳戶幣別皆納入，股數依零股／整張單位向下取整。
+// ─────────────────────────────────────────────────────────────────────────────
+float baseExposure = exposureState == 2 ? fullExposurePct : exposureState == 1 ? coreExposurePct : 0.0
+float targetExposure = baseExposure * leverageFactor
+float contractNotional = close * syminfo.pointvalue
+float targetCapitalSymbol = strategy.convert_to_symbol(strategy.equity * targetExposure)
+float rawDesiredQty = targetExposure > 0 and contractNotional > 0 ? targetCapitalSymbol / contractNotional : 0.0
+float desiredQty = roundDownToStep(rawDesiredQty, qtyStep)
+float currentQty = math.max(strategy.position_size, 0.0)
+float qtyDelta = desiredQty - currentQty
+
+float minAdjustCapitalSymbol = strategy.convert_to_symbol(strategy.equity * minAdjustPct)
+float rawMinAdjustQty = contractNotional > 0 ? minAdjustCapitalSymbol / contractNotional : qtyStep
+float minAdjustQty = math.max(qtyStep, roundDownToStep(rawMinAdjustQty, qtyStep))
+float tacticalCapitalSymbol = strategy.convert_to_symbol(strategy.equity * tacticalShortExposurePct)
+float rawDesiredShortQty = contractNotional > 0 ? tacticalCapitalSymbol / contractNotional : 0.0
+float desiredShortQty = roundDownToStep(rawDesiredShortQty, qtyStep)
+
+float positionValueAccount = strategy.convert_to_account(strategy.position_size * close * syminfo.pointvalue)
+float actualExposurePct = strategy.equity != 0 ? positionValueAccount / strategy.equity * 100.0 : na
+bool qtyStarved = targetExposure > 0 and desiredQty < qtyStep
+
+if not inWindow and strategy.position_size != 0
+    strategy.close_all(comment = "區間平")
+else if tacticalBearLatched
+    if strategy.position_size > 0
+        strategy.close_all(comment = "局部轉空")
+    else if strategy.position_size == 0 and not justClosed and flatBars >= reentryCooldown and desiredShortQty >= qtyStep
+        strategy.entry("Tactical Short", strategy.short, qty = desiredShortQty, comment = "局部做空")
+else if strategy.position_size < 0
+    // 淨部位只有一個方向；close_all 可同時涵蓋正常 Tactical Short 與任何舊的孤兒空單。
+    strategy.close_all(comment = "局部復甦")
+else if exposureState == 0 and currentQty > 0
+    strategy.close_all(comment = emergencyBreak ? "緊急破位" : "真正轉空")
+else if qtyDelta >= minAdjustQty and not justClosed
+    float longEntryStopDistanceNow = clamp(longStopAtrMultiple * atr / close, longMinimumStopPct, longMaximumStopPct)
+    strategy.order("曝險加回", strategy.long, qty = qtyDelta, comment = currentQty == 0 ? "強多買入" : "回檔加回")
+    strategy.exit("硬停損", stop = close * (1.0 - longEntryStopDistanceNow), comment_loss = "硬停損")
+else if qtyDelta <= -minAdjustQty and currentQty > 0
+    // 邏輯仍是 Benson V1 的「小行情減碼」，但使用部分平倉，禁止和停損競態後反手開空。
+    strategy.close("曝險加回", qty = math.min(-qtyDelta, currentQty), comment = "小行情減碼")
+
+var float activeStop = na
+var float longEntryStopDistance = na
+bool newLong = strategy.position_size > 0 and strategy.position_size[1] <= 0
+if newLong
+    longEntryStopDistance := clamp(longStopAtrMultiple * atr / strategy.position_avg_price, longMinimumStopPct, longMaximumStopPct)
+    activeStop := strategy.position_avg_price * (1.0 - longEntryStopDistance)
+else if strategy.position_size > 0
+    float hardCandidate = strategy.position_avg_price * (1.0 - nz(longEntryStopDistance, longMaximumStopPct))
+    activeStop := math.max(nz(activeStop, hardCandidate), hardCandidate)
+else
+    longEntryStopDistance := na
+    activeStop := na
+
+if strategy.position_size > 0
+    strategy.exit("硬停損", stop = activeStop, comment_loss = "硬停損")
+
+// 與原版完全相同的空頭硬停損、MFE 鎖利及 ATR 回吐邏輯。
+var float shortFavorableExtreme = na
+var float shortActiveStop = na
+var float shortEntryStopDistance = na
+bool newShort = strategy.position_size < 0 and strategy.position_size[1] >= 0
+if newShort
+    shortEntryStopDistance := clamp(shortStopAtrMultiple * atr / strategy.position_avg_price, shortMinimumStopPct, shortMaximumStopPct)
+    shortFavorableExtreme := low
+    shortActiveStop := strategy.position_avg_price * (1.0 + shortEntryStopDistance)
+else if strategy.position_size < 0
+    shortFavorableExtreme := math.min(nz(shortFavorableExtreme, low), low)
+    float shortMfePct = (strategy.position_avg_price - shortFavorableExtreme) / strategy.position_avg_price * 100.0
+    float shortHardStop = strategy.position_avg_price * (1.0 + nz(shortEntryStopDistance, shortMaximumStopPct))
+    float shortAtrGiveback = shortTrailAtrMultiple * atr / shortFavorableExtreme
+    float shortEffectiveGiveback = shortMfePct >= tacticalEarlyMfe ? math.max(tacticalEarlyGiveback, shortAtrGiveback) : na
+    float shortTrailStop = not na(shortEffectiveGiveback) ? shortFavorableExtreme * (1.0 + shortEffectiveGiveback) : shortHardStop
+    shortActiveStop := math.min(nz(shortActiveStop, shortHardStop), math.min(shortHardStop, shortTrailStop))
+else
+    shortFavorableExtreme := na
+    shortActiveStop := na
+    shortEntryStopDistance := na
+
+if strategy.position_size < 0 and not na(shortActiveStop)
+    strategy.exit("Tactical Short Risk", from_entry = "Tactical Short", stop = shortActiveStop, comment_loss = "局部空單停損")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 績效比較：週／月 bars 依 0050 每日 270 分鐘自動換算。
+// ─────────────────────────────────────────────────────────────────────────────
+string groupCompare = "績效比較"
+bool autoCompareBars = input.bool(true, "自動計算週／月 bars", group = groupCompare)
+int manualWeekBars = input.int(90, "一週（手動 bars）", minval = 5, maxval = 5000, group = groupCompare)
+int manualMonthBars = input.int(360, "一月（手動 bars）", minval = 20, maxval = 5000, group = groupCompare)
+simple int weekBars = autoCompareBars ? autoWeekBars : manualWeekBars
+simple int monthBars = autoCompareBars ? autoMonthBars : manualMonthBars
+
+var float bhStart = na
+var float bhReturnFrozen = na
+if inWindow and na(bhStart)
+    bhStart := close
+if inWindow and not na(bhStart)
+    bhReturnFrozen := (close / bhStart - 1.0) * 100.0
+
+float bhReturnPct = bhReturnFrozen
+float strategyReturnPct = (strategy.equity / strategy.initial_capital - 1.0) * 100.0
+
+float weekStrategyRet = strategy.equity / strategy.equity[weekBars] - 1.0
+float weekBhRet = close / close[weekBars] - 1.0
+float monthStrategyRet = strategy.equity / strategy.equity[monthBars] - 1.0
+float monthBhRet = close / close[monthBars] - 1.0
+bool weekReady = inWindow and inWindow[weekBars] and not na(weekStrategyRet)
+bool monthReady = inWindow and inWindow[monthBars] and not na(monthStrategyRet)
+
+var int weekWins = 0
+var int weekSamples = 0
+var int monthWins = 0
+var int monthSamples = 0
+if weekReady
+    weekSamples += 1
+    weekWins += weekStrategyRet > weekBhRet ? 1 : 0
+if monthReady
+    monthSamples += 1
+    monthWins += monthStrategyRet > monthBhRet ? 1 : 0
+
+float weekBeatPct = weekSamples > 0 ? weekWins * 100.0 / weekSamples : na
+float monthBeatPct = monthSamples > 0 ? monthWins * 100.0 / monthSamples : na
+
+var int exposureSamples = 0
+var int cashSamples = 0
+var float exposureSum = 0.0
+if inWindow
+    exposureSamples += 1
+    cashSamples += exposureState == 0 ? 1 : 0
+    exposureSum += targetExposure
+
+float averageExposurePct = exposureSamples > 0 ? exposureSum * 100.0 / exposureSamples : na
+float cashBarsPct = exposureSamples > 0 ? cashSamples * 100.0 / exposureSamples : na
+float oneTickPct = close > 0 ? syminfo.mintick / close * 100.0 : na
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 圖表與狀態卡
+// ─────────────────────────────────────────────────────────────────────────────
+plot(blueLine, "藍線", color = color.rgb(0, 132, 255), linewidth = 3)
+plot(regimeAnchor, "趨勢錨", color = color.rgb(255, 184, 77), linewidth = 1, display = display.none)
+plot(strategy.position_size > 0 ? activeStop : na, "有效停損", color = color.rgb(255, 82, 82), linewidth = 2, style = plot.style_linebr)
+plot(strategy.position_size < 0 ? shortActiveStop : na, "空頭有效停損", color = color.rgb(255, 145, 0), linewidth = 2, style = plot.style_linebr)
+bgcolor(exposureState == 2 ? color.new(color.green, 95) : exposureState == 1 ? color.new(color.teal, 96) : color.new(color.red, 96), title = "曝險狀態")
+
+// 明確畫出實際成交後的部位變化；即使 TradingView 隱藏內建交易標記也看得到。
+bool longEntryFill = strategy.position_size > 0 and strategy.position_size[1] <= 0
+bool longAddFill = strategy.position_size > strategy.position_size[1] and strategy.position_size[1] > 0
+bool longReduceFill = strategy.position_size < strategy.position_size[1] and strategy.position_size > 0
+bool longExitFill = strategy.position_size <= 0 and strategy.position_size[1] > 0
+bool shortEntryFill = strategy.position_size < 0 and strategy.position_size[1] >= 0
+bool shortExitFill = strategy.position_size >= 0 and strategy.position_size[1] < 0
+
+plotshape(longEntryFill, title = "BUY 成交", style = shape.labelup, location = location.belowbar, color = color.lime, text = "BUY", textcolor = color.black, size = size.tiny)
+plotshape(longAddFill, title = "ADD 成交", style = shape.labelup, location = location.belowbar, color = color.aqua, text = "ADD", textcolor = color.black, size = size.tiny)
+plotshape(longReduceFill, title = "REDUCE 成交", style = shape.labeldown, location = location.abovebar, color = color.orange, text = "RED", textcolor = color.black, size = size.tiny)
+plotshape(longExitFill, title = "EXIT 成交", style = shape.labeldown, location = location.abovebar, color = color.red, text = "EXIT", textcolor = color.white, size = size.tiny)
+plotshape(shortEntryFill, title = "SHORT 成交", style = shape.labeldown, location = location.abovebar, color = color.fuchsia, text = "SHORT", textcolor = color.white, size = size.tiny)
+plotshape(shortExitFill, title = "COVER 成交", style = shape.labelup, location = location.belowbar, color = color.yellow, text = "COVER", textcolor = color.black, size = size.tiny)
+
+var table scorecard = table.new(position.top_right, 2, 10, border_width = 1)
+if barstate.islast
+    table.cell(scorecard, 0, 0, "0050 Dynamic", bgcolor = color.rgb(35, 35, 35), text_color = color.white)
+    table.cell(scorecard, 1, 0, timeframe.period + " ｜ " + (autoLengths ? "Auto" : "Manual"), bgcolor = color.rgb(35, 35, 35), text_color = color.white)
+    table.cell(scorecard, 0, 1, "策略報酬", text_color = color.white)
+    table.cell(scorecard, 1, 1, str.tostring(strategyReturnPct, "#.##") + "%", text_color = strategyReturnPct >= 0 ? color.lime : color.red)
+    table.cell(scorecard, 0, 2, "Buy & Hold", text_color = color.white)
+    table.cell(scorecard, 1, 2, str.tostring(bhReturnPct, "#.##") + "%", text_color = bhReturnPct >= 0 ? color.lime : color.red)
+    table.cell(scorecard, 0, 3, "一週勝大盤率", text_color = color.white)
+    table.cell(scorecard, 1, 3, str.tostring(weekBeatPct, "#.0") + "%", text_color = weekBeatPct >= 50 ? color.lime : color.orange)
+    table.cell(scorecard, 0, 4, "一月勝大盤率", text_color = color.white)
+    table.cell(scorecard, 1, 4, str.tostring(monthBeatPct, "#.0") + "%", text_color = monthBeatPct >= 50 ? color.lime : color.orange)
+    table.cell(scorecard, 0, 5, "目標｜實際曝險", text_color = color.white)
+    table.cell(scorecard, 1, 5, str.tostring(targetExposure * 100.0, "#") + "% ｜ " + str.tostring(actualExposurePct, "#.1") + "%", text_color = exposureState > 0 ? color.aqua : color.gray)
+    table.cell(scorecard, 0, 6, "下單單位", text_color = color.white)
+    table.cell(scorecard, 1, 6, str.tostring(qtyStepShares) + " 股" + (qtyStarved ? "（資金不足）" : ""), text_color = qtyStarved ? color.red : color.gray)
+    table.cell(scorecard, 0, 7, "ATR｜慣性｜錨", text_color = color.white)
+    table.cell(scorecard, 1, 7, str.tostring(atrLength) + " ｜ " + str.tostring(inertiaLookback) + " ｜ " + str.tostring(anchorLength), text_color = color.gray)
+    table.cell(scorecard, 0, 8, "日｜週｜月 bars", text_color = color.white)
+    table.cell(scorecard, 1, 8, str.tostring(barsPerSession) + " ｜ " + str.tostring(weekBars) + " ｜ " + str.tostring(monthBars), text_color = color.gray)
+    table.cell(scorecard, 0, 9, "每 tick 價格占比", text_color = color.white)
+    table.cell(scorecard, 1, 9, str.tostring(oneTickPct, "#.###") + "%", text_color = color.gray)
+
+plot(strategyReturnPct, "策略報酬%", display = display.status_line)
+plot(bhReturnPct, "B&H 報酬%", display = display.status_line)
+plot(weekBeatPct, "一週勝大盤率%", display = display.status_line)
+plot(monthBeatPct, "一月勝大盤率%", display = display.status_line)
+plot(targetExposure * 100.0, "目標曝險%", display = display.status_line)
+plot(actualExposurePct, "實際曝險%", display = display.status_line)
+plot(averageExposurePct, "平均曝險%", display = display.status_line)
+plot(cashBarsPct, "空手 bars%", display = display.status_line)
+
+alertcondition(exposureState > 0 and exposureState[1] == 0, "0050 多頭進場", "0050 Dynamic：多頭進場條件成立")
+alertcondition(exposureState == 0 and exposureState[1] > 0, "0050 多頭離場", "0050 Dynamic：多頭離場條件成立")
+alertcondition(shortEntryFill, "0050 空頭進場", "0050 Dynamic：tactical short 已成交")
+alertcondition(shortExitFill, "0050 空頭平倉", "0050 Dynamic：tactical short 已平倉")
