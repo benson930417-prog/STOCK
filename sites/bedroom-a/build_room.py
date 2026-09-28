@@ -48,7 +48,7 @@ grillemat=material('11 satin grey vent grille',(.48,.49,.47),.48,.12)
 glass=material('10 glass',(.85,.92,.94),.08)
 pg=glass.node_tree.nodes['Principled BSDF'];pg.inputs['Transmission Weight'].default_value=1;pg.inputs['IOR'].default_value=1.45
 groups={}
-for name in ['Shell','FrontWall','LeftWall','Ceiling','Openings','Furniture','OriginalJoinery','Balcony','Lights','Cameras']:
+for name in ['Shell','FrontWall','LeftWall','Ceiling','Openings','Furniture','OriginalJoinery','Bathroom','Balcony','Lights','Cameras']:
     c=bpy.data.collections.new(name);scene.collection.children.link(c);groups[name]=c
 def group(o,g):
     for c in list(o.users_collection):c.objects.unlink(o)
@@ -83,20 +83,11 @@ def camera(name,loc,target,lens=24,ortho=None):
 import runpy
 D=runpy.run_path(str(OUT/'audited_shell.py'))['build_shell'](box,slab,wall,floor,frame,glass,joinery,balcony)
 runpy.run_path(str(OUT/'window_frames.py'))['build_window_frames'](box,frame,glass)
+runpy.run_path(str(OUT/'bathroom.py'))['build_bathroom'](box,slab,material,wall,floor,frame,glass)
 
-# Bed axis +X, head at original left wall. Mattress is an assumed 1.8 x 2.0 m.
-box('upholstered bed base',(1.23,1.68,.22),(2.15,1.92,.32),cloth,'Furniture',.075)
-box('mattress 180 x 200',(1.23,1.68,.48),(2,1.8,.28),linen,'Furniture',.11)
-box('headboard left wall',(.11,1.68,.71),(.18,2.12,1.32),cloth,'Furniture',.065)
-for y in [1.23,2.13]:box('pillow',(.54,y,.69),(.57,.72,.17),linen,'Furniture',.08)
-box('folded neutral blanket',(1.88,1.68,.645),(.55,1.81,.08),joinery,'Furniture',.03)
-for y in [.40,2.98]:
-    box('bedside table',(.46,y,.245),(.56,.44,.49),joinery,'Furniture',.025)
-    box('bedside tray',(.46,y,.505),(.38,.28,.025),wall,'Furniture',.02)
+runpy.run_path(str(OUT/'platform_proposal.py'))['build_platform_proposal'](box,material,slab,linen,cloth,frame,lightmat,area)
 
 # Optional furniture blocks. They are proposals, not inherited fixed joinery.
-box('proposed wardrobe north',(5.25,2.625,1.16),(2.34,.60,2.32),joinery,'Furniture',.025)
-for x in [4.67,5.25,5.83]:box('wardrobe door reveal',(x,2.316,1.16),(.009,.006,2.24),dark,'Furniture')
 box('desk proposal',(5.92,.40,.74),(1.55,.65,.055),joinery,'Furniture',.02)
 for x in [5.24,6.60]:box('desk support',(x,.40,.36),(.055,.54,.70),frame,'Furniture',.01)
 box('chair seat',(5.92,1.01,.46),(.5,.47,.08),cloth,'Furniture',.06)
@@ -136,7 +127,6 @@ ceiling_zone('front perimeter low band',0,7.155,.12,.47,2.5)
 ceiling_zone('north low strip left',0,2.804,2.93,3.4,2.5)
 ceiling_zone('vestibule ceiling',2.804,4.02,2.93,4.171,2.5)
 ceiling_zone('northeast ceiling',6.573,7.155,2.93,3.4,2.6)
-ceiling_zone('original cabinet coverage - not structural',4.02,6.573,2.93,4.171,2.5)
 def grille(name,center,length,width,vertical=False):
     # local A is the grille cross-axis; local B is its longitudinal Y direction.
     # depth positive goes inside the housing. All blades follow the long edge.
@@ -179,13 +169,13 @@ area('soft interior bounce',(3.6,1.7,2.43),(3.6,1.7,0),170,3,(1,.94,.84))
 area('left high ceiling fill',(1.5,1.7,2.7),(1.5,1.7,0),95,2,(1,.94,.84))
 area('review studio light',(2,-1,7),(3.5,1.7,0),700,6,(1,1,1))
 
-c_top=camera('01 TOP plan',(4.15,1.9,12),(4.15,1.9,0),ortho=10.1)
+c_top=camera('01 TOP plan',(4.15,2.65,12),(4.15,2.65,0),ortho=10.4)
 c_over=camera('02 OVERVIEW cutaway',(-4,-7.2,8.2),(3.7,1.8,1.15),ortho=11.8)
-c_bed=camera('03 BED toward balcony',(.70,1.7,1.35),(7.6,1.70,1.35),lens=19)
+c_bed=camera('03 BED toward balcony',(.70,1.0,1.35),(7.6,1.0,1.35),lens=19)
 c_entry=camera('04 ENTRY toward bed',(3.45,2.88,1.60),(.8,1.60,1.1),lens=22)
 c_rev=camera('05 BALCONY toward bed',(6.94,1.35,1.60),(1.2,1.68,1.1),lens=22)
-scene['concept_notes']='Audited p61/p69 inner-face geometry. See dimension-audit.json for all conflicts and unknowns. P69 controls ceiling. Original north cabinet boundary is not a verified building wall. Furniture is a proposal.'
-scene['source_pdf_pages']='61,65,67,68,69,70'
+scene['concept_notes']='p61/p63 fixed partition enclosing bedroom B wardrobe. Bedroom A ensuite included; bathroom heights schematic per p65 unspecified developer ceiling. P69 controls bedroom ceiling. Standard-double platform and parallel wardrobe are new proposals.'
+scene['source_pdf_pages']='61,63,65,67,68,69,70,73,74'
 scene.camera=c_over
 for a in bpy.context.screen.areas:
     if a.type=='VIEW_3D':
@@ -209,6 +199,7 @@ if os.environ.get('BEDROOM_AUDIT_FAST')=='1':
     jobs=[(c_bed,'03-bed-to-balcony.png',[])]
     scene.cycles.samples=24
     scene.render.resolution_x=1200;scene.render.resolution_y=800
+if os.environ.get('BEDROOM_NO_RENDER')=='1':jobs=[]
 for cam,filename,hidden in jobs:
     visibility(hidden);scene.camera=cam;scene.render.filepath=str(OUT/filename)
     print('RENDERING',filename,flush=True);bpy.ops.render.render(write_still=True)

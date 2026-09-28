@@ -91,6 +91,45 @@
     "basis": "Traced interior face; thickness outside; hidden top not structural"
   },
   {
+    "name": "bedroom B fixed partition - west side",
+    "group": "Shell",
+    "bounds_m": [
+      4.02,
+      2.93,
+      0.0,
+      4.134,
+      4.171,
+      3.15
+    ],
+    "basis": "Fixed partition enclosing bedroom B wardrobe, confirmed by p63 and owner's clarification. Not removable bedroom A joinery; not classified as load-bearing. West: PDF X435.375 to 441.704; front: PDF Y358.010 to 350.182. East return simplified from partition width; detailed pier build-up not determined."
+  },
+  {
+    "name": "bedroom B fixed partition - front",
+    "group": "Shell",
+    "bounds_m": [
+      4.02,
+      2.93,
+      0.0,
+      6.573,
+      3.071,
+      3.15
+    ],
+    "basis": "Fixed partition enclosing bedroom B wardrobe, confirmed by p63 and owner's clarification. Not removable bedroom A joinery; not classified as load-bearing. West: PDF X435.375 to 441.704; front: PDF Y358.010 to 350.182. East return simplified from partition width; detailed pier build-up not determined."
+  },
+  {
+    "name": "bedroom B fixed partition - east return",
+    "group": "Shell",
+    "bounds_m": [
+      6.469,
+      2.93,
+      0.0,
+      6.573,
+      3.4,
+      3.15
+    ],
+    "basis": "Fixed partition enclosing bedroom B wardrobe, confirmed by p63 and owner's clarification. Not removable bedroom A joinery; not classified as load-bearing. West: PDF X435.375 to 441.704; front: PDF Y358.010 to 350.182. East return simplified from partition width; detailed pier build-up not determined."
+  },
+  {
     "name": "northeast edge",
     "group": "Shell",
     "bounds_m": [
@@ -403,6 +442,19 @@
     "basis": "Traced interior face; thickness outside; hidden top not structural"
   },
   {
+    "name": "bathroom A ceiling SCHEMATIC height",
+    "group": "Ceiling",
+    "bounds_m": [
+      0.0,
+      3.504,
+      2.5,
+      2.7,
+      5.3,
+      2.58
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
     "name": "P69 traced ceiling including projecting shelves and lips",
     "group": "Ceiling",
     "bounds_m": [
@@ -476,19 +528,6 @@
       2.6,
       7.155,
       3.4,
-      3.15
-    ],
-    "basis": "p69 traced visible ceiling / p65 transverse band"
-  },
-  {
-    "name": "original cabinet coverage - not structural",
-    "group": "Ceiling",
-    "bounds_m": [
-      4.02,
-      2.93,
-      2.5,
-      6.573,
-      4.171,
       3.15
     ],
     "basis": "p69 traced visible ceiling / p65 transverse band"
@@ -936,186 +975,381 @@
     "basis": "p61 plan width; p67/p69 side section H7 to H240. Internal sash division not established; outer frame only."
   },
   {
-    "name": "upholstered bed base",
+    "name": "platform inset fixed plinth",
     "group": "Furniture",
     "bounds_m": [
-      0.155,
-      0.72,
       0.06,
-      2.305,
-      2.64,
-      0.38
+      0.24,
+      0.0,
+      2.22,
+      1.76,
+      0.11
     ],
-    "basis": "Design proposal; not measured existing furniture"
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
   },
   {
-    "name": "mattress 180 x 200",
+    "name": "platform storage head compartment",
     "group": "Furniture",
     "bounds_m": [
-      0.23,
-      0.78,
-      0.34,
-      2.23,
-      2.58,
-      0.62
+      0.0,
+      0.16,
+      0.11,
+      1.82,
+      1.84,
+      0.245
     ],
-    "basis": "Design proposal; not measured existing furniture"
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
   },
   {
-    "name": "headboard left wall",
+    "name": "platform foot fixed divider",
     "group": "Furniture",
     "bounds_m": [
-      0.02,
-      0.62,
-      0.05,
+      1.82,
+      0.15,
+      0.099,
+      2.38,
+      0.17,
+      0.245
+    ],
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
+  },
+  {
+    "name": "platform foot fixed divider.001",
+    "group": "Furniture",
+    "bounds_m": [
+      1.82,
+      0.99,
+      0.099,
+      2.38,
+      1.01,
+      0.245
+    ],
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
+  },
+  {
+    "name": "platform foot fixed divider.002",
+    "group": "Furniture",
+    "bounds_m": [
+      1.82,
+      1.83,
+      0.099,
+      2.38,
+      1.85,
+      0.245
+    ],
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
+  },
+  {
+    "name": "platform top 238 x 170 H28",
+    "group": "Furniture",
+    "bounds_m": [
+      0.0,
+      0.15,
+      0.245,
+      2.38,
+      1.85,
+      0.28
+    ],
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
+  },
+  {
+    "name": "foot drawer 1 front",
+    "group": "Furniture",
+    "bounds_m": [
+      2.369,
+      0.19,
+      0.094,
+      2.385,
+      0.975,
+      0.24
+    ],
+    "basis": "Design proposal: foot drawer opens toward balcony, travel allowance 55 cm; hardware unselected."
+  },
+  {
+    "name": "foot drawer 1 bottom",
+    "group": "Furniture",
+    "bounds_m": [
+      1.84,
+      0.2075,
+      0.1005,
+      2.37,
+      0.9575,
+      0.1155
+    ],
+    "basis": "Design proposal: foot drawer opens toward balcony, travel allowance 55 cm; hardware unselected."
+  },
+  {
+    "name": "foot drawer 1 side A",
+    "group": "Furniture",
+    "bounds_m": [
+      1.84,
+      0.1985,
+      0.109,
+      2.37,
+      0.2135,
+      0.229
+    ],
+    "basis": "Design proposal: foot drawer opens toward balcony, travel allowance 55 cm; hardware unselected."
+  },
+  {
+    "name": "foot drawer 1 side B",
+    "group": "Furniture",
+    "bounds_m": [
+      1.84,
+      0.9515,
+      0.109,
+      2.37,
+      0.9665,
+      0.229
+    ],
+    "basis": "Design proposal: foot drawer opens toward balcony, travel allowance 55 cm; hardware unselected."
+  },
+  {
+    "name": "foot drawer 1 back",
+    "group": "Furniture",
+    "bounds_m": [
+      1.8355,
+      0.2075,
+      0.109,
+      1.8505,
+      0.9575,
+      0.229
+    ],
+    "basis": "Design proposal: foot drawer opens toward balcony, travel allowance 55 cm; hardware unselected."
+  },
+  {
+    "name": "foot drawer 2 front",
+    "group": "Furniture",
+    "bounds_m": [
+      2.369,
+      1.015,
+      0.094,
+      2.385,
+      1.8,
+      0.24
+    ],
+    "basis": "Design proposal: foot drawer opens toward balcony, travel allowance 55 cm; hardware unselected."
+  },
+  {
+    "name": "foot drawer 2 bottom",
+    "group": "Furniture",
+    "bounds_m": [
+      1.84,
+      1.0325,
+      0.1005,
+      2.37,
+      1.7825,
+      0.1155
+    ],
+    "basis": "Design proposal: foot drawer opens toward balcony, travel allowance 55 cm; hardware unselected."
+  },
+  {
+    "name": "foot drawer 2 side A",
+    "group": "Furniture",
+    "bounds_m": [
+      1.84,
+      1.0235,
+      0.109,
+      2.37,
+      1.0385,
+      0.229
+    ],
+    "basis": "Design proposal: foot drawer opens toward balcony, travel allowance 55 cm; hardware unselected."
+  },
+  {
+    "name": "foot drawer 2 side B",
+    "group": "Furniture",
+    "bounds_m": [
+      1.84,
+      1.7765,
+      0.109,
+      2.37,
+      1.7915,
+      0.229
+    ],
+    "basis": "Design proposal: foot drawer opens toward balcony, travel allowance 55 cm; hardware unselected."
+  },
+  {
+    "name": "foot drawer 2 back",
+    "group": "Furniture",
+    "bounds_m": [
+      1.8355,
+      1.0325,
+      0.109,
+      1.8505,
+      1.7825,
+      0.229
+    ],
+    "basis": "Design proposal: foot drawer opens toward balcony, travel allowance 55 cm; hardware unselected."
+  },
+  {
+    "name": "mattress Taiwan standard 152 x 188",
+    "group": "Furniture",
+    "bounds_m": [
+      0.1,
       0.2,
-      2.74,
-      1.37
+      0.28,
+      1.98,
+      1.72,
+      0.5
     ],
-    "basis": "Design proposal; not measured existing furniture"
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
   },
   {
     "name": "pillow",
     "group": "Furniture",
     "bounds_m": [
-      0.255,
-      0.87,
-      0.605,
-      0.825,
-      1.59,
-      0.775
+      0.19,
+      0.28,
+      0.495,
+      0.67,
+      0.88,
+      0.615
     ],
-    "basis": "Design proposal; not measured existing furniture"
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
   },
   {
     "name": "pillow.001",
     "group": "Furniture",
     "bounds_m": [
-      0.255,
-      1.77,
-      0.605,
-      0.825,
-      2.49,
-      0.775
+      0.19,
+      1.02,
+      0.495,
+      0.67,
+      1.62,
+      0.615
     ],
-    "basis": "Design proposal; not measured existing furniture"
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
   },
   {
-    "name": "folded neutral blanket",
+    "name": "folded bed blanket",
     "group": "Furniture",
     "bounds_m": [
-      1.605,
-      0.775,
-      0.605,
-      2.155,
-      2.585,
-      0.685
+      1.445,
+      0.195,
+      0.4945,
+      1.895,
+      1.725,
+      0.5395
     ],
-    "basis": "Design proposal; not measured existing furniture"
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
   },
   {
-    "name": "bedside table",
+    "name": "parallel wardrobe body 170 x 65 H235",
     "group": "Furniture",
     "bounds_m": [
-      0.18,
-      0.18,
       0.0,
-      0.74,
-      0.62,
-      0.49
-    ],
-    "basis": "Design proposal; not measured existing furniture"
-  },
-  {
-    "name": "bedside tray",
-    "group": "Furniture",
-    "bounds_m": [
-      0.27,
-      0.26,
-      0.4925,
-      0.65,
-      0.54,
-      0.5175
-    ],
-    "basis": "Design proposal; not measured existing furniture"
-  },
-  {
-    "name": "bedside table.001",
-    "group": "Furniture",
-    "bounds_m": [
-      0.18,
-      2.76,
+      2.8,
       0.0,
-      0.74,
-      3.2,
-      0.49
+      1.7,
+      3.4,
+      2.35
     ],
-    "basis": "Design proposal; not measured existing furniture"
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
   },
   {
-    "name": "bedside tray.001",
+    "name": "parallel wardrobe sliding leaf A",
     "group": "Furniture",
     "bounds_m": [
-      0.27,
-      2.84,
-      0.4925,
-      0.65,
-      3.12,
-      0.5175
-    ],
-    "basis": "Design proposal; not measured existing furniture"
-  },
-  {
-    "name": "proposed wardrobe north",
-    "group": "Furniture",
-    "bounds_m": [
-      4.08,
-      2.325,
-      0.0,
-      6.42,
-      2.925,
+      0.019,
+      2.7765,
+      0.04,
+      0.849,
+      2.8015,
       2.32
     ],
-    "basis": "Design proposal; not measured existing furniture"
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
   },
   {
-    "name": "wardrobe door reveal",
+    "name": "parallel wardrobe sliding leaf B",
     "group": "Furniture",
     "bounds_m": [
-      4.6655,
-      2.313,
+      0.845,
+      2.7505,
       0.04,
-      4.6745,
-      2.319,
-      2.28
+      1.695,
+      2.7755,
+      2.32
     ],
-    "basis": "Design proposal; not measured existing furniture"
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
   },
   {
-    "name": "wardrobe door reveal.001",
+    "name": "head wall grey backdrop",
     "group": "Furniture",
     "bounds_m": [
-      5.2455,
-      2.313,
-      0.04,
-      5.2545,
-      2.319,
-      2.28
+      0.0,
+      0.15,
+      0.3,
+      0.035,
+      1.85,
+      2.4
     ],
-    "basis": "Design proposal; not measured existing furniture"
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
   },
   {
-    "name": "wardrobe door reveal.002",
+    "name": "head panel single angled profile",
     "group": "Furniture",
     "bounds_m": [
-      5.8255,
-      2.313,
-      0.04,
-      5.8345,
-      2.319,
-      2.28
+      0.035,
+      0.15,
+      0.28,
+      0.065,
+      1.85,
+      1.56
     ],
-    "basis": "Design proposal; not measured existing furniture"
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
+  },
+  {
+    "name": "LED diffuser head panel concealed",
+    "group": "Furniture",
+    "bounds_m": [
+      0.036,
+      0.18,
+      1.1965,
+      0.048,
+      1.34,
+      1.2035
+    ],
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
+  },
+  {
+    "name": "LED diffuser head panel concealed.001",
+    "group": "Furniture",
+    "bounds_m": [
+      0.036,
+      1.33795,
+      1.19717,
+      0.048,
+      1.82205,
+      1.55083
+    ],
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
+  },
+  {
+    "name": "LED diffuser platform foot recessed",
+    "group": "Furniture",
+    "bounds_m": [
+      2.262,
+      0.25,
+      0.06,
+      2.278,
+      1.75,
+      0.068
+    ],
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
+  },
+  {
+    "name": "LED diffuser platform side recessed",
+    "group": "Furniture",
+    "bounds_m": [
+      0.05,
+      1.752,
+      0.06,
+      2.21,
+      1.768,
+      0.068
+    ],
+    "basis": "New proposal after 28-reference review; 152 x 188 mattress, parallel 170 cm wardrobe, not existing construction."
   },
   {
     "name": "desk proposal",
@@ -1235,43 +1469,368 @@
     "basis": "Design proposal; not measured existing furniture"
   },
   {
-    "name": "original cabinet boundary - west side",
-    "group": "OriginalJoinery",
+    "name": "bathroom A floor",
+    "group": "Bathroom",
     "bounds_m": [
-      4.02,
-      2.93,
       0.0,
-      4.045,
+      3.504,
+      -0.12,
+      2.7,
+      5.3,
+      0.0
+    ],
+    "basis": "Drawing footprint, context/hidden closure thickness not surveyed"
+  },
+  {
+    "name": "bathroom A north wall",
+    "group": "Bathroom",
+    "bounds_m": [
+      0.0,
+      5.3,
+      0.0,
+      2.7,
+      5.4,
+      2.5
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A east upper wall",
+    "group": "Bathroom",
+    "bounds_m": [
+      2.7,
       4.171,
+      0.0,
+      2.804,
+      5.3,
       2.5
     ],
-    "basis": "p61 cabinet frontage, NOT verified building wall; backing unresolved; sheet thickness illustrative"
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
   },
   {
-    "name": "original cabinet boundary - front",
-    "group": "OriginalJoinery",
+    "name": "bathroom A northwest service enclosure",
+    "group": "Bathroom",
     "bounds_m": [
-      4.02,
-      2.93,
       0.0,
-      6.573,
-      2.955,
+      4.9,
+      0.0,
+      0.97,
+      5.3,
       2.5
     ],
-    "basis": "p61 cabinet frontage, NOT verified building wall; backing unresolved; sheet thickness illustrative"
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
   },
   {
-    "name": "original cabinet boundary - east return",
-    "group": "OriginalJoinery",
+    "name": "bathroom A west lower pier",
+    "group": "Bathroom",
     "bounds_m": [
-      6.548,
-      2.93,
+      -0.15,
+      3.504,
       0.0,
-      6.573,
-      3.4,
+      0.0,
+      4.3,
       2.5
     ],
-    "basis": "p61 cabinet frontage, NOT verified building wall; backing unresolved; sheet thickness illustrative"
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A west sill",
+    "group": "Bathroom",
+    "bounds_m": [
+      -0.15,
+      4.3,
+      0.0,
+      0.0,
+      4.9,
+      1.2
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A west lintel",
+    "group": "Bathroom",
+    "bounds_m": [
+      -0.15,
+      4.3,
+      2.2,
+      0.0,
+      4.9,
+      2.5
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A west upper pier",
+    "group": "Bathroom",
+    "bounds_m": [
+      -0.15,
+      4.9,
+      0.0,
+      0.0,
+      5.3,
+      2.5
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A window jamb",
+    "group": "Bathroom",
+    "bounds_m": [
+      -0.11,
+      4.3,
+      1.2,
+      -0.01,
+      4.35,
+      2.2
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A window jamb.001",
+    "group": "Bathroom",
+    "bounds_m": [
+      -0.11,
+      4.85,
+      1.2,
+      -0.01,
+      4.9,
+      2.2
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A window rail",
+    "group": "Bathroom",
+    "bounds_m": [
+      -0.11,
+      4.325,
+      1.2,
+      -0.01,
+      4.875,
+      1.25
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A window rail.001",
+    "group": "Bathroom",
+    "bounds_m": [
+      -0.11,
+      4.325,
+      2.15,
+      -0.01,
+      4.875,
+      2.2
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A window glass",
+    "group": "Bathroom",
+    "bounds_m": [
+      -0.066,
+      4.35,
+      1.25,
+      -0.054,
+      4.85,
+      2.15
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A shower fixed screen",
+    "group": "Bathroom",
+    "bounds_m": [
+      0.964,
+      4.2,
+      0.0,
+      0.976,
+      4.9,
+      2.05
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A shower closed glass door",
+    "group": "Bathroom",
+    "bounds_m": [
+      0.964,
+      3.507,
+      0.0,
+      0.976,
+      4.197,
+      2.05
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A shower upper rail",
+    "group": "Bathroom",
+    "bounds_m": [
+      0.9565,
+      3.504,
+      2.0365,
+      0.9835,
+      4.9,
+      2.0635
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A shower handle",
+    "group": "Bathroom",
+    "bounds_m": [
+      0.9825,
+      3.6025,
+      0.91,
+      1.0175,
+      3.6375,
+      1.13
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A shower fitting schematic",
+    "group": "Bathroom",
+    "bounds_m": [
+      0.39,
+      4.8525,
+      1.01,
+      0.57,
+      4.8875,
+      1.09
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A shower rail schematic",
+    "group": "Bathroom",
+    "bounds_m": [
+      0.4685,
+      4.8525,
+      1.06,
+      0.4915,
+      4.8775,
+      1.98
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A shower head schematic",
+    "group": "Bathroom",
+    "bounds_m": [
+      0.415,
+      4.69,
+      1.928,
+      0.545,
+      4.85,
+      1.952
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A vanity plain support",
+    "group": "Bathroom",
+    "bounds_m": [
+      1.8,
+      4.68,
+      0.02,
+      2.68,
+      5.26,
+      0.79
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A vanity rim",
+    "group": "Bathroom",
+    "bounds_m": [
+      1.79,
+      4.67,
+      0.78,
+      2.69,
+      5.27,
+      0.82
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A basin inset",
+    "group": "Bathroom",
+    "bounds_m": [
+      1.96,
+      4.785,
+      0.817,
+      2.52,
+      5.135,
+      0.833
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A basin tap",
+    "group": "Bathroom",
+    "bounds_m": [
+      2.224,
+      5.18,
+      0.825,
+      2.256,
+      5.22,
+      1.035
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A toilet base",
+    "group": "Bathroom",
+    "bounds_m": [
+      1.23,
+      4.645,
+      0.0,
+      1.52,
+      5.175,
+      0.34
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A toilet bowl",
+    "group": "Bathroom",
+    "bounds_m": [
+      1.18,
+      4.555,
+      0.26,
+      1.57,
+      5.205,
+      0.44
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A toilet seat opening",
+    "group": "Bathroom",
+    "bounds_m": [
+      1.26,
+      4.655,
+      0.442,
+      1.49,
+      5.005,
+      0.45
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  },
+  {
+    "name": "bathroom A toilet cistern",
+    "group": "Bathroom",
+    "bounds_m": [
+      1.18,
+      5.07,
+      0.395,
+      1.57,
+      5.25,
+      0.745
+    ],
+    "basis": "p61/p63 plan; vertical dimensions schematic. UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
   },
   {
     "name": "balcony context floor - level unconfirmed",

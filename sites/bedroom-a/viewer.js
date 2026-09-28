@@ -28,6 +28,8 @@ sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-9;
 sun.shadow.normalBias=.025;sun.shadow.bias=-.00015;scene.add(sun,sun.target);
 const fill=new THREE.DirectionalLight(0xe5edff,1);fill.position.set(-5,4,-6);scene.add(fill);
 let model, active='overview', interiorMode=false, pointer=null;
+const drawerToggle=document.getElementById('drawers'),drawers=[];
+drawerToggle.addEventListener('change',()=>{for(const o of drawers)o.position.x=o.userData.closedX+(drawerToggle.checked?o.userData.drawer_travel:0);});
 let updateOutletViewer=()=>{};
 const fromBlender=a=>new THREE.Vector3(a[0],a[2],-a[1]);
 const ledToggle=document.getElementById('led'), ledMaterials=[], ledLights=[];
@@ -35,21 +37,24 @@ for(const [x,z,tx,tz] of [[3.036,2.642,2.90,2.81],[6.452,2.642,6.60,2.81]]){
  const light=new THREE.RectAreaLight(0xffd8a8,20,2.25,.025);
  light.position.copy(fromBlender([x,1.72,z]));
  light.lookAt(fromBlender([tx,1.72,tz]));
- scene.add(light);ledLights.push(light);
+ light.userData.ceiling=true;scene.add(light);ledLights.push(light);
 }
+const headGlow=new THREE.RectAreaLight(0xffd4a0,2.0,1.5,.025);
+headGlow.position.copy(fromBlender([.09,1.05,1.35]));headGlow.lookAt(fromBlender([0,1.05,1.65]));scene.add(headGlow);ledLights.push(headGlow);
 function updateLED(){
  const on=ledToggle.checked;
  for(const m of ledMaterials){m.emissiveIntensity=on?1.25:0;m.color.set(on?0xd5b788:0xb5b1a7);}
- for(const light of ledLights)light.visible=on&&toggles.ceiling.checked;
+ for(const light of ledLights)light.visible=on&&(light.userData.ceiling?toggles.ceiling.checked:toggles.furniture.checked);
 }
 ledToggle.addEventListener('change',updateLED);
 const presets={
  outlets:{p:[3.8,-4.6,9.5],t:[3.8,1.8,0],label:'插座位置示意 · 安裝高度待確認',fov:45},
- overview:{p:[-4,-7.2,8.2],t:[3.7,1.8,1.15],label:'整體配置 · 剖開檢視',fov:45},
- top:{p:[4.2,1.84,13],t:[4.2,1.85,0],label:'俯視平面 · 左為床頭，右為陽台',fov:45},
- bed:{p:[.70,1.7,1.35],t:[7.6,1.7,1.35],label:'床上朝陽台看',fov:78},
+ overview:{p:[-4,-7.2,9.2],t:[3.5,2.4,1.15],label:'臥室與浴室 · 剖開檢視',fov:45},
+ top:{p:[4.2,2.64,13],t:[4.2,2.65,0],label:'俯視平面 · 包含臥室 A 浴室',fov:45},
+ bed:{p:[.70,1.0,1.35],t:[7.6,1.0,1.35],label:'平台床朝陽台看',fov:78},
  entry:{p:[3.45,2.88,1.60],t:[.8,1.60,1.1],label:'進房後看床區',fov:74},
- balcony:{p:[6.94,1.35,1.60],t:[1.2,1.68,1.1],label:'陽台側回看床區',fov:74}
+ balcony:{p:[3.35,2.35,1.60],t:[.8,1.05,.95],label:'床尾回看平台與平行衣櫃',fov:74},
+ bathroom:{p:[2.3,3.82,1.6],t:[.7,4.9,1.2],label:'臥室 A 浴室 · 設備外形與高度示意',fov:80}
 };
 function visibility(){if(!model)return;model.traverse(o=>{
  const g=o.userData.viewer_group;
@@ -63,12 +68,12 @@ architecturalEdgeParents.forEach(o=>{
 });updateLED();}
 function preset(key){
  document.getElementById('outlets').checked=key==='outlets';document.getElementById('outlets').dispatchEvent(new Event('change'));
- document.getElementById('quickview').value=key;active=key;interiorMode=['bed','entry','balcony'].includes(key);
+ document.getElementById('quickview').value=key;active=key;interiorMode=['bed','entry','balcony','bathroom'].includes(key);
  const v=presets[key];camera.fov=v.fov;camera.updateProjectionMatrix();
  const target=fromBlender(v.t),pos=fromBlender(v.p);
  if(!interiorMode){
   const direction=pos.clone().sub(target).normalize();
-  const width=9.4,height=8.4,vfov=THREE.MathUtils.degToRad(camera.fov);
+  const width=9.4,height=9.6,vfov=THREE.MathUtils.degToRad(camera.fov);
   const dist=Math.max(width/(2*Math.tan(vfov/2)*camera.aspect),height/(2*Math.tan(vfov/2)))*1.08;
   pos.copy(target).addScaledVector(direction,dist);
  }
@@ -99,11 +104,12 @@ document.querySelector('#fullscreen').addEventListener('click',async()=>{
 });
 document.addEventListener('fullscreenchange',()=>{document.querySelector('#fullscreen').textContent=document.fullscreenElement?'退出放大':'放大';});
 new ResizeObserver(()=>{const w=viewport.clientWidth,h=viewport.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(active&&!interiorMode)preset(active);}).observe(viewport);
-new GLTFLoader().load('./bedroom-a-v1.glb?v=dimension-audit-4',async gltf=>{
+new GLTFLoader().load('./bedroom-a-v1.glb?v=platform-ensuite-1',async gltf=>{
  model=gltf.scene;
  model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m.transmission>0){m.transmission=0;m.transparent=true;m.opacity=.14;m.depthWrite=false;o.castShadow=false;}});}});
  scene.add(model);
  model.traverse(o=>{
+  if(o.isMesh&&o.userData.drawer_travel){o.userData.closedX=o.position.x;drawers.push(o);if(drawerToggle.checked)o.position.x+=o.userData.drawer_travel;}
   if(o.isMesh&&o.name.startsWith('LED_diffuser')){
    const m=new THREE.MeshStandardMaterial({color:0xd5b788,emissive:0xffd7a0,emissiveIntensity:1.25,roughness:.5,toneMapped:true});
    o.material=m;o.castShadow=false;ledMaterials.push(m);
@@ -113,7 +119,7 @@ new GLTFLoader().load('./bedroom-a-v1.glb?v=dimension-audit-4',async gltf=>{
  // Children inherit each mesh's transform and ceiling/wall visibility.
  let architecturalEdges=[];
  try{
-  const response=await fetch('./architectural-edges.json?v=union-2');
+  const response=await fetch('./architectural-edges.json?v=platform-ensuite-1');
   if(!response.ok)throw new Error('Architectural outlines unavailable');
   architecturalEdges=await response.json();
  }catch(error){console.error(error);}
@@ -141,7 +147,7 @@ new GLTFLoader().load('./bedroom-a-v1.glb?v=dimension-audit-4',async gltf=>{
   parent.add(lines);scene.add(parent);edgeLines.push(lines);architecturalEdgeParents.push(parent);
  }
  try{updateOutletViewer=await addOutletViewer({scene,camera,renderer,fromBlender});}catch(error){console.error(error);document.getElementById('outlet-detail').textContent='插座資料暫時無法載入，請重新整理。';}
- preset(new URLSearchParams(location.search).get('view')==='outlets'?'outlets':'bed');loading.hidden=true;
+ const requested=new URLSearchParams(location.search).get('view');preset(Object.hasOwn(presets,requested)?requested:'balcony');loading.hidden=true;
 },undefined,error=>{console.error(error);document.getElementById('fallback').hidden=false;loading.hidden=true;status.textContent='目前顯示靜態預覽，重新整理可重試 3D。';});
 renderer.setAnimationLoop(()=>{if(!interiorMode)controls.update();updateOutletViewer();renderer.render(scene,camera);});
 

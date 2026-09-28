@@ -67,5 +67,7 @@ data = {
 }
 assert abs((641.9121704101562-410.57098388671875)/s69-2.5)<.00001
 assert abs((510.3291931152344-458.6938171386719)/s61-.93)<.00001
+import runpy
+data=runpy.run_path(str(root/'merge_context.py'))['merge_context'](data)
 (root/'dimension-audit.json').write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8')
 print(json.dumps(data,ensure_ascii=False,indent=2))

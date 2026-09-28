@@ -35,7 +35,7 @@ The production server path used by all service files is `/home/ubuntu/STOCK`.
 
 ## Other hosted pages
 
-- **臥室 A 房間設計檢視器**：[公開單頁網站](https://linechatbot.duckdns.org/bedroom-a/)，供設計師查看互動 3D、配置重點、插座位置與現況照片，無需登入或下載。來源為 `sites/bedroom-a/`，內部證據頁與模型編輯檔不隨網站發布；同台 ARM 伺服器以 Nginx 靜態提供，更新執行 `sudo python3 scripts/deploy_bedroom_site.py`。
+- **臥室 A 房間設計檢視器**：[公開單頁網站](https://linechatbot.duckdns.org/bedroom-a/)，供設計師查看含 A 室浴室的 2D／3D、平台床與平行衣櫃、插座位置及現況照片，無需登入或下載。來源為 `sites/bedroom-a/`，內部證據頁與模型編輯檔不隨網站發布；同台 ARM 伺服器以 Nginx 靜態提供，更新執行 `sudo python3 scripts/deploy_bedroom_site.py`。
 
 
 ## Canonical market-data contract

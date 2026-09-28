@@ -14,7 +14,7 @@ def deploy():
     # Evidence pages, sources and editable downloads stay in the project archive.
     public_names=['review.html','viewer.js','outlet-viewer.js','outlets.json',
                   'bedroom-a-v1.glb','architectural-edges.json',
-                  '03-bed-to-balcony.png','site-photo.png']
+                  '03-bed-to-balcony.png','floor-plan.png','site-photo.png']
     files=sorted([source/name for name in public_names]+[p for p in (source/'vendor').rglob('*') if p.is_file()])
     missing=[str(p) for p in files if not p.is_file()]
     if missing:raise SystemExit('Missing public assets: '+str(missing))

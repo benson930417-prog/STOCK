@@ -1,0 +1,28 @@
+{
+  "source_pages": [61, 63, 65, 73, 74],
+  "registration": "p61 and p63 use the same vector plan coordinates; existing p61 scale 55.52187093 PDF points per metre retained.",
+  "north_boundary": {
+    "status": "Fixed partition enclosing bedroom B wardrobe, confirmed by p63 and owner's clarification. Not removable bedroom A joinery; not classified as load-bearing.",
+    "west_thickness": 0.114,
+    "front_thickness": 0.141,
+    "east_thickness": 0.104,
+    "thickness_basis": "West: PDF X435.375 to 441.704; front: PDF Y358.010 to 350.182. East return simplified from partition width; detailed pier build-up not determined."
+  },
+  "bathroom": {
+    "scope": "Bedroom A ensuite only; bedroom B bathroom excluded by owner.",
+    "inner_x0": 0.0,
+    "inner_x1": 2.7,
+    "inner_y0": 3.504,
+    "inner_y1": 5.3,
+    "outline_basis": "p63 PDF inner faces: X212.1767 to 362.0859; Y326.1407 to 226.4234. South wall shares bedroom door.",
+    "chase": [0.0, 4.9, 0.97, 5.3],
+    "shower": [0.0, 3.504, 0.97, 4.9],
+    "shower_glass_x": 0.97,
+    "vanity_plan": [1.79, 4.67, 2.69, 5.27],
+    "toilet_plan": [1.18, 4.52, 1.57, 5.25],
+    "west_window_y0": 4.3,
+    "west_window_y1": 4.9,
+    "illustrative_heights": {"ceiling": 2.5, "window_sill": 1.2, "window_head": 2.2, "glass": 2.05, "vanity_top": 0.82, "toilet_seat": 0.42},
+    "height_status": "UNCONFIRMED: p65 says original developer ceiling without numeric height. Bathroom heights and equipment shapes are schematic; plan placement follows source. Floor level difference and drain/fitting positions are unconfirmed."
+  }
+}

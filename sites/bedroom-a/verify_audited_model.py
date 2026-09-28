@@ -24,6 +24,24 @@ for name,xa,xb in [('bathroom',1.9,2.65),('entrance',2.804,3.804)]:
 assert not any('parapet' in o.name for o in bpy.data.objects)
 assert not any('balcony vertical frame' in o.name for o in bpy.data.objects)
 assert not any('north stepped boundary' in o.name for o in bpy.data.objects)
+assert not any('original cabinet boundary' in o.name for o in bpy.data.objects)
+assert not any('180 x 200' in o.name for o in bpy.data.objects)
+b=bounds([obj('mattress Taiwan standard 152 x 188')])
+for actual,expected in zip(b,[.1,.2,.28,1.98,1.72,.50]):near(actual,expected)
+b=bounds([obj('platform top 238 x 170 H28')])
+for actual,expected in zip(b,[0,.15,.245,2.38,1.85,.28]):near(actual,expected)
+wardrobe=[o for o in bpy.data.objects if o.name.startswith('parallel wardrobe')]
+b=bounds(wardrobe)
+near(b[0],0);near(b[3],1.7);near(b[4],3.4);near(b[5],2.35)
+assert b[1]-1.85 >= .899, b
+assert b[3] < 1.9
+near(bounds([obj('bedroom B fixed partition - front')])[1],2.93)
+assert len([o for o in bpy.data.objects if o.name.startswith('bathroom A')])>=20
+near(bounds([obj('bathroom A floor')])[3],2.7)
+near(bounds([obj('bathroom A floor')])[4],5.3)
+for o in bpy.data.objects:
+    if o.get('drawer_travel'):
+        b=bounds([o]);assert b[4]<1.85,'Drawer must not enter wardrobe / bathroom aisle'
 inventory=[]
 for o in bpy.context.scene.objects:
     if o.type!='MESH':continue
@@ -39,5 +57,5 @@ for o in bpy.context.scene.objects:
         else:basis='Drawing footprint, context/hidden closure thickness not surveyed'
     inventory.append({'name':o.name,'group':group,'bounds_m':[round(v,5) for v in bounds([o])],'basis':basis})
 (root/'model-dimension-inventory.json').write_text(json.dumps(inventory,ensure_ascii=False,indent=2),encoding='utf-8')
-print('PASS: openings, sill/transom/head elevations, inner wall faces and removal of unsupported parapets;',len(inventory),'meshes classified')
+print('PASS: source openings, fixed B partition, ensuite footprint, 152 x 188 bed, platform, 90 cm wardrobe aisle and drawers outside bathroom approach;',len(inventory),'meshes classified')
 runpy.run_path(str(root/'export_viewer.py'))

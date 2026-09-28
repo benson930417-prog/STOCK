@@ -1,0 +1,59 @@
+{
+  "status": "design proposal, not construction or as-built dimensions",
+  "basis": "dimension-audit.json; p69 finished ceiling and windows; p61 plan",
+  "bed_direction": "head toward X=0 solid wall; long side near window wall Y=0; feet toward balcony",
+  "platform": {
+    "x0": 0,
+    "x1": 238,
+    "y0": 15,
+    "y1": 185,
+    "height": 28
+  },
+  "mattress": {
+    "x0": 10,
+    "x1": 198,
+    "y0": 20,
+    "y1": 172,
+    "thickness_target": 22
+  },
+  "head_wall_panel": {
+    "depth_budget": 6,
+    "z_top": 115
+  },
+  "wardrobe": {
+    "x0": 0,
+    "x1": 170,
+    "y0": 275,
+    "y1": 340,
+    "height_target": 235,
+    "doors_face": "-Y",
+    "opening": "two sliding leaves; hardware not selected"
+  },
+  "foot_drawers_open": {
+    "x0": 238,
+    "x1": 293,
+    "y0": 20,
+    "y1": 180,
+    "count": 2
+  },
+  "bathroom_clear_zone": {
+    "x0": 190,
+    "x1": 265,
+    "y0": 185,
+    "y1": 340
+  },
+  "clearances": {
+    "wardrobe_aisle": 90,
+    "bathroom_approach_depth": 155,
+    "bedside_ledge": 13,
+    "foot_extension": 40,
+    "curtain_floor_channel": 15,
+    "mattress_to_window_wall": 20
+  },
+  "notes": [
+    "15 cm curtain channel is a reserved proposal, not verified curtain stack depth.",
+    "90 cm wardrobe aisle and 155 cm bathroom approach are planning clearances, not statutory minimums.",
+    "Bedside ledge is not a walkway or full bench.",
+    "North stepped boundary is a fixed partition enclosing bedroom B wardrobe, confirmed p63."
+  ]
+}

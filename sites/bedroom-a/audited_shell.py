@@ -24,9 +24,10 @@ def build_shell(box, slab, wall, floor, frame, glass, joinery, balcony):
     facewall('vestibule west bathroom boundary',(A,N),(A,W),th=.104)
     facewall('entry opening lintel',(entry['x1'],N),(A,N),z0=2.4,th=.104)
     facewall('entry right pier',(B,N),(entry['x1'],N),th=.104)
-    for name,a,b in [('west side',(B,F),(B,N)),('front',(C,F),(B,F)),('east return',(C,W),(C,F))]:
-        obj=facewall('original cabinet boundary - '+name,a,b,z1=2.5,th=.025,g='OriginalJoinery',mat=joinery)
-        obj['dimension_basis']='p61 cabinet frontage, NOT verified building wall; backing unresolved; sheet thickness illustrative'
+    context=json.loads((Path(__file__).parent/'context-p63.json').read_text())['north_boundary']
+    for name,a,b,th in [('west side',(B,F),(B,N),context['west_thickness']),('front',(C,F),(B,F),context['front_thickness']),('east return',(C,W),(C,F),context['east_thickness'])]:
+        obj=facewall('bedroom B fixed partition - '+name,a,b,z1=3.15,th=th,g='Shell',mat=wall)
+        obj['dimension_basis']=context['status']+' '+context['thickness_basis']
     facewall('northeast edge',(L,W),(C,W))
     for d in D['doors']:
         name=d['name']; xa,xb,y,h,t=d['x0'],d['x1'],d['y'],d['head'],d['frame']
