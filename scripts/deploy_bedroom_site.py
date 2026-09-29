@@ -12,13 +12,11 @@ def deploy():
     source=repo/'sites/bedroom-a'
     # The designer-facing site contains one page and its runtime assets only.
     # Evidence pages, sources and editable downloads stay in the project archive.
-    public_names=['review.html','viewer.js','outlet-viewer.js','outlets.json',
-                  'bedroom-a-v1.glb','architectural-edges.json',
-                  '03-bed-to-balcony.png','floor-plan.png','site-photo.png']
+    public_names=['review.html', 'compare.js', 'variants.json', 'headwall-options.json', 'architecture.glb', 'l.glb', 'head-ledge.glb', 'head-floating.glb', 'head-folded.glb', 'head-enclosed.glb', 'l-preview.png', 'ash.png', 'warm-oak.png', 'smoke-oak.png']
     files=sorted([source/name for name in public_names]+[p for p in (source/'vendor').rglob('*') if p.is_file()])
     missing=[str(p) for p in files if not p.is_file()]
     if missing:raise SystemExit('Missing public assets: '+str(missing))
-    if not (source/'review.html').is_file() or not (source/'bedroom-a-v1.glb').is_file():raise SystemExit('Missing site payload')
+    if not (source/'review.html').is_file() or not (source/'l.glb').is_file():raise SystemExit('Missing site payload')
     digest=hashlib.sha256()
     for p in files:digest.update(p.relative_to(source).as_posix().encode());digest.update(p.read_bytes())
     release_id=digest.hexdigest()[:16]

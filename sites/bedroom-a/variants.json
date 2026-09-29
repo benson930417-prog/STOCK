@@ -1,0 +1,242 @@
+{
+  "default": "l",
+  "default_view": "bench",
+  "units": "cm",
+  "variants": [
+    {
+      "id": "l",
+      "name": "一體式窗牆・床台收納",
+      "description": "訂製沙發體嵌接兩側櫃體，含包覆底座、扶手與傾斜厚靠背。背後設深20cm、高50cm連續木平台，窗簾下擺至平台上方1.5cm；左側高櫃為另購尺寸示意。",
+      "wardrobe_width": 185,
+      "cap_length": 112.5,
+      "platform": [
+        [
+          0,
+          0
+        ],
+        [
+          270,
+          0
+        ],
+        [
+          270,
+          137.57359312880715
+        ],
+        [
+          142.57359312880715,
+          265
+        ],
+        [
+          185,
+          265
+        ],
+        [
+          185,
+          340
+        ],
+        [
+          0,
+          340
+        ]
+      ],
+      "steps": [
+        {
+          "name": "內收斜邊踏面",
+          "height": 10,
+          "poly": [
+            [
+              270,
+              137.57359312880715
+            ],
+            [
+              142.57359312880715,
+              265
+            ],
+            [
+              185,
+              265
+            ],
+            [
+              270,
+              180
+            ]
+          ],
+          "edge": [
+            [
+              270,
+              180
+            ],
+            [
+              185,
+              265
+            ]
+          ]
+        }
+      ],
+      "sofa_length": 0,
+      "sofa_depth": 95,
+      "sofa_seat": 43,
+      "platform_height": 20,
+      "cap_height": 65,
+      "cap_depth": 15,
+      "cap_top_depth": 20,
+      "desk": [
+        455,
+        223,
+        655,
+        293
+      ],
+      "bathroom_ground": "75×75",
+      "extra": [],
+      "source": "Conversation geometry; schematic furniture heights. All variants use current straight desk for comparison.",
+      "style": "modern",
+      "cabinet_faces": "bed",
+      "bed_offset_x": 16,
+      "head_cabinet": {
+        "body_depth": 15,
+        "top_depth": 20,
+        "height": 50,
+        "y_start": 20,
+        "y_end": 195
+      },
+      "bedside_return": {
+        "roof_x": [
+          20,
+          60
+        ],
+        "roof_y": [
+          175,
+          195
+        ],
+        "height": 50,
+        "rounded_radius": 7,
+        "wardrobe_gap": 80,
+        "assumption": "Head cabinet end toward the inner room, confirmed by user."
+      },
+      "window_set": "fold45",
+      "bench": {
+        "x": [
+          350,
+          590
+        ],
+        "y": [
+          0,
+          55
+        ],
+        "wood_height": 43,
+        "seat_height": 46,
+        "usable_x": [
+          422,
+          584
+        ],
+        "seat_depth": 44,
+        "shape": "L",
+        "return_rect": [
+          285,
+          30,
+          340,
+          132.5
+        ],
+        "return_seat": [
+          290,
+          34,
+          336,
+          128.5
+        ],
+        "cabinet_seat_side_depth": 15
+      },
+      "default_view": "sidewall",
+      "platform_access": {
+        "top_edge": [
+          [
+            270,
+            137.57359312880715
+          ],
+          [
+            142.57359312880715,
+            265
+          ]
+        ],
+        "tread_depth": 30,
+        "outer_width": 120.20815280171308,
+        "max_x": 270,
+        "max_y": 265
+      },
+      "wardrobe_return": {
+        "rect": [
+          0,
+          197,
+          60,
+          275
+        ],
+        "height": 245,
+        "bedside_gap": 2
+      },
+      "dual_cabinet": {
+        "bed_body_x": [
+          255,
+          270
+        ],
+        "seat_body_x": [
+          270,
+          285
+        ],
+        "outward_y": [
+          30,
+          124.5
+        ],
+        "outward_open_z": [
+          49.5,
+          63.2
+        ],
+        "roof_max_x": 290
+      },
+      "dimension_note": "L形短邊102.5×55｜矮櫃兩面開放｜座高43／薄墊46｜床台10／20｜浴室門前75×75",
+      "coupled_parts": [
+        "bed_tail_cabinet",
+        "head_return",
+        "wall_transition",
+        "book_tower",
+        "window_bench",
+        "recessed_platform_access",
+        "concealed_light_paths"
+      ],
+      "integrated_system": true,
+      "storage_bridge": {
+        "width": 95,
+        "depth": 55,
+        "height": 65,
+        "drawers": 4
+      },
+      "window_seat": {
+        "width": 190,
+        "depth": 85,
+        "seat_height": 45,
+        "back_height": 78,
+        "cushion_thickness": 15,
+        "rear_platform_depth": 20,
+        "rear_platform_height": 50,
+        "curtain_hem": 51.5,
+        "x": [
+          380,
+          570
+        ],
+        "type": "integrated_custom_sofa"
+      },
+      "purchased_storage_zone": {
+        "x": [
+          570,
+          700
+        ],
+        "y": [
+          30,
+          90
+        ],
+        "width": 130,
+        "depth": 60,
+        "height": 230,
+        "status": "indicative_purchased_cabinet_envelope"
+      }
+    }
+  ]
+}
