@@ -113,6 +113,8 @@ record_step_fail() {
     overall_status="PARTIAL_FAIL"
     fail_count=$((fail_count + 1))
     echo "  [FAIL] $label (exit=$rc) — continuing"
+    # Keep the evidence in journald after the temporary email directory is removed.
+    tail -n 30 "$logfile"
 }
 
 # Run a labeled command; append OK/FAIL to summary, capture full stderr+stdout
@@ -205,35 +207,7 @@ printf "  [OK]   today's CLEAN issuer manifest and matching DB import started at
 run_step "generate_etf_summary" python scripts/generate_etf_summary.py
 
 # ──────────────────────────────────────────────────────────────────────────
-# 3. Detect which ETFs got NEW DATA this run for the Git commit label only
-# ──────────────────────────────────────────────────────────────────────────
-CHANGED_ETFS=()
-while IFS= read -r ETF; do
-    [ -n "$ETF" ] && CHANGED_ETFS+=("$ETF")
-done < <(RUN_STARTED_UTC="$RUN_STARTED_UTC" ETFS="${ETFS[*]}" python - <<'PY'
-import json
-import os
-from datetime import datetime, timezone
-from pathlib import Path
-
-run_started = datetime.fromisoformat(os.environ["RUN_STARTED_UTC"].replace("Z", "+00:00"))
-for etf in os.environ["ETFS"].split():
-    prefix = "passive" if etf in {"0050", "0056", "00830", "00878", "00891", "00918", "009805", "009820"} else "etf"
-    path = Path(f"data/{prefix}_{etf}_log.json")
-    try:
-        log = json.loads(path.read_text(encoding="utf-8"))
-        checked = datetime.fromisoformat(str(log.get("last_checked_utc", "")).replace("Z", "+00:00"))
-    except Exception:
-        continue
-    if checked.tzinfo is None:
-        checked = checked.replace(tzinfo=timezone.utc)
-    if checked >= run_started and log.get("status") == "NEW DATA FOUND":
-        print(etf)
-PY
-)
-
-# ──────────────────────────────────────────────────────────────────────────
-# 4. Required daily LINE publication gate
+# 3. Required daily LINE publication gate
 # ──────────────────────────────────────────────────────────────────────────
 # Publication requires the canonical inputs and generated images to be
 # successful. Images are served by the webhook, so Git archival is independent.  The Python gate then independently re-verifies the sealed fetch,
@@ -255,45 +229,14 @@ else
 fi
 
 # ──────────────────────────────────────────────────────────────────────────
-# 5. Optional Git archival, after the required publication attempt.  CHANGED_ETFS only selects the commit message; it must never
-#    decide whether LINE is published.
+# 4. Git archival follows publication; archival failure never triggers a re-send.
 # ──────────────────────────────────────────────────────────────────────────
-git config --local user.name "OCI Server Bot"
-git config --local user.email "oci-bot@localhost"
-
-{ echo; echo "Git & LINE"; echo "──────────"; } >> "$SUMMARY_FILE"
-
-if [ "${#CHANGED_ETFS[@]}" -gt 0 ]; then
-    echo "New data detected for: ${CHANGED_ETFS[*]}"
-    printf "  [INFO] NEW DATA for: %s\n" "${CHANGED_ETFS[*]}" >> "$SUMMARY_FILE"
-    git add data/*.json data/summaries/*.jpg 2>/dev/null
-    commit_output=$(git commit -m "Auto-update ETF data and summary images from OCI" 2>&1)
-    if [ "$?" -eq 0 ]; then
-        printf "  [OK]   git commit\n" >> "$SUMMARY_FILE"
-        echo "$commit_output" | sed -n '1,4p' | sed 's/^/          /' >> "$SUMMARY_FILE"
-    else
-        printf "  [INFO] git: no changes to commit\n" >> "$SUMMARY_FILE"
-        echo "$commit_output" | sed -n '1,4p' | sed 's/^/          /' >> "$SUMMARY_FILE"
-    fi
-    run_step "git push origin main" git push origin main
-
-else
-    echo "No new ETF data found. Pushing log timestamps only."
-    printf "  [INFO] no new ETF data\n" >> "$SUMMARY_FILE"
-    git add data/*.json data/summaries/*.jpg 2>/dev/null
-    commit_output=$(git commit -m "Auto-update ETF log timestamps and summary images from OCI" 2>&1)
-    if [ "$?" -eq 0 ]; then
-        printf "  [OK]   git commit\n" >> "$SUMMARY_FILE"
-        echo "$commit_output" | sed -n '1,4p' | sed 's/^/          /' >> "$SUMMARY_FILE"
-    else
-        printf "  [INFO] git: no changes to commit\n" >> "$SUMMARY_FILE"
-        echo "$commit_output" | sed -n '1,4p' | sed 's/^/          /' >> "$SUMMARY_FILE"
-    fi
-    run_step "git push origin main (log-only)" git push origin main
-fi
+# The archive helper uses a separate Git index and retries concurrent code pushes.
+# It does not merge into, reset, or checkout the live application working tree.
+run_step "git push issuer archive" python scripts/archive_issuer_data.py
 
 # ──────────────────────────────────────────────────────────────────────────
-# 6. Send admin email summary (always, even on full success)
+# 5. Send admin email summary (always, even on full success)
 # ──────────────────────────────────────────────────────────────────────────
 run_end_epoch=$(date +%s)
 duration=$((run_end_epoch - run_start_epoch))
