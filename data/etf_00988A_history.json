@@ -25960,5 +25960,242 @@
         "shares": 200000
       }
     ]
+  },
+  "2026-10-07": {
+    "date": "2026-10-07",
+    "meta": {
+      "fund_size": 53513362250.0,
+      "nav": 17.52
+    },
+    "holdings": [
+      {
+        "id": "LITE US",
+        "name": "LUMENTUM HOLDINGS INC",
+        "weight_pct": 7.73,
+        "shares": 117000
+      },
+      {
+        "id": "BE US",
+        "name": "BLOOM ENERGY CORP- A",
+        "weight_pct": 7.27,
+        "shares": 420000
+      },
+      {
+        "id": "3037",
+        "name": "欣興",
+        "weight_pct": 6.34,
+        "shares": 2600000
+      },
+      {
+        "id": "SPCX US",
+        "name": "SPACE EXPLORATION TECHN-CL A",
+        "weight_pct": 5.48,
+        "shares": 550000
+      },
+      {
+        "id": "009150 KS",
+        "name": "Samsung Electro-Mechanics co(009150 ks)",
+        "weight_pct": 4.98,
+        "shares": 70000
+      },
+      {
+        "id": "6981 JP",
+        "name": "MURATA MANUFACTURING CO LTD",
+        "weight_pct": 4.4,
+        "shares": 1350000
+      },
+      {
+        "id": "PANW US",
+        "name": "PALO ALTO NETWORKS INC",
+        "weight_pct": 3.62,
+        "shares": 150000
+      },
+      {
+        "id": "NVDA US",
+        "name": "NVIDIA CORP(輝達公司)",
+        "weight_pct": 3.53,
+        "shares": 250000
+      },
+      {
+        "id": "2454",
+        "name": "聯發科",
+        "weight_pct": 3.43,
+        "shares": 380000
+      },
+      {
+        "id": "3017",
+        "name": "奇鋐",
+        "weight_pct": 3.38,
+        "shares": 510000
+      },
+      {
+        "id": "PLTR US",
+        "name": "PALANTIR TECHNOLOGIES INC-A",
+        "weight_pct": 3.17,
+        "shares": 275000
+      },
+      {
+        "id": "2383",
+        "name": "台光電",
+        "weight_pct": 2.78,
+        "shares": 250000
+      },
+      {
+        "id": "INTC US",
+        "name": "INTEL CORP",
+        "weight_pct": 2.69,
+        "shares": 400000
+      },
+      {
+        "id": "AMD US",
+        "name": "ADVANCED MICRO DEVICES.amd us(超微半導體公司)",
+        "weight_pct": 2.61,
+        "shares": 68000
+      },
+      {
+        "id": "HOOD US",
+        "name": "ROBINHOOD MARKETS INC - A",
+        "weight_pct": 2.6,
+        "shares": 400120
+      },
+      {
+        "id": "MU US",
+        "name": "MICRON TECHNOLOGY INC",
+        "weight_pct": 2.59,
+        "shares": 40000
+      },
+      {
+        "id": "OKTA US",
+        "name": "OKTA INC",
+        "weight_pct": 2.59,
+        "shares": 200000
+      },
+      {
+        "id": "MRVL US",
+        "name": "MARVELL TECHNOLOGY INC",
+        "weight_pct": 2.54,
+        "shares": 150000
+      },
+      {
+        "id": "CRWD US",
+        "name": "CROWDSTRIKE HOLDINGS INC - A",
+        "weight_pct": 2.06,
+        "shares": 130754
+      },
+      {
+        "id": "SNOW US",
+        "name": "SNOWFLAKE INC-CLASS A(Snowflake公司)",
+        "weight_pct": 1.98,
+        "shares": 100000
+      },
+      {
+        "id": "TWLO US",
+        "name": "TWILIO INC - A",
+        "weight_pct": 1.95,
+        "shares": 120000
+      },
+      {
+        "id": "NOW US",
+        "name": "SERVICENOW INC",
+        "weight_pct": 1.89,
+        "shares": 230000
+      },
+      {
+        "id": "NET US",
+        "name": "CLOUDFLARE INC - CLASS A",
+        "weight_pct": 1.67,
+        "shares": 82000
+      },
+      {
+        "id": "992 HK",
+        "name": "LENOVO GROUP LTD",
+        "weight_pct": 1.6,
+        "shares": 6000000
+      },
+      {
+        "id": "300757 CH",
+        "name": "ROBOTECHNIK INTELLIGENT TE-A",
+        "weight_pct": 1.58,
+        "shares": 334997
+      },
+      {
+        "id": "5801 JP",
+        "name": "FURUKAWA ELECTRIC CO LTD",
+        "weight_pct": 1.33,
+        "shares": 800000
+      },
+      {
+        "id": "1303",
+        "name": "南亞",
+        "weight_pct": 1.32,
+        "shares": 2250000
+      },
+      {
+        "id": "IFX GY",
+        "name": "INFINEON TECHNOLOGIES AG",
+        "weight_pct": 1.22,
+        "shares": 300000
+      },
+      {
+        "id": "000660 KS",
+        "name": "SK HYNIX INC",
+        "weight_pct": 1.13,
+        "shares": 14742
+      },
+      {
+        "id": "2303",
+        "name": "聯電",
+        "weight_pct": 1.0,
+        "shares": 3600000
+      },
+      {
+        "id": "2330",
+        "name": "台積電",
+        "weight_pct": 0.97,
+        "shares": 200000
+      },
+      {
+        "id": "6762 JP",
+        "name": "TDK CORP",
+        "weight_pct": 0.93,
+        "shares": 700000
+      },
+      {
+        "id": "TER US",
+        "name": "TERADYNE INC",
+        "weight_pct": 0.86,
+        "shares": 35000
+      },
+      {
+        "id": "6787 JP",
+        "name": "MEIKO ELECTRONICS CO LTD",
+        "weight_pct": 0.8,
+        "shares": 79000
+      },
+      {
+        "id": "IREN US",
+        "name": "IREN LTD",
+        "weight_pct": 0.75,
+        "shares": 325000
+      },
+      {
+        "id": "COIN US",
+        "name": "COINBASE GLOBAL INC -CLASS A",
+        "weight_pct": 0.74,
+        "shares": 70000
+      },
+      {
+        "id": "3081",
+        "name": "聯亞",
+        "weight_pct": 0.44,
+        "shares": 75000
+      },
+      {
+        "id": "2308",
+        "name": "台達電",
+        "weight_pct": 0.37,
+        "shares": 100000
+      }
+    ]
   }
 }
