@@ -1,0 +1,9 @@
+{
+  "id": "stock",
+  "workspace_name": "STOCK",
+  "requirements": "requirements-local.txt",
+  "python_paths": [
+    "."
+  ],
+  "git_remote": "https://github.com/benson930417-prog/STOCK.git"
+}

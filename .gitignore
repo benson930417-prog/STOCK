@@ -70,3 +70,7 @@ strategy_experiment*/
 
 # Local TradingView TXF long/short research project
 /tradingview_txf_long_short_experiment/
+
+# Legacy archive path must stay absent from OneDrive and must never enter Git.
+/.portable-history/
+/local-migration-report.json

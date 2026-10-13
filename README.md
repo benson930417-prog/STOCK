@@ -1,5 +1,9 @@
 # STOCK
 
+## 2026-10-13 Windows OneDrive / 本機目錄分離
+
+原始碼留在 OneDrive；執行副本、Git metadata、DB、log、歷史與備份改在 `%LOCALAPPDATA%\Programs\TradingWorkspace`；可重建快取在 `%TEMP%\TradingWorkspace`。換機先另外複製 AppData 的 `history`，再雙擊 `initialize-local.cmd`；執行研究／測試用 `local-run.cmd`。詳細使用、保存歷史與重新上傳前備份範圍見 [LOCAL_STORAGE.md](LOCAL_STORAGE.md)。此節優先於下方舊的本機啟動與 venv 路徑說明；本次為 Windows 儲存重構，無需改動或重啟 Linux 正式服务。
+
 ## Current scope — 2026-09-15
 
 This section supersedes the historical product and V1–V4 design sections below.
