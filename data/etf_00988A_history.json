@@ -28312,5 +28312,242 @@
         "shares": 200000
       }
     ]
+  },
+  "2026-10-22": {
+    "date": "2026-10-22",
+    "meta": {
+      "fund_size": 45348734418.0,
+      "nav": 14.87
+    },
+    "holdings": [
+      {
+        "id": "BE US",
+        "name": "BLOOM ENERGY CORP- A",
+        "weight_pct": 7.05,
+        "shares": 450000
+      },
+      {
+        "id": "3037",
+        "name": "欣興",
+        "weight_pct": 6.22,
+        "shares": 2600000
+      },
+      {
+        "id": "SPCX US",
+        "name": "SPACE EXPLORATION TECHN-CL A",
+        "weight_pct": 5.72,
+        "shares": 550000
+      },
+      {
+        "id": "PLTR US",
+        "name": "PALANTIR TECHNOLOGIES INC-A",
+        "weight_pct": 4.94,
+        "shares": 350000
+      },
+      {
+        "id": "NVDA US",
+        "name": "NVIDIA CORP(輝達公司)",
+        "weight_pct": 4.43,
+        "shares": 290000
+      },
+      {
+        "id": "PANW US",
+        "name": "PALO ALTO NETWORKS INC",
+        "weight_pct": 4.21,
+        "shares": 165000
+      },
+      {
+        "id": "3017",
+        "name": "奇鋐",
+        "weight_pct": 4.16,
+        "shares": 600000
+      },
+      {
+        "id": "LITE US",
+        "name": "LUMENTUM HOLDINGS INC",
+        "weight_pct": 3.95,
+        "shares": 73066
+      },
+      {
+        "id": "CRWD US",
+        "name": "CROWDSTRIKE HOLDINGS INC - A",
+        "weight_pct": 3.78,
+        "shares": 220754
+      },
+      {
+        "id": "AMD US",
+        "name": "ADVANCED MICRO DEVICES.amd us(超微半導體公司)",
+        "weight_pct": 3.65,
+        "shares": 100000
+      },
+      {
+        "id": "AAPL US",
+        "name": "APPLE INC(蘋果公司)",
+        "weight_pct": 3.13,
+        "shares": 125000
+      },
+      {
+        "id": "MSFT US",
+        "name": "MICROSOFT CORP(微軟公司)",
+        "weight_pct": 2.92,
+        "shares": 78000
+      },
+      {
+        "id": "OKTA US",
+        "name": "OKTA INC",
+        "weight_pct": 2.9,
+        "shares": 200000
+      },
+      {
+        "id": "2383",
+        "name": "台光電",
+        "weight_pct": 2.8,
+        "shares": 250000
+      },
+      {
+        "id": "NOW US",
+        "name": "SERVICENOW INC",
+        "weight_pct": 2.6,
+        "shares": 230000
+      },
+      {
+        "id": "009150 KS",
+        "name": "Samsung Electro-Mechanics co(009150 ks)",
+        "weight_pct": 2.49,
+        "shares": 40000
+      },
+      {
+        "id": "INTC US",
+        "name": "INTEL CORP",
+        "weight_pct": 2.46,
+        "shares": 400000
+      },
+      {
+        "id": "MRVL US",
+        "name": "MARVELL TECHNOLOGY INC",
+        "weight_pct": 2.41,
+        "shares": 150000
+      },
+      {
+        "id": "SNOW US",
+        "name": "SNOWFLAKE INC-CLASS A(Snowflake公司)",
+        "weight_pct": 2.26,
+        "shares": 100000
+      },
+      {
+        "id": "TWLO US",
+        "name": "TWILIO INC - A",
+        "weight_pct": 2.19,
+        "shares": 120000
+      },
+      {
+        "id": "6787 JP",
+        "name": "MEIKO ELECTRONICS CO LTD",
+        "weight_pct": 2.16,
+        "shares": 250000
+      },
+      {
+        "id": "HOOD US",
+        "name": "ROBINHOOD MARKETS INC - A",
+        "weight_pct": 1.94,
+        "shares": 280000
+      },
+      {
+        "id": "NET US",
+        "name": "CLOUDFLARE INC - CLASS A",
+        "weight_pct": 1.79,
+        "shares": 82000
+      },
+      {
+        "id": "ZS US",
+        "name": "ZSCALER INC",
+        "weight_pct": 1.71,
+        "shares": 100145
+      },
+      {
+        "id": "2330",
+        "name": "台積電",
+        "weight_pct": 1.68,
+        "shares": 320000
+      },
+      {
+        "id": "1303",
+        "name": "南亞",
+        "weight_pct": 1.49,
+        "shares": 2250000
+      },
+      {
+        "id": "6981 JP",
+        "name": "MURATA MANUFACTURING CO LTD",
+        "weight_pct": 1.47,
+        "shares": 500000
+      },
+      {
+        "id": "3443",
+        "name": "創意",
+        "weight_pct": 1.34,
+        "shares": 80000
+      },
+      {
+        "id": "IFX GY",
+        "name": "INFINEON TECHNOLOGIES AG",
+        "weight_pct": 1.21,
+        "shares": 300000
+      },
+      {
+        "id": "6223",
+        "name": "旺矽",
+        "weight_pct": 1.19,
+        "shares": 110000
+      },
+      {
+        "id": "META US",
+        "name": "META PLATFORMS INC(Meta平台公司)",
+        "weight_pct": 1.17,
+        "shares": 25000
+      },
+      {
+        "id": "MU US",
+        "name": "MICRON TECHNOLOGY INC",
+        "weight_pct": 0.99,
+        "shares": 16000
+      },
+      {
+        "id": "6762 JP",
+        "name": "TDK CORP",
+        "weight_pct": 0.89,
+        "shares": 700000
+      },
+      {
+        "id": "600183 CH",
+        "name": "Shengyi Technology Co Ltd-A.600183 ch",
+        "weight_pct": 0.78,
+        "shares": 660000
+      },
+      {
+        "id": "2454",
+        "name": "聯發科",
+        "weight_pct": 0.71,
+        "shares": 80000
+      },
+      {
+        "id": "2308",
+        "name": "台達電",
+        "weight_pct": 0.69,
+        "shares": 200000
+      },
+      {
+        "id": "992 HK",
+        "name": "LENOVO GROUP LTD",
+        "weight_pct": 0.63,
+        "shares": 2962000
+      },
+      {
+        "id": "300757 CH",
+        "name": "ROBOTECHNIK INTELLIGENT TE-A",
+        "weight_pct": 0.39,
+        "shares": 85748
+      }
+    ]
   }
 }
