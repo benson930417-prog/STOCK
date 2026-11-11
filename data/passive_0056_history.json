@@ -19852,5 +19852,336 @@
         "shares": 13870168
       }
     ]
+  },
+  "2026-11-11": {
+    "date": "2026-11-11",
+    "meta": {
+      "fund_size": 812834394527,
+      "nav": 53.47,
+      "outstanding_units": 15202034000,
+      "source_url": "https://www.yuantaetfs.com/product/detail/0056/ratio",
+      "nav_history": {
+        "source_url": "https://www.yuantaetfs.com/tradeInfo/comparison/0056/NAVhistory#table",
+        "latest": {
+          "date": "2026-11-11",
+          "nav": 53.47,
+          "fund_net_assets": 812834394527,
+          "outstanding_units": 15202034000,
+          "deltas": {
+            "nav_pct": 2.354517611026028,
+            "fund_net_assets_pct": 2.407283664194484,
+            "outstanding_units_pct": 0.04606768237570248
+          }
+        },
+        "previous": {
+          "date": "2026-11-10",
+          "nav": 52.24,
+          "fund_net_assets": 793727130965,
+          "outstanding_units": 15195034000
+        }
+      }
+    },
+    "holdings": [
+      {
+        "id": "1303",
+        "name": "南亞",
+        "weight_pct": 10.45,
+        "shares": 271334913
+      },
+      {
+        "id": "2880",
+        "name": "華南金",
+        "weight_pct": 4.64,
+        "shares": 746973155
+      },
+      {
+        "id": "2890",
+        "name": "永豐金",
+        "weight_pct": 4.25,
+        "shares": 806106501
+      },
+      {
+        "id": "2891",
+        "name": "中信金",
+        "weight_pct": 4.25,
+        "shares": 462217218
+      },
+      {
+        "id": "2357",
+        "name": "華碩",
+        "weight_pct": 4.05,
+        "shares": 36458049
+      },
+      {
+        "id": "2886",
+        "name": "兆豐金",
+        "weight_pct": 3.84,
+        "shares": 575386674
+      },
+      {
+        "id": "3231",
+        "name": "緯創",
+        "weight_pct": 3.54,
+        "shares": 164918735
+      },
+      {
+        "id": "2408",
+        "name": "南亞科",
+        "weight_pct": 3.42,
+        "shares": 70489127
+      },
+      {
+        "id": "2382",
+        "name": "廣達",
+        "weight_pct": 3.28,
+        "shares": 89510026
+      },
+      {
+        "id": "2603",
+        "name": "長榮",
+        "weight_pct": 3.28,
+        "shares": 103496915
+      },
+      {
+        "id": "2344",
+        "name": "華邦電",
+        "weight_pct": 3.01,
+        "shares": 179128421
+      },
+      {
+        "id": "2883",
+        "name": "凱基金",
+        "weight_pct": 2.86,
+        "shares": 647146136
+      },
+      {
+        "id": "2884",
+        "name": "玉山金",
+        "weight_pct": 2.77,
+        "shares": 473243263
+      },
+      {
+        "id": "2885",
+        "name": "元大金",
+        "weight_pct": 2.67,
+        "shares": 304882841
+      },
+      {
+        "id": "2887",
+        "name": "台新新光金",
+        "weight_pct": 2.67,
+        "shares": 536046091
+      },
+      {
+        "id": "1216",
+        "name": "統一",
+        "weight_pct": 2.52,
+        "shares": 266795792
+      },
+      {
+        "id": "2379",
+        "name": "瑞昱",
+        "weight_pct": 2.36,
+        "shares": 25168104
+      },
+      {
+        "id": "3045",
+        "name": "台灣大",
+        "weight_pct": 2.32,
+        "shares": 146268767
+      },
+      {
+        "id": "4904",
+        "name": "遠傳",
+        "weight_pct": 2.28,
+        "shares": 171465922
+      },
+      {
+        "id": "2301",
+        "name": "光寶科",
+        "weight_pct": 2.18,
+        "shares": 73996167
+      },
+      {
+        "id": "2317",
+        "name": "鴻海",
+        "weight_pct": 2.09,
+        "shares": 70272461
+      },
+      {
+        "id": "3034",
+        "name": "聯詠",
+        "weight_pct": 1.73,
+        "shares": 29242417
+      },
+      {
+        "id": "3044",
+        "name": "健鼎",
+        "weight_pct": 1.62,
+        "shares": 25308843
+      },
+      {
+        "id": "4938",
+        "name": "和碩",
+        "weight_pct": 1.52,
+        "shares": 128188511
+      },
+      {
+        "id": "2618",
+        "name": "長榮航",
+        "weight_pct": 1.51,
+        "shares": 258199228
+      },
+      {
+        "id": "3036",
+        "name": "文曄",
+        "weight_pct": 1.48,
+        "shares": 62085470
+      },
+      {
+        "id": "5876",
+        "name": "上海商銀",
+        "weight_pct": 1.45,
+        "shares": 226888117
+      },
+      {
+        "id": "2303",
+        "name": "聯電",
+        "weight_pct": 1.43,
+        "shares": 111804911
+      },
+      {
+        "id": "3711",
+        "name": "日月光投控",
+        "weight_pct": 1.28,
+        "shares": 16853543
+      },
+      {
+        "id": "2376",
+        "name": "技嘉",
+        "weight_pct": 1.21,
+        "shares": 32275538
+      },
+      {
+        "id": "2454",
+        "name": "聯發科",
+        "weight_pct": 1.15,
+        "shares": 2339753
+      },
+      {
+        "id": "6239",
+        "name": "力成",
+        "weight_pct": 1.06,
+        "shares": 35685688
+      },
+      {
+        "id": "2356",
+        "name": "英業達",
+        "weight_pct": 1.04,
+        "shares": 164466826
+      },
+      {
+        "id": "2449",
+        "name": "京元電子",
+        "weight_pct": 0.97,
+        "shares": 34260763
+      },
+      {
+        "id": "3702",
+        "name": "大聯大",
+        "weight_pct": 0.88,
+        "shares": 77810450
+      },
+      {
+        "id": "2324",
+        "name": "仁寶",
+        "weight_pct": 0.8,
+        "shares": 208316865
+      },
+      {
+        "id": "2347",
+        "name": "聯強",
+        "weight_pct": 0.8,
+        "shares": 82399021
+      },
+      {
+        "id": "2377",
+        "name": "微星",
+        "weight_pct": 0.72,
+        "shares": 40399338
+      },
+      {
+        "id": "1102",
+        "name": "亞泥",
+        "weight_pct": 0.7,
+        "shares": 154992523
+      },
+      {
+        "id": "2027",
+        "name": "大成鋼",
+        "weight_pct": 0.69,
+        "shares": 112462417
+      },
+      {
+        "id": "2474",
+        "name": "可成",
+        "weight_pct": 0.62,
+        "shares": 26354343
+      },
+      {
+        "id": "2105",
+        "name": "正新",
+        "weight_pct": 0.56,
+        "shares": 153746972
+      },
+      {
+        "id": "6285",
+        "name": "啟碁",
+        "weight_pct": 0.55,
+        "shares": 23133145
+      },
+      {
+        "id": "2353",
+        "name": "宏碁",
+        "weight_pct": 0.54,
+        "shares": 143728557
+      },
+      {
+        "id": "1513",
+        "name": "中興電",
+        "weight_pct": 0.44,
+        "shares": 23613718
+      },
+      {
+        "id": "3005",
+        "name": "神基",
+        "weight_pct": 0.41,
+        "shares": 30381772
+      },
+      {
+        "id": "3023",
+        "name": "信邦",
+        "weight_pct": 0.38,
+        "shares": 11482609
+      },
+      {
+        "id": "2385",
+        "name": "群光",
+        "weight_pct": 0.37,
+        "shares": 33977565
+      },
+      {
+        "id": "9904",
+        "name": "寶成",
+        "weight_pct": 0.36,
+        "shares": 112540305
+      },
+      {
+        "id": "2645",
+        "name": "長榮航太",
+        "weight_pct": 0.28,
+        "shares": 13891633
+      }
+    ]
   }
 }
