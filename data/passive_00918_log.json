@@ -1,9 +1,17 @@
 {
-  "last_checked_utc": "2026-11-13T10:30:56.145667Z",
-  "last_updated_utc": "2026-11-13T10:30:56.145667Z",
-  "latest_date": "2026-11-12",
-  "status": "NEW DATA FOUND",
+  "last_checked_utc": "2026-11-16T12:23:27.991735Z",
+  "last_updated_utc": "2026-11-16T12:17:15.545012Z",
+  "latest_date": "2026-11-16",
+  "status": "NO CHANGE",
   "source": "https://www.uobam.com.tw/json/reply/WebSitePcfRequest",
   "holdings_count": 30,
-  "payload_changed": true
+  "payload_changed": false,
+  "acquisition": {
+    "source_url": "https://www.uobam.com.tw/json/reply/WebSitePcfRequest?fundID=88329556",
+    "http_status": 200,
+    "fetched_at_utc": "2026-11-16T12:16:13.072561+00:00",
+    "sha256": "779f6e25b9b66d31ef33361a574398a3102e997cccaf2dd71e911d015994acdc",
+    "retrieval_host": "SLEEPY5090",
+    "mode": "operator_official_response"
+  }
 }
