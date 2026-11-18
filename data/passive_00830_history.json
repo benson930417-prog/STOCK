@@ -23449,5 +23449,387 @@
         "shares": 33978
       }
     ]
+  },
+  "2026-11-16": {
+    "date": "2026-11-16",
+    "meta": {
+      "fund_size": 71640338099.0,
+      "nav": 70.03,
+      "outstanding_units": 1022965000,
+      "source_url": "https://www.cathaysite.com.tw/ETF/detail/EBO?tab=etf3"
+    },
+    "holdings": [
+      {
+        "id": "AVGO.US",
+        "name": "BROADCOM INC",
+        "weight_pct": 10.82,
+        "shares": 705481
+      },
+      {
+        "id": "NVDA.US",
+        "name": "NVIDIA CORPORATION",
+        "weight_pct": 10.2,
+        "shares": 1419993
+      },
+      {
+        "id": "MU.US",
+        "name": "Micron Technology Inc",
+        "weight_pct": 7.21,
+        "shares": 218015
+      },
+      {
+        "id": "TXN.US",
+        "name": "TEXAS INSTRUMENTS INC",
+        "weight_pct": 5.42,
+        "shares": 400554
+      },
+      {
+        "id": "AMD.US",
+        "name": "ADV MICRO DEVICES",
+        "weight_pct": 5.15,
+        "shares": 222019
+      },
+      {
+        "id": "ADI.US",
+        "name": "ANALOG DEVICES INC",
+        "weight_pct": 5.08,
+        "shares": 288586
+      },
+      {
+        "id": "QCOM.US",
+        "name": "QUALCOMM INC",
+        "weight_pct": 4.75,
+        "shares": 613026
+      },
+      {
+        "id": "TSM.US",
+        "name": "TAIWAN SEMICOND ADS",
+        "weight_pct": 4.32,
+        "shares": 251634
+      },
+      {
+        "id": "ASML.US",
+        "name": "ASML HLDG NY REG",
+        "weight_pct": 3.99,
+        "shares": 61620
+      },
+      {
+        "id": "KLAC.US",
+        "name": "K L A-TENCOR CORP",
+        "weight_pct": 3.94,
+        "shares": 595661
+      },
+      {
+        "id": "AMAT.US",
+        "name": "APPLIED MATERIALS INC",
+        "weight_pct": 3.67,
+        "shares": 227991
+      },
+      {
+        "id": "MPWR.US",
+        "name": "MONOLITHIC POWER SYS",
+        "weight_pct": 3.52,
+        "shares": 58278
+      },
+      {
+        "id": "NXPI.US",
+        "name": "NXP SEMICONDUCTORS",
+        "weight_pct": 3.5,
+        "shares": 299040
+      },
+      {
+        "id": "LRCX.US",
+        "name": "LAM RESEARCH CORP",
+        "weight_pct": 3.36,
+        "shares": 346641
+      },
+      {
+        "id": "MRVL.US",
+        "name": "MARVELL TECH GROUP",
+        "weight_pct": 3.3,
+        "shares": 493757
+      },
+      {
+        "id": "INTC.US",
+        "name": "Intel Corp",
+        "weight_pct": 2.98,
+        "shares": 1167564
+      },
+      {
+        "id": "COHR.US",
+        "name": "COHERENT INC",
+        "weight_pct": 2.17,
+        "shares": 232039
+      },
+      {
+        "id": "TER.US",
+        "name": "TERADYNE INC",
+        "weight_pct": 1.98,
+        "shares": 185246
+      },
+      {
+        "id": "ALAB.US",
+        "name": "ASTERA LABS INC",
+        "weight_pct": 1.91,
+        "shares": 205560
+      },
+      {
+        "id": "MCHP.US",
+        "name": "MICROCHIP TECHNOLOGY INC",
+        "weight_pct": 1.73,
+        "shares": 643403
+      },
+      {
+        "id": "ON.US",
+        "name": "ON SEMICONDUCTOR",
+        "weight_pct": 1.44,
+        "shares": 461290
+      },
+      {
+        "id": "ARM.US",
+        "name": "ARM HOLDINGS PLC ADS",
+        "weight_pct": 1.39,
+        "shares": 172249
+      },
+      {
+        "id": "Q.US",
+        "name": "啟諾迪電子公司",
+        "weight_pct": 1.31,
+        "shares": 247888
+      },
+      {
+        "id": "CRDO.US",
+        "name": "CREDO TECHNOLOGY GROUP HOLDI",
+        "weight_pct": 1.24,
+        "shares": 222681
+      },
+      {
+        "id": "GFS.US",
+        "name": "GLOBALFOUNDRIES ORD",
+        "weight_pct": 1.18,
+        "shares": 650148
+      },
+      {
+        "id": "ENTG.US",
+        "name": "ENTEGRIS INC",
+        "weight_pct": 1.17,
+        "shares": 181051
+      },
+      {
+        "id": "MTSI.US",
+        "name": "MACOM TECHNOLOGY SOLUTIONS H",
+        "weight_pct": 0.92,
+        "shares": 90491
+      },
+      {
+        "id": "LSCC.US",
+        "name": "LATTICE SEMICOND",
+        "weight_pct": 0.8,
+        "shares": 160019
+      },
+      {
+        "id": "TSEM.US",
+        "name": "TOWER SEMICONDUCTOR",
+        "weight_pct": 0.78,
+        "shares": 127115
+      },
+      {
+        "id": "SITM.US",
+        "name": "SITIME CORP",
+        "weight_pct": 0.66,
+        "shares": 33880
+      }
+    ]
+  },
+  "2026-11-17": {
+    "date": "2026-11-17",
+    "meta": {
+      "fund_size": 71970034120.0,
+      "nav": 70.18,
+      "outstanding_units": 1025465000,
+      "source_url": "https://www.cathaysite.com.tw/ETF/detail/EBO?tab=etf3"
+    },
+    "holdings": [
+      {
+        "id": "AVGO.US",
+        "name": "BROADCOM INC",
+        "weight_pct": 11.05,
+        "shares": 707274
+      },
+      {
+        "id": "NVDA.US",
+        "name": "NVIDIA CORPORATION",
+        "weight_pct": 10.12,
+        "shares": 1423601
+      },
+      {
+        "id": "MU.US",
+        "name": "Micron Technology Inc",
+        "weight_pct": 7.12,
+        "shares": 218569
+      },
+      {
+        "id": "TXN.US",
+        "name": "TEXAS INSTRUMENTS INC",
+        "weight_pct": 5.43,
+        "shares": 401572
+      },
+      {
+        "id": "AMD.US",
+        "name": "ADV MICRO DEVICES",
+        "weight_pct": 5.12,
+        "shares": 222583
+      },
+      {
+        "id": "ADI.US",
+        "name": "ANALOG DEVICES INC",
+        "weight_pct": 5.08,
+        "shares": 289320
+      },
+      {
+        "id": "QCOM.US",
+        "name": "QUALCOMM INC",
+        "weight_pct": 4.68,
+        "shares": 614583
+      },
+      {
+        "id": "TSM.US",
+        "name": "TAIWAN SEMICOND ADS",
+        "weight_pct": 4.15,
+        "shares": 252273
+      },
+      {
+        "id": "KLAC.US",
+        "name": "K L A-TENCOR CORP",
+        "weight_pct": 3.95,
+        "shares": 597174
+      },
+      {
+        "id": "ASML.US",
+        "name": "ASML HLDG NY REG",
+        "weight_pct": 3.91,
+        "shares": 61777
+      },
+      {
+        "id": "AMAT.US",
+        "name": "APPLIED MATERIALS INC",
+        "weight_pct": 3.65,
+        "shares": 228570
+      },
+      {
+        "id": "MPWR.US",
+        "name": "MONOLITHIC POWER SYS",
+        "weight_pct": 3.52,
+        "shares": 58426
+      },
+      {
+        "id": "NXPI.US",
+        "name": "NXP SEMICONDUCTORS",
+        "weight_pct": 3.46,
+        "shares": 299800
+      },
+      {
+        "id": "MRVL.US",
+        "name": "MARVELL TECH GROUP",
+        "weight_pct": 3.37,
+        "shares": 495012
+      },
+      {
+        "id": "LRCX.US",
+        "name": "LAM RESEARCH CORP",
+        "weight_pct": 3.35,
+        "shares": 347521
+      },
+      {
+        "id": "INTC.US",
+        "name": "Intel Corp",
+        "weight_pct": 2.95,
+        "shares": 1169535
+      },
+      {
+        "id": "COHR.US",
+        "name": "COHERENT INC",
+        "weight_pct": 2.24,
+        "shares": 232628
+      },
+      {
+        "id": "ALAB.US",
+        "name": "ASTERA LABS INC",
+        "weight_pct": 1.99,
+        "shares": 206082
+      },
+      {
+        "id": "TER.US",
+        "name": "TERADYNE INC",
+        "weight_pct": 1.99,
+        "shares": 185717
+      },
+      {
+        "id": "MCHP.US",
+        "name": "MICROCHIP TECHNOLOGY INC",
+        "weight_pct": 1.75,
+        "shares": 645038
+      },
+      {
+        "id": "ARM.US",
+        "name": "ARM HOLDINGS PLC ADS",
+        "weight_pct": 1.45,
+        "shares": 172686
+      },
+      {
+        "id": "ON.US",
+        "name": "ON SEMICONDUCTOR",
+        "weight_pct": 1.44,
+        "shares": 462462
+      },
+      {
+        "id": "Q.US",
+        "name": "啟諾迪電子公司",
+        "weight_pct": 1.3,
+        "shares": 248518
+      },
+      {
+        "id": "CRDO.US",
+        "name": "CREDO TECHNOLOGY GROUP HOLDI",
+        "weight_pct": 1.27,
+        "shares": 223247
+      },
+      {
+        "id": "GFS.US",
+        "name": "GLOBALFOUNDRIES ORD",
+        "weight_pct": 1.18,
+        "shares": 651800
+      },
+      {
+        "id": "ENTG.US",
+        "name": "ENTEGRIS INC",
+        "weight_pct": 1.17,
+        "shares": 181511
+      },
+      {
+        "id": "MTSI.US",
+        "name": "MACOM TECHNOLOGY SOLUTIONS H",
+        "weight_pct": 0.94,
+        "shares": 90721
+      },
+      {
+        "id": "LSCC.US",
+        "name": "LATTICE SEMICOND",
+        "weight_pct": 0.81,
+        "shares": 160426
+      },
+      {
+        "id": "TSEM.US",
+        "name": "TOWER SEMICONDUCTOR",
+        "weight_pct": 0.79,
+        "shares": 127438
+      },
+      {
+        "id": "SITM.US",
+        "name": "SITIME CORP",
+        "weight_pct": 0.66,
+        "shares": 33966
+      }
+    ]
   }
 }
