@@ -32398,5 +32398,200 @@
         "shares": 4000
       }
     ]
+  },
+  "2026-11-23": {
+    "date": "2026-11-23",
+    "meta": {
+      "fund_size": 34614918439.0,
+      "nav": 11.86
+    },
+    "holdings": [
+      {
+        "id": "SPCX US",
+        "name": "SPACE EXPLORATION TECHN-CL A",
+        "weight_pct": 7.99,
+        "shares": 630000
+      },
+      {
+        "id": "MSFT US",
+        "name": "MICROSOFT CORP(微軟公司)",
+        "weight_pct": 7.49,
+        "shares": 160000
+      },
+      {
+        "id": "AAPL US",
+        "name": "APPLE INC(蘋果公司)",
+        "weight_pct": 5.97,
+        "shares": 180000
+      },
+      {
+        "id": "PLTR US",
+        "name": "PALANTIR TECHNOLOGIES INC-A",
+        "weight_pct": 5.3,
+        "shares": 350000
+      },
+      {
+        "id": "AMD US",
+        "name": "ADVANCED MICRO DEVICES.amd us(超微半導體公司)",
+        "weight_pct": 4.74,
+        "shares": 110000
+      },
+      {
+        "id": "AMZN US",
+        "name": "AMAZON.COM INC(亞馬遜公司)",
+        "weight_pct": 4.61,
+        "shares": 190000
+      },
+      {
+        "id": "CRWD US",
+        "name": "CROWDSTRIKE HOLDINGS INC - A",
+        "weight_pct": 4.39,
+        "shares": 220754
+      },
+      {
+        "id": "PANW US",
+        "name": "PALO ALTO NETWORKS INC",
+        "weight_pct": 4.2,
+        "shares": 125000
+      },
+      {
+        "id": "OKTA US",
+        "name": "OKTA INC",
+        "weight_pct": 3.92,
+        "shares": 200000
+      },
+      {
+        "id": "3017",
+        "name": "奇鋐",
+        "weight_pct": 3.76,
+        "shares": 550000
+      },
+      {
+        "id": "3443",
+        "name": "創意",
+        "weight_pct": 3.55,
+        "shares": 240000
+      },
+      {
+        "id": "NET US",
+        "name": "CLOUDFLARE INC - CLASS A",
+        "weight_pct": 3.32,
+        "shares": 120000
+      },
+      {
+        "id": "BE US",
+        "name": "BLOOM ENERGY CORP- A",
+        "weight_pct": 3.2,
+        "shares": 200000
+      },
+      {
+        "id": "1303",
+        "name": "南亞",
+        "weight_pct": 3.14,
+        "shares": 4800000
+      },
+      {
+        "id": "2330",
+        "name": "台積電",
+        "weight_pct": 2.81,
+        "shares": 480000
+      },
+      {
+        "id": "3037",
+        "name": "欣興",
+        "weight_pct": 2.74,
+        "shares": 1700000
+      },
+      {
+        "id": "NTSK US",
+        "name": "NETSKOPE INC-CL A",
+        "weight_pct": 2.45,
+        "shares": 1000000
+      },
+      {
+        "id": "ZS US",
+        "name": "ZSCALER INC",
+        "weight_pct": 2.18,
+        "shares": 100145
+      },
+      {
+        "id": "3711",
+        "name": "日月光投控",
+        "weight_pct": 2.09,
+        "shares": 1500000
+      },
+      {
+        "id": "SNOW US",
+        "name": "SNOWFLAKE INC-CLASS A(Snowflake公司)",
+        "weight_pct": 2.06,
+        "shares": 80000
+      },
+      {
+        "id": "2454",
+        "name": "聯發科",
+        "weight_pct": 1.78,
+        "shares": 167000
+      },
+      {
+        "id": "META US",
+        "name": "META PLATFORMS INC(Meta平台公司)",
+        "weight_pct": 1.42,
+        "shares": 25000
+      },
+      {
+        "id": "MRNA US",
+        "name": "MODERNA INC",
+        "weight_pct": 1.21,
+        "shares": 60000
+      },
+      {
+        "id": "6223",
+        "name": "旺矽",
+        "weight_pct": 1.21,
+        "shares": 110000
+      },
+      {
+        "id": "APP US",
+        "name": "APPLOVIN CORP-CLASS A",
+        "weight_pct": 0.71,
+        "shares": 20000
+      },
+      {
+        "id": "009150 KS",
+        "name": "Samsung Electro-Mechanics co(009150 ks)",
+        "weight_pct": 0.55,
+        "shares": 10000
+      },
+      {
+        "id": "MU US",
+        "name": "MICRON TECHNOLOGY INC",
+        "weight_pct": 0.5,
+        "shares": 7500
+      },
+      {
+        "id": "3697 JP",
+        "name": "SHIFT INC",
+        "weight_pct": 0.48,
+        "shares": 800000
+      },
+      {
+        "id": "IFX GY",
+        "name": "INFINEON TECHNOLOGIES AG",
+        "weight_pct": 0.25,
+        "shares": 50000
+      },
+      {
+        "id": "7532 JP",
+        "name": "DON QUIJOTE CO LTD",
+        "weight_pct": 0.25,
+        "shares": 500000
+      },
+      {
+        "id": "V US",
+        "name": "VISA INC-CLASS A SHARES",
+        "weight_pct": 0.16,
+        "shares": 4000
+      }
+    ]
   }
 }
